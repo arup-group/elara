@@ -113,4 +113,4 @@ The associated list attached to each handler allows specification of which modes
 * Introduction of a --verbose option for more descriptive terminal outputs.
 
 ## What does the name mean?
-[Elara](https://en.wikipedia.org/wiki/Elara_(moon\)) is a moon of Jupiter. There's not much else interesting to say about it, other than that the wikipedia article states that it orbits 11-13 *gigametres* from the planet. Gigametres is a cool unit of measurement. 
+[Elara]("https://en.wikipedia.org/wiki/Elara_(moon)") is a moon of Jupiter. There's not much else interesting to say about it, other than that the wikipedia article states that it orbits 11-13 *gigametres* from the planet. Gigametres is a cool unit of measurement. 
