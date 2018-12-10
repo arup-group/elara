@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<events version="1.0">
+	<event time="1800.0" type="actend" person="person_a" link="1_2" actType="home"  />
+	<event time="1800.0" type="departure" person="person_a" link="1_2" legMode="car"  />
+	<event time="1800.0" type="PersonEntersVehicle" person="person_a" vehicle="vehicle_a"  />
+	<event time="1800.0" type="vehicle enters traffic" person="person_a" link="1_2" vehicle="vehicle_a" networkMode="car" relativePosition="1.0"  />
+	<event time="1805.0" type="left link" vehicle="vehicle_a" link="1_2"  />
+	<event time="5400.0" type="entered link" vehicle="vehicle_a" link="2_3"  />
+	<event time="5405.0" type="left link" vehicle="vehicle_a" link="2_3"  />
+	<event time="9000.0" type="entered link" vehicle="vehicle_a" link="3_4"  />
+	<event time="9005.0" type="vehicle leaves traffic" person="person_a" link="3_4" vehicle="vehicle_a" networkMode="car" relativePosition="1.0"  />
+	<event time="9005.0" type="PersonLeavesVehicle" person="person_a" vehicle="vehicle_a"  />
+</events>

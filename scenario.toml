@@ -1,0 +1,14 @@
+[scenario]
+name = "test_scenario"
+time_periods = 24
+scale_factor = 0.25
+
+[inputs]
+events = "./fixtures/test-events.xml"
+network = "./fixtures/test-network.xml"
+
+[outputs]
+path = "./outputs"
+
+[handlers]
+volume_counts = ["car"]

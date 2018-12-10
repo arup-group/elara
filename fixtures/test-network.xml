@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE network SYSTEM "http://www.matsim.org/files/dtd/network_v1.dtd">
+<network name="example-network">
+
+<!-- ====================================================================== -->
+
+	<nodes>
+		<node id="1" x="0" y="0" />
+		<node id="2" x="1" y="0" />
+		<node id="3" x="1" y="1" />
+		<node id="4" x="0" y="1" />
+	</nodes>
+
+<!-- ====================================================================== -->
+
+	<links capperiod="01:00:00" effectivecellsize="7.5" effectivelanewidth="3.75">
+		<link id="1_2" from="1" to="2" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="2_1" from="2" to="1" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="2_3" from="2" to="3" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="3_2" from="3" to="2" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="3_4" from="3" to="4" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="4_3" from="4" to="3" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="4_1" from="4" to="1" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="1_4" from="1" to="4" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="1_3" from="1" to="3" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="3_1" from="3" to="1" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="2_4" from="2" to="4" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+		<link id="4_2" from="4" to="2" length="1" freespeed="10" capacity="800" permlanes="1.0" oneway="1" modes="car" />
+	</links>
+
+<!-- ====================================================================== -->
+
+</network>
