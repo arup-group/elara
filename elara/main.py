@@ -51,7 +51,8 @@ def main(config):
     # Iterate through events
     with Halo(text="Processing events...", spinner="dots") as spinner:
         for i, event in enumerate(events.events):
-            spinner.text = "Processed {} events...".format(i + 1)
+            if i % 12345:
+                spinner.text = "Processed {:,} events...".format(i + 1)
             for event_handler in event_handlers:
                 event_handler.process_event(event)
         spinner.succeed("Events processed!")
