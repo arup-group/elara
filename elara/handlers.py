@@ -21,15 +21,16 @@ class Handler:
 
         # Network attributes
         if handler_type == "link":
-            self.ids = network.links
+            self.elems = network.links
         elif handler_type == "node":
-            self.ids = network.nodes
+            self.elems = network.nodes
         else:
             raise Exception(
                 "Unknown handler type encountered ({})".format(handler_type)
             )
-        self.id_indices = {
-            key: value for (key, value) in zip(self.ids, range(0, len(self.ids)))
+        self.elem_indices = {
+            key: value
+            for (key, value) in zip(self.elems.keys(), range(0, len(self.elems)))
         }
 
         # Other attributes
@@ -48,7 +49,7 @@ class Handler:
         :param time: Timestamp of event
         :return: (row, col) tuple to index results table
         """
-        row = self.id_indices[elem_id]
+        row = self.elem_indices[elem_id]
         col = floor(time / (86400.0 / self.periods)) % self.periods
         return row, col
 
@@ -68,7 +69,7 @@ class Handler:
         :param arr: Results array to be processed
         :return: Dataframe
         """
-        return pd.DataFrame(data=arr, index=self.ids, columns=range(0, self.periods))
+        return pd.DataFrame(data=arr, index=self.elems, columns=range(0, self.periods))
 
     def process_event(self, elem):
         """
@@ -91,7 +92,7 @@ class VolumeCounts(Handler):
     def __init__(self, network, mode, periods=24, scale_factor=1.0):
         super().__init__(network, mode, "link", periods, scale_factor)
         self.name = "volume_counts_{}".format(mode)
-        self.results = {self.name: np.zeros((len(self.ids), periods))}
+        self.results = {self.name: np.zeros((len(self.elem_indices), periods))}
 
     def process_event(self, elem):
         """

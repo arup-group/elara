@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from lxml import etree
 
 
@@ -32,19 +30,49 @@ class Network:
         :param path: Path to MATSim network XML file (.xml)
         """
         self.path = path
-        self.links = list(self.get_ids("link"))
-        self.nodes = list(self.get_ids("node"))
+        self.nodes = {
+            elem.get("id"): self.transform_node_elem(elem)
+            for elem in self.get_elems("node")
+        }
+        self.links = {
+            elem.get("id"): self.transform_link_elem(elem)
+            for elem in self.get_elems("link")
+        }
 
-    def get_ids(self, tag):
+    def get_elems(self, tag):
         """
-        Traverse the network XML tree, retrieving the 'id' field of elements
-        with the specified tag.
-        :param tag: The tag type to extract the 'id' field from, e.g. 'link'
-        :return: Generator of 'id' values
+        Traverse the XML tree, retrieving the elements of the specified
+        tag.
+        :param tag: The tag type to extract , e.g. 'link'
+        :return: Generator of elements
         """
         doc = etree.iterparse(self.path, tag=tag)
         for _, element in doc:
-            yield element.get("id")
+            yield element
             element.clear()
             del element.getparent()[0]
         del doc
+
+    @staticmethod
+    def transform_node_elem(elem):
+        """
+        Convert raw node XML element into dictionary.
+        :param elem: Node XML element
+        :return: Equivalent dictionary with relevant fields
+        """
+        return {"x": elem.get("x"), "y": elem.get("y")}
+
+    @staticmethod
+    def transform_link_elem(elem):
+        """
+        Convert raw link XML element into dictionary.
+        :param elem: Link XML element
+        :return: Equivalent dictionary with relevant fields
+        """
+        return {
+            "from": elem.get("from"),
+            "to": elem.get("to"),
+            "length": float(elem.get("length")),
+            "lanes": float(elem.get("permlanes")),
+            "capacity": float(elem.get("permlanes")) * float(elem.get("capacity")),
+        }

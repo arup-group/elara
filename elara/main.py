@@ -63,6 +63,8 @@ def main(config):
             event_handler.generate_results()
             for name, df in event_handler.final_tables.items():
                 spinner.text = "Writing {}".format(name)
-                path = os.path.join(config.output_path, "{}_{}.csv".format(config.name, name))
+                path = os.path.join(
+                    config.output_path, "{}_{}.csv".format(config.name, name)
+                )
                 df.to_csv(path)
         spinner.succeed("Outputs generated!")
