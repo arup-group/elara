@@ -1,11 +1,12 @@
 [scenario]
 name = "test_scenario"
 time_periods = 24
-scale_factor = 0.25
+scale_factor = 0.01
+crs = "EPSG:27700"
 
 [inputs]
-events = "./fixtures/test-events.xml"
-network = "./fixtures/test-network.xml"
+events = "./fixtures/output_events.xml"
+network = "./fixtures/output_network.xml"
 
 [outputs]
 path = "./outputs"

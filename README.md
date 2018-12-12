@@ -17,6 +17,14 @@ pip3 install -e .
 elara --help
 ```
 
+The ``GeoPandas`` library requires ``pyproj`` as a dependency. This can be a bit of a pain to install. For Mac OSX, activate the environment Elara lives in and run the following commands before installing the tool:
+```
+pip3 install cython
+pip3 install git+https://github.com/jswhit/pyproj.git
+```
+
+On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj`` wheel within your environment using pip.  
+
 ## About
 A MATSim scenario run generates a number of different output files, including the events record. This particular XML file enumerates every discrete event that happened during the final iteration of the model. As such, it contains most of the information required to generate reporting for the particular model run. 
 
@@ -50,6 +58,7 @@ This utility uses a TOML configuration format to specify input, output and metri
 name = "test_scenario"
 time_periods = 24
 scale_factor = 0.25
+crs = "EPSG:27700"
 
 [inputs]
 events = "./fixtures/test-events.xml"
@@ -76,6 +85,10 @@ The number of time slices used to split a 24-hour period for the purposes of rep
 
 The sample size used in the originating MATSim scenario run. This is used to scale metrics such as volume counts. For example, if the underlying scenario was run with a 25% sample size, a value of ``0.25`` in this field will ensure that all calculated volume counts are scaled by 4 times.
 
+**#** scenario.**crs** *string* *(required)*
+
+The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This is used to convert the results to WGS 84. 
+
 **#** inputs.**events** *file* *(required)*
 
 Path to the MATSim events XML file. Can be absolute or relative to the invocation location.
@@ -92,7 +105,7 @@ Desired output directory. Can be absolute or relative to the invocation location
 
 Specification of the event handlers to be run during processing. Currently available handlers include:
 
-* ``volume_counts``: Produce link volume counts by time slice.
+* ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
 
 The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
 
@@ -109,7 +122,6 @@ The associated list attached to each handler allows specification of which modes
 **Nice to have**
 
 * More descriptive generated column headers in handler results. Right now column headers are simply numbers mapped to the particular time slice during the modelled day. 
-* Automatic generation of GeoJSON files for link-based handler results, so that maps can be immediately visualised in Kepler or other software. 
 * Introduction of a --verbose option for more descriptive terminal outputs.
 
 ## What does the name mean?
