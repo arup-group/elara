@@ -60,11 +60,12 @@ def main(config):
     # Generate file outputs
     with Halo(text="Generating outputs...", spinner="dots") as spinner:
         for event_handler in event_handlers:
-            event_handler.generate_results()
-            for name, df in event_handler.final_tables.items():
-                spinner.text = "Writing {}".format(name)
+            event_handler.finalise()
+            for name, df in event_handler.result_dfs.items():
+                output_name = "{}_{}.csv".format(config.name, name)
+                spinner.text = "Writing {}".format(output_name)
                 path = os.path.join(
-                    config.output_path, "{}_{}.csv".format(config.name, name)
+                    config.output_path, output_name
                 )
                 df.to_csv(path)
         spinner.succeed("Outputs generated!")

@@ -16,8 +16,6 @@ class Handler:
         :param periods: Number of time periods per 24 hours
         :param scale_factor: Scenario run sample size
         """
-        # Handler name
-        self.name = None  # To be set by children
 
         # Network attributes
         if handler_type == "link":
@@ -39,8 +37,7 @@ class Handler:
         self.scale_factor = scale_factor
 
         # Initialise results storage
-        self.results = dict()  # Raw numpy array results
-        self.final_tables = dict()  # Formatted pandas dataframes
+        self.result_dfs = dict()  # Result dataframes ready to export to CSV
 
     def table_position(self, elem_id, time):
         """
@@ -62,28 +59,10 @@ class Handler:
         # TODO: Implement actual mode determination logic
         return "car"
 
-    def generate_table(self, arr):
+    def finalise(self):
         """
-        Generate a formatted pandas dataframe from raw numpy results with row
-        and column labels.
-        :param arr: Results array to be processed
-        :return: Dataframe
-        """
-        return pd.DataFrame(data=arr, index=self.elems, columns=range(0, self.periods))
-
-    def process_event(self, elem):
-        """
-        Process event function stub, to be overwritten with actual implementation
-        in handler children.
-        :param elem: XML element representing event
-        """
-        return NotImplementedError
-
-    def generate_results(self):
-        """
-        Transform the numpy array created during event iteration into the actual
-        results table, to be overwritten with actual implementation in handler
-        children.
+        Transform accumulated results during event processing into final dataframes
+        ready for exporting.
         """
         return NotImplementedError
 
@@ -91,8 +70,9 @@ class Handler:
 class VolumeCounts(Handler):
     def __init__(self, network, mode, periods=24, scale_factor=1.0):
         super().__init__(network, mode, "link", periods, scale_factor)
-        self.name = "volume_counts_{}".format(mode)
-        self.results = {self.name: np.zeros((len(self.elem_indices), periods))}
+
+        # Initialise volume count table
+        self.counts = np.zeros((len(self.elem_indices), periods))
 
     def process_event(self, elem):
         """
@@ -107,16 +87,22 @@ class VolumeCounts(Handler):
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 row, col = self.table_position(link, time)
-                self.results[self.name][row, col] += 1
+                self.counts[row, col] += 1
 
-    def generate_results(self):
+    def finalise(self):
         """
         Following event processing, the raw events table will contain counts by link
         by time slice. The only thing left to do is scale by the sample size and
         create dataframes.
         """
-        self.results[self.name] *= 1.0 / self.scale_factor
-        self.final_tables[self.name] = self.generate_table(self.results[self.name])
+
+        # Scale final counts
+        self.counts *= 1.0 / self.scale_factor
+
+        # Save results in the result_dfs dictionary
+        self.result_dfs["volume_counts_{}".format(self.mode)] = pd.DataFrame(
+            data=self.counts, index=self.elems, columns=range(0, self.periods)
+        )
 
 
 def safe_array_divide(a, b):
