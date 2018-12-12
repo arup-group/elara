@@ -19,6 +19,7 @@ class Config:
         self.scale_factor = self.valid_scale_factor(
             parsed_toml["scenario"]["scale_factor"]
         )
+        self.crs = parsed_toml["scenario"]["crs"]
 
         # Input paths
         self.events_path = self.valid_path(parsed_toml["inputs"]["events"], "events")

@@ -33,7 +33,7 @@ def main(config):
     # Prepare inputs
     with Halo(text="Preparing inputs...", spinner="dots") as spinner:
         events = inputs.Events(config.events_path)
-        network = inputs.Network(config.network_path)
+        network = inputs.Network(config.network_path, config.crs)
         spinner.succeed("Inputs prepared.")
 
     # Build handlers
