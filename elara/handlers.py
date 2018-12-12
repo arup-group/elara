@@ -9,7 +9,7 @@ class Handler:
         self, network, mode, handler_type="link", periods=24, scale_factor=1.0
     ):
         """
-        Generic handler for link events.
+        Generic handler for events.
         :param network: Network object
         :param mode: Mode of transport string
         :param handler_type: Handler type ('link' or 'node')
@@ -20,15 +20,17 @@ class Handler:
         # Network attributes
         if handler_type == "link":
             self.elems = network.links
+            self.elem_ids = network.link_ids
         elif handler_type == "node":
             self.elems = network.nodes
+            self.elem_ids = network.node_ids
         else:
             raise Exception(
                 "Unknown handler type encountered ({})".format(handler_type)
             )
         self.elem_indices = {
             key: value
-            for (key, value) in zip(self.elems.keys(), range(0, len(self.elems)))
+            for (key, value) in zip(self.elem_ids, range(0, len(self.elem_ids)))
         }
 
         # Other attributes
@@ -101,7 +103,7 @@ class VolumeCounts(Handler):
 
         # Save results in the result_dfs dictionary
         self.result_dfs["volume_counts_{}".format(self.mode)] = pd.DataFrame(
-            data=self.counts, index=self.elems, columns=range(0, self.periods)
+            data=self.counts, index=self.elem_ids, columns=range(0, self.periods)
         )
 
 

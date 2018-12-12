@@ -50,7 +50,7 @@ def main(config):
 
     # Iterate through events
     with Halo(text="Processing events...", spinner="dots") as spinner:
-        for i, event in enumerate(events.events):
+        for i, event in enumerate(events.event_elems):
             if i % 12345:
                 spinner.text = "Processed {:,} events...".format(i + 1)
             for event_handler in event_handlers:
@@ -64,8 +64,6 @@ def main(config):
             for name, df in event_handler.result_dfs.items():
                 output_name = "{}_{}.csv".format(config.name, name)
                 spinner.text = "Writing {}".format(output_name)
-                path = os.path.join(
-                    config.output_path, output_name
-                )
+                path = os.path.join(config.output_path, output_name)
                 df.to_csv(path)
         spinner.succeed("Outputs generated!")
