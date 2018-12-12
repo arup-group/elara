@@ -112,9 +112,10 @@ class VolumeCounts(Handler):
         )
 
         # Create volume/capacity ratio output
-        ratios_df = counts_df.divide(self.link_gdf["capacity"].values, axis=0).fillna(
-            value=0
-        )
+        capacity_factor = 24 / self.periods
+        ratios_df = counts_df.divide(
+            self.link_gdf["capacity"].values * capacity_factor, axis=0
+        ).fillna(value=0)
         self.result_gdfs["vc_ratios_{}".format(self.mode)] = self.link_gdf.join(
             ratios_df, how="left"
         )

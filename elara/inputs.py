@@ -33,17 +33,20 @@ class Network:
             for elem in get_elems(path, "link")
         ]
 
-        self.node_ids = [node["id"] for node in self.nodes]
-        self.link_ids = [link["id"] for link in self.links]
-
         # Generate empty geodataframes
         node_df = pd.DataFrame(self.nodes)
         node_df.set_index("id", inplace=True)
+        node_df.sort_index(inplace=True)
         link_df = pd.DataFrame(self.links)
         link_df.set_index("id", inplace=True)
+        link_df.sort_index(inplace=True)
 
         self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
+
+        # ID-only lists
+        self.node_ids = node_df.index.tolist()
+        self.link_ids = link_df.index.tolist()
 
     @staticmethod
     def transform_node_elem(elem, crs):
