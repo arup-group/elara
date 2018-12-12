@@ -1,3 +1,4 @@
+import geopandas as gdp
 from lxml import etree
 import pandas as pd
 import pyproj
@@ -34,6 +35,15 @@ class Network:
 
         self.node_ids = [node["id"] for node in self.nodes]
         self.link_ids = [link["id"] for link in self.links]
+
+        # Generate empty geodataframes
+        node_df = pd.DataFrame(self.nodes)
+        node_df.set_index("id", inplace=True)
+        link_df = pd.DataFrame(self.links)
+        link_df.set_index("id", inplace=True)
+
+        self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
+        self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
 
     @staticmethod
     def transform_node_elem(elem, crs):

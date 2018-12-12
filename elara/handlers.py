@@ -39,7 +39,9 @@ class Handler:
         self.scale_factor = scale_factor
 
         # Initialise results storage
-        self.result_dfs = dict()  # Result dataframes ready to export to CSV
+        self.node_gdf = network.node_gdf
+        self.link_gdf = network.link_gdf
+        self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def table_position(self, elem_id, time):
         """
@@ -101,24 +103,21 @@ class VolumeCounts(Handler):
         # Scale final counts
         self.counts *= 1.0 / self.scale_factor
 
-        # Save results in the result_dfs dictionary
-        self.result_dfs["volume_counts_{}".format(self.mode)] = pd.DataFrame(
+        # Create volume counts output
+        counts_df = pd.DataFrame(
             data=self.counts, index=self.elem_ids, columns=range(0, self.periods)
+        ).sort_index()
+        self.result_gdfs["volume_counts_{}".format(self.mode)] = self.link_gdf.join(
+            counts_df, how="left"
         )
 
-
-def safe_array_divide(a, b):
-    """
-    Safely divide two arrays, if divide by zero is encountered output zero.
-    :param a: Numpy array 1
-    :param b: Numpy array 2
-    :return: Output numpy array
-    """
-    with np.errstate(divide="ignore", invalid="ignore"):
-        results = np.true_divide(a, b)
-        results[results == np.inf] = 0
-        results = np.nan_to_num(results)
-    return results
+        # Create volume/capacity ratio output
+        ratios_df = counts_df.divide(self.link_gdf["capacity"].values, axis=0).fillna(
+            value=0
+        )
+        self.result_gdfs["vc_ratios_{}".format(self.mode)] = self.link_gdf.join(
+            ratios_df, how="left"
+        )
 
 
 # Dictionary used to map configuration string to handler type

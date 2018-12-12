@@ -61,9 +61,25 @@ def main(config):
     with Halo(text="Generating outputs...", spinner="dots") as spinner:
         for event_handler in event_handlers:
             event_handler.finalise()
-            for name, df in event_handler.result_dfs.items():
-                output_name = "{}_{}.csv".format(config.name, name)
-                spinner.text = "Writing {}".format(output_name)
-                path = os.path.join(config.output_path, output_name)
-                df.to_csv(path)
+            for name, gdf in event_handler.result_gdfs.items():
+                csv_name = "{}_{}.csv".format(config.name, name)
+                geojson_name = "{}_{}.geojson".format(config.name, name)
+                csv_path = os.path.join(config.output_path, csv_name)
+                geojson_path = os.path.join(config.output_path, geojson_name)
+
+                # File exports
+                spinner.text = "Writing {}".format(csv_name)
+                gdf.drop("geometry", axis=1).to_csv(csv_path)
+                spinner.text = "Writing {}".format(geojson_name)
+                export_geojson(gdf, geojson_path)
         spinner.succeed("Outputs generated!")
+
+
+def export_geojson(gdf, path):
+    """
+    Given a geodataframe, export geojson representation to specified path.
+    :param gdf: Input geodataframe
+    :param path: Output path
+    """
+    with open(path, "w") as file:
+        file.write(gdf.to_json())
