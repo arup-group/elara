@@ -5,10 +5,19 @@ import pandas as pd
 
 
 class Handler:
-    def __init__(self, network, mode, handler_type, periods=24, scale_factor=1.0):
+    def __init__(
+        self,
+        network,
+        transit_vehicles,
+        mode,
+        handler_type,
+        periods=24,
+        scale_factor=1.0,
+    ):
         """
         Generic handler for events.
         :param network: Network object
+        :param transit_vehicles: Transit vehicles object
         :param mode: Mode of transport string
         :param handler_type: Handler type ('link' or 'node')
         :param periods: Number of time periods per 24 hours
@@ -32,6 +41,7 @@ class Handler:
         }
 
         # Other attributes
+        self.transit_vehicles = transit_vehicles
         self.mode = mode
         self.periods = periods
         self.scale_factor = scale_factor
@@ -58,8 +68,12 @@ class Handler:
         :param vehicle_id: Vehicle ID string
         :return: Vehicle mode type string
         """
-        # TODO: Implement actual mode determination logic
-        return "car"
+        if vehicle_id in self.transit_vehicles.veh_id_veh_type_map.keys():
+            return self.transit_vehicles.veh_type_mode_map[
+                self.transit_vehicles.veh_id_veh_type_map[vehicle_id]
+            ]
+        else:
+            return "car"
 
     def remove_empty_rows(self, df):
         """
@@ -88,8 +102,13 @@ class Handler:
 
 
 class VolumeCounts(Handler):
-    def __init__(self, network, mode, periods=24, scale_factor=1.0):
-        super().__init__(network, mode, "link", periods, scale_factor)
+    def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
+        super().__init__(network, transit_vehicles, mode, "link", periods, scale_factor)
+
+        # Overwrite the scale factor for public transport vehicles (these do not need to
+        # be expanded.
+        if mode != "car":
+            self.scale_factor = 1.0
 
         # Initialise volume count table
         self.counts = np.zeros((len(self.elem_indices), periods))

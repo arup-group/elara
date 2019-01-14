@@ -42,10 +42,15 @@ def main(config):
     with Halo(text="Building event handlers...", spinner="dots") as spinner:
         event_handlers = list()
         for handler_name, mode_list in config.handlers.items():
+            print(mode_list)
             for mode in mode_list:
                 event_handlers.append(
                     handlers.HANDLER_MAP[handler_name](
-                        network, mode, config.time_periods, config.scale_factor
+                        network,
+                        transit_vehicles,
+                        mode,
+                        config.time_periods,
+                        config.scale_factor,
                     )
                 )
         spinner.succeed("Event handlers prepared.")

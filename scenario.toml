@@ -14,4 +14,4 @@ path = "./outputs"
 contract = true
 
 [handlers]
-volume_counts = ["car"]
+volume_counts = ["car", "bus", "train"]

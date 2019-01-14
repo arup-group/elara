@@ -113,7 +113,7 @@ Specification of the event handlers to be run during processing. Currently avail
 
 The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
 
-* ``car``
+* ``car, bus, train``
 
 ## Todo
 

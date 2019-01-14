@@ -96,7 +96,7 @@ class TransitVehicles:
         self.veh_type_mode_map = {
             "Rail": "train",
             "Suburban Railway": "train",
-            "Bus": "bus"
+            "Bus": "bus",
         }
 
         # Vehicle type to total capacity correspondence
