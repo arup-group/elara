@@ -7,6 +7,7 @@ crs = "EPSG:27700"
 [inputs]
 events = "./fixtures/output_events.xml"
 network = "./fixtures/output_network.xml"
+transit_vehicles = "./fixtures/output_transitVehicles.xml"
 
 [outputs]
 path = "./outputs"

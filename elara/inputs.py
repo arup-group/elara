@@ -89,6 +89,42 @@ class Network:
         }
 
 
+class TransitVehicles:
+    def __init__(self, path):
+        print("hello")
+        # Vehicle types to mode correspondence
+        self.veh_type_mode_map = {
+            "Rail": "train",
+            "Suburban Railway": "train",
+            "Bus": "bus"
+        }
+
+        # Vehicle type to total capacity correspondence
+        self.veh_type_capacity_map = dict(
+            [
+                self.transform_veh_type_elem(elem)
+                for elem in get_elems(path, "vehicleType")
+            ]
+        )
+
+        # Vehicle ID to vehicle type correspondence
+        self.veh_id_veh_type_map = {
+            elem.get("id"): elem.get("type") for elem in get_elems(path, "vehicle")
+        }
+
+    @staticmethod
+    def transform_veh_type_elem(elem):
+        """
+        Extract the vehicle type and total capacity from a vehicleType XML element.
+        :param elem: vehicleType XML element
+        :return: (vehicle type, capacity) tuple
+        """
+        id = elem.xpath("@id")[0]
+        seatedCapacity = float(elem.xpath("capacity/seats/@persons")[0])
+        standingCapacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
+        return (id, seatedCapacity + standingCapacity)
+
+
 def get_elems(path, tag):
     """
     Traverse the given XML tree, retrieving the elements of the specified tag.
