@@ -156,5 +156,77 @@ class VolumeCounts(Handler):
         )
 
 
+class PassengerCounts(Handler):
+    def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
+        super().__init__(network, transit_vehicles, mode, "link", periods, scale_factor)
+
+        # Initialise passenger count table
+        self.counts = np.zeros((len(self.elem_indices), periods))
+
+        # Initialise vehicle occupancy mapping
+        self.veh_occupancy = dict()  # vehicle_id : occupancy
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
+        events to determine passenger volumes by link.
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
+                if self.veh_occupancy.get(veh_id, None) is None:
+                    self.veh_occupancy[veh_id] = 1
+                else:
+                    self.veh_occupancy[veh_id] += 1
+        elif event_type == "PersonLeavesVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
+                if (
+                    self.veh_occupancy.get(veh_id, None) == 0
+                    or self.veh_occupancy.get(veh_id, None) is None
+                ):
+                    pass
+                else:
+                    self.veh_occupancy[veh_id] -= 1
+        elif event_type == "left link" or event_type == "vehicle leaves traffic":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            if veh_mode == self.mode:
+                # Increment link passenger volumes
+                time = float(elem.get("time"))
+                link = elem.get("link")
+                row, col = self.table_position(link, time)
+                self.counts[row, col] += self.veh_occupancy.get(veh_id, 0)
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain passenger
+        counts by link by time slice. The only thing left to do is scale by the
+        sample size and create dataframes.
+        """
+
+        # Scale final counts
+        self.counts *= 1.0 / self.scale_factor
+
+        # Create passenger counts output
+        counts_df = pd.DataFrame(
+            data=self.counts, index=self.elem_ids, columns=range(0, self.periods)
+        ).sort_index()
+        self.result_gdfs["passenger_counts_{}".format(self.mode)] = self.link_gdf.join(
+            counts_df, how="left"
+        )
+
+
 # Dictionary used to map configuration string to handler type
-HANDLER_MAP = {"volume_counts": VolumeCounts}
+HANDLER_MAP = {"volume_counts": VolumeCounts, "passenger_counts": PassengerCounts}
