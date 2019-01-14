@@ -10,6 +10,7 @@ network = "./fixtures/output_network.xml"
 
 [outputs]
 path = "./outputs"
+contract = true
 
 [handlers]
 volume_counts = ["car"]

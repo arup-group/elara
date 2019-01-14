@@ -101,6 +101,10 @@ Path to the MATSim network XML file. Can be absolute or relative to the invocati
 
 Desired output directory. Can be absolute or relative to the invocation location. If the directory does not exist it will be created.
 
+**#** outputs.**contract** *boolean*
+
+If set to *true*, removes rows containing only zero values from the generated output files. 
+
 **#** handlers.**[handler name]** *list of strings* *(required)*
 
 Specification of the event handlers to be run during processing. Currently available handlers include:

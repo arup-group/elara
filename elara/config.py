@@ -21,12 +21,13 @@ class Config:
         )
         self.crs = parsed_toml["scenario"]["crs"]
 
-        # Input paths
+        # Input settings
         self.events_path = self.valid_path(parsed_toml["inputs"]["events"], "events")
         self.network_path = self.valid_path(parsed_toml["inputs"]["network"], "network")
 
-        # Output path
+        # Output settings
         self.output_path = parsed_toml["outputs"]["path"]
+        self.contract = parsed_toml["outputs"]["contract"]
 
         # Handler objects
         self.handlers = parsed_toml["handlers"]

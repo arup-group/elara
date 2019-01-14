@@ -61,6 +61,8 @@ def main(config):
     with Halo(text="Generating outputs...", spinner="dots") as spinner:
         for event_handler in event_handlers:
             event_handler.finalise()
+            if config.contract:
+                event_handler.contract_results()
             for name, gdf in event_handler.result_gdfs.items():
                 csv_name = "{}_{}.csv".format(config.name, name)
                 geojson_name = "{}_{}.geojson".format(config.name, name)

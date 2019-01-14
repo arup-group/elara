@@ -5,9 +5,7 @@ import pandas as pd
 
 
 class Handler:
-    def __init__(
-        self, network, mode, handler_type="link", periods=24, scale_factor=1.0
-    ):
+    def __init__(self, network, mode, handler_type, periods=24, scale_factor=1.0):
         """
         Generic handler for events.
         :param network: Network object
@@ -63,12 +61,30 @@ class Handler:
         # TODO: Implement actual mode determination logic
         return "car"
 
+    def remove_empty_rows(self, df):
+        """
+        Remove rows from given results dataframe if time period columns only contain
+        zeroes.
+        :param df: Results dataframe
+        :return: Contracted results dataframe
+        """
+        cols = [h for h in range(self.periods)]
+        return df.loc[df[cols].sum(axis=1) > 0]
+
     def finalise(self):
         """
         Transform accumulated results during event processing into final dataframes
         ready for exporting.
         """
         return NotImplementedError
+
+    def contract_results(self):
+        """
+        Remove zero-sum rows from all results dataframes.
+        """
+        self.result_gdfs = {
+            k: self.remove_empty_rows(df) for (k, df) in self.result_gdfs.items()
+        }
 
 
 class VolumeCounts(Handler):
