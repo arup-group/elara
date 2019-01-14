@@ -105,11 +105,6 @@ class VolumeCounts(Handler):
     def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
         super().__init__(network, transit_vehicles, mode, "link", periods, scale_factor)
 
-        # Overwrite the scale factor for public transport vehicles (these do not need to
-        # be expanded.
-        if mode != "car":
-            self.scale_factor = 1.0
-
         # Initialise volume count table
         self.counts = np.zeros((len(self.elem_indices), periods))
 
@@ -134,6 +129,11 @@ class VolumeCounts(Handler):
         by time slice. The only thing left to do is scale by the sample size and
         create dataframes.
         """
+
+        # Overwrite the scale factor for public transport vehicles (these do not need to
+        # be expanded.
+        if self.mode != "car":
+            self.scale_factor = 1.0
 
         # Scale final counts
         self.counts *= 1.0 / self.scale_factor
