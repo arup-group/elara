@@ -17,3 +17,4 @@ contract = true
 [handlers]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
+stop_interactions = ["bus", "train"]

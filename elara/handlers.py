@@ -5,7 +5,15 @@ import pandas as pd
 
 
 class Handler:
-    def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
+    def __init__(
+        self,
+        network,
+        transit_schedule,
+        transit_vehicles,
+        mode,
+        periods=24,
+        scale_factor=1.0,
+    ):
         """
         Generic handler for events.
         :param network: Network object
@@ -16,6 +24,7 @@ class Handler:
         """
 
         self.network = network
+        self.transit_schedule = transit_schedule
         self.transit_vehicles = transit_vehicles
         self.mode = mode
         self.periods = periods
@@ -77,8 +86,18 @@ class Handler:
 
 
 class VolumeCounts(Handler):
-    def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
-        super().__init__(network, transit_vehicles, mode, periods, scale_factor)
+    def __init__(
+        self,
+        network,
+        transit_schedule,
+        transit_vehicles,
+        mode,
+        periods=24,
+        scale_factor=1.0,
+    ):
+        super().__init__(
+            network, transit_schedule, transit_vehicles, mode, periods, scale_factor
+        )
 
         # Initialise element attributes
         self.elem_gdf = self.network.link_gdf
@@ -136,8 +155,18 @@ class VolumeCounts(Handler):
 
 
 class PassengerCounts(Handler):
-    def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
-        super().__init__(network, transit_vehicles, mode, periods, scale_factor)
+    def __init__(
+        self,
+        network,
+        transit_schedule,
+        transit_vehicles,
+        mode,
+        periods=24,
+        scale_factor=1.0,
+    ):
+        super().__init__(
+            network, transit_schedule, transit_vehicles, mode, periods, scale_factor
+        )
 
         # Initialise element attributes
         self.elem_gdf = self.network.link_gdf
@@ -211,6 +240,94 @@ class PassengerCounts(Handler):
         )
 
 
+class StopInteractions(Handler):
+    def __init__(
+        self,
+        network,
+        transit_schedule,
+        transit_vehicles,
+        mode,
+        periods=24,
+        scale_factor=1.0,
+    ):
+        super().__init__(
+            network, transit_schedule, transit_vehicles, mode, periods, scale_factor
+        )
+
+        # Initialise element attributes
+        self.elem_gdf = self.transit_schedule.stop_gdf
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise results tables
+        self.boardings = np.zeros((len(self.elem_indices), periods))
+        self.alightings = np.zeros((len(self.elem_indices), periods))
+
+        # Initialise agent status mapping
+        self.agent_status = dict()  # agent_id : [origin_stop, destination_stop]
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'waitingForPt', 'PersonEntersVehicle' and
+        'PersonLeavesVehicle' events to determine stop boardings and alightings.
+        :param elem: Event XML element
+        """
+
+        event_type = elem.get("type")
+        if event_type == "waitingForPt":
+            agent_id = elem.get("agent")
+            origin_stop = elem.get("atStop")
+            destination_stop = elem.get("destinationStop")
+            self.agent_status[agent_id] = [origin_stop, destination_stop]
+        elif event_type == "PersonEntersVehicle":
+            veh_mode = self.vehicle_mode(elem.get("vehicle"))
+            if veh_mode == self.mode:
+                agent_id = elem.get("person")
+                if self.agent_status.get(agent_id, None) is not None:
+                    time = float(elem.get("time"))
+                    origin_stop = self.agent_status[agent_id][0]
+                    row, col = table_position(
+                        self.elem_indices, self.periods, origin_stop, time
+                    )
+                    self.boardings[row, col] += 1
+        elif event_type == "PersonLeavesVehicle":
+            veh_mode = self.vehicle_mode(elem.get("vehicle"))
+            if veh_mode == self.mode:
+                agent_id = elem.get("person")
+                if self.agent_status.get(agent_id, None) is not None:
+                    time = float(elem.get("time"))
+                    destination_stop = self.agent_status[agent_id][1]
+                    row, col = table_position(
+                        self.elem_indices, self.periods, destination_stop, time
+                    )
+                    self.alightings[row, col] += 1
+                    self.agent_status.pop(agent_id, None)
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain boardings
+        and alightings by link by time slice. The only thing left to do is scale
+        by the sample size and create dataframes.
+        """
+
+        # Scale final counts
+        self.boardings *= 1.0 / self.scale_factor
+        self.alightings *= 1.0 / self.scale_factor
+
+        # Create passenger counts output
+        boardings_df = pd.DataFrame(
+            data=self.boardings, index=self.elem_ids, columns=range(0, self.periods)
+        ).sort_index()
+        alightings_df = pd.DataFrame(
+            data=self.alightings, index=self.elem_ids, columns=range(0, self.periods)
+        ).sort_index()
+        self.result_gdfs["boardings_{}".format(self.mode)] = self.elem_gdf.join(
+            boardings_df, how="left"
+        )
+        self.result_gdfs["alightings_{}".format(self.mode)] = self.elem_gdf.join(
+            alightings_df, how="left"
+        )
+
+
 def table_position(elem_indices, periods, elem_id, time):
     """
     Calculate the result table coordinates from a given a element ID and timestamp.
@@ -226,4 +343,8 @@ def table_position(elem_indices, periods, elem_id, time):
 
 
 # Dictionary used to map configuration string to handler type
-HANDLER_MAP = {"volume_counts": VolumeCounts, "passenger_counts": PassengerCounts}
+HANDLER_MAP = {
+    "volume_counts": VolumeCounts,
+    "passenger_counts": PassengerCounts,
+    "stop_interactions": StopInteractions,
+}

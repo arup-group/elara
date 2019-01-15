@@ -49,6 +49,7 @@ def main(config):
                 event_handlers.append(
                     handlers.HANDLER_MAP[handler_name](
                         network,
+                        transit_schedule,
                         transit_vehicles,
                         mode,
                         config.time_periods,
