@@ -24,29 +24,25 @@ class Network:
         """
 
         # Extract element properties
-        self.nodes = [
+        nodes = [
             self.transform_node_elem(elem, crs) for elem in get_elems(path, "node")
         ]
-        node_lookup = {node["id"]: node for node in self.nodes}
-        self.links = [
+        node_lookup = {node["id"]: node for node in nodes}
+        links = [
             self.transform_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
 
         # Generate empty geodataframes
-        node_df = pd.DataFrame(self.nodes)
+        node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
         node_df.sort_index(inplace=True)
-        link_df = pd.DataFrame(self.links)
+        link_df = pd.DataFrame(links)
         link_df.set_index("id", inplace=True)
         link_df.sort_index(inplace=True)
 
         self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
-
-        # ID-only lists
-        self.node_ids = node_df.index.tolist()
-        self.link_ids = link_df.index.tolist()
 
     @staticmethod
     def transform_node_elem(elem, crs):

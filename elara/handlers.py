@@ -5,62 +5,37 @@ import pandas as pd
 
 
 class Handler:
-    def __init__(
-        self,
-        network,
-        transit_vehicles,
-        mode,
-        handler_type,
-        periods=24,
-        scale_factor=1.0,
-    ):
+    def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
         """
         Generic handler for events.
         :param network: Network object
         :param transit_vehicles: Transit vehicles object
         :param mode: Mode of transport string
-        :param handler_type: Handler type ('link' or 'node')
         :param periods: Number of time periods per 24 hours
         :param scale_factor: Scenario run sample size
         """
 
-        # Network attributes
-        if handler_type == "link":
-            self.elems = network.links
-            self.elem_ids = network.link_ids
-        elif handler_type == "node":
-            self.elems = network.nodes
-            self.elem_ids = network.node_ids
-        else:
-            raise Exception(
-                "Unknown handler type encountered ({})".format(handler_type)
-            )
-        self.elem_indices = {
-            key: value
-            for (key, value) in zip(self.elem_ids, range(0, len(self.elem_ids)))
-        }
-
-        # Other attributes
+        self.network = network
         self.transit_vehicles = transit_vehicles
         self.mode = mode
         self.periods = periods
         self.scale_factor = scale_factor
 
         # Initialise results storage
-        self.node_gdf = network.node_gdf
-        self.link_gdf = network.link_gdf
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def table_position(self, elem_id, time):
+    @staticmethod
+    def generate_elem_ids(elem_gdf):
         """
-        Calculate the result table coordinates from a given a element ID and timestamp.
-        :param elem_id: Element ID string
-        :param time: Timestamp of event
-        :return: (row, col) tuple to index results table
+        Generate element ID list and index dictionary from given geodataframe.
+        :param elem_gdf: Element geodataframe
+        :return: (element IDs, element indices)
         """
-        row = self.elem_indices[elem_id]
-        col = floor(time / (86400.0 / self.periods)) % self.periods
-        return row, col
+        elem_ids = elem_gdf.index.tolist()
+        elem_indices = {
+            key: value for (key, value) in zip(elem_ids, range(0, len(elem_ids)))
+        }
+        return elem_ids, elem_indices
 
     def vehicle_mode(self, vehicle_id):
         """
@@ -103,7 +78,11 @@ class Handler:
 
 class VolumeCounts(Handler):
     def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
-        super().__init__(network, transit_vehicles, mode, "link", periods, scale_factor)
+        super().__init__(network, transit_vehicles, mode, periods, scale_factor)
+
+        # Initialise element attributes
+        self.elem_gdf = self.network.link_gdf
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise volume count table
         self.counts = np.zeros((len(self.elem_indices), periods))
@@ -120,7 +99,7 @@ class VolumeCounts(Handler):
             if veh_mode == self.mode:
                 link = elem.get("link")
                 time = float(elem.get("time"))
-                row, col = self.table_position(link, time)
+                row, col = table_position(self.elem_indices, self.periods, link, time)
                 self.counts[row, col] += 1
 
     def finalise(self):
@@ -142,23 +121,27 @@ class VolumeCounts(Handler):
         counts_df = pd.DataFrame(
             data=self.counts, index=self.elem_ids, columns=range(0, self.periods)
         ).sort_index()
-        self.result_gdfs["volume_counts_{}".format(self.mode)] = self.link_gdf.join(
+        self.result_gdfs["volume_counts_{}".format(self.mode)] = self.elem_gdf.join(
             counts_df, how="left"
         )
 
         # Create volume/capacity ratio output
         capacity_factor = 24 / self.periods
         ratios_df = counts_df.divide(
-            self.link_gdf["capacity"].values * capacity_factor, axis=0
+            self.elem_gdf["capacity"].values * capacity_factor, axis=0
         ).fillna(value=0)
-        self.result_gdfs["vc_ratios_{}".format(self.mode)] = self.link_gdf.join(
+        self.result_gdfs["vc_ratios_{}".format(self.mode)] = self.elem_gdf.join(
             ratios_df, how="left"
         )
 
 
 class PassengerCounts(Handler):
     def __init__(self, network, transit_vehicles, mode, periods=24, scale_factor=1.0):
-        super().__init__(network, transit_vehicles, mode, "link", periods, scale_factor)
+        super().__init__(network, transit_vehicles, mode, periods, scale_factor)
+
+        # Initialise element attributes
+        self.elem_gdf = self.network.link_gdf
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise passenger count table
         self.counts = np.zeros((len(self.elem_indices), periods))
@@ -206,7 +189,7 @@ class PassengerCounts(Handler):
                 # Increment link passenger volumes
                 time = float(elem.get("time"))
                 link = elem.get("link")
-                row, col = self.table_position(link, time)
+                row, col = table_position(self.elem_indices, self.periods, link, time)
                 self.counts[row, col] += self.veh_occupancy.get(veh_id, 0)
 
     def finalise(self):
@@ -223,9 +206,23 @@ class PassengerCounts(Handler):
         counts_df = pd.DataFrame(
             data=self.counts, index=self.elem_ids, columns=range(0, self.periods)
         ).sort_index()
-        self.result_gdfs["passenger_counts_{}".format(self.mode)] = self.link_gdf.join(
+        self.result_gdfs["passenger_counts_{}".format(self.mode)] = self.elem_gdf.join(
             counts_df, how="left"
         )
+
+
+def table_position(elem_indices, periods, elem_id, time):
+    """
+    Calculate the result table coordinates from a given a element ID and timestamp.
+    :param elem_indices: Element index list
+    :param periods: Number of time periods across the day
+    :param elem_id: Element ID string
+    :param time: Timestamp of event
+    :return: (row, col) tuple to index results table
+    """
+    row = elem_indices[elem_id]
+    col = floor(time / (86400.0 / periods)) % periods
+    return row, col
 
 
 # Dictionary used to map configuration string to handler type
