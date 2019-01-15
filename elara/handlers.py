@@ -210,6 +210,8 @@ class PassengerCounts(Handler):
                     pass
                 else:
                     self.veh_occupancy[veh_id] -= 1
+                if self.veh_occupancy.get(veh_id, None) == 0:
+                    self.veh_occupancy.pop(veh_id, None)
         elif event_type == "left link" or event_type == "vehicle leaves traffic":
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
