@@ -85,9 +85,54 @@ class Network:
         }
 
 
+class TransitSchedule:
+    def __init__(self, path, crs):
+        """
+        Transit schedule object constructor.
+        :param path: Path to MATSim transit schedule XML file (.xml)
+        """
+
+        # Retrieve stop attributes
+        stops = [
+            self.transform_stop_elem(elem, crs)
+            for elem in get_elems(path, "stopFacility")
+        ]
+
+        # Generate empty geodataframes
+        stop_df = pd.DataFrame(stops)
+        stop_df.set_index("id", inplace=True)
+        stop_df.sort_index(inplace=True)
+
+        self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
+
+    @staticmethod
+    def transform_stop_elem(elem, crs):
+        """
+        Convert raw stop facility XML element into dictionary.
+        :param elem: Stop facility XML element
+        :param crs: Original coordinate reference system code
+        :return: Dictionary
+        """
+        x = float(elem.get("x"))
+        y = float(elem.get("y"))
+
+        geometry = generate_point(x, y, crs)
+
+        return {
+            "id": str(elem.get("id")),
+            "link": str(elem.get("linkRefId")),
+            "stop_area": str(elem.get("stopAreaId")),
+            "geometry": geometry,
+        }
+
+
 class TransitVehicles:
     def __init__(self, path):
-        print("hello")
+        """
+        Transit vehicles object constructor.
+        :param path: Path to MATSim transit vehicles XML file (.xml)
+        """
+
         # Vehicle types to mode correspondence
         self.veh_type_mode_map = {
             "Rail": "train",

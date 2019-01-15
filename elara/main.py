@@ -34,6 +34,9 @@ def main(config):
     with Halo(text="Preparing inputs...", spinner="dots") as spinner:
         events = inputs.Events(config.events_path)
         network = inputs.Network(config.network_path, config.crs)
+        transit_schedule = inputs.TransitSchedule(
+            config.transit_schedule_path, config.crs
+        )
         transit_vehicles = inputs.TransitVehicles(config.transit_vehicles_path)
 
         spinner.succeed("Inputs prepared.")

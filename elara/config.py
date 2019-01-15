@@ -24,6 +24,9 @@ class Config:
         # Input settings
         self.events_path = self.valid_path(parsed_toml["inputs"]["events"], "events")
         self.network_path = self.valid_path(parsed_toml["inputs"]["network"], "network")
+        self.transit_schedule_path = self.valid_path(
+            parsed_toml["inputs"]["transit_schedule"], "transit_schedule"
+        )
         self.transit_vehicles_path = self.valid_path(
             parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
         )
