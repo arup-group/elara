@@ -6,6 +6,7 @@ from halo import Halo
 from elara.config import Config
 from elara import inputs
 from elara import handlers
+from elara import postprocessing
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -58,6 +59,22 @@ def main(config):
                 )
         spinner.succeed("Event handlers prepared.")
 
+    # Build post-processors
+    with Halo(text="Building post-processors...", spinner="dots") as spinner:
+        post_processors = list()
+        for post_processor_name in config.post_processing:
+            post_processor = postprocessing.POST_PROCESSOR_MAP[post_processor_name](
+                config, network, transit_schedule, transit_vehicles
+            )
+            if not post_processor.check_prerequisites():
+                raise Exception(
+                    "Prerequisite handlers not met for {} post-processor".format(
+                        post_processor_name
+                    )
+                )
+            post_processors.append(post_processor)
+        spinner.succeed("Post-processors prepared.")
+
     # Iterate through events
     with Halo(text="Processing events...", spinner="dots") as spinner:
         for i, event in enumerate(events.event_elems):
@@ -85,6 +102,12 @@ def main(config):
                 spinner.text = "Writing {}".format(geojson_name)
                 export_geojson(gdf, geojson_path)
         spinner.succeed("Outputs generated!")
+
+    # Run post-processing modules
+    with Halo(text="Running post-processing...", spinner="dots") as spinner:
+        for post_processor in post_processors:
+            post_processor.run()
+        spinner.succeed("Post-processing complete!")
 
 
 def export_geojson(gdf, path):

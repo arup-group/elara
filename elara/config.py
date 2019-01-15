@@ -31,12 +31,13 @@ class Config:
             parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
         )
 
+        # Handler objects
+        self.handlers = parsed_toml["handlers"]
+
         # Output settings
         self.output_path = parsed_toml["outputs"]["path"]
         self.contract = parsed_toml["outputs"]["contract"]
-
-        # Handler objects
-        self.handlers = parsed_toml["handlers"]
+        self.post_processing = parsed_toml["outputs"]["post_processing"]
 
     @staticmethod
     def valid_time_periods(inp):

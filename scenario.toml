@@ -10,11 +10,12 @@ network = "./fixtures/output_network.xml"
 transit_schedule = "./fixtures/output_transitSchedule.xml"
 transit_vehicles = "./fixtures/output_transitVehicles.xml"
 
-[outputs]
-path = "./outputs"
-contract = true
-
 [handlers]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
+
+[outputs]
+path = "./outputs"
+contract = true
+post_processing = ["vkt"]
