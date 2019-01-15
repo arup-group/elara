@@ -144,15 +144,6 @@ class VolumeCounts(Handler):
             counts_df, how="left"
         )
 
-        # Create volume/capacity ratio output
-        capacity_factor = 24 / self.periods
-        ratios_df = counts_df.divide(
-            self.elem_gdf["capacity"].values * capacity_factor, axis=0
-        ).fillna(value=0)
-        self.result_gdfs["vc_ratios_{}".format(self.mode)] = self.elem_gdf.join(
-            ratios_df, how="left"
-        )
-
 
 class PassengerCounts(Handler):
     def __init__(
