@@ -20,6 +20,7 @@ class Config:
             parsed_toml["scenario"]["scale_factor"]
         )
         self.crs = parsed_toml["scenario"]["crs"]
+        self.verbose = parsed_toml["scenario"]["verbose"]
 
         # Input settings
         self.events_path = self.valid_path(parsed_toml["inputs"]["events"], "events")
