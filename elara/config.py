@@ -31,6 +31,9 @@ class Config:
         self.transit_vehicles_path = self.valid_path(
             parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
         )
+        self.attributes_path = self.valid_path(
+            parsed_toml["inputs"]["attributes"], "attributes"
+        )
 
         # Handler objects
         self.handlers = parsed_toml["handlers"]
@@ -39,6 +42,9 @@ class Config:
         self.output_path = parsed_toml["outputs"]["path"]
         self.contract = parsed_toml["outputs"]["contract"]
         self.post_processing = parsed_toml["outputs"]["post_processing"]
+
+        # Benchmark settings
+        self.benchmarks = parsed_toml["benchmarking"]["benchmarks"]
 
     @staticmethod
     def valid_time_periods(inp):
