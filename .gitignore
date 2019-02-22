@@ -1,6 +1,8 @@
-fixtures/output_*.xml
+fixtures/*
 outputs/
 .idea/
+*.ipynb
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -30,7 +30,7 @@ class VKT(PostProcessor):
 
     def run(self):
         for mode in self.config.handlers["volume_counts"]:
-            file_name = "{}_volume_counts_{}.geojson".format(self.config.name, mode)
+            file_name = "{}_volume_counts_{}_total.geojson".format(self.config.name, mode)
             file_path = os.path.join(self.config.output_path, file_name)
             volumes_gdf = geopandas.read_file(file_path)
 
