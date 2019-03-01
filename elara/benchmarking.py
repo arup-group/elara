@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -10,6 +9,11 @@ class Benchmarks:
     benchmarks = {}
 
     def __init__(self, config):
+        """
+        Wrapper for all benchmarks (ie Cordons ect). Scoring method extracts all
+        benchmark scores and combines using weights into a Metascore.
+        :param config: Config object
+        """
 
         self.config = config
 
@@ -18,6 +22,11 @@ class Benchmarks:
                 cordon_name, config)
 
     def score(self):
+        """
+        Extract all sub scores from benchmarks and return combine 'metascore'.
+        Writes summary of results to csv.
+        :return: Float
+        """
         scores = {}
         meta_score = 0
         for benchmark_name, benchmark in self.benchmarks.items():
@@ -48,6 +57,12 @@ class InnerCordon:
     map_path = os.path.join('benchmark_data', 'inner_cordon', 'cordon_links.csv')
 
     def __init__(self, name, config):
+        """
+        Cordon Object used for handling a cordon benchmark. Initiates two CordonCount
+        objects (one for 'in' and one for 'out counts) with loaded counts and link map.
+        :param name: String, cordon name
+        :param config: Config
+        """
         self.config = config
         counts_df = pd.read_csv(self.benchmark_path)
         links_df = pd.read_csv(self.map_path, index_col=0)
@@ -63,6 +78,11 @@ class InnerCordon:
             ))
 
     def output_and_score(self):
+        """
+        Builds paths for volume count outputs, loads and combines for scoring.
+        Collects scoring from CordonCount objects.
+        :return: Dictionary of scores {'in': float, 'out': float}
+        """
 
         # Build paths and load appropriate volume counts
         # TODO volume counts are just car - need to add buses
@@ -86,6 +106,15 @@ class InnerCordon:
 class CordonCount:
 
     def __init__(self, name, config, direction_name, dir_code, counts_df, links_df):
+        """
+        Builds list of link_ids and counts for given direction.
+        :param name: String, name
+        :param config: Config
+        :param direction_name: String
+        :param dir_code: Int
+        :param counts_df: DataFrame of all counts for cordon
+        :param links_df: DataFrame of cordon-count to links
+        """
         self.cordon_name = name
         self.direction = direction_name
         self.config = config
@@ -96,6 +125,14 @@ class CordonCount:
         self.count_df = self.counts_to_df(self.counts_array)
 
     def output_and_score(self, results_dfs):
+        """
+        Join all results from different volume counts (modal) and extract counts
+        for cordon. Scoring is calculated by summing the absolute difference between
+        hourly total counts and model results, then normalising by the total of all
+        counts.
+        :param results_dfs: DataFrame object of results
+        :return: Float
+        """
         # collect all results
         concat_df = pd.DataFrame()
         for result_df in results_dfs:
@@ -121,10 +158,23 @@ class CordonCount:
         return sum(np.absolute(results_array - self.counts_array)) / self.counts_array.sum()
 
     def get_links(self, links_df, direction_code):
+        """
+        Filter given DataFrame for direction.
+        :param links_df: DataFrame
+        :param direction_code: Int
+        :return: DataFrame
+        """
         df = links_df.loc[links_df.dir == direction_code, :]
         return list(set(df.link))
 
     def get_counts(self, counts_df, direction_code):
+        """
+        Builds array of total counts by hour.
+        TODO counld simplify but might add dict of counts by station in future
+        :param counts_df: DataFrame
+        :param direction_code: Int
+        :return:
+        """
         counts_array = np.zeros((self.config.time_periods))
         df = counts_df.loc[counts_df.Direction == direction_code, :]
         site_indexes = list(set(df.Site))
@@ -136,11 +186,17 @@ class CordonCount:
         return counts_array
 
     def counts_to_df(self, array):
+        """
+        Build counts dataframe from array for writing to csv
+        :param array: np.array
+        :return: DataFrame
+        """
         col_names = [str(i) for i in range(self.config.time_periods)]
         df = pd.DataFrame(array, index=col_names).T
         df['source'] = 'count'
         return df
 
 
+# maps of benchmarks to Classes and weights for scoring
 BENCHMARK_MAP = {"inner_cordon": InnerCordon}
 BENCHMARK_WEIGHTS = {"inner_cordon": 1}
