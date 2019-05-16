@@ -23,5 +23,4 @@ contract = true
 post_processing = ["vkt"]
 
 [benchmarking]
-benchmarks = ["inner_cordon"]
-
+benchmarks = ["inner_cordon_car"]

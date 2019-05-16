@@ -142,6 +142,9 @@ class TransitVehicles:
             "Rail": "train",
             "Suburban Railway": "train",
             "Bus": "bus",
+            "Coach Service": "bus",
+            "Tram": "tram",
+            "Ferry": "ferry"
         }
 
         # Vehicle type to total capacity correspondence

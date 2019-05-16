@@ -50,11 +50,38 @@ class Benchmarks:
         return meta_score
 
 
-class InnerCordon:
+class IrelandCommuterStats:
+
+    def __init__(self, name, config):
+        pass
+
+
+class DublinCanalCordon:
 
     cordon_counts = []
-    benchmark_path = os.path.join('benchmark_data', 'inner_cordon', 'InnerCordon2016.csv')
-    map_path = os.path.join('benchmark_data', 'inner_cordon', 'cordon_links.csv')
+    benchmark_path = os.path.join('benchmark_data', 'ireland', 'dublin_cordon', 'InnerCordon2016.csv')
+    cordon_path = os.path.join('benchmark_data', 'ireland', 'dublin_cordon', 'dublin_cordon.csv')
+
+    def __init__(self, name, config):
+        """
+        Stats object for comparing output mode shares by population attribute to benchmark
+        :param name:
+        :param config:
+        """
+        pass
+
+
+class Cordon:
+
+    cordon_counts = []
+
+    benchmark_path = None
+    cordon_path = None
+
+    directions = {'in': 1, 'out': 2}
+    year = 2016
+    hours = None
+    modes = ['car']
 
     def __init__(self, name, config):
         """
@@ -65,12 +92,17 @@ class InnerCordon:
         """
         self.config = config
         counts_df = pd.read_csv(self.benchmark_path)
-        links_df = pd.read_csv(self.map_path, index_col=0)
+        links_df = pd.read_csv(self.cordon_path, index_col=0)
 
-        for direction_name, dir_code in {'in': 1, 'out': 2}.items():
+        if not self.hours:
+            self.hours = range(self.config.time_periods)
+
+        for direction_name, dir_code in self.directions.items():
             self.cordon_counts.append(CordonCount(
                 name,
                 config,
+                self.year,
+                self.hours,
                 direction_name,
                 dir_code,
                 counts_df,
@@ -85,16 +117,15 @@ class InnerCordon:
         """
 
         # Build paths and load appropriate volume counts
-        # TODO volume counts are just car - need to add buses
-        results_dfs = []
-        for mode in self.config.handlers['volume_counts']:
+        results_dfs = {}
+        for mode in self.modes:
             results_name = "{}_volume_counts_{}.csv".format(self.config.name, mode)
             results_path = os.path.join(self.config.output_path, results_name)
             results_df = pd.read_csv(results_path, index_col=0)
             results_df.index.name = 'link_id'
-            select_cols = ['class'] + [str(i) for i in range(self.config.time_periods)]
+            select_cols = ['class'] + [str(i) for i in self.hours]
             results_df = results_df.loc[:, select_cols]
-            results_dfs.append(results_df)
+            results_dfs[mode] = results_df
 
         # get scores and write outputs
         scores = {}
@@ -105,9 +136,9 @@ class InnerCordon:
 
 class CordonCount:
 
-    def __init__(self, name, config, direction_name, dir_code, counts_df, links_df):
+    def __init__(self, name, config, year, hours, direction_name, dir_code, counts_df, links_df):
         """
-        Builds list of link_ids and counts for given direction.
+        Builds list of link_ids and counts for gifven direction.
         :param name: String, name
         :param config: Config
         :param direction_name: String
@@ -118,11 +149,13 @@ class CordonCount:
         self.cordon_name = name
         self.direction = direction_name
         self.config = config
+        self.year = year
+        self.hours = hours
+        self.dir_code = dir_code
+        self.counts_df = counts_df
 
-        # Get cordon links and counts
+        # Get cordon links
         self.link_ids = self.get_links(links_df, dir_code)
-        self.counts_array = self.get_counts(counts_df, dir_code)
-        self.count_df = self.counts_to_df(self.counts_array)
 
     def output_and_score(self, results_dfs):
         """
@@ -135,7 +168,7 @@ class CordonCount:
         """
         # collect all results
         concat_df = pd.DataFrame()
-        for result_df in results_dfs:
+        for mode, result_df in results_dfs.items():
             concat_df = pd.concat([concat_df, result_df.loc[result_df.index.isin(self.link_ids)]], axis=0)
         classes_df = concat_df.groupby('class').sum()
 
@@ -148,14 +181,18 @@ class CordonCount:
         csv_path = os.path.join(self.config.output_path, csv_name)
         classes_df.to_csv(csv_path)
 
+        # Get cordon counts for mode
+        counts_array = self.get_counts(self.counts_df, modes=results_dfs.keys())
+        count_df = self.counts_to_df(counts_array)
+
         # Label and write benchmark csv
-        benchmark_df = pd.concat([self.count_df, classes_df]).groupby('source').sum()
+        benchmark_df = pd.concat([count_df, classes_df]).groupby('source').sum()
         csv_name = '{}_{}_benchmark.csv'.format(self.cordon_name, self.direction)
         csv_path = os.path.join(self.config.output_path, csv_name)
         benchmark_df.to_csv(csv_path)
 
         # Calc score
-        return sum(np.absolute(results_array - self.counts_array)) / self.counts_array.sum()
+        return 1 - (sum(np.absolute(results_array - counts_array)) / counts_array.sum())
 
     def get_links(self, links_df, direction_code):
         """
@@ -167,22 +204,32 @@ class CordonCount:
         df = links_df.loc[links_df.dir == direction_code, :]
         return list(set(df.link))
 
-    def get_counts(self, counts_df, direction_code):
+    def get_counts(self, counts_df, modes):
         """
         Builds array of total counts by hour.
-        TODO counld simplify but might add dict of counts by station in future
+        TODO could simplify but might add dict of counts by station in future
         :param counts_df: DataFrame
-        :param direction_code: Int
+        :param modes: Strings
         :return:
         """
-        counts_array = np.zeros((self.config.time_periods))
-        df = counts_df.loc[counts_df.Direction == direction_code, :]
+        counts_array = np.zeros(len(self.hours))
+
+        df = counts_df.loc[counts_df.Year == self.year, :]
+        assert(len(df)), f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
+
+        df = counts_df.loc[counts_df.Hour.isin(self.hours), :]
+        assert(len(df)), f'No {self.cordon_name} benchmark counts left from after filtering by hours:{self.hours}'
+
+        df = counts_df.loc[counts_df.Direction == self.dir_code, :]
         site_indexes = list(set(df.Site))
+
         for site_index in site_indexes:
             site_df = df.loc[df.Site == site_index, :]
-            counts = np.array(site_df.sort_values('Hour').Total)
-            assert len(counts) == self.config.time_periods
-            counts_array += counts
+            hour_counts = np.array(site_df.sort_values('Hour').loc[:, modes]).sum(axis=1)
+            assert len(hour_counts) == len(self.hours), f'Not extracted the right amount of hours {self.hours}'
+
+            counts_array += hour_counts
+
         return counts_array
 
     def counts_to_df(self, array):
@@ -191,12 +238,28 @@ class CordonCount:
         :param array: np.array
         :return: DataFrame
         """
-        col_names = [str(i) for i in range(self.config.time_periods)]
+        col_names = [str(i) for i in self.hours]
         df = pd.DataFrame(array, index=col_names).T
         df['source'] = 'count'
         return df
 
 
+class InnerCordonCar(Cordon):
+
+    cordon_counts = []
+
+    benchmark_path = os.path.join('benchmark_data', 'inner_cordon', 'InnerCordon2016.csv')
+    cordon_path = os.path.join('benchmark_data', 'inner_cordon', 'cordon_links.csv')
+
+    directions = {'in': 1, 'out': 2}
+    year = 2016
+    hours = None
+    modes = ['car']
+
+
 # maps of benchmarks to Classes and weights for scoring
-BENCHMARK_MAP = {"inner_cordon": InnerCordon}
-BENCHMARK_WEIGHTS = {"inner_cordon": 1}
+BENCHMARK_MAP = {"inner_cordon_car": InnerCordonCar,
+                 "dublin_canal_cordon_car": DublinCanalCordon}
+
+BENCHMARK_WEIGHTS = {"inner_cordon_car": 1,
+                     "dublin_canal_cordon_car": 1}
