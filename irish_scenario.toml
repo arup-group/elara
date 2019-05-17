@@ -14,14 +14,14 @@ attributes = "./fixtures/fixtures_ireland_test/output_personAttributes.xml.gz"
 
 [handlers]
 volume_counts = ["car"]
-passenger_counts = ["bus", "train", "tram", "ferry"]
-stop_interactions = ["bus", "train", "tram", "ferry"]
+# passenger_counts = ["bus", "train", "tram", "ferry"]
+# stop_interactions = ["bus", "train", "tram", "ferry"]
 
 [outputs]
 path = "./outputs/ireland/test"
 contract = true
-post_processing = ["vkt"]
+post_processing = []
 
 [benchmarking]
-benchmarks = ["dublin_canal_cordon"]
+benchmarks = ["dublin_canal_cordon_car"]
 
