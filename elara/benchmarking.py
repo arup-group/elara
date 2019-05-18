@@ -301,7 +301,7 @@ class PeriodCordonCount(CordonCount):
         # collect all results
         model_results = pd.DataFrame()
         for mode, result_df in results_dfs.items():
-            mode_results = result_df.loc[result_df.index.isin(self.link_ids), :]
+            mode_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
             mode_results.loc[:, 'mode'] = mode
             model_results = pd.concat([model_results, mode_results], axis=0)
 
@@ -341,6 +341,28 @@ class PeriodCordonCount(CordonCount):
         return 1 - (np.absolute(result - count) / count)
 
 
+class ModeStat:
+
+    # load mode stats for commuters (work and education)
+
+    # load model stats for commuters and education - at the moment this is all demand but in
+    # future there might be other sources of demand - so would prefer to extract mode stats per
+    # activity or per source attribute
+
+    # cordon_counter = None
+    # benchmark_path = None
+    # cordon_path = None
+    #
+    # directions = {'in': 1, 'out': 2}
+    # year = 2016
+    # hours = None
+    # modes = None
+    #
+    # cordon_counts = []
+
+    raise NotImplementedError
+
+
 class LondonInnerCordonCar(Cordon):
 
     cordon_counter = HourlyCordonCount
@@ -368,8 +390,7 @@ class DublinCanalCordonCar(Cordon):
 class IrelandCommuterStats:
 
     def __init__(self, name, config):
-
-        pass
+        raise NotImplementedError
 
 
 # maps of benchmarks to Classes and weights for scoring
