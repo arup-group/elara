@@ -3,6 +3,9 @@ from lxml import etree
 import pandas as pd
 import pyproj
 from shapely.geometry import Point, LineString
+import gzip
+from io import BytesIO
+
 
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
@@ -105,6 +108,7 @@ class TransitSchedule:
 
         self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
 
+
     @staticmethod
     def transform_stop_elem(elem, crs):
         """
@@ -153,6 +157,14 @@ class TransitVehicles:
             elem.get("id"): elem.get("type") for elem in get_elems(path, "vehicle")
         }
 
+        self.veh_type_count_map = {}
+        for veh, type in self.veh_id_veh_type_map.items():
+            if self.veh_type_count_map.get(type):
+                self.veh_type_count_map[type] += 1
+            else:
+                self.veh_type_count_map[type] = 1
+
+
     @staticmethod
     def transform_veh_type_elem(elem):
         """
@@ -160,6 +172,7 @@ class TransitVehicles:
         :param elem: vehicleType XML element
         :return: (vehicle type, capacity) tuple
         """
+        strip_namespace(elem)  # TODO only needed for this input - not robust
         id = elem.xpath("@id")[0]
         seatedCapacity = float(elem.xpath("capacity/seats/@persons")[0])
         standingCapacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
@@ -168,16 +181,85 @@ class TransitVehicles:
 
 def get_elems(path, tag):
     """
-    Traverse the given XML tree, retrieving the elements of the specified tag.
+    Wrapper for unzipping and dealing with xml namespaces
     :param tag: The tag type to extract , e.g. 'link'
     :return: Generator of elements
     """
-    doc = etree.iterparse(path, tag=tag)
+    target = try_unzip(path)
+    tag = get_tag(target, tag)
+    target = try_unzip(path)  # need to repeat :(
+    return parse_elems(target, tag)
+
+
+def parse_elems(target, tag):
+    """
+    Traverse the given XML tree, retrieving the elements of the specified tag.
+    :param target: Target xml, either BytesIO object or string path
+    :param tag: The tag type to extract , e.g. 'link'
+    :return: Generator of elements
+    """
+    doc = etree.iterparse(target, tag=tag)
     for _, element in doc:
         yield element
         element.clear()
         del element.getparent()[0]
     del doc
+
+
+def try_unzip(path):
+    """
+    Attempts to unzip xml at given path, if fails, returns path
+    :param path: xml path string
+    :return: either BytesIO object or string path
+    """
+    try:
+        with gzip.open(path) as unzipped:
+            xml = unzipped.read()
+            target = BytesIO(xml)
+            return target
+    except OSError:
+        return path
+
+
+def get_tag(target, tag):
+    """
+    Check for namespace declaration. If they exists return tag string
+    with namespace [''] ie {namespaces['']}tag. If no namespaces declared
+    return original tag
+    TODO Not working with iterparse, generated elem also have ns which is dealt with later
+    """
+    nsmap = {}
+    doc = etree.iterparse(target, events=('end', 'start-ns',))
+    count = 0
+    for event, element in doc:
+        count += 1
+        if event == 'start-ns':
+            nsmap[element[0]] = element[1]
+        if count == 10:  # assume namespace declared at top so can break early
+            del doc
+            break
+    if not nsmap:
+        return tag
+    else:
+        tag = '{' + nsmap[''] + '}' + tag
+        return tag
+
+
+def strip_namespace(elem):
+    """
+    Strips namespaces from given xml element
+    :param elem: xml element
+    :return: xml element
+    """
+    if elem.tag.startswith("{"):
+        elem.tag = elem.tag.split('}', 1)[1]  # strip namespace
+    for k in elem.attrib.keys():
+        if k.startswith("{"):
+            k2 = k.split('}', 1)[1]
+            elem.attrib[k2] = elem.attrib[k]
+            del elem.attrib[k]
+    for child in elem:
+        strip_namespace(child)
 
 
 def generate_point(x, y, crs):

@@ -33,14 +33,28 @@ def main(config):
 
     # Prepare inputs
     with Halo(text="Preparing inputs...", spinner="dots") as spinner:
+        spinner.text = "Preparing events input..."
         events = inputs.Events(config.events_path)
+        spinner.text = "Preparing network input..."
         network = inputs.Network(config.network_path, config.crs)
+        spinner.text = "Preparing schedule input..."
         transit_schedule = inputs.TransitSchedule(
             config.transit_schedule_path, config.crs
         )
+        spinner.text = "Preparing transit vehicle input..."
         transit_vehicles = inputs.TransitVehicles(config.transit_vehicles_path)
 
         spinner.succeed("Inputs prepared.")
+        if config.verbose:
+            print('--- Loading Summary ---')
+            print('Handlers: {}'.format(config.handlers))
+            print('{} Vertexes Loaded'.format(len(network.node_gdf)))
+            print('{} Edges Loaded'.format(len(network.link_gdf)))
+            print('{} Transit Stops Loaded'.format(len(transit_schedule.stop_gdf)))
+            print('Transit Capacities: {}'.format(transit_vehicles.veh_type_capacity_map))
+            print('Transit Vehicles: {}'.format(transit_vehicles.veh_type_count_map))
+            print('-----------------------')
+
 
     # Build handlers
     with Halo(text="Building event handlers...", spinner="dots") as spinner:
