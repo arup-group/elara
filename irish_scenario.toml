@@ -1,0 +1,27 @@
+ [scenario]
+name = "ire"
+time_periods = 24
+scale_factor = 0.01
+crs = "EPSG:27700"
+verbose = true
+
+[inputs]
+events = "./fixtures/fixtures_ireland_test/output_events.xml.gz"
+network = "./fixtures/fixtures_ireland_test/output_network.xml.gz"
+transit_schedule = "./fixtures/fixtures_ireland_test/output_transitSchedule.xml.gz"
+transit_vehicles = "./fixtures/fixtures_ireland_test/output_transitVehicles.xml.gz"
+attributes = "./fixtures/fixtures_ireland_test/output_personAttributes.xml.gz"
+
+[handlers]
+volume_counts = ["car"]
+# passenger_counts = ["bus", "train", "tram", "ferry"]
+# stop_interactions = ["bus", "train", "tram", "ferry"]
+
+[outputs]
+path = "./outputs/ireland/test"
+contract = true
+post_processing = []
+
+[benchmarking]
+benchmarks = ["dublin_canal_cordon_car"]
+

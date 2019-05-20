@@ -142,6 +142,9 @@ class TransitVehicles:
             "Rail": "train",
             "Suburban Railway": "train",
             "Bus": "bus",
+            "Coach Service": "bus",
+            "Tram": "tram",
+            "Ferry": "ferry"
         }
 
         # Vehicle type to total capacity correspondence
@@ -157,12 +160,7 @@ class TransitVehicles:
             elem.get("id"): elem.get("type") for elem in get_elems(path, "vehicle")
         }
 
-        self.veh_type_count_map = {}
-        for veh, type in self.veh_id_veh_type_map.items():
-            if self.veh_type_count_map.get(type):
-                self.veh_type_count_map[type] += 1
-            else:
-                self.veh_type_count_map[type] = 1
+        self.transit_vehicle_counts = count_values(self.veh_id_veh_type_map)
 
 
     @staticmethod
@@ -174,9 +172,45 @@ class TransitVehicles:
         """
         strip_namespace(elem)  # TODO only needed for this input - not robust
         id = elem.xpath("@id")[0]
-        seatedCapacity = float(elem.xpath("capacity/seats/@persons")[0])
-        standingCapacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
-        return (id, seatedCapacity + standingCapacity)
+        seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
+        standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
+        return (id, seated_capacity + standing_capacity)
+
+
+class Attributes:
+    def __init__(self, path):
+        """
+        Population subpopulation attributes constructor.
+        :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
+        """
+
+        # Attribute label mapping
+        self.final_attribute_map = {
+            "inc7p": "inc7p",
+            "inc56": "inc56",
+            "inc34": "inc34",
+            "inc12": "inc12",
+            "inc7p_nocar": "inc7p",
+            "inc56_nocar": "inc56",
+            "inc34_nocar": "inc34",
+            "inc12_nocar": "inc12",
+            "freight": "freight",
+        }
+
+        self.map = dict(
+            [
+                self.get_attribute_text(elem, 'subpopulation')
+                for elem in get_elems(path, "object")
+            ]
+        )
+
+        self.classes, self.attribute_count_map = count_values(self.map)
+
+    def get_attribute_text(self, elem, tag):
+        ident = elem.xpath("@id")[0]
+        attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
+        attribute = self.final_attribute_map.get(attribute.text, 'unknown')
+        return ident, attribute
 
 
 def get_elems(path, tag):
@@ -274,3 +308,18 @@ def generate_point(x, y, crs):
     proj = pyproj.Proj(init=crs)
     lon, lat = pyproj.transform(proj, WGS_84, x, y)
     return Point(lon, lat)
+
+
+def count_values(dictionary):
+    """
+    Build a dictionary of value counts in a given dictionary.
+    :param dictionary: input dictionary object
+    :return: dictionary object
+    """
+    counter = {}
+    for value in dictionary.values():
+        if counter.get(value):
+            counter[value] += 1
+        else:
+            counter[value] = 1
+    return list(counter.keys()), counter
