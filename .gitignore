@@ -1,6 +1,8 @@
-fixtures/output_*.xml
-outputs/
+fixtures
+outputs
 .idea/
+*.ipynb
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -28,6 +30,8 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.DS_Store
+
 MANIFEST
 
 # PyInstaller

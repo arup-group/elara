@@ -1,14 +1,16 @@
-[scenario]
-name = "test_scenario"
+ [scenario]
+name = "test_mabm"
 time_periods = 24
-scale_factor = 0.01
+scale_factor = 0.0001
 crs = "EPSG:27700"
+verbose = true
 
 [inputs]
-events = "./fixtures/output_events.xml"
-network = "./fixtures/output_network.xml"
-transit_schedule = "./fixtures/output_transitSchedule.xml"
-transit_vehicles = "./fixtures/output_transitVehicles.xml"
+events = "./fixtures/fixtures_01perc/test_mabm/output_events.xml.gz"
+network = "./fixtures/fixtures_01perc/test_mabm/output_network.xml.gz"
+transit_schedule = "./fixtures/fixtures_01perc/test_mabm/output_transitSchedule.xml.gz"
+transit_vehicles = "./fixtures/fixtures_01perc/test_mabm/output_transitVehicles.xml.gz"
+attributes = "./fixtures/fixtures_01perc/test_mabm/output_personAttributes.xml.gz"
 
 [handlers]
 volume_counts = ["car"]
@@ -16,6 +18,9 @@ passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
 
 [outputs]
-path = "./outputs"
+path = "./outputs/outputs_01perc"
 contract = true
 post_processing = ["vkt"]
+
+[benchmarking]
+benchmarks = ["london_inner_cordon_car"]
