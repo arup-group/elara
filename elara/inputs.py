@@ -16,7 +16,7 @@ class Events:
         Events object constructor.
         :param path: Path to MATSim events XML file (.xml)
         """
-        self.event_elems = get_elems(path, "event")
+        self.elems = get_elems(path, "event")
 
 
 class Network:
@@ -108,6 +108,14 @@ class TransitSchedule:
 
         self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
 
+        # Generate routes to modes map
+        self.mode_map = dict(
+            [
+                self.get_route_mode(elem) for elem in get_elems(path, "transitRoute")
+            ]
+        )
+
+        self.modes = list(set(self.mode_map.values()))
 
     @staticmethod
     def transform_stop_elem(elem, crs):
@@ -128,6 +136,19 @@ class TransitSchedule:
             "stop_area": str(elem.get("stopAreaId")),
             "geometry": geometry,
         }
+
+    @staticmethod
+    def get_route_mode(elem):
+        """
+        Get mode for each transit route
+        :param elem: TransitRoute XML element
+        :return: (route id, mode) tuple
+        """
+
+        route_id = elem.get('id')
+        mode = elem.xpath('transportMode')[0].text
+
+        return route_id, mode
 
 
 class TransitVehicles:
@@ -170,7 +191,7 @@ class TransitVehicles:
         :param elem: vehicleType XML element
         :return: (vehicle type, capacity) tuple
         """
-        strip_namespace(elem)  # TODO only needed for this input - not robust
+        strip_namespace(elem)  # TODO only needed for this input = janky
         id = elem.xpath("@id")[0]
         seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
         standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
@@ -185,6 +206,7 @@ class Attributes:
         """
 
         # Attribute label mapping
+        # TODO move model specific setup elsewhere
         self.final_attribute_map = {
             "inc7p": "inc7p",
             "inc56": "inc56",
@@ -211,6 +233,54 @@ class Attributes:
         attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
         attribute = self.final_attribute_map.get(attribute.text, 'unknown')
         return ident, attribute
+
+
+class Plans:
+    def __init__(self, path, transit_schedule):
+        """
+        Plans object constructor.
+        :param path: Path to MATSim events XML file (.xml)
+        :param transit_schedule: TransitSchedule object
+        """
+        self.elems = get_elems(path, "plan")
+        self.transit_schedule = transit_schedule
+
+        # Build mode list
+        self.modes_map = {
+            "transit_walk": "walk",
+        }
+
+        self.modes, self.activities = self.get_classes()
+
+        # re-init elements
+        self.elems = get_elems(path, "plan")
+
+    def get_classes(self):
+        """
+        Extract sets of used activities and modes from chosen population plans.
+        # TODO confirm this is how we want to handle plans (ie with handler (iters) and with pre calculated inputs...
+        Note that we use this method to get all categories before flattening results
+        later using a hander, will provide some minor speed up, but is a duplication
+        so slows overall. But is more in keeping with overall flow. For example it
+        provides early logging of activities and modes used.
+        :param elem: Node xml element.
+        :return: (List, List)
+        """
+        modes = set()
+        activities = set()
+
+        for plan in self.elems:
+            if plan.get('selected') == 'yes':
+                for stage in plan:
+                    if stage.tag == 'activity':
+                        activities.add(stage.get('type'))
+                    elif stage.tag == 'leg':
+                        mode = stage.get('mode')
+                        if mode == 'pt':
+                            route = stage.xpath('route')[0].text.split('===')[-2]
+                            mode = self.transit_schedule.mode_map.get(route)
+                        modes.add(mode)
+        return list(modes), list(activities)
 
 
 def get_elems(path, tag):
