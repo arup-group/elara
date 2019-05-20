@@ -24,7 +24,7 @@ def test_config_of_gzip_inputs():
 def test_loading_xml_events():
     config_path = os.path.join('tests/test_xml_scenario.toml')
     config = Config(config_path)
-    events = inputs.Events(config.events_path).event_elems
+    events = inputs.Events(config.events_path).elems
     event = next(events)
     assert event is not None
 
@@ -32,7 +32,7 @@ def test_loading_xml_events():
 def test_loading_gzip_events():
     config_path = os.path.join('tests/test_gzip_scenario.toml')
     config = Config(config_path)
-    events = inputs.Events(config.events_path).event_elems
+    events = inputs.Events(config.events_path).elems
     event = next(events)
     assert event is not None
 

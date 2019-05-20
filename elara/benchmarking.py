@@ -341,28 +341,6 @@ class PeriodCordonCount(CordonCount):
         return 1 - (np.absolute(result - count) / count)
 
 
-class ModeStat:
-
-    # load mode stats for commuters (work and education)
-
-    # load model stats for commuters and education - at the moment this is all demand but in
-    # future there might be other sources of demand - so would prefer to extract mode stats per
-    # activity or per source attribute
-
-    # cordon_counter = None
-    # benchmark_path = None
-    # cordon_path = None
-    #
-    # directions = {'in': 1, 'out': 2}
-    # year = 2016
-    # hours = None
-    # modes = None
-    #
-    # cordon_counts = []
-
-    raise NotImplementedError
-
-
 class LondonInnerCordonCar(Cordon):
 
     cordon_counter = HourlyCordonCount

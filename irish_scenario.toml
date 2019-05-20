@@ -11,11 +11,15 @@ network = "./fixtures/fixtures_ireland_test/output_network.xml.gz"
 transit_schedule = "./fixtures/fixtures_ireland_test/output_transitSchedule.xml.gz"
 transit_vehicles = "./fixtures/fixtures_ireland_test/output_transitVehicles.xml.gz"
 attributes = "./fixtures/fixtures_ireland_test/output_personAttributes.xml.gz"
+plans = "./fixtures/fixtures_ireland_test/output_plans.xml.gz"
 
-[handlers]
+[event_handlers]
 volume_counts = ["car"]
 # passenger_counts = ["bus", "train", "tram", "ferry"]
 # stop_interactions = ["bus", "train", "tram", "ferry"]
+
+[plan_handlers]
+mode_share = ["all"]
 
 [outputs]
 path = "./outputs/ireland/test"

@@ -24,12 +24,12 @@ class VKT(PostProcessor):
 
     def check_prerequisites(self):
         return (
-            "volume_counts" in self.config.handlers
-            and len(self.config.handlers["volume_counts"]) > 0
+            "volume_counts" in self.config.event_handlers
+            and len(self.config.event_handlers["volume_counts"]) > 0
         )
 
     def run(self):
-        for mode in self.config.handlers["volume_counts"]:
+        for mode in self.config.event_handlers["volume_counts"]:
             file_name = "{}_volume_counts_{}_total.geojson".format(self.config.name, mode)
             file_path = os.path.join(self.config.output_path, file_name)
             volumes_gdf = geopandas.read_file(file_path)
