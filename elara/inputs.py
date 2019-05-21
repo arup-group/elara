@@ -181,7 +181,7 @@ class TransitVehicles:
             elem.get("id"): elem.get("type") for elem in get_elems(path, "vehicle")
         }
 
-        self.transit_vehicle_counts = count_values(self.veh_id_veh_type_map)
+        self.types, self.transit_vehicle_counts = count_values(self.veh_id_veh_type_map)
 
 
     @staticmethod
@@ -245,12 +245,25 @@ class Plans:
         self.elems = get_elems(path, "plan")
         self.transit_schedule = transit_schedule
 
+        self.hierarchy = [
+            'ferry',
+            'rail',
+            'tram',
+            'bus',
+            'car',
+            'bike',
+            'walk',
+            'transit_walk'
+        ]
+
         # Build mode list
         self.modes_map = {
             "transit_walk": "walk",
         }
 
         self.modes, self.activities = self.get_classes()
+
+        assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
 
         # re-init elements
         self.elems = get_elems(path, "plan")

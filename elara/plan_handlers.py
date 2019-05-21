@@ -40,17 +40,6 @@ class ModeShare:
 
         self.results = dict()
 
-        self.hierarchy = [
-            'ferry',
-            'rail',
-            'tram',
-            'bus',
-            'car',
-            'bike',
-            'walk',
-            'transit_walk'
-        ]
-
     def process_event(self, elem):
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
@@ -147,7 +136,7 @@ class ModeShare:
         return list_in, list_indices_map
 
     def select_hierarchy(self, modes):
-        for h in self.hierarchy:
+        for h in self.transit_schedule.hierarchy:
             for mode in modes:
                 if h == mode:
                     return mode
