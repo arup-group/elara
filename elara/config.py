@@ -34,9 +34,13 @@ class Config:
         self.attributes_path = self.valid_path(
             parsed_toml["inputs"]["attributes"], "attributes"
         )
+        self.plans_path = self.valid_path(
+            parsed_toml["inputs"]["plans"], "plans"
+        )
 
         # Handler objects
-        self.handlers = parsed_toml["handlers"]
+        self.event_handlers = parsed_toml["event_handlers"]
+        self.plan_handlers = parsed_toml["plan_handlers"]
 
         # Output settings
         self.output_path = parsed_toml["outputs"]["path"]
