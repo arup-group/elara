@@ -15,8 +15,8 @@ plans = "./fixtures/fixtures_ireland_test/output_plans.xml.gz"
 
 [event_handlers]
 volume_counts = ["car"]
-# passenger_counts = ["bus", "train", "tram", "ferry"]
-# stop_interactions = ["bus", "train", "tram", "ferry"]
+passenger_counts = ["bus", "train", "tram", "ferry"]
+stop_interactions = ["bus", "train", "tram", "ferry"]
 
 [plan_handlers]
 mode_share = ["all"]
