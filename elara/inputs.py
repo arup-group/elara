@@ -117,6 +117,17 @@ class TransitSchedule:
 
         self.modes = list(set(self.mode_map.values()))
 
+        self.hierarchy = [
+            "ferry",
+            "rail",
+            "tram",
+            "bus",
+            "car",
+            "bike",
+            "walk",
+            "transit_walk"
+        ]
+
     @staticmethod
     def transform_stop_elem(elem, crs):
         """
