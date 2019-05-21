@@ -460,7 +460,7 @@ def table_position(elem_indices, class_indices, periods, elem_id, attribute_clas
 
 
 # Dictionary used to map configuration string to handler type
-HANDLER_MAP = {
+EVENT_HANDLER_MAP = {
     "volume_counts": VolumeCounts,
     "passenger_counts": PassengerCounts,
     "stop_interactions": StopInteractions,
