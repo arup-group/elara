@@ -136,8 +136,8 @@ def main(config):
 
     # Run benchmarking
     with Halo(text="Running benchmarking...", spinner="dots") as spinner:
-        meta_score = benchmarks.score()
-        spinner.succeed("Benchmark completed with METASCORE of {} and breakdown as follows:".format(meta_score))
+        score_summary = benchmarks.score()
+        spinner.succeed("Benchmark completed with METASCORE of {} and breakdown as follows:".format(benchmarks.meta_score))
 
     print(benchmarks.scores_df)
 
