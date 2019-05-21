@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
+import json
 
 
 # TODO this module has some over complex operations on the input data...
@@ -10,6 +11,7 @@ class Benchmarks:
 
     benchmarks = {}
     scores_df = None
+    meta_score = 0
 
     def __init__(self, config):
         """
@@ -35,27 +37,33 @@ class Benchmarks:
         """
         Calculates all sub scores from benchmarks, writes to disk and returns
         combined metascore.
-        :return: Float
         """
-        scores = {}
-        meta_score = 0
-
+        summary = {}
+        flat_summary = []
         for benchmark_name, benchmark in self.benchmarks.items():
-            sub_scores = benchmark.output_and_score()
-            scores[benchmark_name] = sub_scores
-
-            # Combine with weights
+            scores = benchmark.output_and_score()
             weight = BENCHMARK_WEIGHTS[benchmark_name]
-            for s in sub_scores.values():
-                meta_score += (s * weight)
+
+            sub_summary = {'scores': scores,
+                           'weight': weight
+                           }
+            summary[benchmark_name] = sub_summary
+
+            for name, s in scores.items():
+                flat_summary.append([benchmark_name, name, s])
+                self.meta_score += (s * weight)
 
         # Write scores
-        self.scores_df = pd.DataFrame(scores).T
+        self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
         csv_name = 'benchmark_scores.csv'
         csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
         self.scores_df.to_csv(csv_path)
 
-        return meta_score
+        summary['meta_score'] = self.meta_score
+        json_name = 'benchmark_scores.json'
+        json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
+        with open(json_path, 'w') as outfile:
+            json.dump(summary, outfile)
 
 
 class Cordon:
@@ -282,7 +290,7 @@ class HourlyCordonCount(CordonCount):
         benchmark_df.to_csv(csv_path)
 
         # Calc score
-        return 1 - (sum(np.absolute(results_array - counts_array)) / counts_array.sum())
+        return sum(np.absolute(results_array - counts_array)) / counts_array.sum()
 
 
 class PeriodCordonCount(CordonCount):
@@ -338,7 +346,53 @@ class PeriodCordonCount(CordonCount):
         benchmark_df.to_csv(csv_path)
 
         # Calc score
-        return 1 - (np.absolute(result - count) / count)
+        return np.absolute(result - count) / count
+
+
+class ModeStats:
+
+    benchmark_path = None
+
+    def __init__(self, name, config):
+        """
+        ModeStat parent object for benchmarking with mode share data.
+        :param name: String
+        :param config: Config
+        """
+
+        self.benchmark_df = pd.read_csv(self.benchmark_path,
+                                        header=None,
+                                        names=['mode', 'benchmark'])
+        self.benchmark_df.set_index('mode', inplace=True)
+        self.name = name
+        self.config = config
+
+    def output_and_score(self):
+        """
+        Builds paths for mode share outputs, loads and combines with model for scoring.
+        :return: Dictionary of scores
+        """
+        # Build paths and load appropriate volume counts
+        results_name = "{}_mode_shares_all_total.csv".format(self.config.name)
+        results_path = os.path.join(self.config.output_path, results_name)
+        results_df = pd.read_csv(results_path,
+                                 header=None,
+                                 names=['mode', 'model'])
+        results_df.set_index('mode', inplace=True)
+
+        # join results
+        summary_df = self.benchmark_df.join(results_df, how='inner')
+        summary_df.loc[:, 'diff'] = summary_df.model - summary_df.benchmark
+
+        # write results
+        csv_name = '{}_results.csv'.format(self.name)
+        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
+        summary_df.to_csv(csv_path)
+
+        # get scores and write outputs
+        score = sum(np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model)))
+
+        return {'modeshare': score}
 
 
 class LondonInnerCordonCar(Cordon):
@@ -365,15 +419,16 @@ class DublinCanalCordonCar(Cordon):
     modes = ['car']
 
 
-class IrelandCommuterStats:
+class IrelandCommuterStats(ModeStats):
 
-    def __init__(self, name, config):
-        raise NotImplementedError
+    benchmark_path = os.path.join('benchmark_data', 'ireland', 'census_modestats', '2016_census_modestats.csv')
 
 
 # maps of benchmarks to Classes and weights for scoring
 BENCHMARK_MAP = {"london_inner_cordon_car": LondonInnerCordonCar,
-                 "dublin_canal_cordon_car": DublinCanalCordonCar}
+                 "dublin_canal_cordon_car": DublinCanalCordonCar,
+                 "ireland_commuter_modeshare": IrelandCommuterStats}
 
 BENCHMARK_WEIGHTS = {"london_inner_cordon_car": 1,
-                     "dublin_canal_cordon_car": 1}
+                     "dublin_canal_cordon_car": 1,
+                     "ireland_commuter_modeshare": 1}

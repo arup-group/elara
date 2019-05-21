@@ -27,4 +27,4 @@ contract = true
 post_processing = ["vkt"]
 
 [benchmarking]
-benchmarks = ["london_inner_cordon_car"]
+benchmarks = ["london_inner_cordon_car", "ireland_commuter_modeshare"]

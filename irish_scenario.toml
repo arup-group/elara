@@ -27,5 +27,5 @@ contract = true
 post_processing = []
 
 [benchmarking]
-benchmarks = ["dublin_canal_cordon_car"]
+benchmarks = ["dublin_canal_cordon_car", "ireland_commuter_modeshare"]
 
