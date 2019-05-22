@@ -36,5 +36,40 @@ def test_loading_gzip_events():
     event = next(events)
     assert event is not None
 
+# Plans
+def test_loading_xml_plans():
+    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config = Config(config_path)
+    transit_schedule = inputs.TransitSchedule(
+        config.transit_schedule_path, config.crs
+    )
+    assert len(transit_schedule.stop_gdf)
+    plans = inputs.Plans(config.plans_path, transit_schedule).elems
+    plan = next(plans)
+    assert plan is not None
+
+def test_loading_gzip_plans():
+    config_path = os.path.join('tests/test_gzip_scenario.toml')
+    config = Config(config_path)
+    transit_schedule = inputs.TransitSchedule(
+        config.transit_schedule_path, config.crs
+    )
+    assert len(transit_schedule.stop_gdf)
+    plans = inputs.Plans(config.plans_path, transit_schedule).elems
+    plan = next(plans)
+    assert plan is not None
+
+# Network
+def test_loading_xml_network():
+    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config = Config(config_path)
+    network  = inputs.Network(config.network_path, config.crs)
+    assert len(network.link_gdf)
+
+def test_loading_gzip_network():
+    config_path = os.path.join('tests/test_gzip_scenario.toml')
+    config = Config(config_path)
+    network  = inputs.Network(config.network_path, config.crs)
+    assert len(network.link_gdf)
 
 # TODO add other inputs

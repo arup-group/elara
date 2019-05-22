@@ -11,11 +11,15 @@ network = "./tests/test_fixtures/output_network.xml"
 transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
 transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
 attributes = "./tests/test_fixtures/output_personAttributes.xml"
+plans= "./tests/test_fixtures/output_plans.xml"
 
-[handlers]
+[event_handlers]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
+
+[plan_handlers]
+mode_share = ["all"]
 
 [outputs]
 path = "./tests/test_outputs"
@@ -24,4 +28,3 @@ post_processing = ["vkt"]
 
 [benchmarking]
 benchmarks = ["inner_cordon"]
-
