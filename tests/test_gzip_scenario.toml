@@ -11,11 +11,15 @@ network = "./tests/test_fixtures/output_network.xml.gz"
 transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml.gz"
 transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml.gz"
 attributes = "./tests/test_fixtures/output_personAttributes.xml.gz"
+plans = "./tests/test_fixtures/output_plans.xml.gz"
 
-[handlers]
+[event_handlers]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
+
+[plan_handlers]
+mode_share = ["all"]
 
 [outputs]
 path = "./tests/test_outputs"
@@ -23,5 +27,5 @@ contract = true
 post_processing = ["vkt"]
 
 [benchmarking]
-benchmarks = ["inner_cordon"]
+benchmarks = ["london_inner_cordon_car", "ireland_commuter_modeshare"]
 
