@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 import json
-
+from elara import get_benchmark_data
 
 # TODO this module has some over complex operations on the input data...
 # TODO - needs tests and data validation
@@ -398,8 +398,8 @@ class ModeStats:
 class LondonInnerCordonCar(Cordon):
 
     cordon_counter = HourlyCordonCount
-    benchmark_path = os.path.join('benchmark_data', 'london', 'inner_cordon', 'InnerCordon2016.csv')
-    cordon_path = os.path.join('benchmark_data', 'london', 'inner_cordon', 'cordon_links.csv')
+    benchmark_path = get_benchmark_data(os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv'))
+    cordon_path = get_benchmark_data(os.path.join('london', 'inner_cordon', 'cordon_links.csv'))
 
     directions = {'in': 1, 'out': 2}
     year = 2016
@@ -410,8 +410,8 @@ class LondonInnerCordonCar(Cordon):
 class DublinCanalCordonCar(Cordon):
 
     cordon_counter = PeriodCordonCount
-    benchmark_path = os.path.join('benchmark_data', 'ireland', 'dublin_cordon', '2016_counts.csv')
-    cordon_path = os.path.join('benchmark_data', 'ireland', 'dublin_cordon', 'dublin_cordon.csv')
+    benchmark_path = get_benchmark_data(os.path.join('ireland', 'dublin_cordon', '2016_counts.csv'))
+    cordon_path = get_benchmark_data(os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv'))
 
     directions = {'in': 1}
     year = 2016
@@ -421,7 +421,7 @@ class DublinCanalCordonCar(Cordon):
 
 class IrelandCommuterStats(ModeStats):
 
-    benchmark_path = os.path.join('benchmark_data', 'ireland', 'census_modestats', '2016_census_modestats.csv')
+    benchmark_path = get_benchmark_data(os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv'))
 
 
 # maps of benchmarks to Classes and weights for scoring
