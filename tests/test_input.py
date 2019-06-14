@@ -20,56 +20,68 @@ def test_config_of_gzip_inputs():
     assert config
 
 
+config_path = os.path.join('tests/test_xml_scenario.toml')
+xml_config = Config(config_path)
+
+config_path = os.path.join('tests/test_gzip_scenario.toml')
+gzip_config = Config(config_path)
+
+
 # Events
 def test_loading_xml_events():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
-    config = Config(config_path)
-    events = inputs.Events(config.events_path).elems
-    event = next(events)
-    assert event is not None
+    events = inputs.Events(xml_config.events_path).elems
+    num_events = sum(1 for _ in events)
+    assert num_events == 190
 
 
 def test_loading_gzip_events():
-    config_path = os.path.join('tests/test_gzip_scenario.toml')
-    config = Config(config_path)
-    events = inputs.Events(config.events_path).elems
-    event = next(events)
-    assert event is not None
+    events = inputs.Events(gzip_config.events_path).elems
+    num_events = sum(1 for _ in events)
+    assert num_events == 190
+
+
+# Transit
+def test_load_xml_transit_schedule():
+    transit_schedule = inputs.TransitSchedule(
+            xml_config.transit_schedule_path, xml_config.crs
+            )
+    assert len(transit_schedule.stop_gdf) == 4
+
+
+def test_load_gzip_transit_schedule():
+    transit_schedule = inputs.TransitSchedule(
+            gzip_config.transit_schedule_path, gzip_config.crs
+            )
+    assert len(transit_schedule.stop_gdf) == 4
+
 
 # Plans
 def test_loading_xml_plans():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
-    config = Config(config_path)
     transit_schedule = inputs.TransitSchedule(
-        config.transit_schedule_path, config.crs
+        xml_config.transit_schedule_path, xml_config.crs
     )
     assert len(transit_schedule.stop_gdf)
-    plans = inputs.Plans(config.plans_path, transit_schedule).elems
-    plan = next(plans)
-    assert plan is not None
+    plans = inputs.Plans(xml_config.plans_path, transit_schedule).elems
+    num_plans = sum(1 for _ in plans)
+    assert num_plans == 5
+
 
 def test_loading_gzip_plans():
-    config_path = os.path.join('tests/test_gzip_scenario.toml')
-    config = Config(config_path)
     transit_schedule = inputs.TransitSchedule(
-        config.transit_schedule_path, config.crs
+        gzip_config.transit_schedule_path, gzip_config.crs
     )
     assert len(transit_schedule.stop_gdf)
-    plans = inputs.Plans(config.plans_path, transit_schedule).elems
-    plan = next(plans)
-    assert plan is not None
+    plans = inputs.Plans(gzip_config.plans_path, transit_schedule).elems
+    num_plans = sum(1 for _ in plans)
+    assert num_plans == 5
+
 
 # Network
 def test_loading_xml_network():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
-    config = Config(config_path)
-    network  = inputs.Network(config.network_path, config.crs)
-    assert len(network.link_gdf)
+    network  = inputs.Network(xml_config.network_path, xml_config.crs)
+    assert len(network.link_gdf) == 8
+
 
 def test_loading_gzip_network():
-    config_path = os.path.join('tests/test_gzip_scenario.toml')
-    config = Config(config_path)
-    network  = inputs.Network(config.network_path, config.crs)
-    assert len(network.link_gdf)
-
-# TODO add other inputs
+    network  = inputs.Network(gzip_config.network_path, gzip_config.crs)
+    assert len(network.link_gdf) == 8
