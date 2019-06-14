@@ -1,0 +1,30 @@
+ [scenario]
+name = "test_town"
+time_periods = 24
+scale_factor = 1
+crs = "EPSG:27700"
+verbose = true
+
+[inputs]
+events = "./tests/test_fixtures/output_events.xml.gz"
+network = "./tests/test_fixtures/output_network.xml.gz"
+transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml.gz"
+transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml.gz"
+attributes = "./tests/test_fixtures/output_personAttributes.xml.gz"
+plans = "./tests/test_fixtures/output_plans.xml.gz"
+
+[event_handlers]
+volume_counts = ["car", "bus"]
+passenger_counts = ["bus"]
+stop_interactions = ["bus"]
+
+[plan_handlers]
+mode_share = ["all"]
+
+[outputs]
+path = "./outputs/test_town"
+contract = true
+post_processing = ["vkt"]
+
+[benchmarking]
+benchmarks = ["test_town_cordon", "test_town_peak_cordon", "test_town_modeshare"]

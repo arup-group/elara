@@ -238,11 +238,12 @@ class Attributes:
         )
 
         self.classes, self.attribute_count_map = count_values(self.map)
+        self.classes.append('unknown')
 
     def get_attribute_text(self, elem, tag):
         ident = elem.xpath("@id")[0]
         attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
-        attribute = self.final_attribute_map.get(attribute.text, 'unknown')
+        attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
 
 

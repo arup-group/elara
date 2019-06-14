@@ -136,7 +136,7 @@ class VolumeCounts(Handler):
         if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            attribute_class = self.attributes.map.get(ident, 'missing')
+            attribute_class = self.attributes.map.get(ident, 'unknown')
             if veh_mode == self.mode:
                 link = elem.get("link")
                 time = float(elem.get("time"))
@@ -454,7 +454,7 @@ def table_position(elem_indices, class_indices, periods, elem_id, attribute_clas
     :return: (x, y, z) tuple to index results table
     """
     x = elem_indices[elem_id]
-    y = class_indices[attribute_class]
+    y = class_indices.get(attribute_class, 'unknown')
     z = floor(time / (86400.0 / periods)) % periods
     return x, y, z
 

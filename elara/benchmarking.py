@@ -77,8 +77,6 @@ class Cordon:
     hours = None
     modes = None
 
-    cordon_counts = []
-
     def __init__(self, name, config):
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
@@ -86,6 +84,7 @@ class Cordon:
         :param name: String, cordon name
         :param config: Config
         """
+        self.cordon_counts = []
         self.name = name
         self.config = config
         counts_df = pd.read_csv(self.benchmark_path)
@@ -253,9 +252,10 @@ class HourlyCordonCount(CordonCount):
         # collect all results
         model_results = pd.DataFrame()
         for mode, result_df in results_dfs.items():
-            mode_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
-            mode_results.loc[:, 'mode'] = mode
-            model_results = pd.concat([model_results, mode_results], axis=0)
+            if len(result_df):
+                result_df.loc[:, 'mode'] = mode
+                mode_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
+                model_results = pd.concat([model_results, mode_results], axis=0)
 
         # write cordon model results
         csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
@@ -304,7 +304,6 @@ class PeriodCordonCount(CordonCount):
         :param results_dfs: DataFrame object of model results
         :return: Float
         """
-        print(self.direction)
 
         # collect all results
         model_results = pd.DataFrame()
@@ -424,11 +423,48 @@ class IrelandCommuterStats(ModeStats):
     benchmark_path = get_benchmark_data(os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv'))
 
 
+####### test cordons for test_town #######
+
+class TestTownHourlyCordon(Cordon):
+
+    cordon_counter = HourlyCordonCount
+    benchmark_path = get_benchmark_data(os.path.join('test_town', 'test_town_cordon', '2016_counts.csv'))
+    cordon_path = get_benchmark_data(os.path.join('test_town', 'test_town_cordon', 'test_town_cordon.csv'))
+
+    directions = {'in': 1, 'out': 2}
+    year = 2016
+    hours = None
+    modes = ['car', 'bus']
+
+
+class TestTownPeakIn(Cordon):
+
+    cordon_counter = PeriodCordonCount
+    benchmark_path = get_benchmark_data(os.path.join('test_town', 'test_town_peak_cordon', '2016_peak_in_counts.csv'))
+    cordon_path = get_benchmark_data(os.path.join('test_town', 'test_town_peak_cordon', 'test_town_cordon.csv'))
+
+    directions = {'in': 1}
+    year = 2016
+    hours = [7, 8, 9]
+    modes = ['car', 'bus']
+
+class TestTownCommuterStats(ModeStats):
+
+    benchmark_path = get_benchmark_data(os.path.join('test_town', 'census_modestats', 'test_town_modestats.csv'))
+
+
 # maps of benchmarks to Classes and weights for scoring
 BENCHMARK_MAP = {"london_inner_cordon_car": LondonInnerCordonCar,
                  "dublin_canal_cordon_car": DublinCanalCordonCar,
-                 "ireland_commuter_modeshare": IrelandCommuterStats}
+                 "ireland_commuter_modeshare": IrelandCommuterStats,
+                 "test_town_cordon": TestTownHourlyCordon,
+                 "test_town_peak_cordon": TestTownPeakIn,
+                 "test_town_modeshare": TestTownCommuterStats}
 
 BENCHMARK_WEIGHTS = {"london_inner_cordon_car": 1,
                      "dublin_canal_cordon_car": 1,
-                     "ireland_commuter_modeshare": 1}
+                     "ireland_commuter_modeshare": 1,
+                     "test_town_cordon": 1,
+                     "test_town_peak_cordon": 1,
+                     "test_town_modeshare": 1}
+

@@ -1,0 +1,217 @@
+class,activity,hour,bike,bus,car,transit_walk
+poor,home,0,0.0,0.0,0.0,0.0
+poor,home,1,0.0,0.0,0.0,0.0
+poor,home,2,0.0,0.0,0.0,0.0
+poor,home,3,0.0,0.0,0.0,0.0
+poor,home,4,0.0,0.0,0.0,0.0
+poor,home,5,0.0,0.0,0.0,0.0
+poor,home,6,0.0,0.0,0.0,0.0
+poor,home,7,0.0,0.0,0.0,0.0
+poor,home,8,0.0,0.0,0.0,0.0
+poor,home,9,0.0,0.0,0.0,0.0
+poor,home,10,0.0,0.0,0.0,0.0
+poor,home,11,0.0,0.0,0.0,0.0
+poor,home,12,0.0,0.0,0.0,0.0
+poor,home,13,0.0,0.0,0.0,0.0
+poor,home,14,0.0,0.0,0.0,0.0
+poor,home,15,0.0,0.0,0.0,0.0
+poor,home,16,0.0,1.0,0.0,0.0
+poor,home,17,1.0,1.0,1.0,0.0
+poor,home,18,0.0,0.0,0.0,0.0
+poor,home,19,0.0,0.0,0.0,0.0
+poor,home,20,0.0,0.0,0.0,0.0
+poor,home,21,0.0,0.0,0.0,0.0
+poor,home,22,0.0,0.0,0.0,0.0
+poor,home,23,0.0,0.0,0.0,0.0
+poor,pt interaction,0,0.0,0.0,0.0,0.0
+poor,pt interaction,1,0.0,0.0,0.0,0.0
+poor,pt interaction,2,0.0,0.0,0.0,0.0
+poor,pt interaction,3,0.0,0.0,0.0,0.0
+poor,pt interaction,4,0.0,0.0,0.0,0.0
+poor,pt interaction,5,0.0,0.0,0.0,0.0
+poor,pt interaction,6,0.0,0.0,0.0,0.0
+poor,pt interaction,7,0.0,0.0,0.0,0.0
+poor,pt interaction,8,0.0,0.0,0.0,0.0
+poor,pt interaction,9,0.0,0.0,0.0,0.0
+poor,pt interaction,10,0.0,0.0,0.0,0.0
+poor,pt interaction,11,0.0,0.0,0.0,0.0
+poor,pt interaction,12,0.0,0.0,0.0,0.0
+poor,pt interaction,13,0.0,0.0,0.0,0.0
+poor,pt interaction,14,0.0,0.0,0.0,0.0
+poor,pt interaction,15,0.0,0.0,0.0,0.0
+poor,pt interaction,16,0.0,0.0,0.0,0.0
+poor,pt interaction,17,0.0,0.0,0.0,0.0
+poor,pt interaction,18,0.0,0.0,0.0,0.0
+poor,pt interaction,19,0.0,0.0,0.0,0.0
+poor,pt interaction,20,0.0,0.0,0.0,0.0
+poor,pt interaction,21,0.0,0.0,0.0,0.0
+poor,pt interaction,22,0.0,0.0,0.0,0.0
+poor,pt interaction,23,0.0,0.0,0.0,0.0
+poor,work,0,0.0,0.0,0.0,0.0
+poor,work,1,0.0,0.0,0.0,0.0
+poor,work,2,0.0,0.0,0.0,0.0
+poor,work,3,0.0,0.0,0.0,0.0
+poor,work,4,0.0,0.0,0.0,0.0
+poor,work,5,0.0,0.0,0.0,0.0
+poor,work,6,0.0,0.0,0.0,0.0
+poor,work,7,0.0,1.0,0.0,0.0
+poor,work,8,1.0,1.0,1.0,0.0
+poor,work,9,0.0,0.0,0.0,0.0
+poor,work,10,0.0,0.0,0.0,0.0
+poor,work,11,0.0,0.0,0.0,0.0
+poor,work,12,0.0,0.0,0.0,0.0
+poor,work,13,0.0,0.0,0.0,0.0
+poor,work,14,0.0,0.0,0.0,0.0
+poor,work,15,0.0,0.0,0.0,0.0
+poor,work,16,0.0,0.0,0.0,0.0
+poor,work,17,0.0,0.0,0.0,0.0
+poor,work,18,0.0,0.0,0.0,0.0
+poor,work,19,0.0,0.0,0.0,0.0
+poor,work,20,0.0,0.0,0.0,0.0
+poor,work,21,0.0,0.0,0.0,0.0
+poor,work,22,0.0,0.0,0.0,0.0
+poor,work,23,0.0,0.0,0.0,0.0
+rich,home,0,0.0,0.0,0.0,0.0
+rich,home,1,0.0,0.0,0.0,0.0
+rich,home,2,0.0,0.0,0.0,0.0
+rich,home,3,0.0,0.0,0.0,0.0
+rich,home,4,0.0,0.0,0.0,0.0
+rich,home,5,0.0,0.0,0.0,0.0
+rich,home,6,0.0,0.0,0.0,0.0
+rich,home,7,0.0,0.0,0.0,0.0
+rich,home,8,0.0,0.0,0.0,0.0
+rich,home,9,0.0,0.0,0.0,0.0
+rich,home,10,0.0,0.0,0.0,0.0
+rich,home,11,0.0,0.0,0.0,0.0
+rich,home,12,0.0,0.0,0.0,0.0
+rich,home,13,0.0,0.0,0.0,0.0
+rich,home,14,0.0,0.0,0.0,0.0
+rich,home,15,0.0,0.0,0.0,0.0
+rich,home,16,0.0,0.0,1.0,0.0
+rich,home,17,0.0,0.0,0.0,0.0
+rich,home,18,0.0,0.0,0.0,0.0
+rich,home,19,0.0,0.0,0.0,0.0
+rich,home,20,0.0,0.0,0.0,0.0
+rich,home,21,0.0,0.0,0.0,0.0
+rich,home,22,0.0,0.0,0.0,0.0
+rich,home,23,0.0,0.0,0.0,0.0
+rich,pt interaction,0,0.0,0.0,0.0,0.0
+rich,pt interaction,1,0.0,0.0,0.0,0.0
+rich,pt interaction,2,0.0,0.0,0.0,0.0
+rich,pt interaction,3,0.0,0.0,0.0,0.0
+rich,pt interaction,4,0.0,0.0,0.0,0.0
+rich,pt interaction,5,0.0,0.0,0.0,0.0
+rich,pt interaction,6,0.0,0.0,0.0,0.0
+rich,pt interaction,7,0.0,0.0,0.0,0.0
+rich,pt interaction,8,0.0,0.0,0.0,0.0
+rich,pt interaction,9,0.0,0.0,0.0,0.0
+rich,pt interaction,10,0.0,0.0,0.0,0.0
+rich,pt interaction,11,0.0,0.0,0.0,0.0
+rich,pt interaction,12,0.0,0.0,0.0,0.0
+rich,pt interaction,13,0.0,0.0,0.0,0.0
+rich,pt interaction,14,0.0,0.0,0.0,0.0
+rich,pt interaction,15,0.0,0.0,0.0,0.0
+rich,pt interaction,16,0.0,0.0,0.0,0.0
+rich,pt interaction,17,0.0,0.0,0.0,0.0
+rich,pt interaction,18,0.0,0.0,0.0,0.0
+rich,pt interaction,19,0.0,0.0,0.0,0.0
+rich,pt interaction,20,0.0,0.0,0.0,0.0
+rich,pt interaction,21,0.0,0.0,0.0,0.0
+rich,pt interaction,22,0.0,0.0,0.0,0.0
+rich,pt interaction,23,0.0,0.0,0.0,0.0
+rich,work,0,0.0,0.0,0.0,0.0
+rich,work,1,0.0,0.0,0.0,0.0
+rich,work,2,0.0,0.0,0.0,0.0
+rich,work,3,0.0,0.0,0.0,0.0
+rich,work,4,0.0,0.0,0.0,0.0
+rich,work,5,0.0,0.0,0.0,0.0
+rich,work,6,0.0,0.0,0.0,0.0
+rich,work,7,0.0,0.0,1.0,0.0
+rich,work,8,0.0,0.0,0.0,0.0
+rich,work,9,0.0,0.0,0.0,0.0
+rich,work,10,0.0,0.0,0.0,0.0
+rich,work,11,0.0,0.0,0.0,0.0
+rich,work,12,0.0,0.0,0.0,0.0
+rich,work,13,0.0,0.0,0.0,0.0
+rich,work,14,0.0,0.0,0.0,0.0
+rich,work,15,0.0,0.0,0.0,0.0
+rich,work,16,0.0,0.0,0.0,0.0
+rich,work,17,0.0,0.0,0.0,0.0
+rich,work,18,0.0,0.0,0.0,0.0
+rich,work,19,0.0,0.0,0.0,0.0
+rich,work,20,0.0,0.0,0.0,0.0
+rich,work,21,0.0,0.0,0.0,0.0
+rich,work,22,0.0,0.0,0.0,0.0
+rich,work,23,0.0,0.0,0.0,0.0
+unknown,home,0,0.0,0.0,0.0,0.0
+unknown,home,1,0.0,0.0,0.0,0.0
+unknown,home,2,0.0,0.0,0.0,0.0
+unknown,home,3,0.0,0.0,0.0,0.0
+unknown,home,4,0.0,0.0,0.0,0.0
+unknown,home,5,0.0,0.0,0.0,0.0
+unknown,home,6,0.0,0.0,0.0,0.0
+unknown,home,7,0.0,0.0,0.0,0.0
+unknown,home,8,0.0,0.0,0.0,0.0
+unknown,home,9,0.0,0.0,0.0,0.0
+unknown,home,10,0.0,0.0,0.0,0.0
+unknown,home,11,0.0,0.0,0.0,0.0
+unknown,home,12,0.0,0.0,0.0,0.0
+unknown,home,13,0.0,0.0,0.0,0.0
+unknown,home,14,0.0,0.0,0.0,0.0
+unknown,home,15,0.0,0.0,0.0,0.0
+unknown,home,16,0.0,0.0,0.0,0.0
+unknown,home,17,0.0,0.0,0.0,0.0
+unknown,home,18,0.0,0.0,0.0,0.0
+unknown,home,19,0.0,0.0,0.0,0.0
+unknown,home,20,0.0,0.0,0.0,0.0
+unknown,home,21,0.0,0.0,0.0,0.0
+unknown,home,22,0.0,0.0,0.0,0.0
+unknown,home,23,0.0,0.0,0.0,0.0
+unknown,pt interaction,0,0.0,0.0,0.0,0.0
+unknown,pt interaction,1,0.0,0.0,0.0,0.0
+unknown,pt interaction,2,0.0,0.0,0.0,0.0
+unknown,pt interaction,3,0.0,0.0,0.0,0.0
+unknown,pt interaction,4,0.0,0.0,0.0,0.0
+unknown,pt interaction,5,0.0,0.0,0.0,0.0
+unknown,pt interaction,6,0.0,0.0,0.0,0.0
+unknown,pt interaction,7,0.0,0.0,0.0,0.0
+unknown,pt interaction,8,0.0,0.0,0.0,0.0
+unknown,pt interaction,9,0.0,0.0,0.0,0.0
+unknown,pt interaction,10,0.0,0.0,0.0,0.0
+unknown,pt interaction,11,0.0,0.0,0.0,0.0
+unknown,pt interaction,12,0.0,0.0,0.0,0.0
+unknown,pt interaction,13,0.0,0.0,0.0,0.0
+unknown,pt interaction,14,0.0,0.0,0.0,0.0
+unknown,pt interaction,15,0.0,0.0,0.0,0.0
+unknown,pt interaction,16,0.0,0.0,0.0,0.0
+unknown,pt interaction,17,0.0,0.0,0.0,0.0
+unknown,pt interaction,18,0.0,0.0,0.0,0.0
+unknown,pt interaction,19,0.0,0.0,0.0,0.0
+unknown,pt interaction,20,0.0,0.0,0.0,0.0
+unknown,pt interaction,21,0.0,0.0,0.0,0.0
+unknown,pt interaction,22,0.0,0.0,0.0,0.0
+unknown,pt interaction,23,0.0,0.0,0.0,0.0
+unknown,work,0,0.0,0.0,0.0,0.0
+unknown,work,1,0.0,0.0,0.0,0.0
+unknown,work,2,0.0,0.0,0.0,0.0
+unknown,work,3,0.0,0.0,0.0,0.0
+unknown,work,4,0.0,0.0,0.0,0.0
+unknown,work,5,0.0,0.0,0.0,0.0
+unknown,work,6,0.0,0.0,0.0,0.0
+unknown,work,7,0.0,0.0,0.0,0.0
+unknown,work,8,0.0,0.0,0.0,0.0
+unknown,work,9,0.0,0.0,0.0,0.0
+unknown,work,10,0.0,0.0,0.0,0.0
+unknown,work,11,0.0,0.0,0.0,0.0
+unknown,work,12,0.0,0.0,0.0,0.0
+unknown,work,13,0.0,0.0,0.0,0.0
+unknown,work,14,0.0,0.0,0.0,0.0
+unknown,work,15,0.0,0.0,0.0,0.0
+unknown,work,16,0.0,0.0,0.0,0.0
+unknown,work,17,0.0,0.0,0.0,0.0
+unknown,work,18,0.0,0.0,0.0,0.0
+unknown,work,19,0.0,0.0,0.0,0.0
+unknown,work,20,0.0,0.0,0.0,0.0
+unknown,work,21,0.0,0.0,0.0,0.0
+unknown,work,22,0.0,0.0,0.0,0.0
+unknown,work,23,0.0,0.0,0.0,0.0
