@@ -1,5 +1,5 @@
  [scenario]
-name = "test_town"
+name = "test"
 time_periods = 24
 scale_factor = 1
 crs = "EPSG:27700"
@@ -22,9 +22,9 @@ stop_interactions = ["bus"]
 mode_share = ["all"]
 
 [outputs]
-path = "./outputs/test_town"
+path = "./outputs/test"
 contract = true
 post_processing = ["vkt"]
 
 [benchmarking]
-benchmarks = ["test_town_cordon", "test_town_peak_cordon", "test_town_modeshare"]
+benchmarks = []
