@@ -49,7 +49,7 @@ class ModeShare:
         if elem.get('selected') == 'yes':
 
             ident = elem.getparent().get('id')
-            attribute_class = self.attributes.map.get(ident, 'missing')
+            attribute_class = self.attributes.map.get(ident, 'not found')
 
             end_time = None
             modes = []
