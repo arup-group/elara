@@ -7,6 +7,7 @@ from elara import get_benchmark_data
 # TODO this module has some over complex operations on the input data...
 # TODO - needs tests and data validation
 
+
 class Benchmarks:
 
     benchmarks = {}

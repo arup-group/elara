@@ -267,14 +267,17 @@ class Plans:
             'transit_walk'
         ]
 
-        # Build mode list
-        self.modes_map = {
-            "transit_walk": "walk",
-        }
+        # # Build mode list
+        # self.modes_map = {
+        #     "transit_walk": "walk",
+        #     "access_walk": "walk",
+        #     "egress_walk": "walk",
+        #     "piggy_back": "walk"
+        # }
 
         self.modes, self.activities = self.get_classes()
 
-        assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
+        # assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
 
         # re-init elements
         self.elems = get_elems(path, "plan")
@@ -282,7 +285,9 @@ class Plans:
     def get_classes(self):
         """
         Extract sets of used activities and modes from chosen population plans.
-        # TODO confirm this is how we want to handle plans (ie with handler (iters) and with pre calculated inputs...
+        # TODO
+        confirm this is how we want to handle plans (ie with handler (iters) and with pre
+        calculated inputs...
         Note that we use this method to get all categories before flattening results
         later using a hander, will provide some minor speed up, but is a duplication
         so slows overall. But is more in keeping with overall flow. For example it
