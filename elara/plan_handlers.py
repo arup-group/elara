@@ -2,6 +2,7 @@ import numpy as np
 from math import floor
 import pandas as pd
 
+
 class ModeShare:
 
     def __init__(
@@ -140,7 +141,8 @@ class ModeShare:
             for mode in modes:
                 if h == mode:
                     return mode
-        raise LookupError(f'not found modes in mode [{modes}] hierarchy')
+        print(f"WARNING {modes} not in hierarchy, returning 'walk'")
+        return 'walk'
 
     def table_position(
         self,
