@@ -38,8 +38,6 @@ def main(config):
     with Halo(text="Preparing inputs...", spinner="dots") as spinner:
         spinner.text = "Preparing events input..."
         events = inputs.Events(config.events_path)
-        spinner.text = "Preparing network input..."
-        network = inputs.Network(config.network_path, config.crs)
         spinner.text = "Preparing schedule input..."
         transit_schedule = inputs.TransitSchedule(
             config.transit_schedule_path, config.crs
@@ -50,6 +48,8 @@ def main(config):
         attributes = inputs.Attributes(config.attributes_path)
         spinner.text = "Preparing Plans input..."
         plans = inputs.Plans(config.plans_path, transit_schedule)
+        spinner.text = "Preparing network input..."
+        network = inputs.Network(config.network_path, config.crs)
 
         spinner.succeed("Inputs prepared.")
         if config.verbose:
