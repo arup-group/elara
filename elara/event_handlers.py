@@ -35,29 +35,18 @@ class Handler:
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     @staticmethod
-    def generate_class_ids(list_in):
-        """
-        Generate element ID list and index dictionary from given list.
-        :param list_in: list
-        :return: (list, list_indices_map)
-        """
-        list_indices_map = {
-            key: value for (key, value) in zip(list_in, range(0, len(list_in)))
-        }
-        return list_in, list_indices_map
-
-    @staticmethod
-    def generate_elem_ids(elem_gdf):
+    def generate_elem_ids(elems_in):
         """
         Generate element ID list and index dictionary from given geodataframe.
         :param elem_gdf: Element geodataframe
         :return: (element IDs, element indices)
         """
-        elem_ids = elem_gdf.index.tolist()
+        if not isinstance(elems_in, list):
+            elems_in = elem_gdf.index.tolist()
         elem_indices = {
-            key: value for (key, value) in zip(elem_ids, range(0, len(elem_ids)))
+            key: value for (key, value) in zip(elems_in, range(0, len(elems_in)))
         }
-        return elem_ids, elem_indices
+        return elems_in, elem_indices
 
     def vehicle_mode(self, vehicle_id):
         """
@@ -114,8 +103,13 @@ class VolumeCounts(Handler):
             network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
         )
 
-        # Initialise class attributes
-        self.classes, self.class_indices = self.generate_class_ids(attributes.classes)
+        if mode == "car":
+            # Initialise class attributes
+            self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
+        else:
+            # Initialise class attributes as mode (cannot classify mixed
+            # occupany vehicles)
+            self.classes, self.class_indices = self.generate_elem_ids([mode])
 
         # Initialise element attributes
         self.elem_gdf = self.network.link_gdf
@@ -136,8 +130,9 @@ class VolumeCounts(Handler):
         if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            attribute_class = self.attributes.map.get(ident, 'missing')
             if veh_mode == self.mode:
+                # look for attribute_class, if not found assume pt and use mode
+                attribute_class = self.attributes.map.get(ident, self.mode)
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 x, y, z = table_position(
@@ -171,7 +166,6 @@ class VolumeCounts(Handler):
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
-
         # Create volume counts output
         key = "volume_counts_{}".format(self.mode)
         self.result_gdfs[key] = self.elem_gdf.join(
@@ -206,8 +200,13 @@ class PassengerCounts(Handler):
             network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
         )
 
+        # Check for car
+        if mode == 'car':
+            raise  ValueError("Passenger Counts Handlers not intended for use
+            with mode type = car")
+
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_class_ids(attributes.classes)
+        self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
 
         # Initialise element attributes
         self.elem_gdf = self.network.link_gdf
@@ -330,11 +329,16 @@ class StopInteractions(Handler):
             network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
         )
 
+        # Check for car
+        if mode == 'car':
+            raise  ValueError("Stop Interaction Handlers not intended for use
+            with mode type = car")
+
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_class_ids(attributes.classes)
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_class_ids(attributes.classes)
+        self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
 
         # Initialise element attributes
         self.elem_gdf = self.transit_schedule.stop_gdf
