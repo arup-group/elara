@@ -238,11 +238,12 @@ class Attributes:
         )
 
         self.classes, self.attribute_count_map = count_values(self.map)
+        self.classes.append('not_found')
 
     def get_attribute_text(self, elem, tag):
         ident = elem.xpath("@id")[0]
         attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
-        attribute = self.final_attribute_map.get(attribute.text, 'unknown')
+        attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
 
 
@@ -277,10 +278,11 @@ class Plans:
 
         self.modes, self.activities = self.get_classes()
 
-        # assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
+        #assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
 
         # re-init elements
         self.elems = get_elems(path, "plan")
+        self.agents = get_elems(path, "person")
 
     def get_classes(self):
         """

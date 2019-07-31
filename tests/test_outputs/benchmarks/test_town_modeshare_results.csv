@@ -1,0 +1,4 @@
+mode,benchmark,model,diff
+bike,0.2,0.2,0.0
+bus,0.4,0.4,0.0
+car,0.4,0.4,0.0

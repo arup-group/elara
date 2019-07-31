@@ -1,17 +1,17 @@
  [scenario]
-name = "ire"
+name = "ireland"
 time_periods = 24
 scale_factor = 0.01
 crs = "EPSG:27700"
 verbose = true
 
 [inputs]
-events = "./fixtures/fixtures_ireland_test/output_events.xml.gz"
-network = "./fixtures/fixtures_ireland_test/output_network.xml.gz"
-transit_schedule = "./fixtures/fixtures_ireland_test/output_transitSchedule.xml.gz"
-transit_vehicles = "./fixtures/fixtures_ireland_test/output_transitVehicles.xml.gz"
-attributes = "./fixtures/fixtures_ireland_test/output_personAttributes.xml.gz"
-plans = "./fixtures/fixtures_ireland_test/output_plans.xml.gz"
+events = "./fixtures/fixtures_ireland_test_100/output_events.xml.gz"
+network = "./fixtures/fixtures_ireland_test_100/output_network.xml.gz"
+transit_schedule = "./fixtures/fixtures_ireland_test_100/output_transitSchedule.xml.gz"
+transit_vehicles = "./fixtures/fixtures_ireland_test_100/output_transitVehicles.xml.gz"
+attributes = "./fixtures/fixtures_ireland_test_100/output_personAttributes.xml.gz"
+plans = "./fixtures/fixtures_ireland_test_100/output_plans.xml.gz"
 
 [event_handlers]
 volume_counts = ["car"]
@@ -22,7 +22,7 @@ stop_interactions = ["bus", "train", "tram", "ferry"]
 mode_share = ["all"]
 
 [outputs]
-path = "./outputs/ireland/test"
+path = "./outputs/ireland/test_100/"
 contract = true
 post_processing = []
 

@@ -1,5 +1,5 @@
  [scenario]
-name = "test"
+name = "test_town"
 time_periods = 24
 scale_factor = 0.0001
 crs = "EPSG:27700"

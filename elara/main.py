@@ -64,6 +64,7 @@ def main(config):
             print('Sub-populations: {}'.format(attributes.attribute_count_map))
             print('Plan Activity Types: {}'.format(plans.activities))
             print('Plan Leg Modes: {}'.format(plans.modes))
+            print('Benchmarks: {}'.format(config.benchmarks))
             print('-----------------------')
 
 
