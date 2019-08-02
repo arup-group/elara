@@ -238,7 +238,7 @@ class Attributes:
         )
 
         self.classes, self.attribute_count_map = count_values(self.map)
-        self.classes.append('not_found')
+        self.classes.append('not_applicable')
 
     def get_attribute_text(self, elem, tag):
         ident = elem.xpath("@id")[0]

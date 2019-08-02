@@ -160,7 +160,6 @@ def main(config):
                 gdf.drop("geometry", axis=1).to_csv(csv_path)
                 spinner.text = "Writing {}".format(geojson_name)
                 export_geojson(gdf, geojson_path)
-
         spinner.succeed("Event outputs generated!")
 
     # Generate file outputs

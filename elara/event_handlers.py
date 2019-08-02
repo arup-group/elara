@@ -42,7 +42,8 @@ class Handler:
         :return: (element IDs, element indices)
         """
         if not isinstance(elems_in, list):
-            elems_in = elem_gdf.index.tolist()
+            elems_in = elems_in.index.tolist()
+
         elem_indices = {
             key: value for (key, value) in zip(elems_in, range(0, len(elems_in)))
         }
@@ -103,15 +104,20 @@ class VolumeCounts(Handler):
             network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
         )
 
-        if mode == "car":
-            # Initialise class attributes
-            self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
-        else:
-            # Initialise class attributes as mode (cannot classify mixed
-            # occupany vehicles)
-            self.classes, self.class_indices = self.generate_elem_ids([mode])
+        # # generate index and map for attribute dimension
+        # if mode == "car":
+        #     # Initialise class attributes
+        #     self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
+        # else:
+        #     # TODO maybe get rid of this
+        #     # Initialise class attributes as mode (cannot classify mixed
+        #     # occupany vehicles)
+        #     self.classes, self.class_indices = self.generate_elem_ids([mode])
 
-        # Initialise element attributes
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
+
+        # generate index and map for network link dimension
         self.elem_gdf = self.network.link_gdf
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
@@ -132,7 +138,7 @@ class VolumeCounts(Handler):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
                 # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.attributes.map.get(ident, self.mode)
+                attribute_class = self.attributes.map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 x, y, z = table_position(
@@ -202,8 +208,7 @@ class PassengerCounts(Handler):
 
         # Check for car
         if mode == 'car':
-            raise  ValueError("Passenger Counts Handlers not intended for use
-            with mode type = car")
+            raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
@@ -213,8 +218,8 @@ class PassengerCounts(Handler):
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise passenger count table
-        self.counts = np.zeros((len(self.elem_indices),
-                                len(self.class_indices),
+        self.counts = np.zeros((len(self.elem_ids),
+                                len(self.classes),
                                 periods))
 
         # Initialise vehicle occupancy mapping
@@ -331,11 +336,7 @@ class StopInteractions(Handler):
 
         # Check for car
         if mode == 'car':
-            raise  ValueError("Stop Interaction Handlers not intended for use
-            with mode type = car")
-
-        # Initialise class attributes
-        self.classes, self.class_indices = self.generate_class_ids(attributes.classes)
+            raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
@@ -346,11 +347,11 @@ class StopInteractions(Handler):
 
         # Initialise results tables
         self.boardings = np.zeros((len(self.elem_indices),
-                                len(self.class_indices),
-                                periods))
+                                   len(self.class_indices),
+                                   periods))
         self.alightings = np.zeros((len(self.elem_indices),
-                                len(self.class_indices),
-                                periods))
+                                    len(self.class_indices),
+                                    periods))
 
         # Initialise agent status mapping
         self.agent_status = dict()  # agent_id : [origin_stop, destination_stop]
