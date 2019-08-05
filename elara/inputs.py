@@ -5,6 +5,7 @@ import pyproj
 from shapely.geometry import Point, LineString
 import gzip
 from io import BytesIO
+from math import floor
 
 
 WGS_84 = pyproj.Proj(init="epsg:4326")
@@ -17,6 +18,28 @@ class Events:
         :param path: Path to MATSim events XML file (.xml)
         """
         self.elems = get_elems(path, "event")
+
+
+class ModeMap:
+
+    modemap = {
+        "ferry": "ferry",
+        "rail": "rail",
+        "tram": "tram",
+        "bus": "bus",
+        "car": "car",
+        "bike": "bike",
+        "walk": "walk",
+        "transit_walk": "walk",
+        "access_walk": "walk",
+        "egress_walk": "walk"
+    }
+
+    def __getitem__(self, key: str) -> str:
+        if key in self.modemap:
+            return self.modemap[key]
+
+        raise KeyError(f"key:'{key}' not found in ModeMap")
 
 
 class Network:
@@ -117,17 +140,6 @@ class TransitSchedule:
 
         self.modes = list(set(self.mode_map.values()))
 
-        self.hierarchy = [
-            "ferry",
-            "rail",
-            "tram",
-            "bus",
-            "car",
-            "bike",
-            "walk",
-            "transit_walk"
-        ]
-
     @staticmethod
     def transform_stop_elem(elem, crs):
         """
@@ -194,7 +206,6 @@ class TransitVehicles:
 
         self.types, self.transit_vehicle_counts = count_values(self.veh_id_veh_type_map)
 
-
     @staticmethod
     def transform_veh_type_elem(elem):
         """
@@ -206,7 +217,7 @@ class TransitVehicles:
         id = elem.xpath("@id")[0]
         seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
         standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
-        return (id, seated_capacity + standing_capacity)
+        return id, seated_capacity + standing_capacity
 
 
 class Attributes:
@@ -257,16 +268,16 @@ class Plans:
         self.elems = get_elems(path, "plan")
         self.transit_schedule = transit_schedule
 
-        self.hierarchy = [
-            'ferry',
-            'rail',
-            'tram',
-            'bus',
-            'car',
-            'bike',
-            'walk',
-            'transit_walk'
-        ]
+        # self.hierarchy = [
+        #     'ferry',
+        #     'rail',
+        #     'tram',
+        #     'bus',
+        #     'car',
+        #     'bike',
+        #     'walk',
+        #     'transit_walk'
+        # ]
 
         # # Build mode list
         # self.modes_map = {
@@ -312,6 +323,40 @@ class Plans:
                             mode = self.transit_schedule.mode_map.get(route)
                         modes.add(mode)
         return list(modes), list(activities)
+
+
+class ModeHierarchy:
+
+    hierarchy = [
+        "ferry",
+        "rail",
+        "tram",
+        "bus",
+        "car",
+        "bike",
+        "walk",
+        "transit_walk",
+        "access_walk",
+        "egress_walk"
+    ]
+
+    def get(self, modes: list) -> str:
+        if not isinstance(modes, list):
+            raise TypeError("ModeHierarchy get method expects list")
+        if not all(isinstance(mode, str) for mode in modes):
+            raise TypeError("ModeHierarchy get method expects list of strings")
+        for mode in modes:
+            if mode not in self.hierarchy:
+                print(f"WARNING {mode} not found in hierarchy")
+        for h in self.hierarchy:
+            for mode in modes:
+                if h == mode:
+                    return mode
+        # if mode not found in hierarchy then return middle mode
+        mode_index = floor(len(modes) / 2)
+        mode = modes[mode_index]
+        print(f"WARNING {modes} not in hierarchy, returning {mode}")
+        return mode
 
 
 def get_elems(path, tag):
