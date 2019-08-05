@@ -2,6 +2,7 @@ import sys
 import os
 import pytest
 
+
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config
 from elara import inputs
@@ -36,6 +37,12 @@ def test_loading_gzip_events(test_gzip_config):
     events = inputs.Events(test_gzip_config.events_path).elems
     num_events = sum(1 for _ in events)
     assert num_events == 190
+
+
+# Modemap
+def test_modemap_get():
+    modemap = inputs.ModeMap()
+    assert modemap['egress_walk'] == 'walk'
 
 
 # Transit
@@ -96,6 +103,37 @@ def test_loading_gzip_plans(test_gzip_config):
     plans = inputs.Plans(test_gzip_config.plans_path, transit_schedule).elems
     num_plans = sum(1 for _ in plans)
     assert num_plans == 5
+
+
+# ModeHierarchy
+def test_hierarchy_get_bad_type():
+    hierarchy = inputs.ModeHierarchy()
+    with pytest.raises(TypeError):
+        assert hierarchy['egress_walk']
+    with pytest.raises(TypeError):
+        assert hierarchy[[1]]
+
+
+def test_hierarchy_get_unknown(capsys):
+    hierarchy = inputs.ModeHierarchy()
+    modes = ['one', 'two', 'three']
+    mode = hierarchy.get(modes)
+    captured = capsys.readouterr()
+    assert captured.out
+    assert mode == modes[1]
+
+
+test_hierarchy_get_data = [
+    (['transit_walk', 'bus', 'egress_walk'], "bus"),
+    (['transit_walk', 'bus', 'rail', 'transit_walk'], "rail"),
+    (['car', 'helicopter', 'transit_walk'], "car"),
+]
+
+
+@pytest.mark.parametrize("modes,mode", test_hierarchy_get_data)
+def test_hierarchy_get_(modes, mode):
+    hierarchy = inputs.ModeHierarchy()
+    assert hierarchy.get(modes) == mode
 
 
 # Network

@@ -3,19 +3,31 @@ from math import floor
 import pandas as pd
 
 
+class Activities:
+
+    def __init__(self):
+        raise NotImplementedError
+
+
+class Legs:
+    def __init__(self):
+        raise NotImplementedError
+
+
 class ModeShare:
 
     def __init__(
-        self,
-        act,
-        plans,
-        transit_schedule,
-        attributes,
-        time_periods=24,
-        scale_factor=1.0,
-
+            self,
+            act,
+            plans,
+            transit_schedule,
+            attributes,
+            mode_hierarchy,
+            time_periods=24,
+            scale_factor=1.0,
     ):
         self.act = act
+        #TODO
         if self.act != "all":
             raise NotImplementedError(f'Not implemented filtering with {self.act} for modeshare')
 
@@ -23,6 +35,7 @@ class ModeShare:
         self.attributes = attributes
         self.periods = time_periods
         self.scale_factor = scale_factor
+        self.mode_hierarchy = mode_hierarchy
 
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(plans.modes)
@@ -32,6 +45,7 @@ class ModeShare:
 
         # Initialise activity classes
         self.activities, self.activity_indices = self.generate_id_map(plans.activities)
+        # TODO - don't need to keep pt interactions or modeshare
 
         # Initialise mode count table
         self.mode_counts = np.zeros((len(self.modes),
@@ -41,7 +55,8 @@ class ModeShare:
 
         self.results = dict()
 
-    def process_event(self, elem):
+    def process_plan(self, elem):
+
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
         events to determine link volume counts.
@@ -72,13 +87,14 @@ class ModeShare:
 
                     # only add activity modes when there has been previous activity (ie trip start time)
                     if end_time:
-                        mode = self.select_hierarchy(modes)
+                        mode = self.mode_hierarchy.get(modes)
                         x, y, z, w = self.table_position(
                             mode,
                             attribute_class,
                             activity,
                             end_time
                         )
+
                         self.mode_counts[x, y, z, w] += 1
 
                     # update endtime for next activity
@@ -136,14 +152,6 @@ class ModeShare:
         }
         return list_in, list_indices_map
 
-    def select_hierarchy(self, modes):
-        for h in self.transit_schedule.hierarchy:
-            for mode in modes:
-                if h == mode:
-                    return mode
-        print(f"WARNING {modes} not in hierarchy, returning 'walk'")
-        return 'walk'
-
     def table_position(
         self,
         mode,
@@ -166,7 +174,13 @@ class ModeShare:
         return x, y, z, w
 
 
-def convert_time(t):
+def convert_time(t: str) -> int:
+    """
+    Convert MATSim output plan times into seconds
+
+    :param t: MATSim str time
+    :return: seconds int
+    """
     if not t:
         return None
     t = t.split(":")

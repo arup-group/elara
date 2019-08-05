@@ -38,18 +38,24 @@ def main(config):
     with Halo(text="Preparing inputs...", spinner="dots") as spinner:
         spinner.text = "Preparing events input..."
         events = inputs.Events(config.events_path)
+
+        spinner.text = "Preparing network input..."
+        network = inputs.Network(config.network_path, config.crs)
+        mode_map = inputs.ModeMap
+        mode_hierarchy = inputs.ModeHierarchy
+
         spinner.text = "Preparing schedule input..."
         transit_schedule = inputs.TransitSchedule(
             config.transit_schedule_path, config.crs
         )
         spinner.text = "Preparing transit vehicle input..."
         transit_vehicles = inputs.TransitVehicles(config.transit_vehicles_path)
+
         spinner.text = "Preparing Subpopulation Attribute input..."
         attributes = inputs.Attributes(config.attributes_path)
+
         spinner.text = "Preparing Plans input..."
         plans = inputs.Plans(config.plans_path, transit_schedule)
-        spinner.text = "Preparing network input..."
-        network = inputs.Network(config.network_path, config.crs)
 
         spinner.succeed("Inputs prepared.")
         if config.verbose:
@@ -66,7 +72,6 @@ def main(config):
             print('Plan Leg Modes: {}'.format(plans.modes))
             print('Benchmarks: {}'.format(config.benchmarks))
             print('-----------------------')
-
 
     # Build event handlers
     with Halo(text="Building event handlers...", spinner="dots") as spinner:
@@ -97,6 +102,7 @@ def main(config):
                         plans,
                         transit_schedule,
                         attributes,
+                        mode_hierarchy,
                         config.time_periods,
                         config.scale_factor,
                     )
@@ -130,7 +136,7 @@ def main(config):
             if i % 12345:
                 spinner.text = "Processed {:,} events...".format(i + 1)
             for event_handler in active_event_handlers:
-                event_handler.process_event(event)
+                event_handler.process_plan(event)
         spinner.succeed("Events processed!")
 
     # Iterate through plans
@@ -139,7 +145,7 @@ def main(config):
             if i % 123:
                 spinner.text = "Processed {:,} plans...".format(i + 1)
             for plan_handler in active_plan_handlers:
-                plan_handler.process_event(plan)
+                plan_handler.process_plan(plan)
         spinner.succeed("Plans processed!")
 
     # Generate event file outputs
