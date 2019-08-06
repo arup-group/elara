@@ -8,7 +8,7 @@ import lxml.etree as etree
 
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config
-from elara import inputs, event_handlers, postprocessing
+from elara import inputs, postprocessing
 sys.path.append(os.path.abspath('../tests'))
 
 

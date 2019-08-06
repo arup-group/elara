@@ -8,7 +8,8 @@ import lxml.etree as etree
 
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config
-from elara import inputs, event_handlers
+from elara import inputs, handlers
+from elara.handlers.network_event_handlers import *
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -22,7 +23,7 @@ test_floor_data = [
 
 @pytest.mark.parametrize("seconds,hour", test_floor_data)
 def test_table_position_floor(seconds, hour):
-    assert event_handlers.table_position(
+    assert handlers.network_event_handlers.table_position(
         elem_indices={1: 0},
         class_indices={1: 0},
         periods=24,
@@ -81,7 +82,7 @@ def transit_vehicles(config):
 # Base
 @pytest.fixture
 def base_handler(network, transit_vehicles, transit_schedule, attributes):
-    base_handler = event_handlers.Handler(
+    base_handler = handlers.network_event_handlers.Handler(
         network,
         transit_schedule,
         transit_vehicles,
@@ -145,7 +146,7 @@ def bus_enters_link_event():
 @pytest.fixture
 def test_car_volume_count_handler(network, transit_vehicles, transit_schedule, attributes):
     periods = 24
-    handler = event_handlers.VolumeCounts(
+    handler = VolumeCounts(
         network,
         transit_schedule,
         transit_vehicles,
@@ -211,7 +212,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
 @pytest.fixture
 def test_bus_volume_count_handler(network, transit_vehicles, transit_schedule, attributes):
     periods = 24
-    handler = event_handlers.VolumeCounts(
+    handler = VolumeCounts(
         network,
         transit_schedule,
         transit_vehicles,
@@ -282,7 +283,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 @pytest.fixture
 def test_bus_passenger_count_handler(network, transit_vehicles, transit_schedule, attributes):
     periods = 24
-    handler = event_handlers.PassengerCounts(
+    handler = PassengerCounts(
         network,
         transit_schedule,
         transit_vehicles,
@@ -425,7 +426,7 @@ def test_passenger_count_finalise_bus(
 @pytest.fixture
 def test_bus_passenger_interaction_handler(network, transit_vehicles, transit_schedule, attributes):
     periods = 24
-    handler = event_handlers.StopInteractions(
+    handler = StopInteractions(
         network,
         transit_schedule,
         transit_vehicles,

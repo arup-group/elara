@@ -3,6 +3,13 @@ import numpy as np
 import pandas as pd
 
 
+__all__ = [
+    'VolumeCounts',
+    'PassengerCounts',
+    'StopInteractions',
+]
+
+
 class Handler:
     def __init__(
         self,
@@ -89,6 +96,15 @@ class Handler:
 
 
 class VolumeCounts(Handler):
+
+    subscription = 'events'
+
+    requires = [
+        'network',
+        'transit_schedule',
+        'transit_vehicles',
+        'attributes',
+    ]
 
     def __init__(
         self,
@@ -192,6 +208,16 @@ class VolumeCounts(Handler):
 
 
 class PassengerCounts(Handler):
+
+    subscription = 'events'
+
+    requires = [
+        'network',
+        'transit_schedule',
+        'transit_vehicles',
+        'attributes',
+    ]
+
     def __init__(
         self,
         network,
@@ -320,6 +346,16 @@ class PassengerCounts(Handler):
 
 
 class StopInteractions(Handler):
+
+    subscription = 'events'
+
+    requires = [
+        'network',
+        'transit_schedule',
+        'transit_vehicles',
+        'attributes',
+    ]
+
     def __init__(
         self,
         network,
@@ -462,11 +498,3 @@ def table_position(elem_indices, class_indices, periods, elem_id, attribute_clas
     y = class_indices[attribute_class]
     z = floor(time / (86400.0 / periods)) % periods
     return x, y, z
-
-
-# Dictionary used to map configuration string to handler type
-EVENT_HANDLER_MAP = {
-    "volume_counts": VolumeCounts,
-    "passenger_counts": PassengerCounts,
-    "stop_interactions": StopInteractions,
-}

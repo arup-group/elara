@@ -3,6 +3,13 @@ from math import floor
 import pandas as pd
 
 
+__all__ = [
+    'Activities',
+    'Legs',
+    'ModeShare',
+]
+
+
 class Activities:
 
     def __init__(self):
@@ -15,6 +22,15 @@ class Legs:
 
 
 class ModeShare:
+
+    subscription = 'plans'
+
+    requires = [
+        'plans',
+        'transit_schedule',
+        'attributes',
+        'mode_hierarchy'
+    ]
 
     def __init__(
             self,
@@ -185,8 +201,3 @@ def convert_time(t: str) -> int:
         return None
     t = t.split(":")
     return ((int(t[0]) * 60) + int(t[1])) * 60 + int(t[2])
-
-
-PLAN_HANDLER_MAP = {
-    "mode_share": ModeShare,
-}
