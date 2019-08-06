@@ -5,8 +5,7 @@ from halo import Halo
 
 from elara.config import Config
 from elara import inputs
-from elara import event_handlers
-from elara import plan_handlers
+from elara import handlers
 from elara import postprocessing
 from elara import benchmarking
 
@@ -79,7 +78,7 @@ def main(config):
         for handler_name, mode_list in config.event_handlers.items():
             for mode in mode_list:
                 active_event_handlers.append(
-                    event_handlers.EVENT_HANDLER_MAP[handler_name](
+                    handlers.HANDLER_MAP[handler_name](
                         network,
                         transit_schedule,
                         transit_vehicles,
@@ -97,7 +96,7 @@ def main(config):
         for handler_name, acts in config.plan_handlers.items():
             for act in acts:
                 active_plan_handlers.append(
-                    plan_handlers.PLAN_HANDLER_MAP[handler_name](
+                    handlers.HANDLER_MAP[handler_name](
                         act,
                         plans,
                         transit_schedule,

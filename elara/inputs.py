@@ -7,8 +7,54 @@ import gzip
 from io import BytesIO
 from math import floor
 
+from elara import HandlerInputError
 
 WGS_84 = pyproj.Proj(init="epsg:4326")
+
+
+class InputManager:
+
+    def __init__(self, config):
+        self.config = config
+
+    def validate_requirements(self, requirements):
+        for input_name in requirements:
+            if not hasattr(self, input_name):
+                raise HandlerInputError(f'Unknown input name: {input_name} found in handlers')
+
+    @property
+    def events(self):
+        return Events(self.config.events)
+
+    @property
+    def network(self):
+        return Network(self.config.network, self.config.crs)
+
+    @property
+    def transit_schedule(self):
+        return TransitSchedule(self.config.transit_schedule, self.config.crs)
+
+    @property
+    def transit_vehicles(self):
+        return TransitVehicles(self.config.transit_vehicles)
+
+    @property
+    def attributes(self):
+        return Attributes(self.config.attributes)
+
+    @property
+    def plans(self):
+        return Plans(self.config.plans, self.transit_schedule)
+
+    @property
+    def mode_hierarchy(self):
+        return ModeHierarchy()
+
+    @property
+    def mode_map(self):
+        return ModeMap()
+
+
 
 
 class Events:
@@ -18,28 +64,6 @@ class Events:
         :param path: Path to MATSim events XML file (.xml)
         """
         self.elems = get_elems(path, "event")
-
-
-class ModeMap:
-
-    modemap = {
-        "ferry": "ferry",
-        "rail": "rail",
-        "tram": "tram",
-        "bus": "bus",
-        "car": "car",
-        "bike": "bike",
-        "walk": "walk",
-        "transit_walk": "walk",
-        "access_walk": "walk",
-        "egress_walk": "walk"
-    }
-
-    def __getitem__(self, key: str) -> str:
-        if key in self.modemap:
-            return self.modemap[key]
-
-        raise KeyError(f"key:'{key}' not found in ModeMap")
 
 
 class Network:
@@ -357,6 +381,28 @@ class ModeHierarchy:
         mode = modes[mode_index]
         print(f"WARNING {modes} not in hierarchy, returning {mode}")
         return mode
+
+
+class ModeMap:
+
+    modemap = {
+        "ferry": "ferry",
+        "rail": "rail",
+        "tram": "tram",
+        "bus": "bus",
+        "car": "car",
+        "bike": "bike",
+        "walk": "walk",
+        "transit_walk": "walk",
+        "access_walk": "walk",
+        "egress_walk": "walk"
+    }
+
+    def __getitem__(self, key: str) -> str:
+        if key in self.modemap:
+            return self.modemap[key]
+
+        raise KeyError(f"key:'{key}' not found in ModeMap")
 
 
 def get_elems(path, tag):
