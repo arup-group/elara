@@ -7,71 +7,33 @@ import gzip
 from io import BytesIO
 from math import floor
 
-from elara import HandlerInputError
-
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
 
-class InputManager:
-
-    def __init__(self, config):
-        self.config = config
-
-    def validate_requirements(self, requirements):
-        for input_name in requirements:
-            if not hasattr(self, input_name):
-                raise HandlerInputError(f'Unknown input name: {input_name} found in handlers')
-
-    @property
-    def events(self):
-        return Events(self.config.events)
-
-    @property
-    def network(self):
-        return Network(self.config.network, self.config.crs)
-
-    @property
-    def transit_schedule(self):
-        return TransitSchedule(self.config.transit_schedule, self.config.crs)
-
-    @property
-    def transit_vehicles(self):
-        return TransitVehicles(self.config.transit_vehicles)
-
-    @property
-    def attributes(self):
-        return Attributes(self.config.attributes)
-
-    @property
-    def plans(self):
-        return Plans(self.config.plans, self.transit_schedule)
-
-    @property
-    def mode_hierarchy(self):
-        return ModeHierarchy()
-
-    @property
-    def mode_map(self):
-        return ModeMap()
-
-
-
-
 class Events:
-    def __init__(self, path):
+
+    requirements = ['events']
+
+    def __init__(self, resources):
         """
         Events object constructor.
         :param path: Path to MATSim events XML file (.xml)
         """
+        path = resources['events']
         self.elems = get_elems(path, "event")
 
 
 class Network:
-    def __init__(self, path, crs):
+
+    requirements = ['network', 'crs']
+
+    def __init__(self, resources):
         """
         Network object constructor.
         :param path: Path to MATSim network XML file (.xml)
         """
+        path = resources['network']
+        crs = resources['crs']
 
         # Extract element properties
         nodes = [
@@ -136,11 +98,16 @@ class Network:
 
 
 class TransitSchedule:
-    def __init__(self, path, crs):
+    requirements = ['transit_schedule', 'crs']
+
+    def __init__(self, resources):
         """
         Transit schedule object constructor.
         :param path: Path to MATSim transit schedule XML file (.xml)
         """
+
+        path = resources['transit_schedule']
+        crs = resources['crs']
 
         # Retrieve stop attributes
         stops = [
@@ -199,11 +166,15 @@ class TransitSchedule:
 
 
 class TransitVehicles:
-    def __init__(self, path):
+    requirements = ['transit_vehicles']
+
+    def __init__(self, resources):
         """
         Transit vehicles object constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml)
         """
+
+        path = resources['transit_vehicles']
 
         # Vehicle types to mode correspondence
         self.veh_type_mode_map = {
@@ -245,11 +216,15 @@ class TransitVehicles:
 
 
 class Attributes:
-    def __init__(self, path):
+    requirements = ['attributes']
+
+    def __init__(self, resources):
         """
         Population subpopulation attributes constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
         """
+
+        path = resources['attributes']
 
         # Attribute label mapping
         # TODO move model specific setup elsewhere
@@ -283,37 +258,20 @@ class Attributes:
 
 
 class Plans:
-    def __init__(self, path, transit_schedule):
+    requirements = ['plans']
+
+    def __init__(self, resources):
         """
         Plans object constructor.
         :param path: Path to MATSim events XML file (.xml)
         :param transit_schedule: TransitSchedule object
         """
+        path = resources['plans']
+
         self.elems = get_elems(path, "plan")
-        self.transit_schedule = transit_schedule
-
-        # self.hierarchy = [
-        #     'ferry',
-        #     'rail',
-        #     'tram',
-        #     'bus',
-        #     'car',
-        #     'bike',
-        #     'walk',
-        #     'transit_walk'
-        # ]
-
-        # # Build mode list
-        # self.modes_map = {
-        #     "transit_walk": "walk",
-        #     "access_walk": "walk",
-        #     "egress_walk": "walk",
-        #     "piggy_back": "walk"
-        # }
+        self.transit_schedule = TransitSchedule(resources)
 
         self.modes, self.activities = self.get_classes()
-
-        #assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
 
         # re-init elements
         self.elems = get_elems(path, "plan")
@@ -351,6 +309,8 @@ class Plans:
 
 class ModeHierarchy:
 
+    requirements = []
+
     hierarchy = [
         "ferry",
         "rail",
@@ -363,6 +323,9 @@ class ModeHierarchy:
         "access_walk",
         "egress_walk"
     ]
+
+    def __init__(self, resources):
+        pass
 
     def get(self, modes: list) -> str:
         if not isinstance(modes, list):
@@ -385,6 +348,8 @@ class ModeHierarchy:
 
 class ModeMap:
 
+    requirements = []
+
     modemap = {
         "ferry": "ferry",
         "rail": "rail",
@@ -397,6 +362,9 @@ class ModeMap:
         "access_walk": "walk",
         "egress_walk": "walk"
     }
+
+    def __init__(self, resources):
+        pass
 
     def __getitem__(self, key: str) -> str:
         if key in self.modemap:

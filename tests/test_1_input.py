@@ -4,7 +4,9 @@ import pytest
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config
+from elara.config import ConfigManager
+from elara.handlers import HandlerManager
+from elara.inputs import InputManager
 from elara import inputs
 sys.path.append(os.path.abspath('../tests'))
 
@@ -13,7 +15,11 @@ sys.path.append(os.path.abspath('../tests'))
 @pytest.fixture
 def test_xml_config():
     config_path = os.path.join('tests/test_xml_scenario.toml')
-    config = Config(config_path)
+    config = ConfigManager(config_path)
+    handler_manager = HandlerManager(config)
+    # input_manager = InputManager(config)
+    feeds, resources = handler_manager.requirements
+    config.load_required_paths(feeds + resources)
     assert config
     return config
 
@@ -21,7 +27,11 @@ def test_xml_config():
 @pytest.fixture
 def test_gzip_config():
     config_path = os.path.join('tests/test_gzip_scenario.toml')
-    config = Config(config_path)
+    config = ConfigManager(config_path)
+    handler_manager = HandlerManager(config)
+    # input_manager = InputManager(config)
+    feeds, resources = handler_manager.requirements
+    config.load_required_paths(feeds + resources)
     assert config
     return config
 

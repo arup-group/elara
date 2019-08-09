@@ -7,7 +7,7 @@ import lxml.etree as etree
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config
+from elara.config import ConfigManager
 from elara import inputs, handlers
 from elara.handlers.agent_plan_handlers import *
 sys.path.append(os.path.abspath('../tests'))
@@ -28,7 +28,7 @@ def test_convert_time(time, seconds):
 @pytest.fixture
 def config():
     config_path = os.path.join('tests/test_xml_scenario.toml')
-    return Config(config_path)
+    return ConfigManager(config_path)
 
 
 @pytest.fixture
@@ -39,6 +39,11 @@ def network(config):
 @pytest.fixture
 def mode_hierarchy():
     return inputs.ModeHierarchy()
+
+
+@pytest.fixture
+def mode_map():
+    return inputs.ModeMap()
 
 
 @pytest.fixture
@@ -65,37 +70,39 @@ def plans(config, transit_schedule):
     return inputs.Plans(config.plans_path, transit_schedule)
 
 
+@pytest.fixture
+def plan_handler_resources(plans, transit_schedule, attributes, mode_map, mode_hierarchy):
+    return {'plans': plans,
+            'transit_schedule': transit_schedule,
+            'attributes': attributes,
+            'mode_map': mode_map,
+            'mode_hierarchy': mode_hierarchy,
+            }
+
+
 # Mode Share
 @pytest.fixture
-def test_plan_modeshare_handler(
-        plans,
-        transit_schedule,
-        attributes,
-        mode_hierarchy,
-):
+def test_plan_modeshare_handler(plan_handler_resources):
     periods = 24
     handler = ModeShare(
-        'all',
-        plans,
-        transit_schedule,
-        attributes,
-        mode_hierarchy,
+        selection='all',
+        resources=plan_handler_resources,
         time_periods=periods,
-        scale_factor=0.01
+        scale_factor=0.01,
     )
-    assert len(handler.modes) == len(plans.modes)
+    assert len(handler.modes) == len(handler.plans.modes)
     assert list(handler.mode_indices.keys()) == handler.modes
 
-    assert len(handler.classes) == len(attributes.classes)
+    assert len(handler.classes) == len(handler.attributes.classes)
     assert list(handler.class_indices.keys()) == handler.classes
 
-    assert len(handler.activities) == len(plans.activities)
+    assert len(handler.activities) == len(handler.plans.activities)
     assert list(handler.activity_indices.keys()) == handler.activities
 
     assert handler.mode_counts.shape == (
-        len(plans.modes),
-        len(attributes.classes),
-        len(plans.activities),
+        len(handler.plans.modes),
+        len(handler.attributes.classes),
+        len(handler.plans.activities),
         periods)
 
     return handler

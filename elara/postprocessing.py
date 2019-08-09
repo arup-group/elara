@@ -1,10 +1,18 @@
 import os
-
 import geopandas
 import pandas as pd
 
+from elara.handlers.agent_plan_handlers import *
+from elara.handlers.network_event_handlers import *
+from elara import ConfigPostProcessorError, PostProcessorPrerequisiteError
+
 
 class PostProcessor:
+
+    requirements = ['volume_counts']
+
+    handler_prerequisite = None
+
     def __init__(self, config, network, transit_schedule, transit_vehicles):
         self.config = config
         self.network = network
@@ -17,8 +25,18 @@ class PostProcessor:
     def run(self):
         return NotImplementedError
 
+    def check_handler_prerequisite(self, handler_manager):
+        if self.handler_prerequisite and not sum(
+                [isinstance(h, self.handler_prerequisite) for h in handler_manager.all]
+        ):
+            raise PostProcessorPrerequisiteError(
+                f'Missing handler: {self.handler_prerequisite} for postprocessing')
+
 
 class VKT(PostProcessor):
+
+    handler_prerequisite = VolumeCounts
+
     def __init__(self, config, network, transit_schedule, transit_vehicles):
         super().__init__(config, network, transit_schedule, transit_vehicles)
 

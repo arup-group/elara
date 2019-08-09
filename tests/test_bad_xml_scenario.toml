@@ -14,6 +14,7 @@ attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
 
 [event_handlers]
+extra_counter = ["runner"]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
