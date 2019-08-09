@@ -79,13 +79,17 @@ def main(config):
             for mode in mode_list:
                 active_event_handlers.append(
                     handlers.HANDLER_MAP[handler_name](
-                        network,
-                        transit_schedule,
-                        transit_vehicles,
-                        attributes,
-                        mode,
-                        config.time_periods,
-                        config.scale_factor,
+                        mode=mode,
+                        act=None,
+                        network=network,
+                        transit_schedule=transit_schedule,
+                        transit_vehicles=transit_vehicles,
+                        attributes=attributes,
+                        plans=plans,
+                        mode_map=mode_map,
+                        mode_hierarchy=mode_hierarchy,
+                        time_periods=config.time_periods,
+                        scale_factor=config.scale_factor,
                     )
                 )
         spinner.succeed(f"{len(active_event_handlers)} event handlers prepared.")
@@ -97,13 +101,17 @@ def main(config):
             for act in acts:
                 active_plan_handlers.append(
                     handlers.HANDLER_MAP[handler_name](
-                        act,
-                        plans,
-                        transit_schedule,
-                        attributes,
-                        mode_hierarchy,
-                        config.time_periods,
-                        config.scale_factor,
+                        mode=None,
+                        act=act,
+                        network=network,
+                        transit_schedule=transit_schedule,
+                        transit_vehicles=transit_vehicles,
+                        attributes=attributes,
+                        plans=plans,
+                        mode_map=mode_map,
+                        mode_hierarchy=mode_hierarchy,
+                        time_periods=config.time_periods,
+                        scale_factor=config.scale_factor,
                     )
                 )
         spinner.succeed(f"{len(active_plan_handlers)} plan handlers prepared.")

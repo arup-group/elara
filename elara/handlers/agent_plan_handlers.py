@@ -23,44 +23,45 @@ class Legs:
 
 class ModeShare:
 
-    subscription = 'plans'
+    subscription = 'events'
 
-    requires = [
+    requirements = [
         'plans',
         'transit_schedule',
         'attributes',
+        'mode_map',
         'mode_hierarchy'
     ]
 
     def __init__(
             self,
-            act,
-            plans,
-            transit_schedule,
-            attributes,
-            mode_hierarchy,
+            resources,
+            selection,
             time_periods=24,
             scale_factor=1.0,
     ):
-        self.act = act
+        self.act = selection
+        self.plans = resources['plans']
+        self.transit_schedule = resources['transit_schedule']
+        self.attributes = resources['attributes']
+        self.mode_map = resources['mode_map']
+        self.mode_hierarchy = resources['mode_hierarchy']
+
         #TODO
         if self.act != "all":
             raise NotImplementedError(f'Not implemented filtering with {self.act} for modeshare')
 
-        self.transit_schedule = transit_schedule
-        self.attributes = attributes
         self.periods = time_periods
         self.scale_factor = scale_factor
-        self.mode_hierarchy = mode_hierarchy
 
         # Initialise mode classes
-        self.modes, self.mode_indices = self.generate_id_map(plans.modes)
+        self.modes, self.mode_indices = self.generate_id_map(self.plans.modes)
 
         # Initialise class classes
-        self.classes, self.class_indices = self.generate_id_map(attributes.classes)
+        self.classes, self.class_indices = self.generate_id_map(self.attributes.classes)
 
         # Initialise activity classes
-        self.activities, self.activity_indices = self.generate_id_map(plans.activities)
+        self.activities, self.activity_indices = self.generate_id_map(self.plans.activities)
         # TODO - don't need to keep pt interactions or modeshare
 
         # Initialise mode count table

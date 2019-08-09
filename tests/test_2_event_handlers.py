@@ -7,7 +7,7 @@ import lxml.etree as etree
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config
+from elara.config import ConfigManager
 from elara import inputs, handlers
 from elara.handlers.network_event_handlers import *
 sys.path.append(os.path.abspath('../tests'))
@@ -52,7 +52,7 @@ def test_df(test_list):
 @pytest.fixture
 def config():
     config_path = os.path.join('tests/test_xml_scenario.toml')
-    return Config(config_path)
+    return ConfigManager(config_path)
 
 
 @pytest.fixture
@@ -79,19 +79,25 @@ def transit_vehicles(config):
             )
 
 
+@pytest.fixture
+def event_handler_resources(network, transit_schedule, transit_vehicles, attributes):
+    return {'network': network,
+            'transit_schedule': transit_schedule,
+            'transit_vehicles': transit_vehicles,
+            'attributes': attributes,
+            }
+
+
 # Base
 @pytest.fixture
-def base_handler(network, transit_vehicles, transit_schedule, attributes):
+def base_handler(event_handler_resources):
     base_handler = handlers.network_event_handlers.Handler(
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        'car',
-        24,
-        0.01
+        selection='car',
+        resources=event_handler_resources,
+        time_periods=24,
+        scale_factor=0.01,
     )
-    assert base_handler.mode == 'car'
+    assert base_handler.selection == 'car'
     return base_handler
 
 
@@ -144,23 +150,21 @@ def bus_enters_link_event():
 # Volume Counts
 # Car
 @pytest.fixture
-def test_car_volume_count_handler(network, transit_vehicles, transit_schedule, attributes):
+def test_car_volume_count_handler(event_handler_resources):
     periods = 24
     handler = VolumeCounts(
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        'car',
-        periods,
-        0.01
+        selection='car',
+        resources=event_handler_resources,
+        time_periods=periods,
+        scale_factor=0.01,
     )
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(attributes.classes)
+    assert len(handler.classes) == len(handler.attributes.classes)
     assert list(handler.class_indices.keys()) == handler.classes
-    assert len(handler.elem_ids) == len(network.link_gdf)
+    assert len(handler.elem_ids) == len(handler.network.link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
-    assert handler.counts.shape == (len(network.link_gdf), len(attributes.classes), periods)
+    assert handler.counts.shape == (
+        len(handler.network.link_gdf), len(handler.attributes.classes), periods)
     return handler
 
 
@@ -210,21 +214,19 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
 
 # Bus
 @pytest.fixture
-def test_bus_volume_count_handler(network, transit_vehicles, transit_schedule, attributes):
+def test_bus_volume_count_handler(event_handler_resources):
     periods = 24
     handler = VolumeCounts(
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        'bus',
-        periods,
-        0.01
+        selection='bus',
+        resources=event_handler_resources,
+        time_periods=periods,
+        scale_factor=0.01,
     )
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(attributes.classes)
+    assert len(handler.classes) == len(handler.attributes.classes)
     assert list(handler.class_indices.keys()) == handler.classes
-    assert handler.counts.shape == (len(network.link_gdf), len(attributes.classes), periods)
+    assert handler.counts.shape == (
+        len(handler.network.link_gdf), len(handler.attributes.classes), periods)
     return handler
 
 
@@ -279,23 +281,20 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 
 
 # Passenger Counts Handler Tests
-
 @pytest.fixture
-def test_bus_passenger_count_handler(network, transit_vehicles, transit_schedule, attributes):
+def test_bus_passenger_count_handler(event_handler_resources):
     periods = 24
     handler = PassengerCounts(
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        'bus',
-        periods,
-        0.01
+        selection='bus',
+        resources=event_handler_resources,
+        time_periods=periods,
+        scale_factor=0.01,
     )
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(attributes.classes)
+    assert len(handler.classes) == len(handler.attributes.classes)
     assert list(handler.class_indices.keys()) == handler.classes
-    assert handler.counts.shape == (len(network.link_gdf), len(attributes.classes), periods)
+    assert handler.counts.shape == (
+        len(handler.network.link_gdf), len(handler.attributes.classes), periods)
     return handler
 
 
@@ -422,25 +421,21 @@ def test_passenger_count_finalise_bus(
 
 
 # Stop Interactions
-
 @pytest.fixture
-def test_bus_passenger_interaction_handler(network, transit_vehicles, transit_schedule, attributes):
+def test_bus_passenger_interaction_handler(event_handler_resources):
     periods = 24
     handler = StopInteractions(
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        'bus',
-        periods,
-        0.01
+        selection='bus',
+        resources=event_handler_resources,
+        time_periods=periods,
+        scale_factor=0.01,
     )
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(attributes.classes)
+    assert len(handler.classes) == len(handler.attributes.classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.boardings.shape == (
-        len(transit_schedule.stop_gdf),
-        len(attributes.classes),
+        len(handler.transit_schedule.stop_gdf),
+        len(handler.attributes.classes),
         periods
     )
     return handler

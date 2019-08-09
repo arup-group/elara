@@ -11,16 +11,16 @@ __all__ = [
 
 
 class Handler:
+    subscription = None
+    requirements = []
+
     def __init__(
-        self,
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        mode,
-        periods=24,
-        scale_factor=1.0,
-    ):
+            self,
+            resources: dict = {},
+            selection: str = None,
+            time_periods: int = 24,
+            scale_factor: float = 1.0,
+    ) -> None:
         """
         Generic handler for events.
         :param network: Network object
@@ -30,12 +30,9 @@ class Handler:
         :param scale_factor: Scenario run sample size
         """
 
-        self.network = network
-        self.transit_schedule = transit_schedule
-        self.transit_vehicles = transit_vehicles
-        self.attributes = attributes
-        self.mode = mode
-        self.periods = periods
+        self.resources = resources
+        self.selection = selection
+        self.periods = time_periods
         self.scale_factor = scale_factor
 
         # Initialise results storage
@@ -62,9 +59,9 @@ class Handler:
         :param vehicle_id: Vehicle ID string
         :return: Vehicle mode type string
         """
-        if vehicle_id in self.transit_vehicles.veh_id_veh_type_map.keys():
-            return self.transit_vehicles.veh_type_mode_map[
-                self.transit_vehicles.veh_id_veh_type_map[vehicle_id]
+        if vehicle_id in self.resources['transit_vehicles'].veh_id_veh_type_map.keys():
+            return self.resources['transit_vehicles'].veh_type_mode_map[
+                self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id]
             ]
         else:
             return "car"
@@ -99,7 +96,8 @@ class VolumeCounts(Handler):
 
     subscription = 'events'
 
-    requires = [
+    requirements = [
+        'events',
         'network',
         'transit_schedule',
         'transit_vehicles',
@@ -108,17 +106,23 @@ class VolumeCounts(Handler):
 
     def __init__(
         self,
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        mode,
-        periods=24,
+        resources,
+        selection,
+        time_periods=24,
         scale_factor=1.0,
     ):
         super().__init__(
-            network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
+            resources,
+            selection,
+            time_periods,
+            scale_factor,
         )
+
+        self.mode = selection
+        self.network = resources['network']
+        self.transit_schedule = resources['transit_schedule']
+        self.transit_vehicles = resources['transit_vehicles']
+        self.attributes = resources['attributes']
 
         # # generate index and map for attribute dimension
         # if mode == "car":
@@ -131,7 +135,7 @@ class VolumeCounts(Handler):
         #     self.classes, self.class_indices = self.generate_elem_ids([mode])
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
+        self.classes, self.class_indices = self.generate_elem_ids(self.attributes.classes)
 
         # generate index and map for network link dimension
         self.elem_gdf = self.network.link_gdf
@@ -140,7 +144,7 @@ class VolumeCounts(Handler):
         # Initialise volume count table
         self.counts = np.zeros((len(self.elem_indices),
                                 len(self.classes),
-                                periods))
+                                self.periods))
 
     def process_event(self, elem):
         """
@@ -211,7 +215,8 @@ class PassengerCounts(Handler):
 
     subscription = 'events'
 
-    requires = [
+    requirements = [
+        'events',
         'network',
         'transit_schedule',
         'transit_vehicles',
@@ -219,25 +224,31 @@ class PassengerCounts(Handler):
     ]
 
     def __init__(
-        self,
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        mode,
-        periods=24,
-        scale_factor=1.0,
+            self,
+            resources,
+            selection,
+            time_periods=24,
+            scale_factor=1.0,
     ):
         super().__init__(
-            network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
+            resources,
+            selection,
+            time_periods,
+            scale_factor,
         )
 
+        self.mode = selection
+        self.network = resources['network']
+        self.transit_schedule = resources['transit_schedule']
+        self.transit_vehicles = resources['transit_vehicles']
+        self.attributes = resources['attributes']
+
         # Check for car
-        if mode == 'car':
+        if self.mode == 'car':
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
+        self.classes, self.class_indices = self.generate_elem_ids(self.attributes.classes)
 
         # Initialise element attributes
         self.elem_gdf = self.network.link_gdf
@@ -246,7 +257,7 @@ class PassengerCounts(Handler):
         # Initialise passenger count table
         self.counts = np.zeros((len(self.elem_ids),
                                 len(self.classes),
-                                periods))
+                                self.periods))
 
         # Initialise vehicle occupancy mapping
         self.veh_occupancy = dict()  # vehicle_id : occupancy
@@ -349,7 +360,8 @@ class StopInteractions(Handler):
 
     subscription = 'events'
 
-    requires = [
+    requirements = [
+        'events',
         'network',
         'transit_schedule',
         'transit_vehicles',
@@ -357,25 +369,31 @@ class StopInteractions(Handler):
     ]
 
     def __init__(
-        self,
-        network,
-        transit_schedule,
-        transit_vehicles,
-        attributes,
-        mode,
-        periods=24,
-        scale_factor=1.0,
+            self,
+            resources,
+            selection,
+            time_periods=24,
+            scale_factor=1.0,
     ):
         super().__init__(
-            network, transit_schedule, transit_vehicles, attributes, mode, periods, scale_factor
+            resources,
+            selection,
+            time_periods,
+            scale_factor,
         )
 
+        self.mode = selection
+        self.network = resources['network']
+        self.transit_schedule = resources['transit_schedule']
+        self.transit_vehicles = resources['transit_vehicles']
+        self.attributes = resources['attributes']
+
         # Check for car
-        if mode == 'car':
+        if self.mode == 'car':
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
+        self.classes, self.class_indices = self.generate_elem_ids(self.attributes.classes)
 
         # Initialise element attributes
         self.elem_gdf = self.transit_schedule.stop_gdf
@@ -384,10 +402,10 @@ class StopInteractions(Handler):
         # Initialise results tables
         self.boardings = np.zeros((len(self.elem_indices),
                                    len(self.class_indices),
-                                   periods))
+                                   self.periods))
         self.alightings = np.zeros((len(self.elem_indices),
                                     len(self.class_indices),
-                                    periods))
+                                    self.periods))
 
         # Initialise agent status mapping
         self.agent_status = dict()  # agent_id : [origin_stop, destination_stop]

@@ -1,9 +1,9 @@
 import os.path
 import toml
-from elara import ConfigInputError
 
 
 class Config:
+
     def __init__(self, path):
         """
         Config object constructor.
@@ -19,71 +19,81 @@ class Config:
         self.scale_factor = self.valid_scale_factor(
             self.parsed_toml["scenario"]["scale_factor"]
         )
-        self.crs = self.parsed_toml["scenario"]["crs"]
         self.verbose = self.parsed_toml["scenario"]["verbose"]
 
         # Handler objects
-        self.event_handlers = self.parsed_toml["event_handlers"]
-        self.plan_handlers = self.parsed_toml["plan_handlers"]
+        self.event_handlers = self.parsed_toml.get("event_handlers", {})
+        self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
 
         # Output settings
         self.output_path = self.parsed_toml["outputs"]["path"]
-        self.contract = self.parsed_toml["outputs"]["contract"]
-        self.post_processing = self.parsed_toml["outputs"]["post_processing"]
+        self.contract = self.parsed_toml["outputs"].get("contract", False)
+        self.post_processing = self.parsed_toml["outputs"].get("post_processing", [])
+        self.benchmarks = self.parsed_toml["benchmarking"].get("benchmarks", [])
 
-        # Benchmark settings
-        self.benchmarks = self.parsed_toml["benchmarking"]["benchmarks"]
-
-        self.events_path = None
-
-    def validate_required_paths(self, requirements):
-        for requirement in requirements:
-            if not hasattr(self, requirement):
-                raise ConfigInputError(f'Missing input path: {requirement} found in requirements')
+    @property
+    def crs(self):
+        return self.parsed_toml["scenario"]["crs"]
 
     @property
     def events(self):
+        return self.events_path
+
+    @property
+    def plans(self):
+        return self.plans_path
+
+    @property
+    def network(self):
+        return self.network_path
+
+    @property
+    def attributes(self):
+        return self.attributes_path
+
+    @property
+    def transit_schedule(self):
+        return self.transit_schedule_path
+
+    @property
+    def transit_vehicles(self):
+        return self.transit_vehicles_path
+
+    @property
+    def events_path(self):
         return self.valid_path(
             self.parsed_toml["inputs"]["events"], "events"
         )
 
     @property
-    def plans(self):
+    def plans_path(self):
         return self.valid_path(
             self.parsed_toml["inputs"]["plans"], "plans"
         )
 
     @property
-    def network(self):
+    def network_path(self):
         return self.valid_path(
             self.parsed_toml["inputs"]["network"], "network"
         )
 
     @property
-    def attributes(self):
+    def attributes_path(self):
         return self.valid_path(
             self.parsed_toml["inputs"]["attributes"], "attributes"
         )
 
     @property
-    def transit_schedule(self):
+    def transit_schedule_path(self):
         return self.valid_path(
             self.parsed_toml["inputs"]["transit_schedule"], "transit_schedule"
         )
 
     @property
-    def transit_vehicles(self):
+    def transit_vehicles_path(self):
         return self.valid_path(
             self.parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
         )
-
-    @property
-    def mode_hierarchy(self):
-        return 'place_holder'
-
-    @property
-    def mode_map(self):
-        return 'place_holder'
 
     @staticmethod
     def valid_time_periods(inp):

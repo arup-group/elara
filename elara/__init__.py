@@ -9,22 +9,43 @@ def get_benchmark_data(path):
     return os.path.join(_ROOT, 'benchmark_data', path)
 
 
-class HandlerConfigError(KeyError):
+class ConfigError(KeyError):
     """
-    Incorrect handler name configuration resulting in KeyError.
+   Configuration error resulting in KeyError.
+   """
+    pass
+
+
+class ConfigHandlerError(ConfigError):
+    """
+    Unrecognised handler name in configuration resulting in KeyError.
     """
     pass
 
 
-class HandlerInputError(KeyError):
+class ConfigInputError(ConfigError):
     """
-    Unknown input requirement resulting in KeyError.
+    Unrecognised input name in handler requirements resulting in KeyError.
     """
     pass
 
 
-class ConfigInputError(KeyError):
+class ConfigPostProcessorError(ConfigError):
     """
-    Config has found unknown input path requirement resulting in KeyError.
+    Unrecognised postprocessor name in configuration resulting in KeyError.
+    """
+    pass
+
+
+class PostProcessorPrerequisiteError(ConfigError):
+    """
+    Missing post processor prerequisite handler resulting in ConfigError
+    """
+    pass
+
+
+class ConfigBenchmarkError(ConfigError):
+    """
+    Unrecognised benchmark name in configuration resulting in KeyError.
     """
     pass

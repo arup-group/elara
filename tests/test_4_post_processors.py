@@ -7,7 +7,7 @@ import lxml.etree as etree
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config
+from elara.config import ConfigManager
 from elara import inputs, postprocessing
 sys.path.append(os.path.abspath('../tests'))
 
@@ -23,7 +23,7 @@ def test_generate_period_headers():
 @pytest.fixture
 def config():
     config_path = os.path.join('tests/test_xml_scenario.toml')
-    return Config(config_path)
+    return ConfigManager(config_path)
 
 
 @pytest.fixture

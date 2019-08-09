@@ -3,12 +3,12 @@ import os
 import pytest
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config
+from elara.config import ConfigManager
 from elara import benchmarking
 sys.path.append(os.path.abspath('../tests'))
 
 config_path = os.path.join('tests/test_xml_scenario.toml')
-config = Config(config_path)
+config = ConfigManager(config_path)
 
 
 def test_town_hourly_in_cordon_score_zero():
