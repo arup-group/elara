@@ -21,10 +21,13 @@ stop_interactions = ["bus", "train"]
 [plan_handlers]
 mode_share = ["all"]
 
-[outputs]
-path = "./tests/test_outputs"
-contract = true
-post_processing = ["vkt"]
+[post_processors]
+vkt = ["car"]
 
 [benchmarking]
 benchmarks = ["london_inner_cordon_car"]
+
+[outputs]
+path = "./tests/test_outputs"
+contract = true
+

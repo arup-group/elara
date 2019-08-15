@@ -9,7 +9,7 @@ import lxml.etree as etree
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import ConfigManager
 from elara import inputs, handlers
-from elara.handlers.agent_plan_handlers import *
+from elara.handlers.plan_handlers import *
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -22,7 +22,7 @@ test_mastim_time_data = [
 
 @pytest.mark.parametrize("time,seconds", test_mastim_time_data)
 def test_convert_time(time, seconds):
-    assert handlers.agent_plan_handlers.convert_time(time) == seconds
+    assert handlers.plan_handlers.convert_time(time) == seconds
 
 
 @pytest.fixture

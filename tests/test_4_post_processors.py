@@ -7,7 +7,7 @@ import lxml.etree as etree
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import ConfigManager
+from elara.config import Config
 from elara import inputs, postprocessing
 sys.path.append(os.path.abspath('../tests'))
 
@@ -23,12 +23,18 @@ def test_generate_period_headers():
 @pytest.fixture
 def config():
     config_path = os.path.join('tests/test_xml_scenario.toml')
-    return ConfigManager(config_path)
+    return Config(config_path)
+
+paths = {
+    'network_path': config.network_path,
+    'transit_schedule_path': config.transit_schedule_path,
+    'transit_vehicles_path': config.transit_vehicles_path,
+}
 
 
 @pytest.fixture
 def network(config):
-    return inputs.Network(config.network_path, config.crs)
+    return inputs.Network(resources)
 
 
 @pytest.fixture

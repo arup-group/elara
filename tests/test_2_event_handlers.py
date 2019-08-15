@@ -9,7 +9,7 @@ import lxml.etree as etree
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import ConfigManager
 from elara import inputs, handlers
-from elara.handlers.network_event_handlers import *
+from elara.handlers.event_handlers import *
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -23,7 +23,7 @@ test_floor_data = [
 
 @pytest.mark.parametrize("seconds,hour", test_floor_data)
 def test_table_position_floor(seconds, hour):
-    assert handlers.network_event_handlers.table_position(
+    assert handlers.event_handlers.table_position(
         elem_indices={1: 0},
         class_indices={1: 0},
         periods=24,
@@ -91,7 +91,7 @@ def event_handler_resources(network, transit_schedule, transit_vehicles, attribu
 # Base
 @pytest.fixture
 def base_handler(event_handler_resources):
-    base_handler = handlers.network_event_handlers.Handler(
+    base_handler = handlers.event_handlers.Handler(
         selection='car',
         resources=event_handler_resources,
         time_periods=24,

@@ -1,5 +1,6 @@
 import os.path
 import toml
+from elara.factory import WorkStation, Tool
 
 
 class Config:
@@ -21,43 +22,22 @@ class Config:
         )
         self.verbose = self.parsed_toml["scenario"]["verbose"]
 
-        # Handler objects
+        # Factory objects
         self.event_handlers = self.parsed_toml.get("event_handlers", {})
         self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
+        self.post_processors = self.parsed_toml.get("post_processors", {})
+        self.benchmarks = self.parsed_toml["benchmarking"].get("benchmarks", [])
 
         # Output settings
         self.output_path = self.parsed_toml["outputs"]["path"]
         self.contract = self.parsed_toml["outputs"].get("contract", False)
-        self.post_processing = self.parsed_toml["outputs"].get("post_processing", [])
-        self.benchmarks = self.parsed_toml["benchmarking"].get("benchmarks", [])
+
+    def get_requirements(self):
+        raise NotImplementedError
 
     @property
     def crs(self):
         return self.parsed_toml["scenario"]["crs"]
-
-    @property
-    def events(self):
-        return self.events_path
-
-    @property
-    def plans(self):
-        return self.plans_path
-
-    @property
-    def network(self):
-        return self.network_path
-
-    @property
-    def attributes(self):
-        return self.attributes_path
-
-    @property
-    def transit_schedule(self):
-        return self.transit_schedule_path
-
-    @property
-    def transit_vehicles(self):
-        return self.transit_vehicles_path
 
     @property
     def events_path(self):
@@ -134,3 +114,88 @@ class Config:
         if not os.path.exists(path):
             raise Exception("Specified path for {} does not exist".format(field_name))
         return path
+
+
+class GetCRS(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.crs
+
+
+class GetEventsPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.events_path
+
+
+class GetPlansPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.plans_path
+
+
+class GetNetworkPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.network_path
+
+
+class GetAttributesPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.attributes_path
+
+
+class GetTransitSchedulePath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.transit_schedule_path
+
+
+class GetTransitVehiclesPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.transit_vehicles_path
+
+
+class Paths(WorkStation):
+    tools = {
+        'crs': GetCRS,
+        'events_path': GetEventsPath,
+        'plans_path': GetPlansPath,
+        'network_path': GetNetworkPath,
+        'attributes_path': GetAttributesPath,
+        'transit_schedule_path': GetTransitSchedulePath,
+        'transit_vehicles_path': GetTransitVehiclesPath,
+    }
+
+    def load_all_paths(self):
+        for name, tool in self.tools.items():
+            self.resources[name] = tool(self.config, None)
+
+
+class Requirements(WorkStation):
+
+    tools = None
+
+    def get_requirements(self):
+        reqs = {}
+        reqs.update(self.config.event_handlers)
+        reqs.update(self.config.plan_handlers)
+        reqs.update(self.config.post_processors)
+        # todo add benchmarking
+        return reqs
