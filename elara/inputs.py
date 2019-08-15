@@ -7,33 +7,37 @@ import gzip
 from io import BytesIO
 from math import floor
 
+from elara.factory import Tool
+
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
 
-class Events:
+class Events(Tool):
 
-    requirements = ['events']
+    requirements = ['events_path']
 
-    def __init__(self, resources):
+    def build(self, resources):
         """
         Events object constructor.
         :param path: Path to MATSim events XML file (.xml)
         """
-        path = resources['events']
+        path = resources['events_path'].path
         self.elems = get_elems(path, "event")
 
 
-class Network:
+class Network(Tool):
 
-    requirements = ['network', 'crs']
+    requirements = ['network_path', 'crs']
+    node_gdf = None
+    link_gdf = None
 
-    def __init__(self, resources):
+    def build(self, resources):
         """
         Network object constructor.
         :param path: Path to MATSim network XML file (.xml)
         """
-        path = resources['network']
-        crs = resources['crs']
+        path = resources['network_path'].path
+        crs = resources['crs'].path
 
         # Extract element properties
         nodes = [
@@ -44,7 +48,6 @@ class Network:
             self.transform_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
-
         # Generate empty geodataframes
         node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
@@ -97,23 +100,30 @@ class Network:
         }
 
 
-class TransitSchedule:
-    requirements = ['transit_schedule', 'crs']
+class TransitSchedule(Tool):
+    requirements = ['transit_schedule_path', 'crs']
+    stop_gdf = None
+    mode_map = None
+    modes = None
 
-    def __init__(self, resources):
+    def build(self, resources):
         """
         Transit schedule object constructor.
         :param path: Path to MATSim transit schedule XML file (.xml)
         """
 
-        path = resources['transit_schedule']
-        crs = resources['crs']
+        path = resources['transit_schedule_path'].path
+        crs = resources['crs'].path
+
+        print(path, crs)
 
         # Retrieve stop attributes
         stops = [
             self.transform_stop_elem(elem, crs)
             for elem in get_elems(path, "stopFacility")
         ]
+
+        print(len(stops))
 
         # Generate empty geodataframes
         stop_df = pd.DataFrame(stops)
@@ -165,16 +175,21 @@ class TransitSchedule:
         return route_id, mode
 
 
-class TransitVehicles:
-    requirements = ['transit_vehicles']
+class TransitVehicles(Tool):
+    requirements = ['transit_vehicles_path']
+    veh_type_mode_map = None
+    veh_type_capacity_map = None
+    types = None
+    veh_id_veh_type_map = None
+    transit_vehicle_counts = None
 
-    def __init__(self, resources):
+    def build(self, resources):
         """
         Transit vehicles object constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml)
         """
 
-        path = resources['transit_vehicles']
+        path = resources['transit_vehicles_path'].path
 
         # Vehicle types to mode correspondence
         self.veh_type_mode_map = {
@@ -215,16 +230,20 @@ class TransitVehicles:
         return id, seated_capacity + standing_capacity
 
 
-class Attributes:
-    requirements = ['attributes']
+class Attributes(Tool):
+    requirements = ['attributes_path']
+    final_attribute_map = None
+    map = None
+    classes = None
+    attribute_count_map = None
 
-    def __init__(self, resources):
+    def build(self, resources):
         """
         Population subpopulation attributes constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
         """
 
-        path = resources['attributes']
+        path = resources['attributes_path'].path
 
         # Attribute label mapping
         # TODO move model specific setup elsewhere
@@ -257,19 +276,25 @@ class Attributes:
         return ident, attribute
 
 
-class Plans:
-    requirements = ['plans']
+class Plans(Tool):
+    requirements = ['plans_path']
+    elems = None
+    transit_schedule = None
+    modes = None
+    activities = None
+    agents = None
 
-    def __init__(self, resources):
+    def build(self, resources):
         """
         Plans object constructor.
         :param path: Path to MATSim events XML file (.xml)
         :param transit_schedule: TransitSchedule object
         """
-        path = resources['plans']
+        path = resources['plans_path'].path
 
         self.elems = get_elems(path, "plan")
-        self.transit_schedule = TransitSchedule(resources)
+        self.transit_schedule = TransitSchedule(self.config)
+        self.transit_schedule.build(resources)
 
         self.modes, self.activities = self.get_classes()
 
@@ -307,7 +332,7 @@ class Plans:
         return list(modes), list(activities)
 
 
-class ModeHierarchy:
+class ModeHierarchy(Tool):
 
     requirements = []
 
@@ -323,9 +348,6 @@ class ModeHierarchy:
         "access_walk",
         "egress_walk"
     ]
-
-    def __init__(self, resources):
-        pass
 
     def get(self, modes: list) -> str:
         if not isinstance(modes, list):
@@ -346,7 +368,7 @@ class ModeHierarchy:
         return mode
 
 
-class ModeMap:
+class ModeMap(Tool):
 
     requirements = []
 
@@ -362,9 +384,6 @@ class ModeMap:
         "access_walk": "walk",
         "egress_walk": "walk"
     }
-
-    def __init__(self, resources):
-        pass
 
     def __getitem__(self, key: str) -> str:
         if key in self.modemap:

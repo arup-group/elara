@@ -2,16 +2,10 @@ import os
 import geopandas
 import pandas as pd
 
-from elara.handlers.agent_plan_handlers import *
-from elara.handlers.network_event_handlers import *
-from elara import ConfigPostProcessorError, PostProcessorPrerequisiteError
+from elara.factory import WorkStation, Tool
 
 
-class PostProcessor:
-
-    requirements = ['volume_counts']
-
-    handler_prerequisite = None
+class PostProcessor(Tool):
 
     def __init__(self, config, network, transit_schedule, transit_vehicles):
         self.config = config
@@ -22,23 +16,13 @@ class PostProcessor:
     def check_prerequisites(self):
         return NotImplementedError
 
-    def run(self):
+    def build(self, resource):
         return NotImplementedError
-
-    def check_handler_prerequisite(self, handler_manager):
-        if self.handler_prerequisite and not sum(
-                [isinstance(h, self.handler_prerequisite) for h in handler_manager.all]
-        ):
-            raise PostProcessorPrerequisiteError(
-                f'Missing handler: {self.handler_prerequisite} for postprocessing')
 
 
 class VKT(PostProcessor):
-
-    handler_prerequisite = VolumeCounts
-
-    def __init__(self, config, network, transit_schedule, transit_vehicles):
-        super().__init__(config, network, transit_schedule, transit_vehicles)
+    req = ['volume_counts']
+    valid_options = ['car', 'bus', 'train', 'subway', 'ferry']
 
     def check_prerequisites(self):
         return (
@@ -46,29 +30,32 @@ class VKT(PostProcessor):
             and len(self.config.event_handlers["volume_counts"]) > 0
         )
 
-    def run(self):
-        for mode in self.config.event_handlers["volume_counts"]:
-            file_name = "{}_volume_counts_{}_total.geojson".format(self.config.name, mode)
-            file_path = os.path.join(self.config.output_path, file_name)
-            volumes_gdf = geopandas.read_file(file_path)
+    def build(self, resource: dict):
+        super(Tool).build(resource)
 
-            # Calculate VKT
-            period_headers = generate_period_headers(self.config.time_periods)
-            volumes = volumes_gdf[period_headers]
-            link_lengths = volumes_gdf["length"].values / 1000  # Conversion to metres
-            vkt = volumes.multiply(link_lengths, axis=0)
-            vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
+        mode = self.option
 
-            # Export results
-            csv_path = os.path.join(
-                self.config.output_path, "{}_vkt_{}.csv".format(self.config.name, mode)
-            )
-            geojson_path = os.path.join(
-                self.config.output_path,
-                "{}_vkt_{}.geojson".format(self.config.name, mode),
-            )
-            vkt_gdf.drop("geometry", axis=1).to_csv(csv_path)
-            export_geojson(vkt_gdf, geojson_path)
+        file_name = "{}_volume_counts_{}_total.geojson".format(self.config.name, mode)
+        file_path = os.path.join(self.config.output_path, file_name)
+        volumes_gdf = geopandas.read_file(file_path)
+
+        # Calculate VKT
+        period_headers = generate_period_headers(self.config.time_periods)
+        volumes = volumes_gdf[period_headers]
+        link_lengths = volumes_gdf["length"].values / 1000  # Conversion to metres
+        vkt = volumes.multiply(link_lengths, axis=0)
+        vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
+
+        # Export results
+        csv_path = os.path.join(
+            self.config.output_path, "{}_vkt_{}.csv".format(self.config.name, mode)
+        )
+        geojson_path = os.path.join(
+            self.config.output_path,
+            "{}_vkt_{}.geojson".format(self.config.name, mode),
+        )
+        vkt_gdf.drop("geometry", axis=1).to_csv(csv_path)
+        export_geojson(vkt_gdf, geojson_path)
 
 
 def generate_period_headers(time_periods):
@@ -93,3 +80,11 @@ def export_geojson(gdf, path):
 
 # Dictionary used to map configuration string to post-processor type
 POST_PROCESSOR_MAP = {"vkt": VKT}
+
+
+class PostProcessing(WorkStation):
+
+    tools = {
+        'vkt': VKT,
+    }
+

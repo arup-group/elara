@@ -1,5 +1,5 @@
-from elara.handlers.agent_plan_handlers import *
-from elara.handlers.network_event_handlers import *
+from elara.handlers.plan_handlers import *
+from elara.handlers.event_handlers import *
 
 
 HANDLER_MAP = {
