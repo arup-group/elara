@@ -7,7 +7,7 @@ import gzip
 from io import BytesIO
 from math import floor
 
-from elara.factory import Tool
+from elara.factory import WorkStation, Tool
 
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
@@ -21,6 +21,8 @@ class Events(Tool):
         Events object constructor.
         :param path: Path to MATSim events XML file (.xml)
         """
+        super().build(resources)
+
         path = resources['events_path'].path
         self.elems = get_elems(path, "event")
 
@@ -36,6 +38,8 @@ class Network(Tool):
         Network object constructor.
         :param path: Path to MATSim network XML file (.xml)
         """
+        super().build(resources)
+
         path = resources['network_path'].path
         crs = resources['crs'].path
 
@@ -111,19 +115,16 @@ class TransitSchedule(Tool):
         Transit schedule object constructor.
         :param path: Path to MATSim transit schedule XML file (.xml)
         """
+        super().build(resources)
 
         path = resources['transit_schedule_path'].path
         crs = resources['crs'].path
-
-        print(path, crs)
 
         # Retrieve stop attributes
         stops = [
             self.transform_stop_elem(elem, crs)
             for elem in get_elems(path, "stopFacility")
         ]
-
-        print(len(stops))
 
         # Generate empty geodataframes
         stop_df = pd.DataFrame(stops)
@@ -188,6 +189,7 @@ class TransitVehicles(Tool):
         Transit vehicles object constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml)
         """
+        super().build(resources)
 
         path = resources['transit_vehicles_path'].path
 
@@ -242,6 +244,7 @@ class Attributes(Tool):
         Population subpopulation attributes constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
         """
+        super().build(resources)
 
         path = resources['attributes_path'].path
 
@@ -290,6 +293,8 @@ class Plans(Tool):
         :param path: Path to MATSim events XML file (.xml)
         :param transit_schedule: TransitSchedule object
         """
+        super().build(resources)
+
         path = resources['plans_path'].path
 
         self.elems = get_elems(path, "plan")
@@ -390,6 +395,19 @@ class ModeMap(Tool):
             return self.modemap[key]
 
         raise KeyError(f"key:'{key}' not found in ModeMap")
+
+
+class InputWorkStation(WorkStation):
+    tools = {
+        'events': Events,
+        'network': Network,
+        'transit_schedule': TransitSchedule,
+        'transit_vehicles': TransitVehicles,
+        'attributes': Attributes,
+        'plans': Plans,
+        'mode_map': ModeMap,
+        'mode_hierarchy': ModeHierarchy,
+    }
 
 
 def get_elems(path, tag):

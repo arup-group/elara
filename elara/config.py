@@ -172,7 +172,7 @@ class GetTransitVehiclesPath(Tool):
         self.path = self.config.transit_vehicles_path
 
 
-class Paths(WorkStation):
+class PathWorkStation(WorkStation):
     tools = {
         'crs': GetCRS,
         'events_path': GetEventsPath,
@@ -182,10 +182,6 @@ class Paths(WorkStation):
         'transit_schedule_path': GetTransitSchedulePath,
         'transit_vehicles_path': GetTransitVehiclesPath,
     }
-
-    def load_all_paths(self):
-        for name, tool in self.tools.items():
-            self.resources[name] = tool(self.config, None)
 
 
 class Requirements(WorkStation):

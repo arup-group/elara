@@ -1,7 +1,9 @@
 import numpy as np
 from math import floor
 import pandas as pd
+import os
 
+from elara.factory import Tool, WorkStation
 
 __all__ = [
     'Activities',
@@ -10,20 +12,29 @@ __all__ = [
 ]
 
 
-class Activities:
+class PlanHandler(Tool):
+    results = dict()
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+
+        # TODO
+        if self.option != "all":
+            raise NotImplementedError(f'Not implemented option: {self.option} for modeshare')
+
+
+class Activities(PlanHandler):
 
     def __init__(self):
         raise NotImplementedError
 
 
-class Legs:
+class Legs(PlanHandler):
     def __init__(self):
         raise NotImplementedError
 
 
-class ModeShare:
-
-    subscription = 'events'
+class ModeShare(PlanHandler):
 
     requirements = [
         'plans',
@@ -32,43 +43,44 @@ class ModeShare:
         'mode_map',
         'mode_hierarchy'
     ]
+    valid_options = ['all']
 
-    def __init__(
-            self,
-            resources,
-            selection,
-            time_periods=24,
-            scale_factor=1.0,
-    ):
-        self.act = selection
-        self.plans = resources['plans']
-        self.transit_schedule = resources['transit_schedule']
-        self.attributes = resources['attributes']
-        self.mode_map = resources['mode_map']
-        self.mode_hierarchy = resources['mode_hierarchy']
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.modes = None
+        self.mode_indices = None
+        self.classes = None
+        self.class_indices = None
+        self.activities = None
+        self.activity_indices = None
+        self.mode_counts = None
+        self.results = None
 
-        #TODO
-        if self.act != "all":
-            raise NotImplementedError(f'Not implemented filtering with {self.act} for modeshare')
+        # Initialise results storage
+        self.results = dict()  # Result geodataframes ready to export
 
-        self.periods = time_periods
-        self.scale_factor = scale_factor
+    def build(self, resources):
+        super().build(resources)
 
         # Initialise mode classes
-        self.modes, self.mode_indices = self.generate_id_map(self.plans.modes)
+        self.modes, self.mode_indices = self.generate_id_map(self.resources['plans'].modes)
 
         # Initialise class classes
-        self.classes, self.class_indices = self.generate_id_map(self.attributes.classes)
+        self.classes, self.class_indices = self.generate_id_map(
+            self.resources['attributes'].classes
+        )
 
         # Initialise activity classes
-        self.activities, self.activity_indices = self.generate_id_map(self.plans.activities)
-        # TODO - don't need to keep pt interactions or modeshare
+        self.activities, self.activity_indices = self.generate_id_map(
+            self.resources['plans'].activities
+        )
+        # TODO - don't need to keep pt interactions or/for modeshare
 
         # Initialise mode count table
         self.mode_counts = np.zeros((len(self.modes),
                                     len(self.classes),
                                     len(self.activities),
-                                    time_periods))
+                                    self.config.time_periods))
 
         self.results = dict()
 
@@ -82,7 +94,7 @@ class ModeShare:
         if elem.get('selected') == 'yes':
 
             ident = elem.getparent().get('id')
-            attribute_class = self.attributes.map.get(ident, 'not found')
+            attribute_class = self.resources['attributes'].map.get(ident, 'not found')
 
             end_time = None
             modes = []
@@ -93,7 +105,7 @@ class ModeShare:
                     mode = stage.get('mode')
                     if mode == 'pt':
                         route = stage.xpath('route')[0].text.split('===')[-2]
-                        mode = self.transit_schedule.mode_map.get(route)
+                        mode = self.resources['transit_schedule'].mode_map.get(route)
                     modes.append(mode)
 
                 elif stage.tag == 'activity':
@@ -102,9 +114,10 @@ class ModeShare:
                     if activity == 'pt interaction':  # ignore pt interaction activities
                         continue
 
-                    # only add activity modes when there has been previous activity (ie trip start time)
+                    # only add activity modes when there has been previous activity
+                    # (ie trip start time)
                     if end_time:
-                        mode = self.mode_hierarchy.get(modes)
+                        mode = self.resources['mode_hierarchy'].get(modes)
                         x, y, z, w = self.table_position(
                             mode,
                             attribute_class,
@@ -129,32 +142,32 @@ class ModeShare:
         """
 
         # Scale final counts
-        self.mode_counts *= 1.0 / self.scale_factor
+        self.mode_counts *= 1.0 / self.config.scale_factor
 
         names = ['mode', 'class', 'activity', 'hour']
-        indexes = [self.modes, self.classes, self.activities, range(self.periods)]
+        indexes = [self.modes, self.classes, self.activities, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        key = "mode_counts_{}_breakdown".format(self.act)
+        key = "mode_counts_{}_breakdown".format(self.option)
         self.results[key] = counts_df
 
         # mode counts totals output
         total_counts_df = counts_df.sum(0)
-        key = "mode_counts_{}_total".format(self.act)
+        key = "mode_counts_{}_total".format(self.option)
         self.results[key] = total_counts_df
 
         # convert to mode shares
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        key = "mode_shares_{}_breakdown".format(self.act)
+        key = "mode_shares_{}_breakdown".format(self.option)
         self.results[key] = counts_df / total
 
         # mode shares totals output
-        key = "mode_shares_{}_total".format(self.act)
+        key = "mode_shares_{}_total".format(self.option)
         self.results[key] = total_counts_df / total
 
     @staticmethod
@@ -187,8 +200,41 @@ class ModeShare:
         x = self.mode_indices[mode]
         y = self.class_indices[attribute_class]
         z = self.activity_indices[activity]
-        w = floor(time / (86400.0 / self.periods)) % self.periods
+        w = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
         return x, y, z, w
+
+
+class PlanHandlerStation(WorkStation):
+
+    tools = {
+        # "activities": Activities,
+        # "legs": Legs,
+        "modeshare": ModeShare,
+    }
+
+    def build(self):
+        # build tools
+        super().build()
+
+        # iterate through plans
+        plans = self.supplier_resources['plans']
+        for i, plan in enumerate(plans.elems):
+            for event_handler in self.resources.values():
+                event_handler.process_plan(plan)
+
+        # finalise
+        # Generate event file outputs
+        for handler in self.resources.values():
+            handler.finalise()
+            # if self.config.contract:
+            #     handler.contract_results()
+
+            for name, result in handler.results.items():
+                csv_name = "{}_{}.csv".format(self.config.name, name)
+                csv_path = os.path.join(self.config.output_path, csv_name)
+
+                # File exports
+                result.to_csv(csv_path, header=True)
 
 
 def convert_time(t: str) -> int:
@@ -202,3 +248,13 @@ def convert_time(t: str) -> int:
         return None
     t = t.split(":")
     return ((int(t[0]) * 60) + int(t[1])) * 60 + int(t[2])
+
+
+def export_geojson(gdf, path):
+    """
+    Given a geodataframe, export geojson representation to specified path.
+    :param gdf: Input geodataframe
+    :param path: Output path
+    """
+    with open(path, "w") as file:
+        file.write(gdf.to_json())
