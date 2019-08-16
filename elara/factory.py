@@ -11,6 +11,7 @@ class WorkStation:
         self.config = config
         self.managers = None
         self.suppliers = None
+        self.supplier_resources = {}
 
     def connect(self, managers: list, suppliers: list) -> None:
         """
@@ -142,13 +143,18 @@ class WorkStation:
         :return: None
         """
         # gather resources
-        supplier_resources = {}
         if self.suppliers:
             for supplier in self.suppliers:
-                supplier_resources.update(supplier.resources)
+                self.supplier_resources.update(supplier.resources)
+
         if self.resources:
             for tool_name, tool in self.resources.items():
-                tool.build(supplier_resources)
+                tool.build(self.supplier_resources)
+
+    def load_all_tools(self, option=None):
+        for name, tool in self.tools.items():
+            print(name)
+            self.resources[name] = tool(self.config, option)
 
 
 # Define tools to be used by Sub Processes
@@ -158,6 +164,7 @@ class Tool:
     """
     req = None
     valid_options = [None]  # todo this might be more useful as INVALID OPTIONS or optional both
+    resources = None
 
     def __init__(self, config, option=None):
         """
@@ -192,6 +199,8 @@ class Tool:
             if requirement not in list(resource):
                 raise ValueError(f'Missing requirement: {requirement}')
         print(f'\tBuilt {self}')
+
+        self.resources = resource
 
 
 def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:

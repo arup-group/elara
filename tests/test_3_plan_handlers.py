@@ -3,13 +3,13 @@ import os
 import pytest
 import pandas as pd
 import numpy as np
-import lxml.etree as etree
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import ConfigManager
-from elara import inputs, handlers
-from elara.handlers.plan_handlers import *
+from elara.config import Config, PathWorkStation
+from elara.inputs import InputWorkStation
+from elara.handlers import plan_handlers
+from elara.handlers.plan_handlers import PlanHandlerStation
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -22,96 +22,82 @@ test_mastim_time_data = [
 
 @pytest.mark.parametrize("time,seconds", test_mastim_time_data)
 def test_convert_time(time, seconds):
-    assert handlers.plan_handlers.convert_time(time) == seconds
+    assert plan_handlers.convert_time(time) == seconds
 
 
+# Config
 @pytest.fixture
-def config():
+def test_config():
     config_path = os.path.join('tests/test_xml_scenario.toml')
-    return ConfigManager(config_path)
+    config = Config(config_path)
+    assert config
+    return config
+
+
+# Paths
+@pytest.fixture
+def test_paths(test_config):
+    paths = PathWorkStation(test_config)
+    paths.connect(managers=None, suppliers=None)
+    paths.load_all_tools()
+    paths.build()
+    assert set(paths.resources) == set(paths.tools)
+    return paths
+
+
+# Input Manager
+@pytest.fixture
+def input_manager(test_config, test_paths):
+    input_workstation = InputWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+    return input_workstation
+
+
+# Base
+@pytest.fixture
+def base_handler(test_config, input_manager):
+    base_handler = plan_handlers.PlanHandler(test_config, 'all')
+    assert base_handler.option == 'all'
+    base_handler.build(input_manager.resources)
+    return base_handler
 
 
 @pytest.fixture
-def network(config):
-    return inputs.Network(config.network_path, config.crs)
+def test_plan_modeshare_handler(test_config, input_manager):
+    handler = plan_handlers.ModeShare(test_config, 'all')
 
+    resources = input_manager.resources
+    handler.build(resources)
 
-@pytest.fixture
-def mode_hierarchy():
-    return inputs.ModeHierarchy()
-
-
-@pytest.fixture
-def mode_map():
-    return inputs.ModeMap()
-
-
-@pytest.fixture
-def transit_schedule(config):
-    return inputs.TransitSchedule(
-        config.transit_schedule_path, config.crs
-            )
-
-
-@pytest.fixture
-def attributes(config):
-    return inputs.Attributes(config.attributes_path)
-
-
-@pytest.fixture
-def transit_vehicles(config):
-    return inputs.TransitVehicles(
-            config.transit_vehicles_path
-            )
-
-
-@pytest.fixture
-def plans(config, transit_schedule):
-    return inputs.Plans(config.plans_path, transit_schedule)
-
-
-@pytest.fixture
-def plan_handler_resources(plans, transit_schedule, attributes, mode_map, mode_hierarchy):
-    return {'plans': plans,
-            'transit_schedule': transit_schedule,
-            'attributes': attributes,
-            'mode_map': mode_map,
-            'mode_hierarchy': mode_hierarchy,
-            }
-
-
-# Mode Share
-@pytest.fixture
-def test_plan_modeshare_handler(plan_handler_resources):
     periods = 24
-    handler = ModeShare(
-        selection='all',
-        resources=plan_handler_resources,
-        time_periods=periods,
-        scale_factor=0.01,
-    )
-    assert len(handler.modes) == len(handler.plans.modes)
+
+    assert len(handler.modes) == len(handler.resources['plans'].modes)
     assert list(handler.mode_indices.keys()) == handler.modes
 
-    assert len(handler.classes) == len(handler.attributes.classes)
+    assert len(handler.classes) == len(handler.resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
 
-    assert len(handler.activities) == len(handler.plans.activities)
+    assert len(handler.activities) == len(handler.resources['plans'].activities)
     assert list(handler.activity_indices.keys()) == handler.activities
 
     assert handler.mode_counts.shape == (
-        len(handler.plans.modes),
-        len(handler.attributes.classes),
-        len(handler.plans.activities),
+        len(handler.resources['plans'].modes),
+        len(handler.resources['attributes'].classes),
+        len(handler.resources['plans'].activities),
         periods)
 
     return handler
 
 
-def test_plan_handler_test_data(test_plan_modeshare_handler, plans):
+def test_plan_handler_test_data(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
+
+    plans = test_plan_modeshare_handler.resources['plans']
     for plan in plans.elems:
         handler.process_plan(plan)
+
     assert np.sum(handler.mode_counts) == 10
 
     # mode
@@ -136,8 +122,9 @@ def test_plan_handler_test_data(test_plan_modeshare_handler, plans):
 
 
 @pytest.fixture
-def test_plan_handler_finalised(test_plan_modeshare_handler, plans):
+def test_plan_handler_finalised(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
+    plans = test_plan_modeshare_handler.resources['plans']
     for plan in plans.elems:
         handler.process_plan(plan)
     handler.finalise()
@@ -154,7 +141,7 @@ def test_finalised_mode_counts(test_plan_handler_finalised):
                 for c in cols:
                     assert c in result.columns
                 df = result.loc[:, cols]
-                assert np.sum(df.values) == 10 / handler.scale_factor
+                assert np.sum(df.values) == 10 / handler.config.scale_factor
 
                 if 'class' in result.columns:
                     assert set(result.loc[:, 'class']) == set(handler.classes)
@@ -166,7 +153,7 @@ def test_finalised_mode_counts(test_plan_handler_finalised):
                 for c in cols:
                     assert c in result.index
                 df = result.loc[cols]
-                assert np.sum(df.values) == 10 / handler.scale_factor
+                assert np.sum(df.values) == 10 / handler.config.scale_factor
 
 
 def test_finalised_mode_shares(test_plan_handler_finalised):
@@ -192,3 +179,38 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                     assert c in result.index
                 df = result.loc[cols]
                 assert np.sum(df.values) == 1
+
+
+# Event Handler Manager
+def test_load_plan_handler_manager(test_config, test_paths):
+    input_workstation = InputWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    plan_workstation = PlanHandlerStation(test_config)
+    plan_workstation.connect(managers=None, suppliers=[input_workstation])
+    plan_workstation.load_all_tools(option='all')
+    plan_workstation.build()
+
+    for handler in plan_workstation.resources.values():
+        for name, result in handler.results.items():
+            if 'share' in name:
+                cols = handler.modes
+                if isinstance(result, pd.DataFrame):
+                    for c in cols:
+                        assert c in result.columns
+                    df = result.loc[:, cols]
+                    assert np.sum(df.values) == 1
+
+                    if 'class' in result.columns:
+                        assert set(result.loc[:, 'class']) == set(handler.classes)
+                    if 'activity' in result.columns:
+                        assert set(result.loc[:, 'activity']) == set(handler.activities)
+                    if 'hour' in result.columns:
+                        assert set(result.loc[:, 'hour']) == set(range(24))
+                else:
+                    for c in cols:
+                        assert c in result.index
+                    df = result.loc[cols]
+                    assert np.sum(df.values) == 1

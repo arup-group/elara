@@ -6,12 +6,7 @@ from elara.factory import WorkStation, Tool
 
 
 class PostProcessor(Tool):
-
-    def __init__(self, config, network, transit_schedule, transit_vehicles):
-        self.config = config
-        self.network = network
-        self.transit_schedule = transit_schedule
-        self.transit_vehicles = transit_vehicles
+    valid_options = None
 
     def check_prerequisites(self):
         return NotImplementedError
@@ -24,14 +19,11 @@ class VKT(PostProcessor):
     req = ['volume_counts']
     valid_options = ['car', 'bus', 'train', 'subway', 'ferry']
 
-    def check_prerequisites(self):
-        return (
-            "volume_counts" in self.config.event_handlers
-            and len(self.config.event_handlers["volume_counts"]) > 0
-        )
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
 
     def build(self, resource: dict):
-        super(Tool).build(resource)
+        super().build(resource)
 
         mode = self.option
 
@@ -57,7 +49,6 @@ class VKT(PostProcessor):
         vkt_gdf.drop("geometry", axis=1).to_csv(csv_path)
         export_geojson(vkt_gdf, geojson_path)
 
-
 def generate_period_headers(time_periods):
     """
     Generate a list of strings corresponding to the time period headers in a typical
@@ -82,7 +73,7 @@ def export_geojson(gdf, path):
 POST_PROCESSOR_MAP = {"vkt": VKT}
 
 
-class PostProcessing(WorkStation):
+class PostProcessWorkStation(WorkStation):
 
     tools = {
         'vkt': VKT,

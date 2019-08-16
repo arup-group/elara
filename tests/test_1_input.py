@@ -4,7 +4,7 @@ import pytest
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config, Requirements, Paths
+from elara.config import Config, PathWorkStation
 from elara import inputs
 sys.path.append(os.path.abspath('../tests'))
 
@@ -28,9 +28,9 @@ def test_gzip_config():
 
 @pytest.fixture
 def test_paths(test_xml_config):
-    paths = Paths(test_xml_config)
+    paths = PathWorkStation(test_xml_config)
     paths.connect(managers=None, suppliers=None)
-    paths.load_all_paths()
+    paths.load_all_tools()
     paths.build()
     assert set(paths.resources) == set(paths.tools)
     return paths
@@ -38,9 +38,9 @@ def test_paths(test_xml_config):
 
 @pytest.fixture
 def test_zip_paths(test_gzip_config):
-    paths = Paths(test_gzip_config)
+    paths = PathWorkStation(test_gzip_config)
     paths.connect(managers=None, suppliers=None)
-    paths.load_all_paths()
+    paths.load_all_tools()
     paths.build()
     assert set(paths.resources) == set(paths.tools)
     return paths
@@ -176,3 +176,42 @@ def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
     attributes.build(test_zip_paths.resources)
     assert len(attributes.map) == sum(attributes.attribute_count_map.values())
 
+
+# Input Manager
+def test_load_input_manager(test_xml_config, test_paths):
+    input_workstation = inputs.InputWorkStation(test_xml_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    events = input_workstation.resources['events']
+    network = input_workstation.resources['network']
+    transit_schedule = input_workstation.resources['transit_schedule']
+    transit_vehicles = input_workstation.resources['transit_vehicles']
+    attributes = input_workstation.resources['attributes']
+    plans = input_workstation.resources['plans']
+    mode_map = input_workstation.resources['mode_map']
+    mode_hierarchy = input_workstation.resources['mode_hierarchy']
+
+    num_events = sum(1 for _ in events.elems)
+    assert num_events == 190
+
+    assert len(network.link_gdf) == 8
+    assert len(network.node_gdf) == 5
+
+    assert len(transit_schedule.stop_gdf) == 4
+
+    assert transit_vehicles.veh_type_capacity_map['Bus'] == 70
+    assert len(
+        transit_vehicles.veh_id_veh_type_map
+    ) == sum(
+        transit_vehicles.transit_vehicle_counts.values()
+    )
+
+    assert len(attributes.map) == sum(attributes.attribute_count_map.values())
+
+    num_plans = sum(1 for _ in plans.elems)
+    assert num_plans == 5
+
+    assert mode_map
+    assert mode_hierarchy

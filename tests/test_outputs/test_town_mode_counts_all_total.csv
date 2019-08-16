@@ -1,4 +1,5 @@
-bike,2.0
-bus,4.0
-car,4.0
+mode,0
+bike,20000.0
+bus,40000.0
+car,40000.0
 transit_walk,0.0
