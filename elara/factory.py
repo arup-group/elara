@@ -24,117 +24,63 @@ class WorkStation:
         self.managers = managers
         self.suppliers = suppliers
 
-    def get_requirements(self):
-        """
-        Set own requirements by search backwards through managers chain gathering required tool
-        requirements.
+    def engage(self) -> None:
 
-        Note that this caches requirements dict in self._requirements.
+        all_requirements = []
 
-        If no managers then uses config requirements() method.
+        # get manager requirements
+        manager_requirements = self.gather_manager_requirements()
+        if not self.tools:
+            self.requirements = manager_requirements
 
-        Note that all tools are initiated for all required options and stored in
-        self._resources.
+        # init required tools
+        # build new requirements from tools
+        # loop tool first looking for matches so that tool order is preserved
+        else:
+            for tool_name, tool in self.tools.items():
+                for manager_requirement, options in manager_requirements.items():
+                    if manager_requirement == tool_name:
+                        if options:
+                            for option in options:
+                                # init
+                                key = str(tool_name) + ':' + str(option)
+                                self.resources[key] = tool(self.config, option)
+                                tool_requirements = self.resources[key].get_requirements()
+                                all_requirements.append(tool_requirements)
+                        else:
+                            # init
+                            key = str(tool_name)
+                            self.resources[key] = tool(self.config)
+                            tool_requirements = self.resources[key].get_requirements()
+                            all_requirements.append(tool_requirements)
 
-        :return: dict of requirements {req: [options]}
-        """
-        if self.requirements:
-            return self.requirements
+            self.requirements = combine_reqs(all_requirements)
 
-        if not self.managers:
-            # print(f'retrieving reqs from config at {self}: {self.config.requirements()}')
-            return self.config.get_requirements()
+    def validate_suppliers(self) -> None:
 
-        reqs = []
-        for manager in self.managers:
-            for manager_requirement, options in manager.get_requirements().items():
-                if manager_requirement not in list(self.tools):  # ie tool not available
-                    continue
-                if options is None:
-                    option = None
-                    key = manager_requirement
-                    self._build_manager_requirement(key, manager_requirement, option, reqs)
-                else:
-                    for option in options:
-                        key = manager_requirement + ':' + option
-                        self._build_manager_requirement(key, manager_requirement, option, reqs)
-
-        # cache reqs
-        self.requirements = combine_reqs(reqs)
-        return self.requirements
-
-    def _build_manager_requirement(
-            self,
-            key: str,
-            manager_requirement,
-            option,
-            reqs: list
-    ) -> None:
-        """
-        Helper method to reduce repetition. Initiates required tools, adds them to workstation
-        resources, and builds list of requirements.
-        :param key: str, unique key for .resource map
-        :param manager_requirement: str, tool key
-        :param option: required tool option
-        :param reqs: full list of current requirements
-        :return: None
-        """
-        if key in list(self.resources):
-            return None
-        tool = self.tools.get(manager_requirement)
-        if not tool:
-            return None
-        resource = tool(self.config, option)
-        tool_reqs = resource.get_requirements()
-        reqs.append(tool_reqs)
-        self.resources[key] = resource
-
-    def _engage_suppliers(self):
-        """
-        Engage suppliers, initiating their tools and getting their requirements. Raises
-        ValueError if suppliers have missing tools.
-        :return:
-        """
-        requirements = self.get_requirements()
-
+        # gather supplier tools
         supplier_tools = {}
-        for supplier in self.suppliers:
-            if not supplier.tools:
-                continue
-            supplier_tools.update(supplier.tools)
+        if self.suppliers:
+            for supplier in self.suppliers:
+                if not supplier.tools:
+                    continue
+                supplier_tools.update(supplier.tools)
 
         # check for missing requirements
-        missing = set(requirements) - set(supplier_tools)
+        missing = set(self.requirements) - set(supplier_tools)
         if missing:
             raise ValueError(
                 f'Missing requirements: {missing} from suppliers: {self.suppliers}.'
             )
+        if self.config.verbose:
+            print(f"> Validated suppliers for {self}")
 
-        # activate suppliers and validate options and set their requirements
-        for supplier in self.suppliers:
-            supplier_requirement_list = []
-            # initiate in order
-            if not supplier.tools:
-                continue
-            for tool_name, tool in supplier.tools.items():
-                if not tool:
-                    continue
-                if tool_name in list(requirements):
-                    options = requirements[tool_name]
-                    if not options:
-                        resource = tool(self.config, None)
-                        key = tool_name
-                        supplier.resources[key] = resource
-                        supplier_requirement_list.append(resource.get_requirements())
-
-                    else:
-                        for option in options:
-                            resource = tool(self.config, option)
-                            key = tool_name + ':' + option
-                            supplier.resources[key] = resource
-                            supplier_requirement_list.append(resource.get_requirements())
-            # update supplier req dict
-            supplier.requirements.update(combine_reqs(supplier_requirement_list))
+    def gather_manager_requirements(self):
+        reqs = []
+        if self.managers:
+            for manager in self.managers:
+                reqs.append(manager.requirements)
+        return combine_reqs(reqs)
 
     def build(self):
         """
@@ -142,6 +88,9 @@ class WorkStation:
         order of .resources map.
         :return: None
         """
+        if self.config.verbose:
+            print(f"Building {self}.")
+
         # gather resources
         if self.suppliers:
             for supplier in self.suppliers:
@@ -151,9 +100,13 @@ class WorkStation:
             for tool_name, tool in self.resources.items():
                 tool.build(self.supplier_resources)
 
+        if self.config.verbose:
+            print(f'\tSupplier resources:')
+            for resource in self.supplier_resources:
+                print(f'\t > {resource}')
+
     def load_all_tools(self, option=None):
         for name, tool in self.tools.items():
-            print(name)
             self.resources[name] = tool(self.config, option)
 
 
@@ -162,9 +115,10 @@ class Tool:
     """
     Base tool class.
     """
-    req = None
-    valid_options = [None]  # todo this might be more useful as INVALID OPTIONS or optional both
+    requirements = None
+    valid_options = None  # todo this might be more useful as INVALID OPTIONS or optional both
     resources = None
+    options_enabled = False
 
     def __init__(self, config, option=None):
         """
@@ -173,8 +127,9 @@ class Tool:
         :param option: optional option, typically assumed to be str
         """
         self.config = config
-        if option not in self.valid_options:
-            raise UserWarning(f'Unsupported option: {option} at tool: {self}')
+        if self.valid_options:
+            if option not in self.valid_options:
+                raise UserWarning(f'Unsupported option: {option} at tool: {self}')
         self.option = option
 
     def get_requirements(self) -> dict:
@@ -183,11 +138,17 @@ class Tool:
         Returns None if .option is None.
         :return: dict of requirements
         """
-        if not self.req:
+        if not self.requirements:
             return None
-        if self.option:
-            return {req: [self.option] for req in self.req}
-        return {req: None for req in self.req}
+
+        if self.options_enabled:
+            requirements = {req: [self.option] for req in self.requirements}
+        else:
+            requirements = {req: None for req in self.requirements}
+
+        # if self.config.verbose:
+        #     print(f"> Req for tool: {self} Option: {self.option} = {requirements}")
+        return requirements
 
     def build(self, resource: dict) -> None:
         """
@@ -198,7 +159,6 @@ class Tool:
         for requirement in convert_to_unique_keys(self.get_requirements()):
             if requirement not in list(resource):
                 raise ValueError(f'Missing requirement: {requirement}')
-        print(f'\tBuilt {self}')
 
         self.resources = resource
 
@@ -232,16 +192,19 @@ def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:
     # stage 2:
     visited = []
     queue = []
-    start_node._engage_suppliers()
+    start_node.engage()
+    # start_node._engage_suppliers()
     queue.append(start_node)
     visited.append(start_node)
 
     while queue:
         current = queue.pop(0)
+        current.engage()
+
         if current.suppliers:
             if verbose:
                 print('VALIDATING: ', current)
-            current._engage_suppliers()
+            current.validate_suppliers()
 
             for supplier in order_by_distance(current.suppliers):
                 if supplier not in visited:
@@ -261,23 +224,23 @@ def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:
     return sequence + visited
 
 
-def build_graph_depth(current: WorkStation, visited=None, depth=0) -> list:
+def build_graph_depth(node: WorkStation, visited=None, depth=0) -> list:
     """
     Function to recursive depth-first traverse graph of suppliers, recording workstation depth in
     graph.
-    :param current: starting workstation
+    :param node: starting workstation
     :param visited: list, visited workstations
     :param depth: current depth
     :return: list, visited workstations in order
     """
     if not visited:
         visited = []
-    visited.append(current)
+    visited.append(node)
 
     # Recur for all the nodes supplying this node
-    if current.suppliers:
+    if node.suppliers:
         depth = depth + 1
-        for supplier in current.suppliers:
+        for supplier in node.suppliers:
             if supplier.depth < depth:
                 supplier.depth = depth
             build_graph_depth(supplier, visited, depth)
@@ -315,14 +278,15 @@ def combine_reqs(reqs: list) -> dict:
             tool_set.update(list(req))
     combined_reqs = {}
     for tool in tool_set:
-        options = set()
-        for req in reqs:
-            if req.get(tool):
-                options.update(req[tool])
-        if options:
-            combined_reqs[tool] = list(options)
-        else:
-            combined_reqs[tool] = None
+        if tool_set:
+            options = set()
+            for req in reqs:
+                if req and req.get(tool):
+                    options.update(req[tool])
+            if options:
+                combined_reqs[tool] = list(options)
+            else:
+                combined_reqs[tool] = None
     return combined_reqs
 
 

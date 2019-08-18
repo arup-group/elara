@@ -9,6 +9,8 @@ sys.path.append(os.path.abspath('../tests'))
 
 
 class Config:
+    verbose = True
+
     def __init__(self):
         pass
 
@@ -61,6 +63,10 @@ class GetPath(ExampleTool):
 # Work stations
 class StartProcess(WorkStation):
     tools = None
+
+    def gather_manager_requirements(self):
+
+        return self.config.get_requirements()
 
 
 class PostProcess(WorkStation):
@@ -136,22 +142,48 @@ def test_requirements(start, post_process, handler_process, inputs_process, conf
     inputs_process.connect([handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
-    assert equals(start.get_requirements(), {'volume_counts': ['car'], 'vkt': ['bus']})
-    assert equals(post_process.get_requirements(), {'volume_counts': ['bus']})
-    assert equals(handler_process.get_requirements(), {'events': None, 'network': None})
-    assert equals(inputs_process.get_requirements(), {'events_path': None, 'network_path': None})
-    assert equals(config_paths.get_requirements(), {})
+    operate_workstation_graph(start)
+
+    assert equals(
+        start.gather_manager_requirements(),
+        {'volume_counts': ['car'], 'vkt': ['bus']}
+    )
+    assert equals(
+        post_process.gather_manager_requirements(),
+        {'volume_counts': ['car'], 'vkt': ['bus']}
+    )
+    assert equals(
+        handler_process.gather_manager_requirements(),
+        {'vkt': ['bus'], 'volume_counts': ['car']}
+    )
+    assert equals(
+        inputs_process.gather_manager_requirements(),
+        {'events': None, 'network': None}
+    )
+    assert equals(
+        config_paths.gather_manager_requirements(),
+        {}
+    )
 
 
 def test_engage_start_suppliers(start, post_process, handler_process, inputs_process, config_paths):
+
     start.connect(None, [post_process, handler_process])
     post_process.connect([start], [handler_process])
     handler_process.connect([start, post_process], [inputs_process])
     inputs_process.connect([handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
-    start._engage_suppliers()
+    start.engage()
     assert set(start.resources) == set()
+
+
+
+
+
+
+
+    
     assert set(post_process.resources) == {'vkt:bus'}
     assert set(handler_process.resources) == {'volume_counts:car'}
     post_process._engage_suppliers()

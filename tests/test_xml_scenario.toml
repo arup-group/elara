@@ -24,8 +24,8 @@ mode_share = ["all"]
 [post_processors]
 vkt = ["car"]
 
-[benchmarking]
-benchmarks = ["london_inner_cordon_car"]
+[benchmarks]
+london_inner_cordon_car = ["car"]
 
 [outputs]
 path = "./tests/test_outputs"

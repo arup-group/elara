@@ -159,12 +159,10 @@ class VolumeCounts(EventHandler):
         # be expanded.
         scale_factor = self.config.scale_factor
         if self.option != "car":
-            print('SCALE')
             scale_factor = 1.0
 
         # Scale final counts
         self.counts *= 1.0 / scale_factor
-        print(sum(self.counts))
 
         names = ['elem', 'class', 'hour']
         indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
@@ -474,7 +472,7 @@ class StopInteractions(EventHandler):
 
 class EventHandlerStation(WorkStation):
 
-    MAP = {
+    tools = {
         "volume_counts": VolumeCounts,
         "passenger_counts": PassengerCounts,
         "stop_interactions": StopInteractions,

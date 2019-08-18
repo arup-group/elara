@@ -6,7 +6,7 @@ from elara.factory import WorkStation, Tool
 
 
 class PostProcessor(Tool):
-    valid_options = None
+    options_enabled = True
 
     def check_prerequisites(self):
         return NotImplementedError
@@ -16,11 +16,11 @@ class PostProcessor(Tool):
 
 
 class VKT(PostProcessor):
-    req = ['volume_counts']
+    requirements = ['volume_counts']
     valid_options = ['car', 'bus', 'train', 'subway', 'ferry']
 
-    def __init__(self, config, option=None):
-        super().__init__(config, option)
+    # def __init__(self, config, option=None):
+    #     super().__init__(config, option)
 
     def build(self, resource: dict):
         super().build(resource)
@@ -48,6 +48,7 @@ class VKT(PostProcessor):
         )
         vkt_gdf.drop("geometry", axis=1).to_csv(csv_path)
         export_geojson(vkt_gdf, geojson_path)
+
 
 def generate_period_headers(time_periods):
     """
