@@ -209,7 +209,7 @@ class PlanHandlerStation(WorkStation):
     tools = {
         # "activities": Activities,
         # "legs": Legs,
-        "modeshare": ModeShare,
+        "mode_share": ModeShare,
     }
 
     def build(self):

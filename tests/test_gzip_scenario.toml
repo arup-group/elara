@@ -26,6 +26,6 @@ path = "./tests/test_outputs"
 contract = true
 post_processing = ["vkt"]
 
-[benchmarking]
-benchmarks = ["london_inner_cordon_car", "ireland_commuter_modeshare"]
-
+[benchmarks]
+london_inner_cordon_car = ["car"]
+ireland_commuter_modeshare = ["all"]

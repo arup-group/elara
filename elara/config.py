@@ -20,13 +20,13 @@ class Config:
         self.scale_factor = self.valid_scale_factor(
             self.parsed_toml["scenario"]["scale_factor"]
         )
-        self.verbose = self.parsed_toml["scenario"]["verbose"]
+        self.verbose = self.parsed_toml["scenario"].get("verbose", False)
 
         # Factory objects
         self.event_handlers = self.parsed_toml.get("event_handlers", {})
         self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
         self.post_processors = self.parsed_toml.get("post_processors", {})
-        self.benchmarks = self.parsed_toml["benchmarking"].get("benchmarks", [])
+        self.benchmarks = self.parsed_toml.get("benchmarks", {})
 
         # Output settings
         self.output_path = self.parsed_toml["outputs"]["path"]
@@ -188,10 +188,22 @@ class Requirements(WorkStation):
 
     tools = None
 
+    def gather_manager_requirements(self):
+        reqs = {}
+        reqs.update(self.config.event_handlers)
+        reqs.update(self.config.plan_handlers)
+        reqs.update(self.config.post_processors)
+        if self.config.verbose:
+            print(f"> Retrieving requirements from config.")
+        # todo add benchmarking
+        return reqs
+
     def get_requirements(self):
         reqs = {}
         reqs.update(self.config.event_handlers)
         reqs.update(self.config.plan_handlers)
         reqs.update(self.config.post_processors)
+        if self.config.verbose:
+            print(f"> Retrieving requirements from config.")
         # todo add benchmarking
         return reqs

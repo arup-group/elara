@@ -2,6 +2,8 @@ import pandas as pd
 import os
 import numpy as np
 import json
+
+from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
 
 
@@ -9,66 +11,8 @@ from elara import get_benchmark_data
 # TODO - needs tests and data validation
 
 
-class Benchmarks:
-
-    benchmarks = {}
-    scores_df = None
-    meta_score = 0
-
-    def __init__(self, config):
-        """
-        Wrapper for all benchmarks (ie Cordons ect).
-        :param config: Config object
-        """
-
-        self.config = config
-
-        # Create output folder if it does not exist
-        benchmark_dir = os.path.join(self.config.output_path, 'benchmarks')
-        if not os.path.exists(benchmark_dir):
-            os.makedirs(benchmark_dir)
-
-        for cordon_name in config.benchmarks:
-
-            # TODO add more explicit input data checking for each benchmark
-
-            self.benchmarks[cordon_name] = BENCHMARK_MAP[cordon_name](
-                cordon_name, config)
-
-    def score(self):
-        """
-        Calculates all sub scores from benchmarks, writes to disk and returns
-        combined metascore.
-        """
-        summary = {}
-        flat_summary = []
-        for benchmark_name, benchmark in self.benchmarks.items():
-            scores = benchmark.output_and_score()
-            weight = BENCHMARK_WEIGHTS[benchmark_name]
-
-            sub_summary = {'scores': scores,
-                           'weight': weight
-                           }
-            summary[benchmark_name] = sub_summary
-
-            for name, s in scores.items():
-                flat_summary.append([benchmark_name, name, s])
-                self.meta_score += (s * weight)
-
-        # Write scores
-        self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
-        csv_name = 'benchmark_scores.csv'
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        self.scores_df.to_csv(csv_path)
-
-        summary['meta_score'] = self.meta_score
-        json_name = 'benchmark_scores.json'
-        json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
-        with open(json_path, 'w') as outfile:
-            json.dump(summary, outfile)
-
-
-class Cordon:
+class Cordon(Tool):
+    options_enabled = True
 
     cordon_counter = None
     benchmark_path = None
@@ -450,9 +394,75 @@ class TestTownPeakIn(Cordon):
     hours = [7, 8, 9]
     modes = ['car', 'bus']
 
+
 class TestTownCommuterStats(ModeStats):
 
     benchmark_path = get_benchmark_data(os.path.join('test_town', 'census_modestats', 'test_town_modestats.csv'))
+
+
+class Benchmarks(WorkStation):
+    tools = {
+        "london_inner_cordon_car": LondonInnerCordonCar,
+        "dublin_canal_cordon_car": DublinCanalCordonCar,
+        "ireland_commuter_modeshare": IrelandCommuterStats,
+        "test_town_cordon": TestTownHourlyCordon,
+        "test_town_peak_cordon": TestTownPeakIn,
+        "test_town_modeshare": TestTownCommuterStats
+    }
+
+    BENCHMARK_WEIGHTS = {
+        "london_inner_cordon_car": 1,
+        "dublin_canal_cordon_car": 1,
+        "ireland_commuter_modeshare": 1,
+        "test_town_cordon": 1,
+        "test_town_peak_cordon": 1,
+        "test_town_modeshare": 1
+    }
+
+    benchmarks = {}
+    scores_df = None
+    meta_score = 0
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        # Create output folder if it does not exist
+        benchmark_dir = os.path.join(self.config.output_path, 'benchmarks')
+        if not os.path.exists(benchmark_dir):
+            os.makedirs(benchmark_dir)
+
+    def build(self):
+        """
+        Calculates all sub scores from benchmarks, writes to disk and returns
+        combined metascore.
+        """
+
+        summary = {}
+        flat_summary = []
+        for benchmark_name, benchmark in self.benchmarks.items():
+            scores = benchmark.output_and_score()
+            weight = BENCHMARK_WEIGHTS[benchmark_name]
+
+            sub_summary = {'scores': scores,
+                           'weight': weight
+                           }
+            summary[benchmark_name] = sub_summary
+
+            for name, s in scores.items():
+                flat_summary.append([benchmark_name, name, s])
+                self.meta_score += (s * weight)
+
+        # Write scores
+        self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
+        csv_name = 'benchmark_scores.csv'
+        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
+        self.scores_df.to_csv(csv_path)
+
+        summary['meta_score'] = self.meta_score
+        json_name = 'benchmark_scores.json'
+        json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
+        with open(json_path, 'w') as outfile:
+            json.dump(summary, outfile)
 
 
 # maps of benchmarks to Classes and weights for scoring
