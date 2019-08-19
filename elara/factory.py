@@ -55,13 +55,10 @@ class Tool:
     def build(
             self,
             resource: Dict[str, list],
-            spinner=None,
-
     ) -> None:
         """
         Default build self.
         :param resource: dict, supplier resources
-        :param spinner: optional spinner for verbosity
         :return: None
         """
         for requirement in convert_to_unique_keys(self.get_requirements()):
@@ -215,7 +212,7 @@ class WorkStation:
             for tool_name, tool in self.resources.items():
                 if spinner:
                     spinner.text = f"Building: {tool}"
-                tool.build(self.supplier_resources, spinner)
+                tool.build(self.supplier_resources)
 
     def load_all_tools(self, option=None) -> None:
         """
@@ -283,12 +280,12 @@ def build(start_node: WorkStation, verbose=False) -> list:
 
     if verbose:
         for workstation in visited:
-            print(f"\t> {workstation} engaged with tools:")
-            if not workstation.tools:
-                print("\t\t- None")
+            print(f"> {workstation} engaged for tools:")
+            if not workstation.resources:
+                print("\t- None")
             else:
-                for tool in workstation.tools.keys():
-                    print(f"\t\t- {tool}")
+                for tool in workstation.resources.keys():
+                    print(f"\t- {tool}")
 
     # stage 3:
     with Halo(text="Building workflow graph...", spinner="dots") as spinner:

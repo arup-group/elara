@@ -181,7 +181,7 @@ class PathFinderWorkStation(WorkStation):
     }
 
     def __str__(self):
-        return f'PathFinder WorkStation with resources: {self.resources}'
+        return f'PathFinder WorkStation'
 
 
 class RequirementsWorkStation(WorkStation):
