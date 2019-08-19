@@ -72,8 +72,6 @@ class WorkStation:
             raise ValueError(
                 f'Missing requirements: {missing} from suppliers: {self.suppliers}.'
             )
-        if self.config.verbose:
-            print(f"> Validated suppliers for {self}")
 
     def gather_manager_requirements(self):
         reqs = []
@@ -88,9 +86,6 @@ class WorkStation:
         order of .resources map.
         :return: None
         """
-        if self.config.verbose:
-            print(f"Building {self}.")
-
         # gather resources
         if self.suppliers:
             for supplier in self.suppliers:
@@ -99,11 +94,6 @@ class WorkStation:
         if self.resources:
             for tool_name, tool in self.resources.items():
                 tool.build(self.supplier_resources)
-
-        if self.config.verbose:
-            print(f'\tSupplier resources:')
-            for resource in self.supplier_resources:
-                print(f'\t > {resource}')
 
     def load_all_tools(self, option=None):
         for name, tool in self.tools.items():
@@ -199,17 +189,20 @@ def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:
 
     while queue:
         current = queue.pop(0)
+        if verbose:
+            print(f'> Engaging: {current}')
         current.engage()
 
         if current.suppliers:
             if verbose:
-                print('VALIDATING: ', current)
+                print(f'> Validating suppliers for: {current}')
             current.validate_suppliers()
 
             for supplier in order_by_distance(current.suppliers):
                 if supplier not in visited:
                     queue.append(supplier)
                     visited.append(supplier)
+
     # stage 3:
     sequence = visited
     return_queue = visited[::-1]
@@ -217,7 +210,7 @@ def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:
     while return_queue:
         current = return_queue.pop(0)
         if verbose:
-            print('BUILDING: ', current)
+            print(f'> Building: {current}')
         current.build()
         visited.append(current)
     # return full sequence for testing
