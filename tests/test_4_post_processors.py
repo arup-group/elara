@@ -1,17 +1,13 @@
 import sys
 import os
 import pytest
-import pandas as pd
-import numpy as np
-import lxml.etree as etree
-
 
 sys.path.append(os.path.abspath('../elara'))
 from elara import postprocessing
-from elara.config import Config, PathWorkStation
-from elara.inputs import InputWorkStation
-from elara.handlers.event_handlers import EventHandlerStation
-from elara.handlers.plan_handlers import PlanHandlerStation
+from elara.config import Config, PathFinderWorkStation
+from elara.inputs import InputsWorkStation
+from elara.event_handlers import EventHandlerWorkStation
+from elara.plan_handlers import PlanHandlerWorkStation
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -35,7 +31,7 @@ def test_config():
 # Paths
 @pytest.fixture
 def test_paths(test_config):
-    paths = PathWorkStation(test_config)
+    paths = PathFinderWorkStation(test_config)
     paths.connect(managers=None, suppliers=None)
     paths.load_all_tools()
     paths.build()
@@ -46,7 +42,7 @@ def test_paths(test_config):
 # Input Manager
 @pytest.fixture
 def input_manager(test_config, test_paths):
-    input_workstation = InputWorkStation(test_config)
+    input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
@@ -67,24 +63,24 @@ def test_vkt_build(vkt_post_processor, ):
 
 
 def test_post_process_workstation(test_config, test_paths):
-    input_workstation = InputWorkStation(test_config)
+    input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
 
-    event_workstation = EventHandlerStation(test_config)
+    event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='car')
+    event_workstation.load_all_tools(option='bus')
     event_workstation.build()
 
-    plan_workstation = PlanHandlerStation(test_config)
+    plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
     plan_workstation.load_all_tools(option='all')
     plan_workstation.build()
 
     pp_workstation = postprocessing.PostProcessWorkStation(test_config)
     pp_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
-    pp_workstation.load_all_tools(option='car')
+    pp_workstation.load_all_tools(option='bus')
     pp_workstation.build()
 
 

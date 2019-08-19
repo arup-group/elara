@@ -24,8 +24,10 @@ mode_share = ["all"]
 [outputs]
 path = "./tests/test_outputs"
 contract = true
-post_processing = ["vkt"]
+
+[post_processors]
+vkt = ["car"]
 
 [benchmarks]
-london_inner_cordon_car = ["car"]
-ireland_commuter_modeshare = ["all"]
+test_town_cordon = ["car"]
+test_town_modeshare = ["all"]

@@ -6,10 +6,10 @@ import numpy as np
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config, PathWorkStation
-from elara.inputs import InputWorkStation
-from elara.handlers import plan_handlers
-from elara.handlers.plan_handlers import PlanHandlerStation
+from elara.config import Config, PathFinderWorkStation
+from elara.inputs import InputsWorkStation
+from elara import plan_handlers
+from elara.plan_handlers import PlanHandlerWorkStation
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -37,7 +37,7 @@ def test_config():
 # Paths
 @pytest.fixture
 def test_paths(test_config):
-    paths = PathWorkStation(test_config)
+    paths = PathFinderWorkStation(test_config)
     paths.connect(managers=None, suppliers=None)
     paths.load_all_tools()
     paths.build()
@@ -48,7 +48,7 @@ def test_paths(test_config):
 # Input Manager
 @pytest.fixture
 def input_manager(test_config, test_paths):
-    input_workstation = InputWorkStation(test_config)
+    input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
@@ -58,7 +58,7 @@ def input_manager(test_config, test_paths):
 # Base
 @pytest.fixture
 def base_handler(test_config, input_manager):
-    base_handler = plan_handlers.PlanHandler(test_config, 'all')
+    base_handler = plan_handlers.PlanHandlerTool(test_config, 'all')
     assert base_handler.option == 'all'
     base_handler.build(input_manager.resources)
     return base_handler
@@ -183,12 +183,12 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
 
 # Event Handler Manager
 def test_load_plan_handler_manager(test_config, test_paths):
-    input_workstation = InputWorkStation(test_config)
+    input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
 
-    plan_workstation = PlanHandlerStation(test_config)
+    plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
     plan_workstation.load_all_tools(option='all')
     plan_workstation.build()
