@@ -1,1 +1,1 @@
-{"test_town_cordon": {"scores": {"in": 0.0, "out": 0.0}, "weight": 1}, "test_town_peak_cordon": {"scores": {"in": 0.0}, "weight": 1}, "test_town_modeshare": {"scores": {"modeshare": 0.0}, "weight": 1}, "meta_score": 0.0}
+{"test_town_cordon:car": {"scores": {"in": 0.0, "out": 0.0}, "weight": 1}, "meta_score": 0.0}

@@ -1,19 +1,120 @@
+from typing import Dict, List, Union
+from halo import Halo
+
+
+# Define tools to be used by Sub Processes
+class Tool:
+    """
+    Base tool class, defines basic behaviour for all tools at each Workstation.
+    Values:
+        .requirements: list, of requirements that that must be provided by suppliers.
+        .options_enabled: bool, for if requirements should carry through manager options.
+        .valid_options/.invalid_options: Optional lists for option validation at init.
+        .resources: dict, of supplier resources collected with .build() method.
+
+    Methods:
+        .__init__(): instantiate and validate option.
+        .get_requirements(): return tool requirements.
+        .build(): check if requirements are met then build.
+    """
+    requirements = []
+    options_enabled = False
+
+    valid_options = None
+    invalid_options = None
+
+    resources = {}
+
+    def __init__(
+            self, config,
+            option: Union[None, str] = None
+    ) -> None:
+        """
+        Initiate a tool instance with optional option (ie: 'bus').
+        :param option: optional option, typically assumed to be str
+        """
+        self.config = config
+        self.option = self._validate_option(option)
+
+    def get_requirements(self) -> Union[None, Dict[str, list]]:
+        """
+        Default return requirements of tool for given .option.
+        Returns None if .option is None.
+        :return: dict of requirements
+        """
+        if not self.requirements:
+            return None
+
+        if self.options_enabled:
+            requirements = {req: [self.option] for req in self.requirements}
+        else:
+            requirements = {req: None for req in self.requirements}
+
+        return requirements
+
+    def build(
+            self,
+            resource: Dict[str, list],
+            spinner=None,
+
+    ) -> None:
+        """
+        Default build self.
+        :param resource: dict, supplier resources
+        :param spinner: optional spinner for verbosity
+        :return: None
+        """
+        for requirement in convert_to_unique_keys(self.get_requirements()):
+            if requirement not in list(resource):
+                raise ValueError(f'Missing requirement: {requirement}')
+
+        self.resources = resource
+
+    def _validate_option(self, option: str) -> str:
+        """
+        Validate option based on .valid_options and .invalid_option if not None.
+        Raises UserWarning if option is not in .valid_options or in .invalid_options.
+        :param option: str
+        :return: str
+        """
+        if self.valid_options:
+            if option not in self.valid_options:
+                raise UserWarning(f'Unsupported option: {option} at tool: {self}')
+        if self.invalid_options:
+            if option in self.invalid_options:
+                raise UserWarning(f'Invalid option: {option} at tool: {self}')
+        return option
+
+
 class WorkStation:
     """
-    Base Class for holding dictionary of Tool objects.
+    Base Class for WorkStations.
+
+    Values:
+        .depth: int, depth of workstation in longest path search, used for ordering graph operation.
+        .tools: dict, of available tools.
     """
     depth = 0
     tools = {}
 
-    def __init__(self, config):
+    def __init__(self, config) -> None:
+        """
+        Instantiate WorkStation.
+        :param config: Config object
+        """
+        self.config = config
+
         self.resources = {}
         self.requirements = {}
-        self.config = config
         self.managers = None
         self.suppliers = None
         self.supplier_resources = {}
 
-    def connect(self, managers: list, suppliers: list) -> None:
+    def connect(
+            self,
+            managers: Union[None, list],
+            suppliers: Union[None, list]
+    ) -> None:
         """
         Connect workstations to their respective managers and suppliers to form a DAG.
         Note that arguments should be provided as lists.
@@ -25,6 +126,13 @@ class WorkStation:
         self.suppliers = suppliers
 
     def engage(self) -> None:
+        """
+        Engage workstation, initiating required tools and getting their requirements.
+        Note that initiated tools are mapped in .resources.
+        Note that requirements are mapped as .requirements.
+        Note that tool order is preserves as defined in Workstation.tools.
+        :return: None
+        """
 
         all_requirements = []
 
@@ -57,6 +165,11 @@ class WorkStation:
             self.requirements = combine_reqs(all_requirements)
 
     def validate_suppliers(self) -> None:
+        """
+        Collects available tools from supplier workstations. Raises ValueError if suppliers have
+        missing tools.
+        :return: None
+        """
 
         # gather supplier tools
         supplier_tools = {}
@@ -73,19 +186,26 @@ class WorkStation:
                 f'Missing requirements: {missing} from suppliers: {self.suppliers}.'
             )
 
-    def gather_manager_requirements(self):
+    def gather_manager_requirements(self) -> Dict[str, List[str]]:
+        """
+        Gather manager requirements.
+        :return: dict of manager reqs, eg {a: [1,2], b:[1]}
+        """
         reqs = []
         if self.managers:
             for manager in self.managers:
                 reqs.append(manager.requirements)
         return combine_reqs(reqs)
 
-    def build(self):
+    def build(self, spinner=None):
         """
         Gather resources from suppliers for current workstation and build() all resources in
         order of .resources map.
+        :param: spinner: optional spinner for verbose behaviour.
         :return: None
         """
+        if spinner:
+            spinner.text = f"Gathering supplier resources for {self}"
         # gather resources
         if self.suppliers:
             for supplier in self.suppliers:
@@ -93,67 +213,22 @@ class WorkStation:
 
         if self.resources:
             for tool_name, tool in self.resources.items():
-                tool.build(self.supplier_resources)
+                if spinner:
+                    spinner.text = f"Building: {tool}"
+                tool.build(self.supplier_resources, spinner)
 
-    def load_all_tools(self, option=None):
+    def load_all_tools(self, option=None) -> None:
+        """
+        Method used for testing.
+        Load all available tools into resources with given option.
+        :param option: option, default None, must be valid for tools
+        :return: NOne
+        """
         for name, tool in self.tools.items():
             self.resources[name] = tool(self.config, option)
 
 
-# Define tools to be used by Sub Processes
-class Tool:
-    """
-    Base tool class.
-    """
-    requirements = None
-    valid_options = None  # todo this might be more useful as INVALID OPTIONS or optional both
-    resources = None
-    options_enabled = False
-
-    def __init__(self, config, option=None):
-        """
-        Initiate a tool instance with optional option (ie: 'bus'). Raise UserWarning if option is
-        not in .valid_options.
-        :param option: optional option, typically assumed to be str
-        """
-        self.config = config
-        if self.valid_options:
-            if option not in self.valid_options:
-                raise UserWarning(f'Unsupported option: {option} at tool: {self}')
-        self.option = option
-
-    def get_requirements(self) -> dict:
-        """
-        Default return requirements of tool for given .option.
-        Returns None if .option is None.
-        :return: dict of requirements
-        """
-        if not self.requirements:
-            return None
-
-        if self.options_enabled:
-            requirements = {req: [self.option] for req in self.requirements}
-        else:
-            requirements = {req: None for req in self.requirements}
-
-        # if self.config.verbose:
-        #     print(f"> Req for tool: {self} Option: {self.option} = {requirements}")
-        return requirements
-
-    def build(self, resource: dict) -> None:
-        """
-        Default build self.
-        :param resource:
-        :return: None
-        """
-        for requirement in convert_to_unique_keys(self.get_requirements()):
-            if requirement not in list(resource):
-                raise ValueError(f'Missing requirement: {requirement}')
-
-        self.resources = resource
-
-
-def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:
+def build(start_node: WorkStation, verbose=False) -> list:
     """
     Main function for validating graph requirements, then initiating and building minimum resources.
 
@@ -177,42 +252,57 @@ def operate_workstation_graph(start_node: WorkStation, verbose=False) -> list:
     """
 
     # stage 1:
-    build_graph_depth(start_node)
+    with Halo(text="Initialising workflow graph...", spinner="dots") as spinner:
+        build_graph_depth(start_node)
+        spinner.succeed("Workflow graph prepared.")
 
     # stage 2:
-    visited = []
-    queue = []
-    start_node.engage()
-    # start_node._engage_suppliers()
-    queue.append(start_node)
-    visited.append(start_node)
+    with Halo(text="Validating workflow graph...", spinner="dots") as spinner:
+        visited = []
+        queue = []
+        queue.append(start_node)
+        visited.append(start_node)
 
-    while queue:
-        current = queue.pop(0)
-        if verbose:
-            print(f'> Engaging: {current}')
-        current.engage()
-
-        if current.suppliers:
+        while queue:
+            current = queue.pop(0)
             if verbose:
-                print(f'> Validating suppliers for: {current}')
-            current.validate_suppliers()
+                spinner.text = f'> Engaging: {current}'
+            current.engage()
 
-            for supplier in order_by_distance(current.suppliers):
-                if supplier not in visited:
-                    queue.append(supplier)
-                    visited.append(supplier)
+            if current.suppliers:
+                if verbose:
+                    spinner.text = f'> Validating suppliers for: {current}'
+                current.validate_suppliers()
+
+                for supplier in order_by_distance(current.suppliers):
+                    if supplier not in visited:
+                        queue.append(supplier)
+                        visited.append(supplier)
+
+        spinner.succeed("Graph Validated and Prepared")
+
+    if verbose:
+        for workstation in visited:
+            print(f"\t> {workstation} engaged with tools:")
+            if not workstation.tools:
+                print("\t\t- None")
+            else:
+                for tool in workstation.tools.keys():
+                    print(f"\t\t- {tool}")
 
     # stage 3:
-    sequence = visited
-    return_queue = visited[::-1]
-    visited = []
-    while return_queue:
-        current = return_queue.pop(0)
-        if verbose:
-            print(f'> Building: {current}')
-        current.build()
-        visited.append(current)
+    with Halo(text="Building workflow graph...", spinner="dots") as spinner:
+        sequence = visited
+        return_queue = visited[::-1]
+        visited = []
+        while return_queue:
+            current = return_queue.pop(0)
+            if verbose:
+                spinner.text = f'> Building: {current}'
+            current.build(spinner=spinner)
+            visited.append(current)
+        spinner.succeed("Graph Build Complete")
+
     # return full sequence for testing
     return sequence + visited
 
@@ -250,7 +340,7 @@ def order_by_distance(candidates: list) -> list:
     return sorted(candidates, key=lambda x: x.depth, reverse=False)
 
 
-def combine_reqs(reqs: list) -> dict:
+def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
     """
     Helper function for combining lists of requirements (dicts of lists) into a single
     requirements dict:
@@ -337,255 +427,3 @@ def equals(d1, d2):
         if not list_equals(d1v, d2[d1k]):
             return False
     return True
-
-###########
-
-#
-#
-#
-# class PPPipe(Pipe):
-#     req = ['volume_counts']
-#
-#
-# class Factory:
-#
-#     def __init__(self, config):
-#         if config.post_processors:
-#             self.post_processors = PostProcessor
-#
-#     def _build(self):
-#         pass
-#
-#     def _build_requirements(self):
-#         req = []
-#         if self.config.plan_handlers:
-#             req.append(['plan_handlers'])
-#         if self.config.event_handlers:
-#             req.append(['event_handlers'])
-#         if self.config.post_processors:
-#             req.append(['post_processors'])
-#         # benchmarkers = self.config.benchmarks
-#         return req
-#
-#
-# class PlanManager(Manager):
-#
-#     _tools = {
-#         'plan_handlers': Pipe,
-#         'event_handlers': Pipe,
-#         'post_processors': PPPipe,
-#     }
-#
-#     def _build(self):
-#         print(f'STREAM {self}')
-#
-#     def _build_requirements(self):
-#         req = super()._build_requirements()
-#         req.update(self.config.plan_handlers)
-#
-# #
-# # class BProcess(Manager):
-# #     _tools = {
-# #         'a': Tool1,
-# #     }
-# #
-# #
-# # class CProcess(Manager):
-# #     _tools = {
-# #         'b': Tool3,
-# #     }
-# #
-# #
-# # class DProcess(Manager):
-# #     _tools = {
-# #         'a': Tool1,
-# #         'b': Tool3,
-# #         'e': Tool2,
-# #         'c': Tool5,
-# #     }
-# #
-# #
-# # class FinalProcess(Manager):
-# #     _tools = {
-# #         'a': 'A',
-# #         'b': 'B',
-# #         'c': 'C',
-# #         'd': 'D',
-# #         'e': 'E',
-# #         'f': 'F',
-# #     }
-# #
-# #     def _build(self):
-# #         print('building final')
-# #         self._resources = self._tools
-#
-#
-# class ConfigSupervisor(Manager):
-#
-#     @property
-#     def tools(self):
-#         return list(self._tools)
-#
-#     def _build_requirements(self):
-#         return None
-#
-#     def _build(self):
-#         print(f'building: {self}')
-#         for todo in self._gather_manager_requirements():
-#             self._resources[todo] = self.config.__getattribute__(
-#                 todo
-#             )
-#
-#
-# class InputSupervisor(Manager):
-#     supplier_class = ConfigSupervisor
-#
-#     MAP = {
-#         'events': Events,
-#         'network': Network,
-#         'transit_schedule': TransitSchedule,
-#         'transit_vehicles': TransitVehicles,
-#         'attributes': Attributes,
-#         'plans': Plans,
-#         'mode_map': ModeMap,
-#         'mode_hierarchy': ModeHierarchy,
-#     }
-#
-#     priorities = [
-#         'events',
-#         'plans',
-#         'network',
-#         'attributes',
-#         'transit_schedule',
-#         'transit_vehicles',
-#         'mode_hierarchy',
-#         'mode_map'
-#     ]
-#
-#     def build(self):
-#         print(f'--> Building {type(self)}')
-#         for todo in (self._prioritise(self.manager.requirements())):
-#             self._resources[todo] = self.MAP[todo](self.supplier.resources)
-#
-#     def print(self):
-#         print('--- Input Summary ---')
-#         for required_input in self._resources:
-#             print(required_input)
-#
-#
-# class HandlerSupervisor(Manager):
-#     supplier_class = InputSupervisor
-#
-#     MAP = {
-#         "volume_counts": VolumeCounts,
-#         "passenger_counts": PassengerCounts,
-#         "stop_interactions": StopInteractions,
-#         "activities": Activities,
-#         "legs": Legs,
-#         "mode_share": ModeShare,
-#     }
-#
-#     def build(self):
-#         for handler_name, selections in self.manager.requirements().items():
-#             for selection in selections:
-#                 self._resources[handler_name + '-' + selection] = self.MAP[handler_name](
-#                             selection=selection,
-#                             resources=self.supplier.resources,
-#                             time_periods=self.factory_supervisor.config.time_periods,
-#                             scale_factor=self.factory_supervisor.config.scale_factor,
-#                         )
-#
-#
-# class OutputSupervisor(Manager):
-#     supplier_class = HandlerSupervisor
-#     tools = {}
-#     _resources = {}
-#
-#     def __init__(self, config_path):
-#         super().__init__(self, manager=None)
-#
-#         # initiate config
-#         self.config = Config(config_path)
-#
-#     # def _validate(self):
-#     #     for
-#
-#     def requirements(self):
-#         return {**self.config.event_handlers, **self.config.plan_handlers}
-#
-#
-#     @staticmethod
-#     def user_check_config():
-#         if not input('Continue? (y/n) --').lower() in ('y', 'yes', 'ok'):
-#             quit()
-
-
-
-
-# class PostProcessManager(Manager):
-#
-#     reportees = None
-#
-#     def __init__(self, config):
-#
-#         # Dictionary used to map configuration string to post-processor type
-#         self.POST_PROCESSOR_MAP = {"vkt": VKT}
-#
-#         self.config = config
-#         self._validate_config()
-#
-#         self.post_processors = []
-#
-#     def prepare(self, input_manager, handler_manager):
-#         for post_processor_name in self.config.post_processing:
-#             post_processor = self.POST_PROCESSOR_MAP[post_processor_name](
-#                     self.config,
-#                     input_manager.resources['network'],
-#                     input_manager.resources['transit_schedule'],
-#                     input_manager.resources['transit_vehicles']
-#                 )
-#             post_processor.check_handler_prerequisite(handler_manager)
-#             self.post_processors.append(post_processor)
-#
-#     def _validate_config(self):
-#         for post_processor_name in self.config.post_processing:
-#             post_processor_class = self.POST_PROCESSOR_MAP.get(post_processor_name, None)
-#             if not post_processor_class:
-#                 raise ConfigPostProcessorError(
-#                     f'Unknown post=processor name: {post_processor_name} found in config')
-#
-#
-# class BenchmarkManager(Manager):
-#
-#     reportees = None
-#
-#     def __init__(self, config):
-#
-#         self.BENCHMARK_MAP = {"london_inner_cordon_car": LondonInnerCordonCar,
-#                          "dublin_canal_cordon_car": DublinCanalCordonCar,
-#                          "ireland_commuter_modeshare": IrelandCommuterStats,
-#                          "test_town_cordon": TestTownHourlyCordon,
-#                          "test_town_peak_cordon": TestTownPeakIn,
-#                          "test_town_modeshare": TestTownCommuterStats}
-#
-#         self.BENCHMARK_WEIGHTS = {"london_inner_cordon_car": 1,
-#                              "dublin_canal_cordon_car": 1,
-#                              "ireland_commuter_modeshare": 1,
-#                              "test_town_cordon": 1,
-#                              "test_town_peak_cordon": 1,
-#                              "test_town_modeshare": 1}
-#
-#         self.config = config
-#         self._validate_config()
-#
-#         self.benchmarks = None
-#
-#     def prepare(self, input_manager, handler_manager):
-#         self.benchmarks = Benchmarks(self.config)
-#
-#     def _validate_config(self):
-#         for benchmark_name in self.config.benchmarks:
-#             benchmark_class = self.BENCHMARK_MAP.get(benchmark_name, None)
-#             if not benchmark_class:
-#                 raise ConfigBenchmarkError(
-#                     f'Unknown benchmark name: {benchmark_name} found in config')

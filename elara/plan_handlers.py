@@ -5,14 +5,11 @@ import os
 
 from elara.factory import Tool, WorkStation
 
-__all__ = [
-    'Activities',
-    'Legs',
-    'ModeShare',
-]
 
-
-class PlanHandler(Tool):
+class PlanHandlerTool(Tool):
+    """
+    Base Tool class for Plan Handling.
+    """
     results = dict()
 
     def __init__(self, config, option=None):
@@ -23,18 +20,21 @@ class PlanHandler(Tool):
             raise NotImplementedError(f'Not implemented option: {self.option} for modeshare')
 
 
-class Activities(PlanHandler):
+class Activities(PlanHandlerTool):
 
     def __init__(self):
         raise NotImplementedError
 
 
-class Legs(PlanHandler):
+class Legs(PlanHandlerTool):
     def __init__(self):
         raise NotImplementedError
 
 
-class ModeShare(PlanHandler):
+class ModeShare(PlanHandlerTool):
+    """
+    Extract Mode Share from Plans.
+    """
 
     requirements = [
         'plans',
@@ -45,8 +45,16 @@ class ModeShare(PlanHandler):
     ]
     valid_options = ['all']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate Handler.
+        :param config: Config
+        :param option: str, option
+        """
         super().__init__(config, option)
+
+        self.option = option  # todo options not implemented
+
         self.modes = None
         self.mode_indices = None
         self.classes = None
@@ -59,7 +67,15 @@ class ModeShare(PlanHandler):
         # Initialise results storage
         self.results = dict()  # Result geodataframes ready to export
 
-    def build(self, resources):
+    def __str__(self):
+        return f'ModeShare mode: {self.option}'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build Handler.
+        :param resources:
+        :return:
+        """
         super().build(resources)
 
         # Initialise mode classes
@@ -85,7 +101,6 @@ class ModeShare(PlanHandler):
         self.results = dict()
 
     def process_plan(self, elem):
-
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
         events to determine link volume counts.
@@ -204,7 +219,10 @@ class ModeShare(PlanHandler):
         return x, y, z, w
 
 
-class PlanHandlerStation(WorkStation):
+class PlanHandlerWorkStation(WorkStation):
+    """
+    Work Station class for collecting and building Plans Handlers.
+    """
 
     tools = {
         # "activities": Activities,
@@ -213,6 +231,10 @@ class PlanHandlerStation(WorkStation):
     }
 
     def build(self):
+        """
+        Build all required handlers, then finalise and save results.
+        :return: None
+        """
         # build tools
         super().build()
 

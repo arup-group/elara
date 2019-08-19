@@ -1,22 +1,24 @@
 from math import floor
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import os
+from typing import Union, Tuple
+
+
 from elara.factory import WorkStation, Tool
 
 
-__all__ = [
-    'VolumeCounts',
-    'PassengerCounts',
-    'StopInteractions',
-]
-
-
-class EventHandler(Tool):
+class EventHandlerTool(Tool):
+    """
+    Base Tool class for Event Handling.
+    """
     result_gdfs = dict()
 
     @staticmethod
-    def generate_elem_ids(elems_in):
+    def generate_elem_ids(
+            elems_in: Union[list, gpd.GeoDataFrame]
+    ) -> Tuple[list, dict]:
         """
         Generate element ID list and index dictionary from given geodataframe.
         :param elems_in: elements
@@ -30,7 +32,7 @@ class EventHandler(Tool):
         }
         return elems_in, elem_indices
 
-    def vehicle_mode(self, vehicle_id):
+    def vehicle_mode(self, vehicle_id: str) -> str:
         """
         Given a vehicle's ID, return its mode type.
         :param vehicle_id: Vehicle ID string
@@ -43,7 +45,7 @@ class EventHandler(Tool):
         else:
             return "car"
 
-    def remove_empty_rows(self, df):
+    def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Remove rows from given results dataframe if time period columns only contain
         zeroes.
@@ -60,7 +62,7 @@ class EventHandler(Tool):
         """
         return NotImplementedError
 
-    def contract_results(self):
+    def contract_results(self) -> None:
         """
         Remove zero-sum rows from all results dataframes.
         """
@@ -69,7 +71,10 @@ class EventHandler(Tool):
         }
 
 
-class VolumeCounts(EventHandler):
+class VolumeCounts(EventHandlerTool):
+    """
+    Extract Volume Counts for mode on given network.
+    """
 
     requirements = [
         'events',
@@ -78,10 +83,15 @@ class VolumeCounts(EventHandler):
         'transit_vehicles',
         'attributes',
     ]
-    valid_options = ['car', 'bus', 'train']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
         super().__init__(config, option)
+
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -92,23 +102,16 @@ class VolumeCounts(EventHandler):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def build(self, resources):
+    def __str__(self):
+        return f'VolumeCounts mode: {self.option}'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :return: None
+        """
         super().build(resources)
-
-        # self.network = resources['network']
-        # self.transit_schedule = resources['transit_schedule']
-        # self.transit_vehicles = resources['transit_vehicles']
-        # self.attributes = resources['attributes']
-
-        # # generate index and map for attribute dimension
-        # if mode == "car":
-        #     # Initialise class attributes
-        #     self.classes, self.class_indices = self.generate_elem_ids(attributes.classes)
-        # else:
-        #     # TODO maybe get rid of this
-        #     # Initialise class attributes as mode (cannot classify mixed
-        #     # occupany vehicles)
-        #     self.classes, self.class_indices = self.generate_elem_ids([mode])
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
@@ -123,7 +126,7 @@ class VolumeCounts(EventHandler):
                                 len(self.classes),
                                 self.config.time_periods))
 
-    def process_event(self, elem):
+    def process_event(self, elem) -> None:
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
         events to determine link volume counts.
@@ -148,7 +151,7 @@ class VolumeCounts(EventHandler):
                 )
                 self.counts[x, y, z] += 1
 
-    def finalise(self):
+    def finalise(self) -> None:
         """
         Following event processing, the raw events table will contain counts by link
         by time slice. The only thing left to do is scale by the sample size and
@@ -189,7 +192,10 @@ class VolumeCounts(EventHandler):
         )
 
 
-class PassengerCounts(EventHandler):
+class PassengerCounts(EventHandlerTool):
+    """
+    Build Passenger Counts for given mode in mode vehicles.
+    """
 
     requirements = [
         'events',
@@ -198,9 +204,14 @@ class PassengerCounts(EventHandler):
         'transit_vehicles',
         'attributes',
     ]
-    valid_options = ['bus', 'train']
+    invalid_options = ['car']
 
     def __init__(self, config, option=None):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
         super().__init__(config, option)
         self.classes = None
         self.class_indices = None
@@ -214,7 +225,15 @@ class PassengerCounts(EventHandler):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
+    def __str__(self):
+        return f'PassengerCounts mode: {self.option}'
+
     def build(self, resources: dict) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :return: None
+        """
         super().build(resources)
 
         # Check for car
@@ -330,7 +349,10 @@ class PassengerCounts(EventHandler):
         )
 
 
-class StopInteractions(EventHandler):
+class StopInteractions(EventHandlerTool):
+    """
+    Alightings and Boardings handler for given mode.
+    """
 
     requirements = [
         'events',
@@ -339,9 +361,14 @@ class StopInteractions(EventHandler):
         'transit_vehicles',
         'attributes',
     ]
-    valid_options = ['bus', 'train']
+    invalid_options = ['car']
 
     def __init__(self, config, option=None):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
         super().__init__(config, option)
         self.classes = None
         self.class_indices = None
@@ -356,7 +383,15 @@ class StopInteractions(EventHandler):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
+    def __str__(self):
+        return f'StopInteractions with mode: {self.option}'
+
     def build(self, resources: dict) -> None:
+        """
+        Build handler.
+        :param resources: dict, supplier resources.
+        :return: None
+        """
         super().build(resources)
 
         # Check for car
@@ -470,7 +505,11 @@ class StopInteractions(EventHandler):
             )
 
 
-class EventHandlerStation(WorkStation):
+class EventHandlerWorkStation(WorkStation):
+
+    """
+    Work Station for holding and building Event Handlers.
+    """
 
     tools = {
         "volume_counts": VolumeCounts,
@@ -478,7 +517,14 @@ class EventHandlerStation(WorkStation):
         "stop_interactions": StopInteractions,
     }
 
-    def build(self):
+    def __str__(self):
+        return f'Events Handler WorkStation with resources: {self.resources}'
+
+    def build(self) -> None:
+        """
+        Build all required handlers, then finalise and save results.
+        :return: None
+        """
         # build tools
         super().build()
 

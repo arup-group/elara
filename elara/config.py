@@ -22,7 +22,7 @@ class Config:
         )
         self.verbose = self.parsed_toml["scenario"].get("verbose", False)
 
-        # Factory objects
+        # Factory requirements
         self.event_handlers = self.parsed_toml.get("event_handlers", {})
         self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
         self.post_processors = self.parsed_toml.get("post_processors", {})
@@ -31,9 +31,6 @@ class Config:
         # Output settings
         self.output_path = self.parsed_toml["outputs"]["path"]
         self.contract = self.parsed_toml["outputs"].get("contract", False)
-
-    def get_requirements(self):
-        raise NotImplementedError
 
     @property
     def crs(self):
@@ -172,7 +169,7 @@ class GetTransitVehiclesPath(Tool):
         self.path = self.config.transit_vehicles_path
 
 
-class PathWorkStation(WorkStation):
+class PathFinderWorkStation(WorkStation):
     tools = {
         'crs': GetCRS,
         'events_path': GetEventsPath,
@@ -183,8 +180,11 @@ class PathWorkStation(WorkStation):
         'transit_vehicles_path': GetTransitVehiclesPath,
     }
 
+    def __str__(self):
+        return f'PathFinder WorkStation with resources: {self.resources}'
 
-class Requirements(WorkStation):
+
+class RequirementsWorkStation(WorkStation):
 
     tools = None
 
@@ -193,17 +193,9 @@ class Requirements(WorkStation):
         reqs.update(self.config.event_handlers)
         reqs.update(self.config.plan_handlers)
         reqs.update(self.config.post_processors)
-        if self.config.verbose:
-            print(f"> Retrieving requirements from config.")
-        # todo add benchmarking
+        reqs.update(self.config.benchmarks)
         return reqs
 
-    def get_requirements(self):
-        reqs = {}
-        reqs.update(self.config.event_handlers)
-        reqs.update(self.config.plan_handlers)
-        reqs.update(self.config.post_processors)
-        if self.config.verbose:
-            print(f"> Retrieving requirements from config.")
-        # todo add benchmarking
-        return reqs
+    def __str__(self):
+        return f'Requirements WorkStation'
+

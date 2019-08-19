@@ -397,7 +397,7 @@ class ModeMap(Tool):
         raise KeyError(f"key:'{key}' not found in ModeMap")
 
 
-class InputWorkStation(WorkStation):
+class InputsWorkStation(WorkStation):
     tools = {
         'events': Events,
         'network': Network,

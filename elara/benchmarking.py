@@ -12,7 +12,6 @@ from elara import get_benchmark_data
 
 
 class Cordon(Tool):
-    options_enabled = True
 
     cordon_counter = None
     benchmark_path = None
@@ -23,16 +22,20 @@ class Cordon(Tool):
     hours = None
     modes = None
 
-    def __init__(self, name, config):
+    def __init__(self, config, option) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
         :param name: String, cordon name
         :param config: Config
         """
+        super().__init__(config, option)
+
         self.cordon_counts = []
-        self.name = name
-        self.config = config
+
+        self.name = self.config.name
+        self.mode = option
+
         counts_df = pd.read_csv(self.benchmark_path)
         links_df = pd.read_csv(self.cordon_path, index_col=0)
 
@@ -41,17 +44,14 @@ class Cordon(Tool):
 
         for direction_name, dir_code in self.directions.items():
             self.cordon_counts.append(self.cordon_counter(
-                self.name,
-                self.config,
-                self.year,
-                self.hours,
+                self,
                 direction_name,
                 dir_code,
                 counts_df,
                 links_df
             ))
 
-    def output_and_score(self):
+    def build(self, resource: dict) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
@@ -59,24 +59,22 @@ class Cordon(Tool):
         """
 
         # Build paths and load appropriate volume counts
-        results_dfs = {}
-        for mode in self.modes:
-            results_name = "{}_volume_counts_{}.csv".format(self.config.name, mode)
-            results_path = os.path.join(self.config.output_path, results_name)
-            results_df = pd.read_csv(results_path, index_col=0)
-            results_df.index.name = 'link_id'
-            results_dfs[mode] = results_df
+        results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
+        results_path = os.path.join(self.config.output_path, results_name)
+        results_df = pd.read_csv(results_path, index_col=0)
+        results_df.index.name = 'link_id'
 
         # get scores and write outputs
         scores = {}
         for cordon_count in self.cordon_counts:
-            scores[cordon_count.direction] = cordon_count.output_and_score(results_dfs)
+            scores[cordon_count.direction] = cordon_count.output_and_score(results_df)
         return scores
 
 
 class CordonCount:
 
-    def __init__(self, name, config, year, hours, direction_name, dir_code, counts_df, links_df):
+    def __init__(self, parent, direction_name, dir_code, counts_df,
+                 links_df):
         """
         Cordon count parent object for counts in or out of a cordon. Includes
         methods for calculating hourly or aggregated period counts.
@@ -87,11 +85,13 @@ class CordonCount:
         :param counts_df: DataFrame of all benchmark counts for cordon
         :param links_df: DataFrame of cordon-count to links
         """
-        self.cordon_name = name
+        self.cordon_name = parent.name
+        self.config = parent.config
+        self.year = parent.year
+        self.hours = parent.hours
+        self.mode = parent.mode
+
         self.direction = direction_name
-        self.config = config
-        self.year = year
-        self.hours = hours
         self.dir_code = dir_code
         self.counts_df = counts_df
 
@@ -108,28 +108,30 @@ class CordonCount:
         df = links_df.loc[links_df.dir == direction_code, :]
         return list(set(df.link))
 
-    def get_counts(self, counts_df, modes):
+    def get_counts(self, counts_df):
         """
         Builds array of total counts by hour.
         :param counts_df: DataFrame
-        :param modes: List of mode Strings
         :return:
         """
         counts_array = np.zeros(len(self.hours))
 
         df = counts_df.loc[counts_df.Year == self.year, :]
-        assert(len(df)), f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
+        assert(len(df)),\
+            f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
 
         df = df.loc[df.Hour.isin(self.hours), :]
-        assert(len(df)), f'No {self.cordon_name} benchmark counts left from after filtering by hours:{self.hours}'
+        assert(len(df)),\
+            f'No {self.cordon_name} benchmark counts left from after filtering by hours:{self.hours}'
 
         df = df.loc[counts_df.Direction == self.dir_code, :]
         site_indexes = list(set(df.Site))
 
         for site_index in site_indexes:
             site_df = df.loc[df.Site == site_index, :]
-            hour_counts = np.array(site_df.sort_values('Hour').loc[:, modes]).sum(axis=1)
-            assert len(hour_counts) == len(self.hours), f'Not extracted the right amount of hours {self.hours}'
+            hour_counts = np.array(site_df.sort_values('Hour').loc[:, self.mode])
+            assert len(hour_counts) == len(self.hours),\
+                f'Not extracted the right amount of hours {self.hours}'
 
             counts_array += hour_counts
 
@@ -147,17 +149,17 @@ class CordonCount:
         df.loc[:, 'source'] = source
         return df
 
-    def get_count(self, counts_df, modes):
+    def get_count(self, counts_df):
         """
         Builds total count for period.
         :param counts_df: DataFrame
-        :param modes: List of mode Strings
         :return:
         """
         count = 0
 
         df = counts_df.loc[counts_df.Year == self.year, :]
-        assert(len(df)), f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
+        assert(len(df)),\
+            f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
 
         df = df.loc[df.Direction == self.dir_code, :]
         site_indexes = list(set(df.Site))
@@ -165,7 +167,7 @@ class CordonCount:
         for site_index in site_indexes:
             site_df = df.loc[df.Site == site_index, :]
 
-            site_count = site_df.loc[:, modes].values.sum()
+            site_count = site_df.loc[:, self.mode].values.sum()
 
             count += site_count
 
@@ -186,22 +188,20 @@ class CordonCount:
 
 class HourlyCordonCount(CordonCount):
 
-    def output_and_score(self, results_dfs):
+    def output_and_score(self, result_df):
         """
         Cordon count for hourly data. Joins all results from different volume counts
         (modal) and extract counts for cordon. Scoring is calculated by summing the
         absolute difference between hourly total counts and model results,
         then normalising by the total of all counts.
-        :param results_dfs: DataFrame object of model results
+        :param result_df: DataFrame object of model results
         :return: Float
         """
         # collect all results
-        model_results = pd.DataFrame()
-        for mode, result_df in results_dfs.items():
-            if len(result_df):
-                result_df.loc[:, 'mode'] = mode
-                mode_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
-                model_results = pd.concat([model_results, mode_results], axis=0)
+        assert len(result_df), f"zero length results df at {self.cordon_name}."
+
+        model_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
+        model_results.loc[:, 'mode'] = self.mode
 
         # write cordon model results
         csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
@@ -225,7 +225,7 @@ class HourlyCordonCount(CordonCount):
         classes_df.to_csv(csv_path)
 
         # Get cordon counts for mode
-        counts_array = self.get_counts(self.counts_df, modes=results_dfs.keys())
+        counts_array = self.get_counts(self.counts_df)
         count_df = self.counts_to_df(counts_array, )
 
         # Label and write benchmark csv
@@ -241,22 +241,21 @@ class HourlyCordonCount(CordonCount):
 
 class PeriodCordonCount(CordonCount):
 
-    def output_and_score(self, results_dfs):
+    def output_and_score(self, result_df):
         """
         Cordon count for single period data. Joins all results from different volume counts
         (modal) and extract counts for cordon. Scoring is calculated by summing the
         absolute difference between count and model results, then normalising by the
         total of all counts.
-        :param results_dfs: DataFrame object of model results
+        :param result_df: DataFrame object of model results
         :return: Float
         """
 
         # collect all results
-        model_results = pd.DataFrame()
-        for mode, result_df in results_dfs.items():
-            mode_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
-            mode_results.loc[:, 'mode'] = mode
-            model_results = pd.concat([model_results, mode_results], axis=0)
+        assert len(result_df), f"zero length results df at {self.cordon_name}."
+
+        model_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
+        model_results.loc[:, 'mode'] = self.mode
 
         # write cordon model results
         csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
@@ -281,7 +280,7 @@ class PeriodCordonCount(CordonCount):
         classes_df.to_csv(csv_path)
 
         # Get cordon count for mode
-        count = self.get_count(self.counts_df, modes=results_dfs.keys())
+        count = self.get_count(self.counts_df)
         count_df = self.count_to_df(count, 'benchmark')
 
         # Label and write benchmark csv
@@ -294,31 +293,31 @@ class PeriodCordonCount(CordonCount):
         return np.absolute(result - count) / count
 
 
-class ModeStats:
+class ModeStats(Tool):
 
     benchmark_path = None
 
-    def __init__(self, name, config):
+    def __init__(self, config, option):
         """
         ModeStat parent object for benchmarking with mode share data.
         :param name: String
         :param config: Config
         """
+        super().__init__(config, option)
 
         self.benchmark_df = pd.read_csv(self.benchmark_path,
                                         header=None,
                                         names=['mode', 'benchmark'])
         self.benchmark_df.set_index('mode', inplace=True)
-        self.name = name
-        self.config = config
+        self.name = self.config.name
 
-    def output_and_score(self):
+    def build(self, resource: dict) -> dict:
         """
         Builds paths for mode share outputs, loads and combines with model for scoring.
         :return: Dictionary of scores
         """
         # Build paths and load appropriate volume counts
-        results_name = "{}_mode_shares_all_total.csv".format(self.config.name)
+        results_name = "{}_mode_shares_all_total.csv".format(self.name)
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path,
                                  header=None,
@@ -342,6 +341,11 @@ class ModeStats:
 
 class LondonInnerCordonCar(Cordon):
 
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
     cordon_counter = HourlyCordonCount
     benchmark_path = get_benchmark_data(os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv'))
     cordon_path = get_benchmark_data(os.path.join('london', 'inner_cordon', 'cordon_links.csv'))
@@ -354,6 +358,11 @@ class LondonInnerCordonCar(Cordon):
 
 class DublinCanalCordonCar(Cordon):
 
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
     cordon_counter = PeriodCordonCount
     benchmark_path = get_benchmark_data(os.path.join('ireland', 'dublin_cordon', '2016_counts.csv'))
     cordon_path = get_benchmark_data(os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv'))
@@ -366,13 +375,21 @@ class DublinCanalCordonCar(Cordon):
 
 class IrelandCommuterStats(ModeStats):
 
+    requirements = ['mode_share']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 1
     benchmark_path = get_benchmark_data(os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv'))
 
 
-####### test cordons for test_town #######
-
 class TestTownHourlyCordon(Cordon):
 
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
     cordon_counter = HourlyCordonCount
     benchmark_path = get_benchmark_data(os.path.join('test_town', 'test_town_cordon', '2016_counts.csv'))
     cordon_path = get_benchmark_data(os.path.join('test_town', 'test_town_cordon', 'test_town_cordon.csv'))
@@ -385,6 +402,11 @@ class TestTownHourlyCordon(Cordon):
 
 class TestTownPeakIn(Cordon):
 
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
     cordon_counter = PeriodCordonCount
     benchmark_path = get_benchmark_data(os.path.join('test_town', 'test_town_peak_cordon', '2016_peak_in_counts.csv'))
     cordon_path = get_benchmark_data(os.path.join('test_town', 'test_town_peak_cordon', 'test_town_cordon.csv'))
@@ -397,10 +419,20 @@ class TestTownPeakIn(Cordon):
 
 class TestTownCommuterStats(ModeStats):
 
-    benchmark_path = get_benchmark_data(os.path.join('test_town', 'census_modestats', 'test_town_modestats.csv'))
+    requirements = ['mode_share']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 1
+    benchmark_path = get_benchmark_data(os.path.join('test_town', 'census_modestats',
+                                                      'test_town_modestats.csv'))
 
 
-class Benchmarks(WorkStation):
+class BenchmarkWorkStation(WorkStation):
+    """
+    WorkStation class for building benchmarks.
+    """
+
     tools = {
         "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
@@ -431,7 +463,7 @@ class Benchmarks(WorkStation):
         if not os.path.exists(benchmark_dir):
             os.makedirs(benchmark_dir)
 
-    def build(self):
+    def build(self) -> None:
         """
         Calculates all sub scores from benchmarks, writes to disk and returns
         combined metascore.
@@ -439,9 +471,10 @@ class Benchmarks(WorkStation):
 
         summary = {}
         flat_summary = []
-        for benchmark_name, benchmark in self.benchmarks.items():
-            scores = benchmark.output_and_score()
-            weight = BENCHMARK_WEIGHTS[benchmark_name]
+        for benchmark_name, benchmark in self.resources.items():
+
+            scores = benchmark.build({})
+            weight = benchmark.weight
 
             sub_summary = {'scores': scores,
                            'weight': weight

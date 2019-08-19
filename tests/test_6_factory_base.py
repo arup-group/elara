@@ -4,7 +4,7 @@ import pytest
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.factory import WorkStation, Tool, equals, operate_workstation_graph, build_graph_depth
+from elara.factory import WorkStation, Tool, equals, build, build_graph_depth
 sys.path.append(os.path.abspath('../tests'))
 
 
@@ -143,7 +143,7 @@ def test_requirements(start, post_process, handler_process, inputs_process, conf
     inputs_process.connect([handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
-    operate_workstation_graph(start)
+    build(start)
 
     assert equals(
         start.gather_manager_requirements(),
@@ -208,7 +208,7 @@ def test_bfs(start, post_process, handler_process, inputs_process, config_paths)
     inputs_process.connect([handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
-    sequence = operate_workstation_graph(start)
+    sequence = build(start)
     assert sequence == [start, post_process, handler_process, inputs_process, config_paths,
                         config_paths, inputs_process, handler_process, post_process, start]
 
@@ -221,7 +221,7 @@ def test_engage_supply_chain(start, post_process, handler_process, inputs_proces
     inputs_process.connect([handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
-    operate_workstation_graph(start)
+    build(start)
 
     assert set(start.resources) == set()
     assert set(post_process.resources) == {'vkt:bus'}

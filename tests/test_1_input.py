@@ -4,7 +4,7 @@ import pytest
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config, PathWorkStation
+from elara.config import Config, PathFinderWorkStation
 from elara import inputs
 sys.path.append(os.path.abspath('../tests'))
 
@@ -28,7 +28,7 @@ def test_gzip_config():
 
 @pytest.fixture
 def test_paths(test_xml_config):
-    paths = PathWorkStation(test_xml_config)
+    paths = PathFinderWorkStation(test_xml_config)
     paths.connect(managers=None, suppliers=None)
     paths.load_all_tools()
     paths.build()
@@ -38,7 +38,7 @@ def test_paths(test_xml_config):
 
 @pytest.fixture
 def test_zip_paths(test_gzip_config):
-    paths = PathWorkStation(test_gzip_config)
+    paths = PathFinderWorkStation(test_gzip_config)
     paths.connect(managers=None, suppliers=None)
     paths.load_all_tools()
     paths.build()
@@ -179,7 +179,7 @@ def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
 
 # Input Manager
 def test_load_input_manager(test_xml_config, test_paths):
-    input_workstation = inputs.InputWorkStation(test_xml_config)
+    input_workstation = inputs.InputsWorkStation(test_xml_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
