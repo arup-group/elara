@@ -24,40 +24,41 @@ class ExampleTool(Tool):
 
 # Tools
 class VKT(ExampleTool):
-    req = ['volume_counts']
+    options_enabled = True
+    requirements = ['volume_counts']
     valid_options = ['car', 'bus']
 
 
 class VolumeCounts(ExampleTool):
-    req = ['network', 'events']
+    requirements = ['network', 'events']
     valid_options = ['car', 'bus']
 
     def get_requirements(self):
-        return {req: None for req in self.req}
+        return {req: None for req in self.requirements}
 
 
 class ModeShare(ExampleTool):
-    req = ['network', 'events']
+    requirements = ['network', 'events']
     valid_options = ['all']
 
     def get_requirements(self):
-        return {req: None for req in self.req}
+        return {req: None for req in self.requirements}
 
 
 class Network(ExampleTool):
-    req = ['network_path']
+    requirements = ['network_path']
 
 
 class Events(ExampleTool):
-    req = ['events_path']
+    requirements = ['events_path']
 
 
 class Plans(ExampleTool):
-    req = ['plans_path']
+    requirements = ['plans_path']
 
 
 class GetPath(ExampleTool):
-    req = None
+    requirements = None
 
 
 # Work stations
@@ -154,7 +155,7 @@ def test_requirements(start, post_process, handler_process, inputs_process, conf
     )
     assert equals(
         handler_process.gather_manager_requirements(),
-        {'vkt': ['bus'], 'volume_counts': ['car']}
+        {'vkt': ['bus'], 'volume_counts': ['car', 'bus']}
     )
     assert equals(
         inputs_process.gather_manager_requirements(),
@@ -162,7 +163,7 @@ def test_requirements(start, post_process, handler_process, inputs_process, conf
     )
     assert equals(
         config_paths.gather_manager_requirements(),
-        {}
+        {'events_path': None, 'network_path': None}
     )
 
 
@@ -176,18 +177,12 @@ def test_engage_start_suppliers(start, post_process, handler_process, inputs_pro
 
     start.engage()
     assert set(start.resources) == set()
-
-
-
-
-
-
-
-    
+    post_process.engage()
     assert set(post_process.resources) == {'vkt:bus'}
-    assert set(handler_process.resources) == {'volume_counts:car'}
-    post_process._engage_suppliers()
+    handler_process.engage()
     assert set(handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
+    inputs_process.engage()
+    assert set(inputs_process.resources) == {'events', 'network'}
 
 
 def test_dfs_distances(start, post_process, handler_process, inputs_process, config_paths):
@@ -219,6 +214,7 @@ def test_bfs(start, post_process, handler_process, inputs_process, config_paths)
 
 
 def test_engage_supply_chain(start, post_process, handler_process, inputs_process, config_paths):
+
     start.connect(None, [handler_process, post_process])
     post_process.connect([start], [handler_process])
     handler_process.connect([start, post_process], [inputs_process])
@@ -226,6 +222,7 @@ def test_engage_supply_chain(start, post_process, handler_process, inputs_proces
     config_paths.connect([inputs_process], None)
 
     operate_workstation_graph(start)
+
     assert set(start.resources) == set()
     assert set(post_process.resources) == {'vkt:bus'}
     assert set(handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
