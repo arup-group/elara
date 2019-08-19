@@ -24,6 +24,7 @@ class Events(Tool):
         super().build(resources)
 
         path = resources['events_path'].path
+
         self.elems = get_elems(path, "event")
 
 

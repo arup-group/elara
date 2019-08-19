@@ -518,7 +518,7 @@ class EventHandlerWorkStation(WorkStation):
     }
 
     def __str__(self):
-        return f'Events Handler WorkStation with resources: {self.resources}'
+        return f'Events Handler WorkStation'
 
     def build(self) -> None:
         """
