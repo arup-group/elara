@@ -463,7 +463,7 @@ class BenchmarkWorkStation(WorkStation):
         if not os.path.exists(benchmark_dir):
             os.makedirs(benchmark_dir)
 
-    def build(self) -> None:
+    def build(self, spinner=None) -> None:
         """
         Calculates all sub scores from benchmarks, writes to disk and returns
         combined metascore.
@@ -496,6 +496,9 @@ class BenchmarkWorkStation(WorkStation):
         json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
         with open(json_path, 'w') as outfile:
             json.dump(summary, outfile)
+
+    def __str__(self):
+        return f'Benchmarking WorkStation'
 
 
 # maps of benchmarks to Classes and weights for scoring

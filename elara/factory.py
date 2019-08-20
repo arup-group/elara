@@ -201,8 +201,7 @@ class WorkStation:
         :param: spinner: optional spinner for verbose behaviour.
         :return: None
         """
-        if spinner:
-            spinner.text = f"Gathering supplier resources for {self}"
+
         # gather resources
         if self.suppliers:
             for supplier in self.suppliers:
@@ -211,7 +210,7 @@ class WorkStation:
         if self.resources:
             for tool_name, tool in self.resources.items():
                 if spinner:
-                    spinner.text = f"Building: {tool}"
+                    spinner.text = f"Building {tool_name}."
                 tool.build(self.supplier_resources)
 
     def load_all_tools(self, option=None) -> None:
@@ -250,25 +249,27 @@ def build(start_node: WorkStation, verbose=False) -> list:
 
     # stage 1:
     with Halo(text="Initialising workflow graph...", spinner="dots") as spinner:
+
+        if cyclic(start_node):
+            raise UserWarning(f"Cyclic dependency found at {cyclic(start_node)}")
+        if broken(start_node):
+            raise UserWarning(f"Broken dependency found at {broken(start_node)}")
         build_graph_depth(start_node)
-        spinner.succeed("Workflow graph prepared.")
+
+        spinner.stop_and_persist(symbol='📌'.encode('utf-8'), text="Workflow graph prepared.")
 
     # stage 2:
-    with Halo(text="Validating workflow graph...", spinner="dots") as spinner:
-        visited = []
-        queue = []
-        queue.append(start_node)
-        visited.append(start_node)
+    visited = []
+    queue = []
+    queue.append(start_node)
+    visited.append(start_node)
 
-        while queue:
-            current = queue.pop(0)
-            if verbose:
-                spinner.text = f'> Engaging: {current}'
+    while queue:
+        current = queue.pop(0)
+        with Halo(text="Engaging {current}...", spinner="dots") as spinner:
             current.engage()
 
             if current.suppliers:
-                if verbose:
-                    spinner.text = f'> Validating suppliers for: {current}'
                 current.validate_suppliers()
 
                 for supplier in order_by_distance(current.suppliers):
@@ -276,32 +277,77 @@ def build(start_node: WorkStation, verbose=False) -> list:
                         queue.append(supplier)
                         visited.append(supplier)
 
-        spinner.succeed("Graph Validated and Prepared")
+            spinner.succeed(f"{current} engaged and suppliers validated.")
 
-    if verbose:
-        for workstation in visited:
-            print(f"> {workstation} engaged for tools:")
-            if not workstation.resources:
-                print("\t- None")
-            else:
-                for tool in workstation.resources.keys():
-                    print(f"\t- {tool}")
+    print('📌', "Workstations initiated and validated.")
 
     # stage 3:
-    with Halo(text="Building workflow graph...", spinner="dots") as spinner:
-        sequence = visited
-        return_queue = visited[::-1]
-        visited = []
-        while return_queue:
-            current = return_queue.pop(0)
-            if verbose:
-                spinner.text = f'> Building: {current}'
-            current.build(spinner=spinner)
+    sequence = visited
+    return_queue = visited[::-1]
+    visited = []
+    while return_queue:
+        current = return_queue.pop(0)
+        with Halo(text=f"Building {current}...", spinner="dots") as spinner:
+            current.build(spinner)
             visited.append(current)
-        spinner.succeed("Graph Build Complete")
+            spinner.succeed(f"{current} build completed.")
+
+    print('📌', "All complete.")
 
     # return full sequence for testing
     return sequence + visited
+
+
+def cyclic(start):
+    """
+    Return WorkStation if the directed graph starting at WorkStation has a cycle.
+    :param start: starting WorkStation
+    :return: WorkStation
+    """
+    path = set()
+    visited = set()
+
+    def visit(vertex):
+        if vertex in visited:
+            return False
+        visited.add(vertex)
+        path.add(vertex)
+        if vertex.suppliers:
+            for supplier in vertex.suppliers:
+                if supplier in path or visit(supplier):
+                    return supplier
+        path.remove(vertex)
+
+    return visit(start)
+
+
+def broken(start):
+    """
+    Return WorkStation if directed graph starting at WorkStation has broken connection,
+    ie a supplier who does not have the correct manager in .managers.
+    :param start: starting WorkStation
+    :return: WorkStation
+    """
+
+    visited = set()
+
+    def broken_link(manager, supplier):
+        if not supplier.managers:
+            return True
+        if manager not in supplier.managers:
+            return True
+
+    def visit(vertex):
+        visited.add(vertex)
+        if vertex.suppliers:
+
+            for supplier in vertex.suppliers:
+                if supplier in visited:
+                    continue
+                if broken_link(vertex, supplier) or visit(supplier):
+                    return supplier
+
+    return visit(start)
 
 
 def build_graph_depth(node: WorkStation, visited=None, depth=0) -> list:

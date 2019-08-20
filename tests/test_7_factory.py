@@ -135,3 +135,75 @@ def test_bfs(requirements):
     factory.build(requirements)
     assert requirements.resources == {}
     assert set(requirements.suppliers[0].resources) == set({'vkt:car': factory.Tool})
+
+
+def test_cycle():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+
+        def connect(self, suppliers):
+            self.suppliers = suppliers
+
+    a = Node()
+    b = Node()
+    a.connect([b])
+    b.connect([a])
+
+    assert factory.cyclic(a)
+
+
+def test_not_cycle():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+
+        def connect(self, suppliers):
+            self.suppliers = suppliers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    a.connect([b])
+    b.connect([c])
+
+    assert not factory.cyclic(a)
+
+
+def test_broken():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+            self.managers = []
+
+        def connect(self, suppliers, managers):
+            self.suppliers = suppliers
+            self.managers = managers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    a.connect([b], [a])
+    b.connect([c], None)
+
+    assert factory.broken(a)
+
+
+def test_not_broken():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+            self.managers = []
+
+        def connect(self, suppliers, managers):
+            self.suppliers = suppliers
+            self.managers = managers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    a.connect([b], None)
+    b.connect([c], [a])
+    c.connect(None, [b])
+
+    assert not factory.broken(a)

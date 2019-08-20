@@ -3,6 +3,7 @@ from lxml import etree
 import pandas as pd
 import pyproj
 from shapely.geometry import Point, LineString
+from shapely.ops import transform
 import gzip
 from io import BytesIO
 from math import floor
@@ -15,11 +16,12 @@ WGS_84 = pyproj.Proj(init="epsg:4326")
 class Events(Tool):
 
     requirements = ['events_path']
+    elems = None
 
-    def build(self, resources):
+    def build(self, resources: dict) -> None:
         """
         Events object constructor.
-        :param path: Path to MATSim events XML file (.xml)
+        :param resources: GetPath resources from suppliers
         """
         super().build(resources)
 
@@ -34,10 +36,10 @@ class Network(Tool):
     node_gdf = None
     link_gdf = None
 
-    def build(self, resources):
+    def build(self, resources: dict) -> None:
         """
         Network object constructor.
-        :param path: Path to MATSim network XML file (.xml)
+        :param resources: dict, resources from suppliers
         """
         super().build(resources)
 
@@ -46,11 +48,11 @@ class Network(Tool):
 
         # Extract element properties
         nodes = [
-            self.transform_node_elem(elem, crs) for elem in get_elems(path, "node")
+            self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
         node_lookup = {node["id"]: node for node in nodes}
         links = [
-            self.transform_link_elem(elem, node_lookup)
+            self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
         # Generate empty geodataframes
@@ -62,7 +64,12 @@ class Network(Tool):
         link_df.sort_index(inplace=True)
 
         self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
+        self.node_gdf.crs = {'init': crs}
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
+        self.link_gdf.crs = {'init': crs}
+
+        self.node_gdf.to_crs(epsg=4326, inplace=True)
+        self.link_gdf.to_crs(epsg=4326, inplace=True)
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -80,7 +87,22 @@ class Network(Tool):
         return {"id": str(elem.get("id")), "geometry": geometry}
 
     @staticmethod
-    def transform_link_elem(elem, node_lookup):
+    def get_node_elem(elem):
+        """
+        Convert raw node XML element into dictionary.
+        :param elem: Node XML element
+        :param crs: Original coordinate reference system code
+        :return: Dictionary
+        """
+        x = float(elem.get("x"))
+        y = float(elem.get("y"))
+
+        geometry = Point(x, y)
+
+        return {"id": str(elem.get("id")), "geometry": geometry}
+
+    @staticmethod
+    def get_link_elem(elem, node_lookup):
         """
         Convert raw link XML element into dictionary.
         :param elem: Link XML element
@@ -111,10 +133,10 @@ class TransitSchedule(Tool):
     mode_map = None
     modes = None
 
-    def build(self, resources):
+    def build(self, resources:dict) -> None:
         """
         Transit schedule object constructor.
-        :param path: Path to MATSim transit schedule XML file (.xml)
+        :param resources: dict, resources from suppliers
         """
         super().build(resources)
 
@@ -409,6 +431,9 @@ class InputsWorkStation(WorkStation):
         'mode_map': ModeMap,
         'mode_hierarchy': ModeHierarchy,
     }
+
+    def __str__(self):
+        return f'Inputs WorkStation'
 
 
 def get_elems(path, tag):

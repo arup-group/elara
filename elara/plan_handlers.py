@@ -230,33 +230,42 @@ class PlanHandlerWorkStation(WorkStation):
         "mode_share": ModeShare,
     }
 
-    def build(self):
+    def build(self, spinner=None):
         """
         Build all required handlers, then finalise and save results.
         :return: None
         """
         # build tools
-        super().build()
+        super().build(spinner)
 
         # iterate through plans
         plans = self.supplier_resources['plans']
         for i, plan in enumerate(plans.elems):
             for event_handler in self.resources.values():
                 event_handler.process_plan(plan)
+            if not i % 10000 and spinner:
+                spinner.text = f'{self} processed {i} plans.'
 
         # finalise
         # Generate event file outputs
-        for handler in self.resources.values():
+        for handler_name, handler in self.resources.items():
+            if spinner:
+                spinner.text = f'{self} finalising {handler_name}.'
             handler.finalise()
             # if self.config.contract:
             #     handler.contract_results()
 
             for name, result in handler.results.items():
+                if spinner:
+                    spinner.text = f'{self} writing {name} results to disk.'
                 csv_name = "{}_{}.csv".format(self.config.name, name)
                 csv_path = os.path.join(self.config.output_path, csv_name)
 
                 # File exports
                 result.to_csv(csv_path, header=True)
+
+    def __str__(self):
+        return f'Plan Handling WorkStation'
 
 
 def convert_time(t: str) -> int:

@@ -80,3 +80,6 @@ class PostProcessWorkStation(WorkStation):
         'vkt': VKT,
     }
 
+    def __str__(self):
+        return f'PostProcessing WorkStation'
+
