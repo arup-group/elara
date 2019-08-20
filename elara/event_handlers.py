@@ -520,28 +520,34 @@ class EventHandlerWorkStation(WorkStation):
     def __str__(self):
         return f'Events Handler WorkStation'
 
-    def build(self) -> None:
+    def build(self, spinner=None) -> None:
         """
         Build all required handlers, then finalise and save results.
         :return: None
         """
         # build tools
-        super().build()
+        super().build(spinner)
 
         # iterate through events
         events = self.supplier_resources['events']
         for i, event in enumerate(events.elems):
             for event_handler in self.resources.values():
                 event_handler.process_event(event)
+            if not i % 10000 and spinner:
+                spinner.text = f'{self} processed {i} events.'
 
         # finalise
         # Generate event file outputs
-        for event_handler in self.resources.values():
+        for handler_name, event_handler in self.resources.items():
+            if spinner:
+                spinner.text = f'{self} finalising {handler_name}.'
             event_handler.finalise()
             if self.config.contract:
                 event_handler.contract_results()
 
             for name, gdf in event_handler.result_gdfs.items():
+                if spinner:
+                    spinner.text = f'{self} writing {name} results to disk.'
                 csv_name = "{}_{}.csv".format(self.config.name, name)
                 geojson_name = "{}_{}.geojson".format(self.config.name, name)
                 csv_path = os.path.join(self.config.output_path, csv_name)

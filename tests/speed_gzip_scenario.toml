@@ -1,5 +1,5 @@
  [scenario]
-name = "test"
+name = "speed"
 time_periods = 24
 scale_factor = 0.0001
 crs = "EPSG:27700"
@@ -8,10 +8,10 @@ verbose = true
 [inputs]
 events = "./fixtures/fixtures_01perc/baseline/output_events.xml.gz"
 network = "./fixtures/fixtures_01perc/baseline/output_network.xml.gz"
+plans = "./fixtures/fixtures_01perc/baseline/output_plans.xml.gz"
 transit_schedule = "./fixtures/fixtures_01perc/baseline/output_transitSchedule.xml.gz"
 transit_vehicles = "./fixtures/fixtures_01perc/baseline/output_transitVehicles.xml.gz"
 attributes = "./fixtures/fixtures_01perc/baseline/output_personAttributes.xml.gz"
-plans = "./fixtures/fixtures_01perc/baseline/output_plans.xml.gz"
 
 [event_handlers]
 volume_counts = ["car"]
@@ -22,11 +22,12 @@ stop_interactions = ["bus", "train"]
 mode_share = ["all"]
 
 [outputs]
-path = "./outputs/testing_elara_outputs"
+path = "./tests/speed_test_outputs"
 contract = true
 
 [post_processors]
 vkt = ["car"]
 
 [benchmarks]
-london_inner_cordon_car = ["car"]
+test_town_cordon = ["car"]
+test_town_modeshare = ["all"]
