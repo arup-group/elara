@@ -1,9 +1,13 @@
 # Elara
 
 A command line utility for processing MATSim output XML files:
+
 1) Event Based Outputs (for example traffic 'flow')
+
 2) Plan Based Outputs (for example mode shares)
+
 3) Post Processing of Outputs (for example for Vehicle kms)
+
 4) Benchmarking of Outputs (for example comparison to measured cordon counts)
 
 ## Contents
@@ -55,8 +59,10 @@ Elara uses this DAG to provide:
 Elara does this by traversing the DAG in three stages:
 
 1) Longest path search to ensure correct order.
-2) Breadth first initiation and supplier validation
-3) Reverse Breadth first build all requirements
+
+2) Breadth first initiation and supplier validation.
+
+3) Reverse Breadth first build all requirements.
 
 ## Command line reference
 ```
