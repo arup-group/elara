@@ -137,7 +137,7 @@ def test_bfs(requirements):
     assert set(requirements.suppliers[0].resources) == set({'vkt:car': factory.Tool})
 
 
-def test_cycle():
+def test_cycle_simple():
     class Node:
         def __init__(self):
             self.suppliers = []
@@ -150,10 +150,48 @@ def test_cycle():
     a.connect([b])
     b.connect([a])
 
-    assert factory.cyclic(a)
+    assert factory.is_cyclic(a)
 
 
-def test_not_cycle():
+def test_cycle_2():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+
+        def connect(self, suppliers):
+            self.suppliers = suppliers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    a.connect([b])
+    b.connect([c])
+    c.connect([b])
+
+    assert factory.is_cyclic(a)
+
+
+def test_cycle_3():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+
+        def connect(self, suppliers):
+            self.suppliers = suppliers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    d = Node()
+    a.connect([b])
+    b.connect([c])
+    c.connect([d])
+    d.connect([b])
+
+    assert factory.is_cyclic(a)
+
+
+def test_not_cycle_simple():
     class Node:
         def __init__(self):
             self.suppliers = []
@@ -167,7 +205,42 @@ def test_not_cycle():
     a.connect([b])
     b.connect([c])
 
-    assert not factory.cyclic(a)
+    assert not factory.is_cyclic(a)
+
+
+def test_not_cycle_2():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+
+        def connect(self, suppliers):
+            self.suppliers = suppliers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    a.connect([b, c])
+    b.connect([c])
+
+    assert not factory.is_cyclic(a)
+
+
+def test_not_cycle_3():
+    class Node:
+        def __init__(self):
+            self.suppliers = []
+
+        def connect(self, suppliers):
+            self.suppliers = suppliers
+
+    a = Node()
+    b = Node()
+    c = Node()
+    d = Node()
+    a.connect([b, c, d])
+    b.connect([c, d])
+
+    assert not factory.is_cyclic(a)
 
 
 def test_broken():
@@ -186,7 +259,7 @@ def test_broken():
     a.connect([b], [a])
     b.connect([c], None)
 
-    assert factory.broken(a)
+    assert factory.is_broken(a)
 
 
 def test_not_broken():
@@ -206,4 +279,4 @@ def test_not_broken():
     b.connect([c], [a])
     c.connect(None, [b])
 
-    assert not factory.broken(a)
+    assert not factory.is_broken(a)

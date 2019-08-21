@@ -33,6 +33,10 @@ class Config:
         self.contract = self.parsed_toml["outputs"].get("contract", False)
 
     @property
+    def dummy_path(self):
+        return self.parsed_toml["scenario"]["name"]
+
+    @property
     def crs(self):
         return self.parsed_toml["scenario"]["crs"]
 

@@ -122,6 +122,20 @@ class WorkStation:
         self.managers = managers
         self.suppliers = suppliers
 
+    def display_string(self):
+        managers, suppliers, tools = "-None-", "-None-", "-None-"
+        if self.managers:
+            managers = str([str(m) for m in list(self.managers)])
+        if self.suppliers:
+            suppliers = str([str(s) for s in list(self.suppliers)])
+        if self.tools:
+            tools = list(self.tools)
+
+        return f"👉️ {self}:\n" \
+               f"   ⛓  Managers: {managers}\n" \
+               f"   🕸  Suppliers: {suppliers}\n" \
+               f"   🔧 Tooling: {tools}\n"
+
     def engage(self) -> None:
         """
         Engage workstation, initiating required tools and getting their requirements.
@@ -250,13 +264,19 @@ def build(start_node: WorkStation, verbose=False) -> list:
     # stage 1:
     with Halo(text="Initialising workflow graph...", spinner="dots") as spinner:
 
-        if cyclic(start_node):
-            raise UserWarning(f"Cyclic dependency found at {cyclic(start_node)}")
-        if broken(start_node):
-            raise UserWarning(f"Broken dependency found at {broken(start_node)}")
+        if is_cyclic(start_node):
+            raise UserWarning(f"Cyclic dependency found at {is_cyclic(start_node)}")
+        if is_broken(start_node):
+            raise UserWarning(f"Broken dependency found at {is_broken(start_node)}")
+
         build_graph_depth(start_node)
 
-        spinner.stop_and_persist(symbol='📌'.encode('utf-8'), text="Workflow graph prepared.")
+        spinner.stop_and_persist(symbol='✅'.encode('utf-8'), text="Workflow graph prepared.")
+
+    if verbose:
+        print("****************************** DAG ******************************")
+        display_graph(start_node)
+        print("*****************************************************************")
 
     # stage 2:
     visited = []
@@ -279,7 +299,7 @@ def build(start_node: WorkStation, verbose=False) -> list:
 
             spinner.succeed(f"{current} engaged and suppliers validated.")
 
-    print('📌', "Workstations initiated and validated.")
+    print('✅', "All Workstations initiated and validated.")
 
     # stage 3:
     sequence = visited
@@ -292,13 +312,13 @@ def build(start_node: WorkStation, verbose=False) -> list:
             visited.append(current)
             spinner.succeed(f"{current} build completed.")
 
-    print('📌', "All complete.")
+    print('✅', "All complete.")
 
     # return full sequence for testing
     return sequence + visited
 
 
-def cyclic(start):
+def is_cyclic(start):
     """
     Return WorkStation if the directed graph starting at WorkStation has a cycle.
     :param start: starting WorkStation
@@ -321,7 +341,7 @@ def cyclic(start):
     return visit(start)
 
 
-def broken(start):
+def is_broken(start):
     """
     Return WorkStation if directed graph starting at WorkStation has broken connection,
     ie a supplier who does not have the correct manager in .managers.
@@ -372,6 +392,26 @@ def build_graph_depth(node: WorkStation, visited=None, depth=0) -> list:
             build_graph_depth(supplier, visited, depth)
 
     return visited
+
+
+def display_graph(node: WorkStation) -> None:
+    """
+    Function to depth first traverse graph from start vertex, displaying vertex connections
+    :param node: starting Workstation
+    :return: None
+    """
+
+    visited = set()
+
+    def visit(vertex):
+        print(vertex.display_string())
+        visited.add(vertex)
+        if vertex.suppliers:
+            for supplier in vertex.suppliers:
+                if supplier not in visited:
+                    visit(supplier)
+
+    visit(node)
 
 
 def order_by_distance(candidates: list) -> list:
