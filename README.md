@@ -56,9 +56,11 @@ Elara does this by traversing the DAG in three stages:
 
 1) Longest path search to ensure correct order.
 
-2) Breadth first initiation and supplier validation.
+2) Breadth first initiation of `.tools` as `.resources` and supplier validation.
 
-3) Reverse Breadth first build all requirements.
+3) Reverse Breadth first build all tools in `.resources` and build workstation.
+
+![dag](images/dag.jpg)
 
 ## Command line reference
 ```
