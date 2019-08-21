@@ -1,12 +1,17 @@
 # Elara
 
-A command line utility for processing a MATSim scenario events output XML file. Generates flat CSV files summarising key metrics by time slice for links or nodes across the input network. 
+A command line utility for processing MATSim output XML files:
+- Event Based Outputs (for example traffic 'flow')
+- Plan Based Outputs (for example mode shares)
+- Post Processing of Outputs (for example for Vehicle kms)
+- Benchmarking of Outputs (for example comparison to measured cordon counts)
 
 ## Contents
 * [Installation](#markdown-header-installation)
 * [About](#markdown-header-about)
 * [Command line reference](#markdown-header-command-line-reference)
 * [Configuration format](#markdown-header-configuration-format)
+* [Adding features](#markdown-header-adding-features)
 * [Todo](#markdown-header-todo)
 * [What does the name mean?](#markdown-header-what-does-the-name-mean)
 
@@ -25,10 +30,33 @@ pip3 install git+https://github.com/jswhit/pyproj.git
 
 On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj`` wheel within your environment using pip.  
 
-## About
-A MATSim scenario run generates a number of different output files, including the events record. This particular XML file enumerates every discrete event that happened during the final iteration of the model. As such, it contains most of the information required to generate reporting for the particular model run. 
 
-Given a configuration file pointing to this file, as well as a number of other auxiliary files, this utility will produce a customisable selection of summary metric CSVs. These CSVs can then be joined to network geometry (through Shapefiles, GeoJSON etc.) or themselves processed downstream to present scenario results. 
+Like (bad) test?
+```
+cd elara
+pytest
+```
+
+## About
+Elara is designed to undertake arbitrarily complex pipelines of output processing, postprocessing
+ and benchmarking as defined by a CONFIG_FILE. Such as `elara.scenario.toml`.
+ 
+Elara defines a graph of connected `WorkStations`, each responsible for building certain types of
+ output or intermediate data requirements (`Tools`). These workstations are connected to their 
+ respective 
+ dependees and dependencies (managers and suppliers) to form a DAG.
+ 
+Elara uses this DAG to provide:
+
+* **Minimal** dependency processing
+* **Early validation** of all intermediate requirements 
+* **Early Failure**/Ordering
+
+Elara does this by traversing the DAG in three stages:
+
+1) Longest path search to ensure correct order.
+2) Breadth first initiation and supplier validation
+3) Reverse Breadth first build all requirements
 
 ## Command line reference
 ```
@@ -42,33 +70,45 @@ Options:
   -h, --help  Show this message and exit.
 ```
 
-Given the path to a suitable configuration TOML file (see [here](#markdown-header-configuration-format)), processes a MATSim events file and produces the desired summary metric files. Example usage:
-
-* ``elara scenario.toml``  
-Processes according to the settings present in the ``scenario.toml`` file.
-
-**#** mimas **-h** | **--help**
-
-Output usage information.
+Given the path to a suitable configuration TOML file (see [here]
+(#markdown-header-configuration-format)), processes a MATSim events file and produces the desired
+ summary metric files. For example: `elara scenario.toml`.
 
 ## Configuration format
 This utility uses a TOML configuration format to specify input, output and metric generation options. For example:
 ```
-[scenario]
-name = "test_scenario"
+ [scenario]
+name = "test_town"
 time_periods = 24
-scale_factor = 0.25
+scale_factor = 0.01
 crs = "EPSG:27700"
+verbose = true
 
 [inputs]
-events = "./fixtures/test-events.xml"
-network = "./fixtures/test-network.xml"
+events = "./tests/test_fixtures/output_events.xml"
+network = "./tests/test_fixtures/output_network.xml"
+transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
+transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
+attributes = "./tests/test_fixtures/output_personAttributes.xml"
+plans= "./tests/test_fixtures/output_plans.xml"
+
+[event_handlers]
+volume_counts = ["car"]
+passenger_counts = ["bus", "train"]
+stop_interactions = ["bus", "train"]
+
+[plan_handlers]
+mode_share = ["all"]
+
+[post_processors]
+vkt = ["car"]
+
+[benchmarks]
+test_town_cordon = ["car"]
 
 [outputs]
-path = "./outputs"
-
-[handlers]
-volume_counts = ["car"]
+path = "./tests/test_outputs"
+contract = true
 ```
 
 The following fields are available:
@@ -87,15 +127,68 @@ The sample size used in the originating MATSim scenario run. This is used to sca
 
 **#** scenario.**crs** *string* *(required)*
 
-The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This is used to convert the results to WGS 84. 
+The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This
+ is used to convert the results to WGS 84 as required. 
 
-**#** inputs.**events** *file* *(required)*
+**#** inputs.**events** *file*
 
 Path to the MATSim events XML file. Can be absolute or relative to the invocation location.
 
-**#** inputs.**network** *file* *(required)*
+**#** inputs.**network** *file*
 
 Path to the MATSim network XML file. Can be absolute or relative to the invocation location.
+
+**#** inputs.**etc** *file*
+
+Path to additional MATSim resources.
+
+**#** event_handlers.**[handler name]** *list of strings* *(optional)*
+
+Specification of the event handlers to be run during processing. Currently available handlers include:
+
+* ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
+* ``passenger_counts``: Produce vehicle occupancy by time slice.
+* ``stop_interactions``: Boardings and Alightings by time slice.
+
+The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
+
+* eg ``car, bus, train``
+
+**#** plan_handlers.**[handler name]** *list of strings* *(optional)*
+
+Specification of the plan handlers to be run during processing. Currently available handlers 
+include:
+
+* ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
+
+The associated list attached to each handler allows specification of additional options:
+
+* eg ``all, <NOT IMPLEMENTED>``
+
+**#** post_processors.**[post-processor name]** *list of strings* *(optional)*
+
+Specification of the event handlers to be run post processing. Currently available handlers include:
+
+* ``vkt``: Produce link volume vehicle kms by time slice.
+
+The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
+
+* eg ``car, bus, train``
+
+**#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
+
+Specification of the benchmarks to be run post processing. Currently available benchmarks include:
+
+* ``london_inner_cordon_car``
+* ``dublin_canal_cordon_car``
+* ``ireland_commuter_modeshare``
+* ``test_town_cordon``
+* ``test_town_peak_cordon``
+* ``test_town_modeshare``
+
+The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
+
+* eg ``car, bus, train``
 
 **#** outputs.**path** *directory* *(required)*
 
@@ -105,21 +198,24 @@ Desired output directory. Can be absolute or relative to the invocation location
 
 If set to *true*, removes rows containing only zero values from the generated output files. 
 
-**#** handlers.**[handler name]** *list of strings* *(required)*
+## Adding Features
 
-Specification of the event handlers to be run during processing. Currently available handlers include:
+Elara is designed to be extendable, primarily with new tools such as handlers or benchmarks. 
+New tool classes must correctly inherit and implement a number of values and methods so that they 
+play well with their respective WorkStation:
+ 
+* ``.__init__(self, config, option)``: Used for early validation of option and 
+subsequent requirements.
+* ``.build(self, resource=None)``: Used to process required output (assumes required resources are 
+available).
 
-* ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
-
-The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
-
-* ``car, bus, train``
+`tool_templates` provides some templates and notes for adding new tools. Additionally remember to
+ add new tools to their `WorkStation` `.tools` dictionary and the docs.
 
 ## Todo
 
 **Priority**
 
-* Implementation of proper mode detection. The mode of transport related to an event can only be determined based on the specific vehicle ID. In the case of the TfL mode, logic needs to be developed to separate private cars from public transport vehicles. The Melbourne model used a lookup table generated from the transit vehicles XML file - a similar approach could be implemented.
 * Addition of additional handlers, including average link travel time, node boardings/alightings, etc. This will be relatively easy to achieve once sample outputs are available to test against - the logic already exists in old scripts. 
 * Add tests and refactor to make testing easier! 
 
