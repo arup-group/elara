@@ -40,7 +40,7 @@ pytest
 
 ## About
 Elara is designed to undertake arbitrarily complex pipelines of output processing, postprocessing
- and benchmarking as defined by a CONFIG_FILE. Such as `elara.scenario.toml`.
+ and benchmarking as defined by a configuration file, such as `elara.scenario.toml`.
  
 Elara defines a graph of connected `WorkStations`, each responsible for building certain types of
  output or intermediate data requirements (`Tools`). These workstations are connected to their 
@@ -73,8 +73,7 @@ Options:
   -h, --help  Show this message and exit.
 ```
 
-Given the path to a suitable configuration TOML file (see [here]
-(#markdown-header-configuration-format)), processes a MATSim events file and produces the desired
+Given the path to a suitable configuration TOML file (see [here](#markdown-header-configuration-format)), processes a MATSim events file and produces the desired
  summary metric files. For example: `elara scenario.toml`.
 
 ## Configuration format
