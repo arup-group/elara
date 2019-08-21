@@ -1,54 +1,80 @@
 import os.path
-
 import toml
+from elara.factory import WorkStation, Tool
 
 
 class Config:
+
     def __init__(self, path):
         """
         Config object constructor.
         :param path: Path to scenario configuration TOML file
         """
-        parsed_toml = toml.load(path, _dict=dict)
+        self.parsed_toml = toml.load(path, _dict=dict)
 
         # Scenario settings
-        self.name = parsed_toml["scenario"]["name"]
+        self.name = self.parsed_toml["scenario"]["name"]
         self.time_periods = self.valid_time_periods(
-            parsed_toml["scenario"]["time_periods"]
+            self.parsed_toml["scenario"]["time_periods"]
         )
         self.scale_factor = self.valid_scale_factor(
-            parsed_toml["scenario"]["scale_factor"]
+            self.parsed_toml["scenario"]["scale_factor"]
         )
-        self.crs = parsed_toml["scenario"]["crs"]
-        self.verbose = parsed_toml["scenario"]["verbose"]
+        self.verbose = self.parsed_toml["scenario"].get("verbose", False)
 
-        # Input settings
-        self.events_path = self.valid_path(parsed_toml["inputs"]["events"], "events")
-        self.network_path = self.valid_path(parsed_toml["inputs"]["network"], "network")
-        self.transit_schedule_path = self.valid_path(
-            parsed_toml["inputs"]["transit_schedule"], "transit_schedule"
-        )
-        self.transit_vehicles_path = self.valid_path(
-            parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
-        )
-        self.attributes_path = self.valid_path(
-            parsed_toml["inputs"]["attributes"], "attributes"
-        )
-        self.plans_path = self.valid_path(
-            parsed_toml["inputs"]["plans"], "plans"
-        )
-
-        # Handler objects
-        self.event_handlers = parsed_toml["event_handlers"]
-        self.plan_handlers = parsed_toml["plan_handlers"]
+        # Factory requirements
+        self.event_handlers = self.parsed_toml.get("event_handlers", {})
+        self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
+        self.post_processors = self.parsed_toml.get("post_processors", {})
+        self.benchmarks = self.parsed_toml.get("benchmarks", {})
 
         # Output settings
-        self.output_path = parsed_toml["outputs"]["path"]
-        self.contract = parsed_toml["outputs"]["contract"]
-        self.post_processing = parsed_toml["outputs"]["post_processing"]
+        self.output_path = self.parsed_toml["outputs"]["path"]
+        self.contract = self.parsed_toml["outputs"].get("contract", False)
 
-        # Benchmark settings
-        self.benchmarks = parsed_toml["benchmarking"]["benchmarks"]
+    @property
+    def dummy_path(self):
+        return self.parsed_toml["scenario"]["name"]
+
+    @property
+    def crs(self):
+        return self.parsed_toml["scenario"]["crs"]
+
+    @property
+    def events_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["events"], "events"
+        )
+
+    @property
+    def plans_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["plans"], "plans"
+        )
+
+    @property
+    def network_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["network"], "network"
+        )
+
+    @property
+    def attributes_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["attributes"], "attributes"
+        )
+
+    @property
+    def transit_schedule_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["transit_schedule"], "transit_schedule"
+        )
+
+    @property
+    def transit_vehicles_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
+        )
 
     @staticmethod
     def valid_time_periods(inp):
@@ -89,3 +115,91 @@ class Config:
         if not os.path.exists(path):
             raise Exception("Specified path for {} does not exist".format(field_name))
         return path
+
+
+class GetCRS(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.crs
+
+
+class GetEventsPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.events_path
+
+
+class GetPlansPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.plans_path
+
+
+class GetNetworkPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.network_path
+
+
+class GetAttributesPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.attributes_path
+
+
+class GetTransitSchedulePath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.transit_schedule_path
+
+
+class GetTransitVehiclesPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.transit_vehicles_path
+
+
+class PathFinderWorkStation(WorkStation):
+    tools = {
+        'crs': GetCRS,
+        'events_path': GetEventsPath,
+        'plans_path': GetPlansPath,
+        'network_path': GetNetworkPath,
+        'attributes_path': GetAttributesPath,
+        'transit_schedule_path': GetTransitSchedulePath,
+        'transit_vehicles_path': GetTransitVehiclesPath,
+    }
+
+    def __str__(self):
+        return f'PathFinder WorkStation'
+
+
+class RequirementsWorkStation(WorkStation):
+
+    tools = None
+
+    def gather_manager_requirements(self):
+        reqs = {}
+        reqs.update(self.config.event_handlers)
+        reqs.update(self.config.plan_handlers)
+        reqs.update(self.config.post_processors)
+        reqs.update(self.config.benchmarks)
+        return reqs
+
+    def __str__(self):
+        return f'Requirements WorkStation'
+

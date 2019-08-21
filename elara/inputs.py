@@ -3,62 +3,58 @@ from lxml import etree
 import pandas as pd
 import pyproj
 from shapely.geometry import Point, LineString
+from shapely.ops import transform
 import gzip
 from io import BytesIO
 from math import floor
 
+from elara.factory import WorkStation, Tool
 
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
 
-class Events:
-    def __init__(self, path):
+class Events(Tool):
+
+    requirements = ['events_path']
+    elems = None
+
+    def build(self, resources: dict) -> None:
         """
         Events object constructor.
-        :param path: Path to MATSim events XML file (.xml)
+        :param resources: GetPath resources from suppliers
         """
+        super().build(resources)
+
+        path = resources['events_path'].path
+
         self.elems = get_elems(path, "event")
 
 
-class ModeMap:
+class Network(Tool):
 
-    modemap = {
-        "ferry": "ferry",
-        "rail": "rail",
-        "tram": "tram",
-        "bus": "bus",
-        "car": "car",
-        "bike": "bike",
-        "walk": "walk",
-        "transit_walk": "walk",
-        "access_walk": "walk",
-        "egress_walk": "walk"
-    }
+    requirements = ['network_path', 'crs']
+    node_gdf = None
+    link_gdf = None
 
-    def __getitem__(self, key: str) -> str:
-        if key in self.modemap:
-            return self.modemap[key]
-
-        raise KeyError(f"key:'{key}' not found in ModeMap")
-
-
-class Network:
-    def __init__(self, path, crs):
+    def build(self, resources: dict) -> None:
         """
         Network object constructor.
-        :param path: Path to MATSim network XML file (.xml)
+        :param resources: dict, resources from suppliers
         """
+        super().build(resources)
+
+        path = resources['network_path'].path
+        crs = resources['crs'].path
 
         # Extract element properties
         nodes = [
-            self.transform_node_elem(elem, crs) for elem in get_elems(path, "node")
+            self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
         node_lookup = {node["id"]: node for node in nodes}
         links = [
-            self.transform_link_elem(elem, node_lookup)
+            self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
-
         # Generate empty geodataframes
         node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
@@ -68,7 +64,12 @@ class Network:
         link_df.sort_index(inplace=True)
 
         self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
+        self.node_gdf.crs = {'init': crs}
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
+        self.link_gdf.crs = {'init': crs}
+
+        self.node_gdf.to_crs(epsg=4326, inplace=True)
+        self.link_gdf.to_crs(epsg=4326, inplace=True)
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -86,7 +87,22 @@ class Network:
         return {"id": str(elem.get("id")), "geometry": geometry}
 
     @staticmethod
-    def transform_link_elem(elem, node_lookup):
+    def get_node_elem(elem):
+        """
+        Convert raw node XML element into dictionary.
+        :param elem: Node XML element
+        :param crs: Original coordinate reference system code
+        :return: Dictionary
+        """
+        x = float(elem.get("x"))
+        y = float(elem.get("y"))
+
+        geometry = Point(x, y)
+
+        return {"id": str(elem.get("id")), "geometry": geometry}
+
+    @staticmethod
+    def get_link_elem(elem, node_lookup):
         """
         Convert raw link XML element into dictionary.
         :param elem: Link XML element
@@ -111,12 +127,21 @@ class Network:
         }
 
 
-class TransitSchedule:
-    def __init__(self, path, crs):
+class TransitSchedule(Tool):
+    requirements = ['transit_schedule_path', 'crs']
+    stop_gdf = None
+    mode_map = None
+    modes = None
+
+    def build(self, resources:dict) -> None:
         """
         Transit schedule object constructor.
-        :param path: Path to MATSim transit schedule XML file (.xml)
+        :param resources: dict, resources from suppliers
         """
+        super().build(resources)
+
+        path = resources['transit_schedule_path'].path
+        crs = resources['crs'].path
 
         # Retrieve stop attributes
         stops = [
@@ -174,12 +199,22 @@ class TransitSchedule:
         return route_id, mode
 
 
-class TransitVehicles:
-    def __init__(self, path):
+class TransitVehicles(Tool):
+    requirements = ['transit_vehicles_path']
+    veh_type_mode_map = None
+    veh_type_capacity_map = None
+    types = None
+    veh_id_veh_type_map = None
+    transit_vehicle_counts = None
+
+    def build(self, resources):
         """
         Transit vehicles object constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml)
         """
+        super().build(resources)
+
+        path = resources['transit_vehicles_path'].path
 
         # Vehicle types to mode correspondence
         self.veh_type_mode_map = {
@@ -220,12 +255,21 @@ class TransitVehicles:
         return id, seated_capacity + standing_capacity
 
 
-class Attributes:
-    def __init__(self, path):
+class Attributes(Tool):
+    requirements = ['attributes_path']
+    final_attribute_map = None
+    map = None
+    classes = None
+    attribute_count_map = None
+
+    def build(self, resources):
         """
         Population subpopulation attributes constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
         """
+        super().build(resources)
+
+        path = resources['attributes_path'].path
 
         # Attribute label mapping
         # TODO move model specific setup elsewhere
@@ -258,38 +302,29 @@ class Attributes:
         return ident, attribute
 
 
-class Plans:
-    def __init__(self, path, transit_schedule):
+class Plans(Tool):
+    requirements = ['plans_path']
+    elems = None
+    transit_schedule = None
+    modes = None
+    activities = None
+    agents = None
+
+    def build(self, resources):
         """
         Plans object constructor.
         :param path: Path to MATSim events XML file (.xml)
         :param transit_schedule: TransitSchedule object
         """
+        super().build(resources)
+
+        path = resources['plans_path'].path
+
         self.elems = get_elems(path, "plan")
-        self.transit_schedule = transit_schedule
-
-        # self.hierarchy = [
-        #     'ferry',
-        #     'rail',
-        #     'tram',
-        #     'bus',
-        #     'car',
-        #     'bike',
-        #     'walk',
-        #     'transit_walk'
-        # ]
-
-        # # Build mode list
-        # self.modes_map = {
-        #     "transit_walk": "walk",
-        #     "access_walk": "walk",
-        #     "egress_walk": "walk",
-        #     "piggy_back": "walk"
-        # }
+        self.transit_schedule = TransitSchedule(self.config)
+        self.transit_schedule.build(resources)
 
         self.modes, self.activities = self.get_classes()
-
-        #assert all(m in self.hierarchy for m in self.modes), f'unknown mode {m} in plans'
 
         # re-init elements
         self.elems = get_elems(path, "plan")
@@ -325,7 +360,9 @@ class Plans:
         return list(modes), list(activities)
 
 
-class ModeHierarchy:
+class ModeHierarchy(Tool):
+
+    requirements = []
 
     hierarchy = [
         "ferry",
@@ -357,6 +394,46 @@ class ModeHierarchy:
         mode = modes[mode_index]
         print(f"WARNING {modes} not in hierarchy, returning {mode}")
         return mode
+
+
+class ModeMap(Tool):
+
+    requirements = []
+
+    modemap = {
+        "ferry": "ferry",
+        "rail": "rail",
+        "tram": "tram",
+        "bus": "bus",
+        "car": "car",
+        "bike": "bike",
+        "walk": "walk",
+        "transit_walk": "walk",
+        "access_walk": "walk",
+        "egress_walk": "walk"
+    }
+
+    def __getitem__(self, key: str) -> str:
+        if key in self.modemap:
+            return self.modemap[key]
+
+        raise KeyError(f"key:'{key}' not found in ModeMap")
+
+
+class InputsWorkStation(WorkStation):
+    tools = {
+        'events': Events,
+        'network': Network,
+        'transit_schedule': TransitSchedule,
+        'transit_vehicles': TransitVehicles,
+        'attributes': Attributes,
+        'plans': Plans,
+        'mode_map': ModeMap,
+        'mode_hierarchy': ModeHierarchy,
+    }
+
+    def __str__(self):
+        return f'Inputs WorkStation'
 
 
 def get_elems(path, tag):

@@ -7,14 +7,13 @@ verbose = true
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
-network = "./tests/test_fixtures/output_network.xml"
+network = "./tests/BADPATH/output_network.xml"
 transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
 transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
 attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
 
 [event_handlers]
-volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
 
