@@ -1,14 +1,10 @@
 # Elara
 
 A command line utility for processing MATSim output XML files:
-
-1) Event Based Outputs (for example traffic 'flow')
-
-2) Plan Based Outputs (for example mode shares)
-
-3) Post Processing of Outputs (for example for Vehicle kms)
-
-4) Benchmarking of Outputs (for example comparison to measured cordon counts)
+* **Event Based Outputs** (for example traffic 'flow')
+* **Plan Based Outputs** (for example mode shares)
+* **Post Processing** of Outputs (for example for Vehicle kms)
+* **Benchmarking** of Outputs (for example comparison to measured cordon counts)
 
 ## Contents
 * [Installation](#markdown-header-installation)
