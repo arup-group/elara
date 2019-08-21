@@ -31,7 +31,6 @@ pip3 install git+https://github.com/jswhit/pyproj.git
 
 On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj`` wheel within your environment using pip.  
 
-
 Like (bad) tests?
 ```
 cd elara
