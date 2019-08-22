@@ -127,13 +127,52 @@ class Network(Tool):
         }
 
 
+class OSMHighway(Tool):
+
+    requirements = ['network_path']
+    map = None
+
+    def build(self, resources: dict) -> None:
+        """
+        OSM highway attribute map.
+        :param resources: dict, resources from suppliers
+        """
+        super().build(resources)
+
+        path = resources['network_path'].path
+
+        # Extract element properties
+        self.map = dict(
+            [
+                self.get_link_attribute(elem, 'osm:way:highway')
+                for elem in get_elems(path, "link")
+                ]
+        )
+
+    @staticmethod
+    def get_link_attribute(elem, name):
+        """
+        Convert raw link XML element into tuple of ident and named attribute.
+        :param elem: Link XML element
+        :param name: str, name of attribute
+        :return: tuple of ident and attribute
+        """
+
+        ident = str(elem.get("id"))
+        attribute = elem.find('.//attribute[@name="{}"]'.format(name))
+        if attribute is not None:
+            attribute = attribute.text
+
+        return ident, str(attribute)
+
+
 class TransitSchedule(Tool):
     requirements = ['transit_schedule_path', 'crs']
     stop_gdf = None
     mode_map = None
     modes = None
 
-    def build(self, resources:dict) -> None:
+    def build(self, resources: dict) -> None:
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
@@ -255,7 +294,7 @@ class TransitVehicles(Tool):
         return id, seated_capacity + standing_capacity
 
 
-class Attributes(Tool):
+class Attribute(Tool):
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
@@ -264,7 +303,7 @@ class Attributes(Tool):
 
     def build(self, resources):
         """
-        Population subpopulation attributes constructor.
+        Population subpopulation attribute constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
         """
         super().build(resources)
@@ -300,6 +339,54 @@ class Attributes(Tool):
         attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
         attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
+
+
+class Attributes(Tool):
+    requirements = ['attributes_path']
+    final_attribute_map = None
+    map = None
+    fields = None
+    attributes_df = None
+
+    def build(self, resources):
+        """
+        Population subpopulation attributes constructor.
+        :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
+        """
+        super().build(resources)
+
+        path = resources['attributes_path'].path
+
+        # Attribute label mapping
+        # TODO move model specific setup elsewhere
+        self.final_attribute_map = {
+            "inc7p": "inc7p",
+            "inc56": "inc56",
+            "inc34": "inc34",
+            "inc12": "inc12",
+            "inc7p_nocar": "inc7p",
+            "inc56_nocar": "inc56",
+            "inc34_nocar": "inc34",
+            "inc12_nocar": "inc12",
+            "freight": "freight",
+        }
+
+        self.map = dict(
+            [
+                self.get_attribute_text(elem)
+                for elem in get_elems(path, "object")
+            ]
+        )
+
+        self.fields = set([k for v in self.map.values() for k in v.keys()])
+        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
+
+    def get_attribute_text(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.findall('.//attribute'):
+            attributes[attr.get('name')] = self.final_attribute_map.get(attr.text, attr.text)
+        return ident, attributes
 
 
 class Plans(Tool):
@@ -426,7 +513,7 @@ class InputsWorkStation(WorkStation):
         'network': Network,
         'transit_schedule': TransitSchedule,
         'transit_vehicles': TransitVehicles,
-        'attributes': Attributes,
+        'attributes': Attribute,
         'plans': Plans,
         'mode_map': ModeMap,
         'mode_hierarchy': ModeHierarchy,
