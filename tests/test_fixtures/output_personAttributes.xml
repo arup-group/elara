@@ -4,17 +4,22 @@
 <objectAttributes>
 	<object id="chris">
 		<attribute name="subpopulation" class="java.lang.String">rich</attribute>
+		<attribute name="age" class="java.lang.String">yes</attribute>
 	</object>
 	<object id="fatema">
 		<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+		<attribute name="age" class="java.lang.String">no</attribute>
 	</object>
 	<object id="gerry">
 		<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+		<attribute name="age" class="java.lang.String">no</attribute>
 	</object>
 	<object id="fred">
 		<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+		<attribute name="age" class="java.lang.String">no</attribute>
 	</object>
 	<object id="nick">
 		<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+		<attribute name="age" class="java.lang.String">no</attribute>
 	</object>
 </objectAttributes>
