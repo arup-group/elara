@@ -13,14 +13,14 @@ from elara.plan_handlers import PlanHandlerWorkStation
 sys.path.append(os.path.abspath('../tests'))
 
 
-test_mastim_time_data = [
+test_matsim_time_data = [
     ('00:00:00', 0),
     ('01:01:01', 3661),
     (None, None),
 ]
 
 
-@pytest.mark.parametrize("time,seconds", test_mastim_time_data)
+@pytest.mark.parametrize("time,seconds", test_matsim_time_data)
 def test_convert_time(time, seconds):
     assert plan_handlers.convert_time(time) == seconds
 
