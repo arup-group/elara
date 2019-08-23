@@ -81,7 +81,7 @@ class VolumeCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'transit_vehicles',
-        'attributes',
+        'attribute',
     ]
 
     def __init__(self, config, option=None) -> None:
@@ -115,7 +115,7 @@ class VolumeCounts(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
-            self.resources['attributes'].classes)
+            self.resources['attribute'].classes)
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
@@ -138,7 +138,7 @@ class VolumeCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.option:
                 # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.resources['attributes'].map.get(ident, 'not_applicable')
+                attribute_class = self.resources['attribute'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 x, y, z = table_position(
@@ -202,7 +202,7 @@ class PassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'transit_vehicles',
-        'attributes',
+        'attribute',
     ]
     invalid_options = ['car']
 
@@ -241,7 +241,7 @@ class PassengerCounts(EventHandlerTool):
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attribute'].classes)
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
@@ -271,7 +271,7 @@ class PassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['attribute'].map[agent_id]
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
 
@@ -286,7 +286,7 @@ class PassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['attribute'].map[agent_id]
                 if not self.veh_occupancy[veh_id][attribute_class]:
                     pass
                 else:
@@ -359,7 +359,7 @@ class StopInteractions(EventHandlerTool):
         'network',
         'transit_schedule',
         'transit_vehicles',
-        'attributes',
+        'attribute',
     ]
     invalid_options = ['car']
 
@@ -399,7 +399,7 @@ class StopInteractions(EventHandlerTool):
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attribute'].classes)
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
@@ -435,7 +435,7 @@ class StopInteractions(EventHandlerTool):
                 agent_id = elem.get("person")
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['attributes'].map[agent_id]
+                    attribute_class = self.resources['attribute'].map[agent_id]
                     origin_stop = self.agent_status[agent_id][0]
                     x, y, z = table_position(
                         self.elem_indices,
@@ -452,7 +452,7 @@ class StopInteractions(EventHandlerTool):
                 agent_id = elem.get("person")
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['attributes'].map[agent_id]
+                    attribute_class = self.resources['attribute'].map[agent_id]
                     destination_stop = self.agent_status[agent_id][1]
                     x, y, z = table_position(
                         self.elem_indices,

@@ -65,6 +65,72 @@ def base_handler(test_config, input_manager):
 
 
 @pytest.fixture
+def agent_distances_handler_car_mode(test_config, input_manager):
+    handler = plan_handlers.AgentHighwayDistance(test_config, 'car')
+
+    resources = input_manager.resources
+    handler.build(resources)
+
+    assert len(handler.agents_ids) == len(handler.resources['agents'].idents)
+    assert list(handler.agent_indices.keys()) == handler.agents_ids
+
+    assert len(handler.ways) == len(handler.resources['osm:ways'].classes)
+    assert list(handler.ways_indices.keys()) == handler.ways
+
+    assert handler.distances.shape == (
+        len(handler.resources['agents'].idents),
+        len(handler.resources['osm:ways'].classes)
+    )
+
+    return handler
+
+
+def test_agent_distances_handler_car_mode(agent_distances_handler_car_mode):
+    handler = agent_distances_handler_car_mode
+
+    plans = handler.resources['plans']
+    for plan in plans.elems:
+        handler.process_plan(plan)
+
+    assert np.sum(handler.distances) == 40600.0
+
+    # agent
+    assert np.sum(handler.distances[handler.agent_indices['chris']]) == 20400.0
+
+    # class
+    assert np.sum(handler.distances[:, handler.ways_indices['trunk']]) == 30600.0
+
+
+@pytest.fixture
+def agent_distances_handler_finalised_car(agent_distances_handler_car_mode):
+    handler = agent_distances_handler_car_mode
+    plans = handler.resources['plans']
+    for plan in plans.elems:
+        handler.process_plan(plan)
+    handler.finalise()
+    return handler
+
+
+def test_finalised_mode_counts_car(agent_distances_handler_finalised_car):
+    handler = agent_distances_handler_finalised_car
+
+    for name, result in handler.results.items():
+        cols = handler.ways
+        if 'total' in name:
+            for c in cols:
+                assert c in result.index
+            assert 'total' in result.index
+            assert np.sum(result[cols].values) == 40600.0
+
+        else:
+            for c in cols:
+                assert c in result.columns
+            assert 'total' in result.columns
+            df = result.loc[:, cols]
+            assert np.sum(df.values) == 40600.0
+
+
+@pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
     handler = plan_handlers.ModeShare(test_config, 'all')
 
@@ -76,7 +142,7 @@ def test_plan_modeshare_handler(test_config, input_manager):
     assert len(handler.modes) == len(handler.resources['plans'].modes)
     assert list(handler.mode_indices.keys()) == handler.modes
 
-    assert len(handler.classes) == len(handler.resources['attributes'].classes)
+    assert len(handler.classes) == len(handler.resources['attribute'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
 
     assert len(handler.activities) == len(handler.resources['plans'].activities)
@@ -84,7 +150,7 @@ def test_plan_modeshare_handler(test_config, input_manager):
 
     assert handler.mode_counts.shape == (
         len(handler.resources['plans'].modes),
-        len(handler.resources['attributes'].classes),
+        len(handler.resources['attribute'].classes),
         len(handler.resources['plans'].activities),
         periods)
 
@@ -181,7 +247,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                 assert np.sum(df.values) == 1
 
 
-# Event Handler Manager
+# Plan Handler Manager
 def test_load_plan_handler_manager(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
