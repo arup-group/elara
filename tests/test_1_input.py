@@ -164,19 +164,19 @@ def test_loading_gzip_network(test_gzip_config, test_zip_paths):
     assert len(network.node_gdf) == 5
 
 
-# OSMHighway
+# OSMWay
 def test_loading_osm_highways_map_from_xml(test_xml_config, test_paths):
-    osm_highway = inputs.OSMHighway(test_xml_config)
+    osm_highway = inputs.OSMWays(test_xml_config)
     osm_highway.build(test_paths.resources)
-    assert len(osm_highway.map) == 8
-    assert len(set(osm_highway.map.values())) == 2
+    assert len(osm_highway.ways) == 8
+    assert len(osm_highway.classes) == 2
 
 
 def test_loading_osm_highways_map_from_gzip(test_gzip_config, test_zip_paths):
-    osm_highway = inputs.OSMHighway(test_gzip_config)
+    osm_highway = inputs.OSMWays(test_gzip_config)
     osm_highway.build(test_zip_paths.resources)
-    assert len(osm_highway.map) == 8
-    assert len(set(osm_highway.map.values())) == 2
+    assert len(osm_highway.ways) == 8
+    assert len(osm_highway.classes) == 2
 
 
 # Attribute
@@ -192,20 +192,22 @@ def test_loading_gzip_attribute(test_gzip_config, test_zip_paths):
     assert len(attribute.map) == sum(attribute.attribute_count_map.values())
 
 
-# Attributes
+# Agents
 def test_loading_xml_attributes(test_xml_config, test_paths):
-    attributes = inputs.Attributes(test_xml_config)
+    attributes = inputs.Agents(test_xml_config)
     attributes.build(test_paths.resources)
     assert len(attributes.map) == 5
-    assert attributes.fields == {'age', 'subpopulation'}
+    assert attributes.idents == ['chris', 'fatema', 'fred', 'gerry', 'nick']
+    assert attributes.attribute_fields == {'age', 'subpopulation'}
     assert len(attributes.attributes_df) == 5
 
 
 def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
-    attributes = inputs.Attributes(test_gzip_config)
+    attributes = inputs.Agents(test_gzip_config)
     attributes.build(test_zip_paths.resources)
     assert len(attributes.map) == 5
-    assert attributes.fields == {'age', 'subpopulation'}
+    assert attributes.idents == ['chris', 'fatema', 'fred', 'gerry', 'nick']
+    assert attributes.attribute_fields == {'age', 'subpopulation'}
     assert len(attributes.attributes_df) == 5
 
 
@@ -220,7 +222,7 @@ def test_load_input_manager(test_xml_config, test_paths):
     network = input_workstation.resources['network']
     transit_schedule = input_workstation.resources['transit_schedule']
     transit_vehicles = input_workstation.resources['transit_vehicles']
-    attributes = input_workstation.resources['attributes']
+    attributes = input_workstation.resources['attribute']
     plans = input_workstation.resources['plans']
     mode_map = input_workstation.resources['mode_map']
     mode_hierarchy = input_workstation.resources['mode_hierarchy']

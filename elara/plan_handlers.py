@@ -10,14 +10,8 @@ class PlanHandlerTool(Tool):
     """
     Base Tool class for Plan Handling.
     """
-    results = dict()
-
     def __init__(self, config, option=None):
         super().__init__(config, option)
-
-        # TODO
-        if self.option != "all":
-            raise NotImplementedError(f'Not implemented option: {self.option} for modeshare')
 
 
 class Activities(PlanHandlerTool):
@@ -31,6 +25,152 @@ class Legs(PlanHandlerTool):
         raise NotImplementedError
 
 
+class AgentHighwayDistance(PlanHandlerTool):
+    """
+    Extract modal distances from agent plans
+    todo road only will not require transit schedule... maybe split road and pt
+    """
+
+    requirements = [
+        'plans',
+        'agents',
+        'osm:ways'
+        ]
+    valid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate handler.
+        :param config: config
+        :param option: str, mode option
+        """
+        super().__init__(config, option)
+
+        self.option = option
+        self.agents = None
+        self.osm_ways = None
+
+        self.agents_ids = None
+        self.ways = None
+        self.agent_indices = None
+        self.ways_indices = None
+
+        self.distances = None
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+
+    def __str__(self):
+        return f'AgentDistance (mode:{self.option})'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build Handler.
+        :param resources: dict, resources from suppliers
+        :return: None
+        """
+        super().build(resources)
+
+        self.agents = resources['agents']
+        self.osm_ways = resources['osm:ways']
+
+        # Initialise agent indices
+        self.agents_ids, self.agent_indices = self.generate_id_map(self.agents.idents)
+
+        # Initialise way indices
+        self.ways, self.ways_indices = self.generate_id_map(self.osm_ways.classes)
+
+        # Initialise mode count table
+        self.distances = np.zeros((len(self.agents_ids),
+                                   len(self.ways)))
+
+    def process_plan(self, elem):
+        """
+        Iteratively aggregate distance on highway distances from legs of selected plans.
+        :param elem: Plan XML element
+        """
+        if elem.get('selected') == 'yes':
+
+            ident = elem.getparent().get('id')
+
+            for stage in elem:
+
+                if stage.tag == 'leg':
+                    mode = stage.get('mode')
+                    if not mode == self.option:
+                        continue
+
+                    route = stage.xpath('route')[0].text.split(' ')
+                    length = len(route)
+                    for i, link in enumerate(route):
+                        way = str(self.osm_ways.ways.get(link, None))
+                        distance = float(self.osm_ways.lengths.get(link, 0))
+                        if i == 0 or i == length - 1:  # halve first and last link lengths
+                            distance /= 2
+
+                        x, y = self.table_position(
+                            ident,
+                            way,
+                        )
+
+                        self.distances[x, y] += distance
+
+    def finalise(self):
+        """
+        Following plan processing, the raw distance table will contain agent travel distance by way.
+        Finalise aggregates and joins these results as required and creates a dataframe.
+        """
+
+        names = ['agent', 'way']
+        indexes = [self.agents.idents, self.ways]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        distance_df = pd.DataFrame(self.distances.flatten(), index=index)[0]
+
+        # mode counts breakdown output
+        distance_df = distance_df.unstack(level='way').sort_index()
+
+        # calculate agent total distance
+        distance_df['total'] = distance_df.sum(1)
+
+        # calculate summary
+        total_df = distance_df.sum(0)
+        key = "agent_distance_{}_total".format(self.option)
+        self.results[key] = total_df
+
+        # join with agent attributes
+        key = "agent_distances_{}_breakdown".format(self.option)
+        self.results[key] = distance_df.join(
+            self.agents.attributes_df, how="left"
+        )
+
+    @staticmethod
+    def generate_id_map(list_in):
+        """
+        Generate element ID list and index dictionary from given list.
+        :param list_in: list
+        :return: (list, list_indices_map)
+        """
+        list_indices_map = {
+            key: value for (key, value) in zip(list_in, range(0, len(list_in)))
+        }
+        return list_in, list_indices_map
+
+    def table_position(
+        self,
+        ident,
+        way
+    ):
+        """
+        Calculate the result table coordinates from given maps.
+        :param ident: String, agent id
+        :param way: String, way id
+        :return: (x, y) tuple of integers to index results table
+        """
+        x = self.agent_indices[ident]
+        y = self.ways_indices[way]
+        return x, y
+
+
 class ModeShare(PlanHandlerTool):
     """
     Extract Mode Share from Plans.
@@ -39,7 +179,7 @@ class ModeShare(PlanHandlerTool):
     requirements = [
         'plans',
         'transit_schedule',
-        'attributes',
+        'attribute',
         'mode_map',
         'mode_hierarchy'
     ]
@@ -65,7 +205,7 @@ class ModeShare(PlanHandlerTool):
         self.results = None
 
         # Initialise results storage
-        self.results = dict()  # Result geodataframes ready to export
+        self.results = dict()  # Result dataframes ready to export
 
     def __str__(self):
         return f'ModeShare mode: {self.option}'
@@ -83,7 +223,7 @@ class ModeShare(PlanHandlerTool):
 
         # Initialise class classes
         self.classes, self.class_indices = self.generate_id_map(
-            self.resources['attributes'].classes
+            self.resources['attribute'].classes
         )
 
         # Initialise activity classes
@@ -98,18 +238,15 @@ class ModeShare(PlanHandlerTool):
                                     len(self.activities),
                                     self.config.time_periods))
 
-        self.results = dict()
-
     def process_plan(self, elem):
         """
-        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
-        events to determine link volume counts.
+        Iteratively aggregate dominant mode from activity trips of selected plans.
         :param elem: Plan XML element
         """
         if elem.get('selected') == 'yes':
 
             ident = elem.getparent().get('id')
-            attribute_class = self.resources['attributes'].map.get(ident, 'not found')
+            attribute_class = self.resources['attribute'].map.get(ident, 'not found')
 
             end_time = None
             modes = []

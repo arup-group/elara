@@ -127,10 +127,15 @@ class Network(Tool):
         }
 
 
-class OSMHighway(Tool):
+class OSMWays(Tool):
+    """
+    Light weight network input with no geometries - just osm way attribute and length.
+    """
 
     requirements = ['network_path']
-    map = None
+    ways = None
+    lengths = None
+    classes = None
 
     def build(self, resources: dict) -> None:
         """
@@ -142,15 +147,16 @@ class OSMHighway(Tool):
         path = resources['network_path'].path
 
         # Extract element properties
-        self.map = dict(
-            [
-                self.get_link_attribute(elem, 'osm:way:highway')
+        links = [
+                self.get_link_attribute(elem)
                 for elem in get_elems(path, "link")
                 ]
-        )
+        self.ways = {link['id']: link['way'] for link in links}
+        self.lengths = {link['id']: link['length'] for link in links}
+        self.classes = list(set(self.ways.values()))
 
     @staticmethod
-    def get_link_attribute(elem, name):
+    def get_link_attribute(elem):
         """
         Convert raw link XML element into tuple of ident and named attribute.
         :param elem: Link XML element
@@ -158,12 +164,17 @@ class OSMHighway(Tool):
         :return: tuple of ident and attribute
         """
 
-        ident = str(elem.get("id"))
-        attribute = elem.find('.//attribute[@name="{}"]'.format(name))
-        if attribute is not None:
-            attribute = attribute.text
+        for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
+            attribute = elem.find('.//attribute[@name="{}"]'.format(name))
+            if attribute is not None:
+                attribute = attribute.text
+                break
 
-        return ident, str(attribute)
+        return {
+            'id': str(elem.get("id")),
+            "length": float(elem.get("length")),
+            "way": str(attribute)
+        }
 
 
 class TransitSchedule(Tool):
@@ -294,6 +305,56 @@ class TransitVehicles(Tool):
         return id, seated_capacity + standing_capacity
 
 
+class Agents(Tool):
+    requirements = ['attributes_path']
+    final_attribute_map = None
+    map = None
+    idents = None
+    attribute_fields = None
+    attributes_df = None
+
+    def build(self, resources: dict):
+        """
+        Population subpopulation attributes constructor.
+        :param resources: dict, of resources from suppliers
+        """
+        super().build(resources)
+
+        path = resources['attributes_path'].path
+
+        # Attribute label mapping
+        # TODO move model specific setup elsewhere
+        self.final_attribute_map = {
+            "inc7p": "inc7p",
+            "inc56": "inc56",
+            "inc34": "inc34",
+            "inc12": "inc12",
+            "inc7p_nocar": "inc7p",
+            "inc56_nocar": "inc56",
+            "inc34_nocar": "inc34",
+            "inc12_nocar": "inc12",
+            "freight": "freight",
+        }
+
+        self.map = dict(
+            [
+                self.get_attribute_text(elem)
+                for elem in get_elems(path, "object")
+            ]
+        )
+
+        self.idents = sorted(list(self.map))
+        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
+        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
+
+    def get_attribute_text(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.findall('.//attribute'):
+            attributes[attr.get('name')] = self.final_attribute_map.get(attr.text, attr.text)
+        return ident, attributes
+
+
 class Attribute(Tool):
     requirements = ['attributes_path']
     final_attribute_map = None
@@ -339,54 +400,6 @@ class Attribute(Tool):
         attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
         attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
-
-
-class Attributes(Tool):
-    requirements = ['attributes_path']
-    final_attribute_map = None
-    map = None
-    fields = None
-    attributes_df = None
-
-    def build(self, resources):
-        """
-        Population subpopulation attributes constructor.
-        :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
-        """
-        super().build(resources)
-
-        path = resources['attributes_path'].path
-
-        # Attribute label mapping
-        # TODO move model specific setup elsewhere
-        self.final_attribute_map = {
-            "inc7p": "inc7p",
-            "inc56": "inc56",
-            "inc34": "inc34",
-            "inc12": "inc12",
-            "inc7p_nocar": "inc7p",
-            "inc56_nocar": "inc56",
-            "inc34_nocar": "inc34",
-            "inc12_nocar": "inc12",
-            "freight": "freight",
-        }
-
-        self.map = dict(
-            [
-                self.get_attribute_text(elem)
-                for elem in get_elems(path, "object")
-            ]
-        )
-
-        self.fields = set([k for v in self.map.values() for k in v.keys()])
-        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
-
-    def get_attribute_text(self, elem):
-        ident = elem.xpath("@id")[0]
-        attributes = {}
-        for attr in elem.findall('.//attribute'):
-            attributes[attr.get('name')] = self.final_attribute_map.get(attr.text, attr.text)
-        return ident, attributes
 
 
 class Plans(Tool):
@@ -511,9 +524,11 @@ class InputsWorkStation(WorkStation):
     tools = {
         'events': Events,
         'network': Network,
+        'osm:ways': OSMWays,
         'transit_schedule': TransitSchedule,
         'transit_vehicles': TransitVehicles,
-        'attributes': Attribute,
+        'agents': Agents,
+        'attribute': Attribute,
         'plans': Plans,
         'mode_map': ModeMap,
         'mode_hierarchy': ModeHierarchy,

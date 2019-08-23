@@ -150,12 +150,12 @@ def test_car_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert len(handler.classes) == len(resources['attribute'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), len(resources['attribute'].classes), periods)
     return handler
 
 
@@ -200,7 +200,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 14 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
 
 
 # Bus
@@ -214,12 +214,12 @@ def test_bus_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert len(handler.classes) == len(resources['attribute'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), len(resources['attribute'].classes), periods)
     return handler
 
 
@@ -274,7 +274,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 12
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
 
 
 # Passenger Counts Handler Tests
@@ -288,10 +288,10 @@ def test_bus_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert len(handler.classes) == len(resources['attribute'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), len(resources['attribute'].classes), periods)
     return handler
 
 
@@ -414,7 +414,7 @@ def test_passenger_count_finalise_bus(
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
 
 
 # Stop Interactions
@@ -428,11 +428,11 @@ def test_bus_passenger_interaction_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert len(handler.classes) == len(resources['attribute'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.boardings.shape == (
         len(resources['transit_schedule'].stop_gdf),
-        len(resources['attributes'].classes),
+        len(resources['attribute'].classes),
         periods
     )
     return handler
@@ -536,7 +536,7 @@ def test_stop_interaction_finalise_bus(
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 4 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
 
 
 # Event Handler Manager
