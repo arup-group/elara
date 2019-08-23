@@ -7,6 +7,8 @@ from shapely.ops import transform
 import gzip
 from io import BytesIO
 from math import floor
+from datetime import datetime, timedelta
+
 
 from elara.factory import WorkStation, Tool
 
@@ -458,6 +460,108 @@ class Plans(Tool):
                             mode = self.transit_schedule.mode_map.get(route)
                         modes.add(mode)
         return list(modes), list(activities)
+
+#
+# class Legs(Tool):
+#     """
+#     Legs input extracted from plans.
+#     """
+#     requirements = ['plans_path']
+#     valid_options = ['all']
+#
+#     legs = []
+#
+#     def build(self, resources: dict):
+#         """
+#         Legs object constructor.
+#         :param resources: dict, resources from supplier/s
+#         """
+#         super().build(resources)
+#
+#         path = resources['plans_path'].path
+#
+#         for plan in get_elems(path, "plan"):
+#             self.legs.extend(self.get_legs(plan))
+#
+#
+#     @staticmethod
+#     def get_legs(plan):
+#
+#         uid = 0
+#
+#         ident = plan.getparent().get('id')
+#         # attribute_class = self.resources['attribute'].map.get(ident, 'not found')
+#
+#         sequence_counter = 0
+#         acts = []
+#
+#         arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
+#
+#         if plan.get('selected') == 'yes':
+#             for stage in plan:
+#
+#                 if stage.tag == 'leg':
+#                     departure = stage.get('departure_time')
+#                     departure_dt = datetime.strptime(departure, '%H:%M:%S')
+#
+#                     trav_time = stage.get('trav_time')
+#                     t = datetime.strptime(trav_time, '%H:%M:%S')
+#                     td = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+#                     arrival_dt = departure_dt + td
+#
+#                 elif stage.tag == 'activity':
+#                     uid += 1
+#                     sequence_counter += 1
+#
+#                     end = stage.get('end_time')
+#                     end_dt = datetime.strptime(end, '%H:%M:%S')
+#                     duration = end_dt - arrival_dt
+#
+#                     acts.append(
+#                         {
+#                             'uid': uid,
+#                             'agent_id': ident,
+#                             'seq': sequence_counter,
+#                             'act': str(stage.get('type')),
+#                             'x': stage.get('x'),
+#                             'y': stage.get('y'),
+#                             'start': arrival_dt.time(),
+#                             'end': end_dt.time(),
+#                             'duration': duration,
+#                             'start_s': int(arrival_dt.strftime('%s')),
+#                             'end_s': int(end_dt.strftime('%s')),
+#                             'duration_s': duration.total_seconds(),
+#                             # 'act_wrap': 'True',
+#                             # 'loc_wrap': 'True'
+#                         }
+#                     )
+#
+#             # todo decide how to deal with wrapping...
+#
+#             """
+#             act_wrap = acts[0]['act'] == acts[-1]['act']
+#             x_wrap = acts[0]['x'] == acts[-1]['x']
+#             y_wrap = acts[0]['y'] == acts[-1]['y']
+#             loc_wrap = x_wrap and y_wrap
+#
+#             if not act_wrap and loc_wrap:
+#                 for act in acts:
+#                     act['act_wrap'] = str(act_wrap)
+#                     act['loc_wrap'] = str(loc_wrap)
+#             else:
+#                 acts[0]['start'] = acts[-1]['start']
+#                 acts[-1]['end'] = acts[0]['end']
+#                 acts[0]['start_s'] = acts[-1]['start_s']
+#                 acts[-1]['end_s'] = acts[0]['end_s']
+#
+#                 acts[0]['duration'] += acts[-1]['duration']
+#                 acts[-1]['duration'] += acts[0]['duration']
+#                 acts[0]['duration_s'] += acts[-1]['duration_s']
+#                 acts[-1]['duration_s'] += acts[0]['duration_s']
+#
+#             """
+#
+#         return acts
 
 
 class ModeHierarchy(Tool):

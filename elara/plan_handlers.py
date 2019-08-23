@@ -14,7 +14,15 @@ class PlanHandlerTool(Tool):
         super().__init__(config, option)
 
 
-class Activities(PlanHandlerTool):
+class ActivityLog(PlanHandlerTool):
+    """
+    Activity Log.
+    """
+    requirements = [
+        'plans',
+        'agents',
+        'osm:ways'
+    ]
 
     def __init__(self):
         raise NotImplementedError
