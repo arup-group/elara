@@ -63,7 +63,55 @@ def base_handler(test_config, input_manager):
     base_handler.build(input_manager.resources)
     return base_handler
 
+### Log Handler ###
+@pytest.fixture
+def agent_log_handler(test_config, input_manager):
+    handler = plan_handlers.LogsHandler(test_config, 'all')
 
+    resources = input_manager.resources
+    handler.build(resources)
+
+    assert len(handler.activities) == 0
+    assert len(handler.legs) == 0
+
+    return handler
+
+
+def test_agent_log_handler(agent_log_handler):
+    handler = agent_log_handler
+
+    plans = handler.resources['plans']
+    for plan in plans.elems:
+        handler.process_plan(plan)
+
+    assert len(handler.activities) == 23
+    assert len(handler.legs) == 18
+
+
+@pytest.fixture
+def agent_log_handler_finalised(agent_log_handler):
+    handler = agent_log_handler
+    plans = handler.resources['plans']
+    for plan in plans.elems:
+        handler.process_plan(plan)
+    handler.finalise()
+    return handler
+
+
+def test_finalised_mode_counts_car(agent_log_handler_finalised):
+    handler = agent_log_handler_finalised
+
+    assert len(handler.results) == 2
+
+    for name, result in handler.results.items():
+        if 'activity' in name:
+            assert len(result) == 23
+
+        else:
+            assert len(result) == 18
+
+
+### Highway Distance Handler ###
 @pytest.fixture
 def agent_distances_handler_car_mode(test_config, input_manager):
     handler = plan_handlers.AgentHighwayDistance(test_config, 'car')
@@ -111,7 +159,7 @@ def agent_distances_handler_finalised_car(agent_distances_handler_car_mode):
     return handler
 
 
-def test_finalised_mode_counts_car(agent_distances_handler_finalised_car):
+def test_finalised_agent_distances_car(agent_distances_handler_finalised_car):
     handler = agent_distances_handler_finalised_car
 
     for name, result in handler.results.items():
@@ -130,6 +178,7 @@ def test_finalised_mode_counts_car(agent_distances_handler_finalised_car):
             assert np.sum(df.values) == 40600.0
 
 
+### Modeshare Handler ###
 @pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
     handler = plan_handlers.ModeShare(test_config, 'all')
@@ -139,19 +188,19 @@ def test_plan_modeshare_handler(test_config, input_manager):
 
     periods = 24
 
-    assert len(handler.modes) == len(handler.resources['plans'].modes)
+    assert len(handler.modes) == len(handler.resources['output_config'].modes)
     assert list(handler.mode_indices.keys()) == handler.modes
 
     assert len(handler.classes) == len(handler.resources['attribute'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
 
-    assert len(handler.activities) == len(handler.resources['plans'].activities)
+    assert len(handler.activities) == len(handler.resources['output_config'].activities)
     assert list(handler.activity_indices.keys()) == handler.activities
 
     assert handler.mode_counts.shape == (
-        len(handler.resources['plans'].modes),
+        len(handler.resources['output_config'].modes),
         len(handler.resources['attribute'].classes),
-        len(handler.resources['plans'].activities),
+        len(handler.resources['output_config'].activities),
         periods)
 
     return handler
