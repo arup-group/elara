@@ -71,6 +71,50 @@ class EventHandlerTool(Tool):
         }
 
 
+class AgentWaitingTimes(EventHandlerTool):
+    """
+    Extract Waiting times for agents by mode
+
+    waiting for pt:
+
+    <event time="25752.0" type="waitingForPt" agent="gerry" atStop="home_stop_out"
+    destinationStop="work_stop_in"/>
+
+    <event time="27001.0" type="PersonEntersVehicle" person="gerry" vehicle="bus1"/>
+
+    <event time="27300.0" type="VehicleDepartsAtFacility" vehicle="bus1"
+    facility="home_stop_out" delay="0.0"/>
+
+    interchange:
+
+    <event time="46589.0" type="PersonLeavesVehicle" person="census_1001" vehicle="veh_26916_rail"  />
+
+    <event time="46589.0" type="arrival" person="census_1001" link="pt_IRELANDWHOLE3575" legMode="pt"  />
+	<event time="46589.0" type="actstart" person="census_1001" link="pt_IRELANDWHOLE3575" actType="pt interaction"  />
+	<event time="46589.0" type="actend" person="census_1001" link="pt_IRELANDWHOLE3575" actType="pt interaction"  />
+	<event time="46589.0" type="departure" person="census_1001" link="pt_IRELANDWHOLE3575" legMode="transit_walk"  />
+	<event time="46589.0" type="VehicleDepartsAtFacility" vehicle="veh_8487_tram" facility="IRELANDWHOLE10719.link:pt_IRELANDWHOLE10719" delay="0.0"  />
+	<event time="46589.0" type="travelled" person="census_1001" distance="0.0"  />
+	<event time="46589.0" type="arrival" person="census_1001" link="491835" legMode="transit_walk"  />
+	<event time="46589.0" type="actstart" person="census_1001" link="491835" actType="pt interaction"  />
+	<event time="46589.0" type="actend" person="census_1001" link="491835" actType="pt interaction"  />
+	<event time="46589.0" type="departure" person="census_1001" link="491835" legMode="pt"  />
+	<event time="46589.0" type="waitingForPt" agent="census_1001" atStop="IRELANDWHOLE3575.link:491835" destinationStop="IRELANDWHOLE3633.link:857029"  />
+
+	<event time="47601.0" type="PersonEntersVehicle" person="census_1001" vehicle="veh_27216_bus"  />
+    """
+
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        raise NotImplementedError
+
+
 class VolumeCounts(EventHandlerTool):
     """
     Extract Volume Counts for mode on given network.
