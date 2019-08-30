@@ -102,7 +102,38 @@ class AgentWaitingTimes(EventHandlerTool):
 	<event time="46589.0" type="waitingForPt" agent="census_1001" atStop="IRELANDWHOLE3575.link:491835" destinationStop="IRELANDWHOLE3633.link:857029"  />
 
 	<event time="47601.0" type="PersonEntersVehicle" person="census_1001" vehicle="veh_27216_bus"  />
+
+
+	EXIT:
+	<event time="27534.0" type="PersonLeavesVehicle" person="gerry" vehicle="bus1"  />
+	<event time="27534.0" type="arrival" person="gerry" link="3-4" legMode="pt"  />
+	<event time="27534.0" type="actstart" person="gerry" link="3-4" actType="pt interaction"  />
+	<event time="27534.0" type="actend" person="gerry" link="3-4" actType="pt interaction"  />
+	<event time="27534.0" type="departure" person="gerry" link="3-4" legMode="transit_walk"  />
+	<event time="28318.0" type="travelled" person="gerry" distance="653.2419153728579"  />
+	<event time="28318.0" type="arrival" person="gerry" link="3-4" legMode="transit_walk"  />
+	<event time="28318.0" type="actstart" person="gerry" link="3-4" actType="work"  />
+
+	1. get number of pt legs
+	2. minus number of unique agents
+	3. = number of start interactions and interchanges
+	4. stream events for pt interactions
+	5. keep dict of agents status {time at interaction}
+	6. stream events for agents entering pt vehicles
+	7. refer to dict to add wait to results
+	8. if agent starts a non pt interaction activity then clear dict
+
+	9. record type of interchange? (ie strart/inter)
+	10. record modes? (bus-bus/train-bus etc)
+	11. collect time and loc
     """
+
+    requirements = [
+        'events',
+        # 'agent_logs',
+        'transit_schedule',
+        'attributes',
+    ]
 
     def __init__(self, config, option=None) -> None:
         """
@@ -112,7 +143,116 @@ class AgentWaitingTimes(EventHandlerTool):
         """
         super().__init__(config, option)
 
-        raise NotImplementedError
+        self.agent_status = dict()
+        self.veh_waiting_occupancy = dict()
+
+        self.waiting_log = []
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+
+    def __str__(self):
+        return f'AgentWaitingTimes'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :return: None
+        """
+        super().build(resources)
+
+        # name = "{}_agents_leg_logs_{}".format(self.config.name, self.option)
+        # legs_df = self.resources['agent_logs'].results[name]
+        #
+        # unique_pt_interactions = legs_df.iloc[legs_df.act == 'pt interaction']
+        # num_pt_interactions = len(unique_pt_interactions)
+        # num_unique_agents = unique_pt_interactions.agent_id.nunique()
+
+    def process_event(self, elem) -> None:
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
+        events to determine link volume counts.
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+        if event_type == 'waitingForPt':
+            time = int(float(elem.get("time")))
+            agent_id = elem.get("agent")
+
+            """Note the use of 'agent' above - not 'person' as per usual"""
+
+            if agent_id not in self.agent_status:
+                self.agent_status[agent_id] = [time, None]
+
+            else:  # agent is in transit therefore this is an interchange, so update time only
+                self.agent_status[agent_id][0] = time
+            return None
+
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_ident)
+
+            if veh_mode == 'car':  # can ignore cars
+                return None
+
+            # update veh occupancy
+            if not self.veh_waiting_occupancy.get(veh_ident):
+                self.veh_waiting_occupancy[veh_ident] = [agent_id]
+            else:
+                self.veh_waiting_occupancy[veh_ident].append(agent_id)
+
+        if event_type == "VehicleDepartsAtFacility":
+            veh_ident = elem.get("vehicle")
+
+            if veh_ident not in self.veh_waiting_occupancy:  # ignore if no-one waiting in vehicle
+                return None
+
+            vehicle_waiting_report = []
+
+            veh_mode = self.vehicle_mode(veh_ident)
+            time = int(float(elem.get("time")))
+            stop = elem.get("facility")
+
+            for agent_id in self.veh_waiting_occupancy[veh_ident]:
+
+                if agent_id not in self.agent_status:  # ignore (ie driver)
+                    continue
+
+                start_time, previous_mode = self.agent_status[agent_id]
+
+                waiting_time = time - start_time
+
+                # first waiting
+                vehicle_waiting_report.append(
+                    {
+                        'agent_id': agent_id,
+                        'prev_mode': previous_mode,
+                        'mode': veh_mode,
+                        'stop': stop,
+                        'duration': waiting_time,
+                        'departure': time
+                    }
+                )
+
+                # update agent status for 'previous mode'
+                self.agent_status[agent_id] = [None, veh_mode]
+
+            # clear veh_waiting_occupancy
+            self.veh_waiting_occupancy.pop('veh_ident', None)
+
+            self.waiting_log.extend(vehicle_waiting_report)
+
+            return None
+
+        if event_type == "actstart":
+
+            if elem.get("type") == "pt interaction":  # ignore pt interactions
+                return None
+
+            agent_id = elem.get("person")
+            self.agent_status.pop(agent_id, None)  # agent has finished transit - remove record
 
 
 class VolumeCounts(EventHandlerTool):
@@ -125,7 +265,7 @@ class VolumeCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'transit_vehicles',
-        'attribute',
+        'attributes',
     ]
 
     def __init__(self, config, option=None) -> None:
@@ -147,7 +287,7 @@ class VolumeCounts(EventHandlerTool):
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'VolumeCounts mode: {self.option}'
+        return f'VolumeCounts'
 
     def build(self, resources: dict) -> None:
         """
@@ -159,7 +299,7 @@ class VolumeCounts(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
-            self.resources['attribute'].classes)
+            self.resources['attributes'].classes)
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
@@ -182,7 +322,7 @@ class VolumeCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.option:
                 # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.resources['attribute'].map.get(ident, 'not_applicable')
+                attribute_class = self.resources['attributes'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 x, y, z = table_position(
@@ -246,7 +386,7 @@ class PassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'transit_vehicles',
-        'attribute',
+        'attributes',
     ]
     invalid_options = ['car']
 
@@ -270,7 +410,7 @@ class PassengerCounts(EventHandlerTool):
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'PassengerCounts mode: {self.option}'
+        return f'PassengerCounts'
 
     def build(self, resources: dict) -> None:
         """
@@ -285,7 +425,7 @@ class PassengerCounts(EventHandlerTool):
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attribute'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
@@ -315,7 +455,7 @@ class PassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attribute'].map[agent_id]
+                attribute_class = self.resources['attributes'].map[agent_id]
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
 
@@ -330,7 +470,7 @@ class PassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attribute'].map[agent_id]
+                attribute_class = self.resources['attributes'].map[agent_id]
                 if not self.veh_occupancy[veh_id][attribute_class]:
                     pass
                 else:
@@ -403,7 +543,7 @@ class StopInteractions(EventHandlerTool):
         'network',
         'transit_schedule',
         'transit_vehicles',
-        'attribute',
+        'attributes',
     ]
     invalid_options = ['car']
 
@@ -428,7 +568,7 @@ class StopInteractions(EventHandlerTool):
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'StopInteractions with mode: {self.option}'
+        return f'StopInteractions'
 
     def build(self, resources: dict) -> None:
         """
@@ -443,7 +583,7 @@ class StopInteractions(EventHandlerTool):
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attribute'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
@@ -479,7 +619,7 @@ class StopInteractions(EventHandlerTool):
                 agent_id = elem.get("person")
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['attribute'].map[agent_id]
+                    attribute_class = self.resources['attributes'].map[agent_id]
                     origin_stop = self.agent_status[agent_id][0]
                     x, y, z = table_position(
                         self.elem_indices,
@@ -496,7 +636,7 @@ class StopInteractions(EventHandlerTool):
                 agent_id = elem.get("person")
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['attribute'].map[agent_id]
+                    attribute_class = self.resources['attributes'].map[agent_id]
                     destination_stop = self.agent_status[agent_id][1]
                     x, y, z = table_position(
                         self.elem_indices,

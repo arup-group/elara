@@ -2,4 +2,4 @@ mode,0
 bike,0.2
 bus,0.4
 car,0.4
-transit_walk,0.0
+walk,0.0

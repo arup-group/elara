@@ -55,7 +55,6 @@ def test_town_mode_share_score_zero():
     assert score['modeshare'] == 0
 
 
-
 # Config
 @pytest.fixture
 def test_config():
@@ -89,7 +88,8 @@ def test_benchmark_workstation(test_config, test_paths):
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    plan_workstation.load_all_tools(option='all')
+    tool = plan_workstation.tools['mode_share']
+    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
     plan_workstation.build()
 
     pp_workstation = benchmarking.BenchmarkWorkStation(test_config)

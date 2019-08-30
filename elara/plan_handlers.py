@@ -30,7 +30,207 @@ class PlanHandlerTool(Tool):
         return list_in, list_indices_map
 
 
-class LogsHandler(PlanHandlerTool):
+class ModeShareHandler(PlanHandlerTool):
+    """
+    Extract Mode Share from Plans.
+    """
+
+    requirements = [
+        'plans',
+        'attributes',
+        'transit_schedule',
+        'output_config',
+        'mode_map',
+        'mode_hierarchy'
+    ]
+    valid_options = ['all']
+
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate Handler.
+        :param config: Config
+        :param option: str, option
+        """
+        super().__init__(config, option)
+
+        self.option = option  # todo options not implemented
+
+        self.modes = None
+        self.mode_indices = None
+        self.classes = None
+        self.class_indices = None
+        self.activities = None
+        self.activity_indices = None
+        self.mode_counts = None
+        self.results = None
+
+        # Initialise results storage
+        self.results = dict()  # Result geodataframes ready to export
+
+    def __str__(self):
+        return f'ModeShare'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build Handler.
+        :param resources:
+        :return:
+        """
+        super().build(resources)
+
+        modes = self.resources['output_config'].modes + self.resources['transit_schedule'].modes
+        if 'pt' in modes:
+            modes.remove('pt')
+
+        activities = self.resources['output_config'].activities
+        sub_populations = self.resources['output_config'].sub_populations
+
+        # Initialise mode classes
+        self.modes, self.mode_indices = self.generate_id_map(modes)
+
+        # Initialise class classes
+        self.classes, self.class_indices = self.generate_id_map(
+            sub_populations
+        )
+
+        # Initialise activity classes
+        self.activities, self.activity_indices = self.generate_id_map(
+            activities
+        )
+
+        # TODO - don't need to keep pt interactions or/for modeshare
+
+        # Initialise mode count table
+        self.mode_counts = np.zeros((len(self.modes),
+                                    len(self.classes),
+                                    len(self.activities),
+                                    self.config.time_periods))
+
+        self.results = dict()
+
+    def process_plan(self, elem):
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
+        events to determine link volume counts.
+        :param elem: Plan XML element
+        """
+        if elem.get('selected') == 'yes':
+
+            ident = elem.getparent().get('id')
+            attribute_class = self.resources['attributes'].map.get(ident, 'not found')
+
+            end_time = None
+            modes = []
+
+            for stage in elem:
+
+                if stage.tag == 'leg':
+                    mode = stage.get('mode')
+                    if mode == 'pt':
+                        route = stage.xpath('route')[0].text.split('===')[-2]
+                        mode = self.resources['transit_schedule'].mode_map.get(route)
+                    modes.append(mode)
+
+                elif stage.tag == 'activity':
+                    activity = stage.get('type')
+
+                    if activity == 'pt interaction':  # ignore pt interaction activities
+                        continue
+
+                    # only add activity modes when there has been previous activity
+                    # (ie trip start time)
+                    if end_time:
+                        mode = self.resources['mode_hierarchy'].get(modes)
+                        x, y, z, w = self.table_position(
+                            mode,
+                            attribute_class,
+                            activity,
+                            end_time
+                        )
+
+                        self.mode_counts[x, y, z, w] += 1
+
+                    # update endtime for next activity
+                    end_time = convert_time(stage.get('end_time'))
+
+                    # reset modes
+                    modes = []
+
+    def finalise(self):
+        """
+        Following plan processing, the raw mode share table will contain counts by mode,
+        population attribute class, activity and period (where period is based on departure
+        time).
+        Finalise aggregates these results as required and creates a dataframe.
+        """
+
+        # Scale final counts
+        self.mode_counts *= 1.0 / self.config.scale_factor
+
+        names = ['mode', 'class', 'activity', 'hour']
+        indexes = [self.modes, self.classes, self.activities, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
+
+        # mode counts breakdown output
+        counts_df = counts_df.unstack(level='mode').sort_index()
+        key = "mode_counts_{}_breakdown".format(self.option)
+        self.results[key] = counts_df
+
+        # mode counts totals output
+        total_counts_df = counts_df.sum(0)
+        key = "mode_counts_{}_total".format(self.option)
+        self.results[key] = total_counts_df
+
+        # convert to mode shares
+        total = self.mode_counts.sum()
+
+        # mode shares breakdown output
+        key = "mode_shares_{}_breakdown".format(self.option)
+        self.results[key] = counts_df / total
+
+        # mode shares totals output
+        key = "mode_shares_{}_total".format(self.option)
+        self.results[key] = total_counts_df / total
+
+    @staticmethod
+    def generate_id_map(list_in):
+        """
+        Generate element ID list and index dictionary from given list.
+        :param list_in: list
+        :return: (list, list_indices_map)
+        """
+        if not len(set(list_in)) == len(list_in):
+            raise UserWarning("non unique mode list found")
+
+        list_indices_map = {
+            key: value for (key, value) in zip(list_in, range(0, len(list_in)))
+        }
+        return list_in, list_indices_map
+
+    def table_position(
+        self,
+        mode,
+        attribute_class,
+        activity,
+        time
+    ):
+        """
+        Calculate the result table coordinates from given maps.
+        :param mode: String, mode id
+        :param attribute_class: String, class id
+        :param activity: String, activity id
+        :param time: Timestamp of event
+        :return: (x, y, z, w) tuple of integers to index results table
+        """
+        x = self.mode_indices[mode]
+        y = self.class_indices[attribute_class]
+        z = self.activity_indices[activity]
+        w = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
+        return x, y, z, w
+
+
+class AgentLogsHandler(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule']
     valid_options = ['all']
@@ -55,14 +255,7 @@ class LogsHandler(PlanHandlerTool):
         self.results = dict()  # Result dataframes ready to export
 
     def __str__(self):
-        return f'LogHandler (type:{self.option})'
-
-    # def build(self, resources: dict):
-    #     """
-    #     Plans object constructor.
-    #     :param resources: dict, supplier resources
-    #     """
-    #     super().build(resources)
+        return f'LogHandler'
 
     def process_plan(self, plan):
 
@@ -94,8 +287,11 @@ class LogsHandler(PlanHandlerTool):
                     act_seq_idx += 1
 
                     act_type = stage.get('type')
+
                     if not act_type == 'pt interaction':
+
                         trip_seq_idx += 1  # increment for a new trip idx
+
                         end = stage.get('end_time', '23:59:59')
                         end_dt = datetime.strptime(end, '%H:%M:%S')
                         duration = end_dt - arrival_dt
@@ -178,9 +374,9 @@ class LogsHandler(PlanHandlerTool):
         # modes = list(set(legs_df['mode']))
         # activities = list(set(activities_df['act']))
 
-        key = "agents_activity_logs_{}".format(self.option)
+        key = "{}_agents_activity_logs_{}".format(self.config.name, self.option)
         self.results[key] = activities_df
-        key = "agents_leg_logs_{}".format(self.option)
+        key = "{}_agents_leg_logs_{}".format(self.config.name, self.option)
         self.results[key] = legs_df
 
     @staticmethod
@@ -196,12 +392,7 @@ class LogsHandler(PlanHandlerTool):
         return s + (60 * (m + (60 * h)))
 
 
-class Legs(PlanHandlerTool):
-    def __init__(self):
-        raise NotImplementedError
-
-
-class AgentHighwayDistance(PlanHandlerTool):
+class AgentHighwayDistanceHandler(PlanHandlerTool):
     """
     Extract modal distances from agent plans
     todo road only will not require transit schedule... maybe split road and pt
@@ -237,7 +428,7 @@ class AgentHighwayDistance(PlanHandlerTool):
         self.results = dict()  # Result dataframes ready to export
 
     def __str__(self):
-        return f'AgentHighwayDistance (mode:{self.option})'
+        return f'AgentHighwayDistance)'
 
     def build(self, resources: dict) -> None:
         """
@@ -335,202 +526,15 @@ class AgentHighwayDistance(PlanHandlerTool):
         return x, y
 
 
-class ModeShare(PlanHandlerTool):
-    """
-    Extract Mode Share from Plans.
-    """
-
-    requirements = [
-        'plans',
-        'transit_schedule',
-        'attribute',
-        'output_config',
-        'mode_map',
-        'mode_hierarchy'
-    ]
-    valid_options = ['all']
-
-    def __init__(self, config, option=None) -> None:
-        """
-        Initiate Handler.
-        :param config: Config
-        :param option: str, option
-        """
-        super().__init__(config, option)
-
-        self.option = option  # todo options not implemented
-
-        self.modes = None
-        self.mode_indices = None
-        self.classes = None
-        self.class_indices = None
-        self.activities = None
-        self.activity_indices = None
-        self.mode_counts = None
-        self.results = None
-
-        # Initialise results storage
-        self.results = dict()  # Result dataframes ready to export
-
-    def __str__(self):
-        return f'ModeShare mode: {self.option}'
-
-    def build(self, resources: dict) -> None:
-        """
-        Build Handler.
-        :param resources:
-        :return:
-        """
-        super().build(resources)
-
-        # Initialise mode classes
-        self.modes, self.mode_indices = self.generate_indices_map(self.resources[
-                                                                      'output_config'].modes)
-
-        # Initialise class classes
-        self.classes, self.class_indices = self.generate_indices_map(
-            self.resources['attribute'].classes
-        )
-
-        # Initialise activity classes
-        self.activities, self.activity_indices = self.generate_indices_map(
-            self.resources['output_config'].activities
-        )
-        # TODO - don't need to keep pt interactions or/for modeshare
-
-        # Initialise mode count table
-        self.mode_counts = np.zeros((len(self.modes),
-                                    len(self.classes),
-                                    len(self.activities),
-                                    self.config.time_periods))
-
-    def process_plan(self, elem):
-        """
-        Iteratively aggregate dominant mode from activity trips of selected plans.
-        :param elem: Plan XML element
-        """
-        if elem.get('selected') == 'yes':
-
-            ident = elem.getparent().get('id')
-            attribute_class = self.resources['attribute'].map.get(ident, 'not found')
-
-            end_time = None
-            modes = []
-
-            for stage in elem:
-
-                if stage.tag == 'leg':
-                    mode = stage.get('mode')
-                    if mode == 'pt':
-                        route = stage.xpath('route')[0].text.split('===')[-2]
-                        mode = self.resources['transit_schedule'].mode_map.get(route)
-                    modes.append(mode)
-
-                elif stage.tag == 'activity':
-                    activity = stage.get('type')
-
-                    if activity == 'pt interaction':  # ignore pt interaction activities
-                        continue
-
-                    # only add activity modes when there has been previous activity
-                    # (ie trip start time)
-                    if end_time:
-                        mode = self.resources['mode_hierarchy'].get(modes)
-                        x, y, z, w = self.table_position(
-                            mode,
-                            attribute_class,
-                            activity,
-                            end_time
-                        )
-
-                        self.mode_counts[x, y, z, w] += 1
-
-                    # update endtime for next activity
-                    end_time = convert_time(stage.get('end_time'))
-
-                    # reset modes
-                    modes = []
-
-    def finalise(self):
-        """
-        Following plan processing, the raw mode share table will contain counts by mode,
-        population attribute class, activity and period (where period is based on departure
-        time).
-        Finalise aggregates these results as required and creates a dataframe.
-        """
-
-        # Scale final counts
-        self.mode_counts *= 1.0 / self.config.scale_factor
-
-        names = ['mode', 'class', 'activity', 'hour']
-        indexes = [self.modes, self.classes, self.activities, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
-
-        # mode counts breakdown output
-        counts_df = counts_df.unstack(level='mode').sort_index()
-        key = "mode_counts_{}_breakdown".format(self.option)
-        self.results[key] = counts_df
-
-        # mode counts totals output
-        total_counts_df = counts_df.sum(0)
-        key = "mode_counts_{}_total".format(self.option)
-        self.results[key] = total_counts_df
-
-        # convert to mode shares
-        total = self.mode_counts.sum()
-
-        # mode shares breakdown output
-        key = "mode_shares_{}_breakdown".format(self.option)
-        self.results[key] = counts_df / total
-
-        # mode shares totals output
-        key = "mode_shares_{}_total".format(self.option)
-        self.results[key] = total_counts_df / total
-
-    @staticmethod
-    def generate_indices_map(list_in):
-        """
-        Generate element ID list and index dictionary from given list.
-        :param list_in: list
-        :return: (list, list_indices_map)
-        """
-        list_indices_map = {
-            key: value for (key, value) in zip(list_in, range(0, len(list_in)))
-        }
-        return list_in, list_indices_map
-
-    def table_position(
-        self,
-        mode,
-        attribute_class,
-        activity,
-        time
-    ):
-        """
-        Calculate the result table coordinates from given maps.
-        :param mode: String, mode id
-        :param attribute_class: String, class id
-        :param activity: String, activity id
-        :param time: Timestamp of event
-        :return: (x, y, z, w) tuple of integers to index results table
-        """
-        x = self.mode_indices[mode]
-        y = self.class_indices[attribute_class]
-        z = self.activity_indices[activity]
-        w = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
-        return x, y, z, w
-
-
 class PlanHandlerWorkStation(WorkStation):
     """
     Work Station class for collecting and building Plans Handlers.
     """
 
     tools = {
-        # "activities": Activities,
-        # "legs": Legs,
-        "mode_share": ModeShare,
+        "mode_share": ModeShareHandler,
+        "agent_logs": AgentLogsHandler,
+        "agent_highway_distances": AgentHighwayDistanceHandler,
     }
 
     def build(self, spinner=None):

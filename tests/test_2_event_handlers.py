@@ -120,6 +120,94 @@ def events(test_config, test_paths):
 
 
 @pytest.fixture
+def gerry_waiting_event():
+    time = 6.5 * 60 * 60
+    string = """
+        <event time="23400.0" type="waitingForPt" agent="gerry" atStop="home_stop_out" 
+        destinationStop="work_stop_in"  />
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def driver_enters_veh_event():
+    time = 6.5 * 60 * 60 + (5 * 60)
+    string = """
+        <event time="23700.0" type="PersonEntersVehicle" person="pt_bus1_Bus" vehicle="bus1"  />
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def gerry_enters_veh_event():
+    time = 6.5 * 60 * 60 + (10 * 60)
+    string = """
+        <event time="24000.0" type="PersonEntersVehicle" person="gerry" vehicle="bus1"  />
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def veh_departs_event():
+    time = 6.5 * 60 * 60 + (15 * 60)
+    string = """
+        <event time="24300.0" type="VehicleDepartsAtFacility" vehicle="bus1" 
+        facility="home_stop_out" delay="0.0"  />
+        """
+    return etree.fromstring(string)
+
+
+# Waiting times
+@pytest.fixture
+def test_agent_waiting_times_log_handler(test_config, input_manager):
+    handler = event_handlers.AgentWaitingTimes(test_config, 'all')
+
+    resources = input_manager.resources
+    handler.build(resources)
+
+    return handler
+
+
+def test_agent_waiting_times_log_single_event_first_waiting(
+        test_agent_waiting_times_log_handler,
+        gerry_waiting_event,
+        driver_enters_veh_event,
+        gerry_enters_veh_event,
+        veh_departs_event
+):
+    handler = test_agent_waiting_times_log_handler
+
+    def printer(handler):
+        print(handler.agent_status)
+        print(handler.veh_waiting_occupancy)
+        print(handler.waiting_log)
+
+    handler.process_event(gerry_waiting_event)
+    printer(handler)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 0
+    assert len(handler.waiting_log) == 0
+
+    handler.process_event(driver_enters_veh_event)
+    printer(handler)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 1
+    assert len(handler.waiting_log) == 0
+
+    handler.process_event(gerry_enters_veh_event)
+    printer(handler)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 1
+    assert len(handler.waiting_log) == 0
+
+    handler.process_event(veh_departs_event)
+    printer(handler)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 1
+    assert len(handler.waiting_log) == 1
+
+
+@pytest.fixture
 def car_enters_link_event():
     time = 6.5 * 60 * 60
     string = """
@@ -150,12 +238,12 @@ def test_car_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attribute'].classes)
+    assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attribute'].classes), periods)
+        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
     return handler
 
 
@@ -200,7 +288,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 14 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
 # Bus
@@ -214,12 +302,12 @@ def test_bus_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attribute'].classes)
+    assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attribute'].classes), periods)
+        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
     return handler
 
 
@@ -274,7 +362,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 12
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
 # Passenger Counts Handler Tests
@@ -288,10 +376,10 @@ def test_bus_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attribute'].classes)
+    assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attribute'].classes), periods)
+        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
     return handler
 
 
@@ -414,7 +502,7 @@ def test_passenger_count_finalise_bus(
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
 # Stop Interactions
@@ -428,11 +516,11 @@ def test_bus_passenger_interaction_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attribute'].classes)
+    assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.boardings.shape == (
         len(resources['transit_schedule'].stop_gdf),
-        len(resources['attribute'].classes),
+        len(resources['attributes'].classes),
         periods
     )
     return handler
@@ -536,7 +624,7 @@ def test_stop_interaction_finalise_bus(
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 4 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attribute'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
 # Event Handler Manager

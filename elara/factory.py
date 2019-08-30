@@ -235,6 +235,12 @@ class WorkStation:
         :return: NOne
         """
         for name, tool in self.tools.items():
+            if option is None and tool.valid_options is not None:
+                option = tool.valid_options[0]
+                print("++++")
+                print(tool)
+                print(tool.valid_options)
+                print(option)
             self.resources[name] = tool(self.config, option)
 
 

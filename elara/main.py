@@ -57,7 +57,7 @@ def main(config):
     )
     postprocessing.connect(
         managers=[config_requirements],
-        suppliers=[event_handlers, plan_handlers]
+        suppliers=[input_workstation, event_handlers, plan_handlers]
     )
     event_handlers.connect(
         managers=[postprocessing, benchmarks, config_requirements],
