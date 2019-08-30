@@ -181,13 +181,13 @@ def test_loading_osm_highways_map_from_gzip(test_gzip_config, test_zip_paths):
 
 # Attribute
 def test_loading_xml_attribute(test_xml_config, test_paths):
-    attribute = inputs.Attribute(test_xml_config)
+    attribute = inputs.Attributes(test_xml_config)
     attribute.build(test_paths.resources)
     assert len(attribute.map) == sum(attribute.attribute_count_map.values())
 
 
 def test_loading_gzip_attribute(test_gzip_config, test_zip_paths):
-    attribute = inputs.Attribute(test_gzip_config)
+    attribute = inputs.Attributes(test_gzip_config)
     attribute.build(test_zip_paths.resources)
     assert len(attribute.map) == sum(attribute.attribute_count_map.values())
 
@@ -211,6 +211,15 @@ def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
     assert len(attributes.attributes_df) == 5
 
 
+# Output Config
+def test_load_xml_output_config(test_xml_config, test_paths):
+    out_config = inputs.OutputConfig(test_xml_config)
+    out_config.build(test_paths.resources)
+    assert set(out_config.activities) == set(['home', 'work'])
+    assert set(out_config.modes) == set(['pt', 'walk', 'bike', 'car'])
+    assert set(out_config.sub_populations) == set(['rich', 'poor', 'default'])
+
+
 # Input Manager
 def test_load_input_manager(test_xml_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_xml_config)
@@ -222,7 +231,7 @@ def test_load_input_manager(test_xml_config, test_paths):
     network = input_workstation.resources['network']
     transit_schedule = input_workstation.resources['transit_schedule']
     transit_vehicles = input_workstation.resources['transit_vehicles']
-    attributes = input_workstation.resources['attribute']
+    attributes = input_workstation.resources['attributes']
     plans = input_workstation.resources['plans']
     mode_map = input_workstation.resources['mode_map']
     mode_hierarchy = input_workstation.resources['mode_hierarchy']

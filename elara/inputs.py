@@ -357,17 +357,17 @@ class Agents(Tool):
         return ident, attributes
 
 
-class Attribute(Tool):
+class Attributes(Tool):
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
     classes = None
     attribute_count_map = None
 
-    def build(self, resources):
+    def build(self, resources: dict):
         """
         Population subpopulation attribute constructor.
-        :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
+        :param resources: dict, of supplier resources.
         """
         super().build(resources)
 
@@ -429,6 +429,7 @@ class OutputConfig(Tool):
 
     modes = set()
     activities = set()
+    sub_populations = set()
 
     def build(self, resources: dict):
         """
@@ -451,8 +452,14 @@ class OutputConfig(Tool):
         ):
             self.activities.add(e.get('value'))
 
+        for e in elems.xpath(
+                '//module/parameterset/param[@name="subpopulation"]'
+        ):
+            self.sub_populations.add(e.get('value'))
+
         self.modes = list(self.modes)
         self.activities = list(self.activities)
+        self.sub_populations = list(self.sub_populations)
 
 
 class ModeHierarchy(Tool):
@@ -523,7 +530,7 @@ class InputsWorkStation(WorkStation):
         'transit_schedule': TransitSchedule,
         'transit_vehicles': TransitVehicles,
         'agents': Agents,
-        'attribute': Attribute,
+        'attributes': Attributes,
         'plans': Plans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
