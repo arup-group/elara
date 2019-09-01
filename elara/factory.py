@@ -1,5 +1,6 @@
 from typing import Dict, List, Union
 from halo import Halo
+import pandas as pd
 
 
 # Define tools to be used by Sub Processes
@@ -237,11 +238,49 @@ class WorkStation:
         for name, tool in self.tools.items():
             if option is None and tool.valid_options is not None:
                 option = tool.valid_options[0]
-                print("++++")
-                print(tool)
-                print(tool.valid_options)
-                print(option)
             self.resources[name] = tool(self.config, option)
+
+
+class ChunkWriter:
+    """
+    Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
+    """
+
+    def __init__(self, path, chunksize=1000) -> None:
+        self.path = path
+        self.chunksize = chunksize
+
+        self.chunk = []
+        self.idx = 0
+
+    def add(self, lines: list) -> None:
+        """
+        Add a list of lines (dicts) to the chunk.
+        If chunk exceeds chunksize, then write to disk.
+        :param lines: list of dicts
+        :return: None
+        """
+        self.chunk.extend(lines)
+        if len(self.chunk) > self.chunksize:
+            self.write()
+
+    def write(self) -> None:
+        """
+        Convert chunk to dataframe and write to disk.
+        :return: None
+        """
+        chunk_df = pd.DataFrame(self.chunk, index=range(self.idx, self.idx + len(self.chunk)))
+        if not self.idx:
+            chunk_df.to_csv(self.path)
+            self.idx += len(self.chunk)
+        else:
+            chunk_df.to_csv(self.path, header=None, mode="a")
+            self.idx += len(self.chunk)
+        del chunk_df
+        self.chunk = []
+
+    def finish(self) -> None:
+        self.write()
 
 
 def build(start_node: WorkStation, verbose=False) -> list:
