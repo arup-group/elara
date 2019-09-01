@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from datetime import datetime, timedelta
 
-from elara.factory import Tool, WorkStation
+from elara.factory import Tool, WorkStation, ChunkWriter
 
 
 class PlanHandlerTool(Tool):
@@ -230,7 +230,7 @@ class ModeShareHandler(PlanHandlerTool):
         return x, y, z, w
 
 
-class AgentLogsHandler(PlanHandlerTool):
+class AgentPlansHandler(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule']
     valid_options = ['all']
@@ -248,14 +248,30 @@ class AgentLogsHandler(PlanHandlerTool):
 
         self.option = option
 
-        self.activities = []
-        self.legs = []
+        self.activities_log = None
+        self.legs_log = None
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
     def __str__(self):
         return f'LogHandler'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :return: None
+        """
+        super().build(resources)
+
+        csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
+        csv_path = os.path.join(self.config.output_path, csv_name)
+        self.activities_log = ChunkWriter(csv_path)
+
+        csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        csv_path = os.path.join(self.config.output_path, csv_name)
+        self.legs_log = ChunkWriter(csv_path)
 
     def process_plan(self, plan):
 
@@ -358,26 +374,16 @@ class AgentLogsHandler(PlanHandlerTool):
                 leg['dx'] = activities[idx + 1]['x']
                 leg['dy'] = activities[idx + 1]['y']
 
-            self.activities.extend(activities)
-            self.legs.extend(legs)
+            self.activities_log.add(activities)
+            self.legs_log.add(legs)
 
     def finalise(self):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
 
-        activities_df = pd.DataFrame(self.activities)
-        activities_df['uid'] = range(len(activities_df))
-        legs_df = pd.DataFrame(self.legs)
-        legs_df['uid'] = range(len(legs_df))
-
-        # modes = list(set(legs_df['mode']))
-        # activities = list(set(activities_df['act']))
-
-        key = "{}_agents_activity_logs_{}".format(self.config.name, self.option)
-        self.results[key] = activities_df
-        key = "{}_agents_leg_logs_{}".format(self.config.name, self.option)
-        self.results[key] = legs_df
+        self.activities_log.finish()
+        self.legs_log.finish()
 
     @staticmethod
     def get_seconds(dt: datetime) -> int:
@@ -533,7 +539,7 @@ class PlanHandlerWorkStation(WorkStation):
 
     tools = {
         "mode_share": ModeShareHandler,
-        "agent_logs": AgentLogsHandler,
+        "agent_logs": AgentPlansHandler,
         "agent_highway_distances": AgentHighwayDistanceHandler,
     }
 

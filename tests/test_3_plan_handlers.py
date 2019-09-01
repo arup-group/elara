@@ -66,7 +66,7 @@ def base_handler(test_config, input_manager):
 ### Log Handler ###
 @pytest.fixture
 def agent_log_handler(test_config, input_manager):
-    handler = plan_handlers.AgentLogsHandler(test_config, 'all')
+    handler = plan_handlers.AgentPlansHandler(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources)

@@ -6,7 +6,7 @@ import os
 from typing import Union, Tuple
 
 
-from elara.factory import WorkStation, Tool
+from elara.factory import WorkStation, Tool, ChunkWriter
 
 
 class EventHandlerTool(Tool):
@@ -146,7 +146,7 @@ class AgentWaitingTimes(EventHandlerTool):
         self.agent_status = dict()
         self.veh_waiting_occupancy = dict()
 
-        self.waiting_log = []
+        self.waiting_time_log = None
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
@@ -168,6 +168,10 @@ class AgentWaitingTimes(EventHandlerTool):
         # unique_pt_interactions = legs_df.iloc[legs_df.act == 'pt interaction']
         # num_pt_interactions = len(unique_pt_interactions)
         # num_unique_agents = unique_pt_interactions.agent_id.nunique()
+
+        csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
+        csv_path = os.path.join(self.config.output_path, csv_name)
+        self.waiting_time_log = ChunkWriter(csv_path)
 
     def process_event(self, elem) -> None:
         """
@@ -242,7 +246,7 @@ class AgentWaitingTimes(EventHandlerTool):
             # clear veh_waiting_occupancy
             self.veh_waiting_occupancy.pop('veh_ident', None)
 
-            self.waiting_log.extend(vehicle_waiting_report)
+            self.waiting_time_log.add(vehicle_waiting_report)
 
             return None
 
@@ -253,6 +257,9 @@ class AgentWaitingTimes(EventHandlerTool):
 
             agent_id = elem.get("person")
             self.agent_status.pop(agent_id, None)  # agent has finished transit - remove record
+
+    def finalise(self):
+        self.waiting_time_log.finish()
 
 
 class VolumeCounts(EventHandlerTool):

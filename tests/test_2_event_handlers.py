@@ -177,34 +177,25 @@ def test_agent_waiting_times_log_single_event_first_waiting(
 ):
     handler = test_agent_waiting_times_log_handler
 
-    def printer(handler):
-        print(handler.agent_status)
-        print(handler.veh_waiting_occupancy)
-        print(handler.waiting_log)
-
     handler.process_event(gerry_waiting_event)
-    printer(handler)
     assert len(handler.agent_status) == 1
     assert len(handler.veh_waiting_occupancy) == 0
-    assert len(handler.waiting_log) == 0
+    assert len(handler.waiting_time_log.chunk) == 0
 
     handler.process_event(driver_enters_veh_event)
-    printer(handler)
     assert len(handler.agent_status) == 1
     assert len(handler.veh_waiting_occupancy) == 1
-    assert len(handler.waiting_log) == 0
+    assert len(handler.waiting_time_log.chunk) == 0
 
     handler.process_event(gerry_enters_veh_event)
-    printer(handler)
     assert len(handler.agent_status) == 1
     assert len(handler.veh_waiting_occupancy) == 1
-    assert len(handler.waiting_log) == 0
+    assert len(handler.waiting_time_log.chunk) == 0
 
     handler.process_event(veh_departs_event)
-    printer(handler)
     assert len(handler.agent_status) == 1
     assert len(handler.veh_waiting_occupancy) == 1
-    assert len(handler.waiting_log) == 1
+    assert len(handler.waiting_time_log.chunk) == 1
 
 
 @pytest.fixture
