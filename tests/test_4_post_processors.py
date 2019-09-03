@@ -75,12 +75,14 @@ def test_post_process_workstation(test_config, test_paths):
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    plan_workstation.load_all_tools(option='all')
+    tool = plan_workstation.tools['mode_share']
+    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
     plan_workstation.build()
 
     pp_workstation = postprocessing.PostProcessWorkStation(test_config)
     pp_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
-    pp_workstation.load_all_tools(option='bus')
+    tool = pp_workstation.tools['vkt']
+    pp_workstation.resources['vkt'] = tool(test_config, 'bus')
     pp_workstation.build()
 
 

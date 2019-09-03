@@ -6,7 +6,7 @@ import os
 from typing import Union, Tuple
 
 
-from elara.factory import WorkStation, Tool
+from elara.factory import WorkStation, Tool, ChunkWriter
 
 
 class EventHandlerTool(Tool):
@@ -71,6 +71,155 @@ class EventHandlerTool(Tool):
         }
 
 
+class AgentWaitingTimes(EventHandlerTool):
+    """
+    Extract Waiting times for agents.
+    """
+
+    requirements = [
+        'events',
+        'transit_schedule',
+        'transit_vehicles',
+        'attributes',
+    ]
+
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        self.agent_status = dict()
+        self.veh_waiting_occupancy = dict()
+
+        self.waiting_time_log = None
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+
+    def __str__(self):
+        return f'AgentWaitingTimes'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :return: None
+        """
+        super().build(resources)
+
+        # name = "{}_agents_leg_logs_{}".format(self.config.name, self.option)
+        # legs_df = self.resources['agent_logs'].results[name]
+        #
+        # unique_pt_interactions = legs_df.iloc[legs_df.act == 'pt interaction']
+        # num_pt_interactions = len(unique_pt_interactions)
+        # num_unique_agents = unique_pt_interactions.agent_id.nunique()
+
+        csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
+        csv_path = os.path.join(self.config.output_path, csv_name)
+        self.waiting_time_log = ChunkWriter(csv_path)
+
+    def process_event(self, elem) -> None:
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
+        events to determine link volume counts.
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+        if event_type == 'waitingForPt':
+            time = int(float(elem.get("time")))
+            agent_id = elem.get("agent")
+
+            """Note the use of 'agent' above - not 'person' as per usual"""
+
+            if agent_id not in self.agent_status:
+                self.agent_status[agent_id] = [time, None]
+
+            else:  # agent is in transit therefore this is an interchange, so update time only
+                self.agent_status[agent_id][0] = time
+            return None
+
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_ident)
+
+            if veh_mode == 'car':  # can ignore cars
+                return None
+
+            # update veh occupancy
+            if not self.veh_waiting_occupancy.get(veh_ident):
+                self.veh_waiting_occupancy[veh_ident] = [agent_id]
+            else:
+                self.veh_waiting_occupancy[veh_ident].append(agent_id)
+
+        if event_type == "VehicleDepartsAtFacility":
+            veh_ident = elem.get("vehicle")
+
+            if veh_ident not in self.veh_waiting_occupancy:  # ignore if no-one waiting in vehicle
+                return None
+
+            vehicle_waiting_report = []
+
+            veh_mode = self.vehicle_mode(veh_ident)
+            time = int(float(elem.get("time")))
+            stop = elem.get("facility")
+
+            # get loc
+            point = self.resources['transit_schedule'].stop_gdf.loc[stop, 'geometry']
+            x, y = point.x, point.y
+
+            for agent_id in self.veh_waiting_occupancy[veh_ident]:
+
+                if agent_id not in self.agent_status:  # ignore (ie driver)
+                    continue
+
+                # get subpop
+                subpop = self.resources['attributes'].map.get(agent_id)
+
+                start_time, previous_mode = self.agent_status[agent_id]
+
+                waiting_time = time - start_time
+
+                # first waiting
+                vehicle_waiting_report.append(
+                    {
+                        'agent_id': agent_id,
+                        'prev_mode': previous_mode,
+                        'mode': veh_mode,
+                        'stop': stop,
+                        'x': x,
+                        'y': y,
+                        'duration': waiting_time,
+                        'departure': time,
+                        'subpop': subpop
+                    }
+                )
+
+                # update agent status for 'previous mode'
+                self.agent_status[agent_id] = [time, veh_mode]
+
+            # clear veh_waiting_occupancy
+            self.veh_waiting_occupancy.pop('veh_ident', None)
+
+            self.waiting_time_log.add(vehicle_waiting_report)
+
+            return None
+
+        if event_type == "actstart":
+
+            if elem.get("type") == "pt interaction":  # ignore pt interactions
+                return None
+
+            agent_id = elem.get("person")
+            self.agent_status.pop(agent_id, None)  # agent has finished transit - remove record
+
+    def finalise(self):
+        self.waiting_time_log.finish()
+
+
 class VolumeCounts(EventHandlerTool):
     """
     Extract Volume Counts for mode on given network.
@@ -103,7 +252,7 @@ class VolumeCounts(EventHandlerTool):
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'VolumeCounts mode: {self.option}'
+        return f'VolumeCounts'
 
     def build(self, resources: dict) -> None:
         """
@@ -226,7 +375,7 @@ class PassengerCounts(EventHandlerTool):
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'PassengerCounts mode: {self.option}'
+        return f'PassengerCounts'
 
     def build(self, resources: dict) -> None:
         """
@@ -384,7 +533,7 @@ class StopInteractions(EventHandlerTool):
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'StopInteractions with mode: {self.option}'
+        return f'StopInteractions'
 
     def build(self, resources: dict) -> None:
         """
@@ -515,6 +664,7 @@ class EventHandlerWorkStation(WorkStation):
         "volume_counts": VolumeCounts,
         "passenger_counts": PassengerCounts,
         "stop_interactions": StopInteractions,
+        "waiting_times": AgentWaitingTimes,
     }
 
     def __str__(self):
@@ -525,6 +675,9 @@ class EventHandlerWorkStation(WorkStation):
         Build all required handlers, then finalise and save results.
         :return: None
         """
+        if not self.resources:
+            return None
+
         # build tools
         super().build(spinner)
 

@@ -12,6 +12,7 @@ transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
 transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
 attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
+output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [event_handlers]
 passenger_counts = ["bus", "train"]

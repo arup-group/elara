@@ -120,6 +120,85 @@ def events(test_config, test_paths):
 
 
 @pytest.fixture
+def gerry_waiting_event():
+    time = 6.5 * 60 * 60
+    string = """
+        <event time="23400.0" type="waitingForPt" agent="gerry" atStop="home_stop_out" 
+        destinationStop="work_stop_in"  />
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def driver_enters_veh_event():
+    time = 6.5 * 60 * 60 + (5 * 60)
+    string = """
+        <event time="23700.0" type="PersonEntersVehicle" person="pt_bus1_Bus" vehicle="bus1"  />
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def gerry_enters_veh_event():
+    time = 6.5 * 60 * 60 + (10 * 60)
+    string = """
+        <event time="24000.0" type="PersonEntersVehicle" person="gerry" vehicle="bus1"  />
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def veh_departs_event():
+    time = 6.5 * 60 * 60 + (15 * 60)
+    string = """
+        <event time="24300.0" type="VehicleDepartsAtFacility" vehicle="bus1" 
+        facility="home_stop_out" delay="0.0"  />
+        """
+    return etree.fromstring(string)
+
+
+# Waiting times
+@pytest.fixture
+def test_agent_waiting_times_log_handler(test_config, input_manager):
+    handler = event_handlers.AgentWaitingTimes(test_config, 'all')
+
+    resources = input_manager.resources
+    handler.build(resources)
+
+    return handler
+
+
+def test_agent_waiting_times_log_single_event_first_waiting(
+        test_agent_waiting_times_log_handler,
+        gerry_waiting_event,
+        driver_enters_veh_event,
+        gerry_enters_veh_event,
+        veh_departs_event
+):
+    handler = test_agent_waiting_times_log_handler
+
+    handler.process_event(gerry_waiting_event)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 0
+    assert len(handler.waiting_time_log.chunk) == 0
+
+    handler.process_event(driver_enters_veh_event)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 1
+    assert len(handler.waiting_time_log.chunk) == 0
+
+    handler.process_event(gerry_enters_veh_event)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 1
+    assert len(handler.waiting_time_log.chunk) == 0
+
+    handler.process_event(veh_departs_event)
+    assert len(handler.agent_status) == 1
+    assert len(handler.veh_waiting_occupancy) == 1
+    assert len(handler.waiting_time_log.chunk) == 1
+
+
+@pytest.fixture
 def car_enters_link_event():
     time = 6.5 * 60 * 60
     string = """

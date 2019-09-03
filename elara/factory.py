@@ -1,5 +1,6 @@
 from typing import Dict, List, Union
 from halo import Halo
+import pandas as pd
 
 
 # Define tools to be used by Sub Processes
@@ -63,7 +64,7 @@ class Tool:
         """
         for requirement in convert_to_unique_keys(self.get_requirements()):
             if requirement not in list(resource):
-                raise ValueError(f'Missing requirement: {requirement}')
+                raise ValueError(f'Missing requirement @{self}: {requirement}')
 
         self.resources = resource
 
@@ -149,6 +150,7 @@ class WorkStation:
 
         # get manager requirements
         manager_requirements = self.gather_manager_requirements()
+
         if not self.tools:
             self.requirements = manager_requirements
 
@@ -174,6 +176,20 @@ class WorkStation:
                             all_requirements.append(tool_requirements)
 
             self.requirements = combine_reqs(all_requirements)
+
+            # Clean out unsupported options for tools that don't support options
+            # todo: this sucks...
+            # better catch option enabled tools at init but requires looking forward at suppliers
+            #  before they are engaged or validated...
+            if self.requirements:
+                for req, options in self.requirements.items():
+                    if self.suppliers and options:
+
+                        for s in self.suppliers:
+                            if s.tools:
+                                for name, tool in s.tools.items():
+                                    if req == name and not tool.options_enabled:
+                                        self.requirements[name] = None
 
     def validate_suppliers(self) -> None:
         """
@@ -235,7 +251,51 @@ class WorkStation:
         :return: NOne
         """
         for name, tool in self.tools.items():
+            if option is None and tool.valid_options is not None:
+                option = tool.valid_options[0]
             self.resources[name] = tool(self.config, option)
+
+
+class ChunkWriter:
+    """
+    Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
+    """
+
+    def __init__(self, path, chunksize=1000) -> None:
+        self.path = path
+        self.chunksize = chunksize
+
+        self.chunk = []
+        self.idx = 0
+
+    def add(self, lines: list) -> None:
+        """
+        Add a list of lines (dicts) to the chunk.
+        If chunk exceeds chunksize, then write to disk.
+        :param lines: list of dicts
+        :return: None
+        """
+        self.chunk.extend(lines)
+        if len(self.chunk) > self.chunksize:
+            self.write()
+
+    def write(self) -> None:
+        """
+        Convert chunk to dataframe and write to disk.
+        :return: None
+        """
+        chunk_df = pd.DataFrame(self.chunk, index=range(self.idx, self.idx + len(self.chunk)))
+        if not self.idx:
+            chunk_df.to_csv(self.path)
+            self.idx += len(self.chunk)
+        else:
+            chunk_df.to_csv(self.path, header=None, mode="a")
+            self.idx += len(self.chunk)
+        del chunk_df
+        self.chunk = []
+
+    def finish(self) -> None:
+        self.write()
 
 
 def build(start_node: WorkStation, verbose=False) -> list:
