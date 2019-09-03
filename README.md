@@ -2,9 +2,9 @@
 
 A command line utility for processing MATSim output XML files:
 
-* **Event Based Outputs** (for example traffic 'flow')
-* **Plan Based Outputs** (for example mode shares)
-* **Post Processing** of Outputs (for example for Vehicle kms)
+* **Event Based Outputs** (for example transport network 'flows' or agent waiting times)
+* **Plan Based Outputs** (for example mode shares or final agent plan records)
+* **Post Processing** of Outputs (for example for vehicle kms)
 * **Benchmarking** of Outputs (for example comparison to measured cordon counts)
 
 ## Contents
@@ -60,7 +60,7 @@ Elara does this by traversing the DAG in three stages:
 
 3) Reverse Breadth first build all tools in `.resources` and build workstation.
 
-![dag](images/dag.jpg)
+![dag](images/dag.png)
 
 ## Command line reference
 ```
@@ -99,9 +99,12 @@ plans= "./tests/test_fixtures/output_plans.xml"
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
+waiting_times = ["all"]
 
 [plan_handlers]
 mode_share = ["all"]
+agent_logs = ["all"]
+highway_distances = ["car"]
 
 [post_processors]
 vkt = ["car"]
@@ -152,10 +155,14 @@ Specification of the event handlers to be run during processing. Currently avail
 * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
 * ``passenger_counts``: Produce vehicle occupancy by time slice.
 * ``stop_interactions``: Boardings and Alightings by time slice.
+* ``waiting_times``: Agent waiting times for unique pt interaction events.
 
-The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
+The associated list attached to each handler allows specification of which options (typically modes
+ of transport) should be processed using that handler. This allows certain handlers to be activated 
+for public transport modes but not private vehicles for example. Possible modes currently include:
 
-* eg ``car, bus, train``
+* eg ``car, bus, train, tram, ferry, ...``.
+* note that ``waiting_times`` only supports the option of ``["all"]``.
 
 **#** plan_handlers.**[handler name]** *list of strings* *(optional)*
 
@@ -163,20 +170,28 @@ Specification of the plan handlers to be run during processing. Currently availa
 include:
 
 * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
+* ``agent_logs``: Produce flat output of agent activity logs and leg logs, including times, 
+sequences, durations and categories.
+* ``highway_distances``: Produce flat output of agent distances by car on different road 
+types (as described by the input network osm:way).
 
 The associated list attached to each handler allows specification of additional options:
 
-* eg ``all, <NOT IMPLEMENTED>``
+* in most cases ``all``
+* highway_distances only supports ``car``
 
 **#** post_processors.**[post-processor name]** *list of strings* *(optional)*
 
 Specification of the event handlers to be run post processing. Currently available handlers include:
 
 * ``vkt``: Produce link volume vehicle kms by time slice.
+* ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
+with multiple leg modes.
 
 The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
 
-* eg ``car, bus, train``
+* eg ``car, bus, train, ...``
+* note that ``trip_logs`` only supports the option of ``["all"]``.
 
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
@@ -191,7 +206,7 @@ Specification of the benchmarks to be run post processing. Currently available b
 
 The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
 
-* eg ``car, bus, train``
+* eg ``car, bus, train, ...``
 
 **#** outputs.**path** *directory* *(required)*
 
@@ -204,28 +219,44 @@ If set to *true*, removes rows containing only zero values from the generated ou
 ## Adding Features
 
 Elara is designed to be extendable, primarily with new tools such as handlers or benchmarks. 
+
+Where new tools are new classes that implement some process that fits within the implementation 
+(both in terms of code and also abstractly) of a WorkStation. New tools must be added to the 
+relevant workstations 'roster' of tools (ie `.tools`).
+
 New tool classes must correctly inherit and implement a number of values and methods so that they 
-play well with their respective WorkStation:
+play well with their respective workstation:
  
 * ``.__init__(self, config, option)``: Used for early validation of option and 
 subsequent requirements.
 * ``.build(self, resource=None)``: Used to process required output (assumes required resources are 
 available).
 
-`tool_templates` provides some templates and notes for adding new tools. Additionally remember to
- add new tools to their `WorkStation` `.tools` dictionary and the docs.
+`tool_templates` provides some templates and notes for adding new tools.
+ 
+ It may also be required to add or connect new workstations, where new workstations are new types
+  of process that might contain a new or multiple new tools. New workstations must be defined and
+   connected to their respective suppliers and managers in `main`.
 
 ## Todo
 
 **Priority**
 
-* Addition of additional handlers, including average link travel time, node boardings/alightings, etc. This will be relatively easy to achieve once sample outputs are available to test against - the logic already exists in old scripts. 
-* Add tests and refactor to make testing easier! 
+* Move more process and verbosity into main to make factory process more transparent.
+* Unit testing.
 
 **Nice to have**
 
 * More descriptive generated column headers in handler results. Right now column headers are simply numbers mapped to the particular time slice during the modelled day. 
-* Introduction of a --verbose option for more descriptive terminal outputs.
+* More outputs, ie mode distances/times/animations.
+* S3 integration (read and write).
+* automatic discovery of inputs in directory.
+
+**Is it fast/sensible?**
+
+ Sometimes - 
+ 
+ ![dag](images/design.png)
 
 ## What does the name mean?
 [Elara]("https://en.wikipedia.org/wiki/Elara_(moon)") is a moon of Jupiter. There's not much else interesting to say about it, other than that the wikipedia article states that it orbits 11-13 *gigametres* from the planet. Gigametres is a cool unit of measurement. 

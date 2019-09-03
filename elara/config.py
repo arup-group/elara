@@ -76,6 +76,12 @@ class Config:
             self.parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
         )
 
+    @property
+    def output_config_path(self):
+        return self.valid_path(
+            self.parsed_toml["inputs"]["output_config_path"], "output_config"
+        )
+
     @staticmethod
     def valid_time_periods(inp):
         """
@@ -173,6 +179,14 @@ class GetTransitVehiclesPath(Tool):
         self.path = self.config.transit_vehicles_path
 
 
+class GetOutputConfigPath(Tool):
+    path = None
+
+    def build(self, resource: dict):
+        super().build(resource)
+        self.path = self.config.output_config_path
+
+
 class PathFinderWorkStation(WorkStation):
     tools = {
         'crs': GetCRS,
@@ -182,6 +196,7 @@ class PathFinderWorkStation(WorkStation):
         'attributes_path': GetAttributesPath,
         'transit_schedule_path': GetTransitSchedulePath,
         'transit_vehicles_path': GetTransitVehiclesPath,
+        'output_config_path': GetOutputConfigPath,
     }
 
     def __str__(self):

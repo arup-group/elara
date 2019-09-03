@@ -7,6 +7,8 @@ from shapely.ops import transform
 import gzip
 from io import BytesIO
 from math import floor
+from datetime import datetime, timedelta
+
 
 from elara.factory import WorkStation, Tool
 
@@ -63,11 +65,11 @@ class Network(Tool):
         link_df.set_index("id", inplace=True)
         link_df.sort_index(inplace=True)
 
+        # transform
         self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
         self.node_gdf.crs = {'init': crs}
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
         self.link_gdf.crs = {'init': crs}
-
         self.node_gdf.to_crs(epsg=4326, inplace=True)
         self.link_gdf.to_crs(epsg=4326, inplace=True)
 
@@ -91,7 +93,6 @@ class Network(Tool):
         """
         Convert raw node XML element into dictionary.
         :param elem: Node XML element
-        :param crs: Original coordinate reference system code
         :return: Dictionary
         """
         x = float(elem.get("x"))
@@ -127,13 +128,62 @@ class Network(Tool):
         }
 
 
+class OSMWays(Tool):
+    """
+    Light weight network input with no geometries - just osm way attribute and length.
+    """
+
+    requirements = ['network_path']
+    ways = None
+    lengths = None
+    classes = None
+
+    def build(self, resources: dict) -> None:
+        """
+        OSM highway attribute map.
+        :param resources: dict, resources from suppliers
+        """
+        super().build(resources)
+
+        path = resources['network_path'].path
+
+        # Extract element properties
+        links = [
+                self.get_link_attribute(elem)
+                for elem in get_elems(path, "link")
+                ]
+        self.ways = {link['id']: link['way'] for link in links}
+        self.lengths = {link['id']: link['length'] for link in links}
+        self.classes = list(set(self.ways.values()))
+
+    @staticmethod
+    def get_link_attribute(elem):
+        """
+        Convert raw link XML element into tuple of ident and named attribute.
+        :param elem: Link XML element
+        :return: tuple of ident and attribute
+        """
+
+        for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
+            attribute = elem.find('.//attribute[@name="{}"]'.format(name))
+            if attribute is not None:
+                attribute = attribute.text
+                break
+
+        return {
+            'id': str(elem.get("id")),
+            "length": float(elem.get("length")),
+            "way": str(attribute)
+        }
+
+
 class TransitSchedule(Tool):
     requirements = ['transit_schedule_path', 'crs']
     stop_gdf = None
     mode_map = None
     modes = None
 
-    def build(self, resources:dict) -> None:
+    def build(self, resources: dict) -> None:
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
@@ -145,7 +195,7 @@ class TransitSchedule(Tool):
 
         # Retrieve stop attributes
         stops = [
-            self.transform_stop_elem(elem, crs)
+            self.get_node_elem(elem)
             for elem in get_elems(path, "stopFacility")
         ]
 
@@ -156,6 +206,10 @@ class TransitSchedule(Tool):
 
         self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
 
+        # transform
+        self.stop_gdf.crs = {'init': crs}
+        self.stop_gdf.to_crs(epsg=4326, inplace=True)
+
         # Generate routes to modes map
         self.mode_map = dict(
             [
@@ -164,6 +218,26 @@ class TransitSchedule(Tool):
         )
 
         self.modes = list(set(self.mode_map.values()))
+
+    @staticmethod
+    def get_node_elem(elem):
+        """
+        Convert raw node XML element into dictionary.
+        :param elem: Node XML element
+        :param crs: Original coordinate reference system code
+        :return: Dictionary
+        """
+        x = float(elem.get("x"))
+        y = float(elem.get("y"))
+
+        geometry = Point(x, y)
+
+        return {
+            "id": str(elem.get("id")),
+            "link": str(elem.get("linkRefId")),
+            "stop_area": str(elem.get("stopAreaId")),
+            "geometry": geometry,
+        }
 
     @staticmethod
     def transform_stop_elem(elem, crs):
@@ -255,6 +329,56 @@ class TransitVehicles(Tool):
         return id, seated_capacity + standing_capacity
 
 
+class Agents(Tool):
+    requirements = ['attributes_path']
+    final_attribute_map = None
+    map = None
+    idents = None
+    attribute_fields = None
+    attributes_df = None
+
+    def build(self, resources: dict):
+        """
+        Population subpopulation attributes constructor.
+        :param resources: dict, of resources from suppliers
+        """
+        super().build(resources)
+
+        path = resources['attributes_path'].path
+
+        # Attribute label mapping
+        # TODO move model specific setup elsewhere
+        self.final_attribute_map = {
+            "inc7p": "inc7p",
+            "inc56": "inc56",
+            "inc34": "inc34",
+            "inc12": "inc12",
+            "inc7p_nocar": "inc7p",
+            "inc56_nocar": "inc56",
+            "inc34_nocar": "inc34",
+            "inc12_nocar": "inc12",
+            "freight": "freight",
+        }
+
+        self.map = dict(
+            [
+                self.get_attribute_text(elem)
+                for elem in get_elems(path, "object")
+            ]
+        )
+
+        self.idents = sorted(list(self.map))
+        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
+        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
+
+    def get_attribute_text(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.findall('.//attribute'):
+            attributes[attr.get('name')] = self.final_attribute_map.get(attr.text, attr.text)
+        return ident, attributes
+
+
 class Attributes(Tool):
     requirements = ['attributes_path']
     final_attribute_map = None
@@ -262,10 +386,10 @@ class Attributes(Tool):
     classes = None
     attribute_count_map = None
 
-    def build(self, resources):
+    def build(self, resources: dict):
         """
-        Population subpopulation attributes constructor.
-        :param path: Path to MATSim transit vehicles XML file (.xml or .xml.gz)
+        Population subpopulation attribute constructor.
+        :param resources: dict, of supplier resources.
         """
         super().build(resources)
 
@@ -305,59 +429,59 @@ class Attributes(Tool):
 class Plans(Tool):
     requirements = ['plans_path']
     elems = None
-    transit_schedule = None
-    modes = None
-    activities = None
-    agents = None
 
-    def build(self, resources):
+    def build(self, resources: dict):
         """
         Plans object constructor.
         :param path: Path to MATSim events XML file (.xml)
-        :param transit_schedule: TransitSchedule object
+        :param resources: dict, supplier resources
         """
         super().build(resources)
 
         path = resources['plans_path'].path
 
         self.elems = get_elems(path, "plan")
-        self.transit_schedule = TransitSchedule(self.config)
-        self.transit_schedule.build(resources)
 
-        self.modes, self.activities = self.get_classes()
+        # self.agents = get_elems(path, "person")
 
-        # re-init elements
-        self.elems = get_elems(path, "plan")
-        self.agents = get_elems(path, "person")
 
-    def get_classes(self):
+class OutputConfig(Tool):
+
+    requirements = ['output_config_path']
+
+    modes = set()
+    activities = set()
+    sub_populations = set()
+
+    def build(self, resources: dict):
         """
-        Extract sets of used activities and modes from chosen population plans.
-        # TODO
-        confirm this is how we want to handle plans (ie with handler (iters) and with pre
-        calculated inputs...
-        Note that we use this method to get all categories before flattening results
-        later using a hander, will provide some minor speed up, but is a duplication
-        so slows overall. But is more in keeping with overall flow. For example it
-        provides early logging of activities and modes used.
-        :param elem: Node xml element.
-        :return: (List, List)
+        Config object constructor.
+        :param path: Path to MATSim events XML file (.xml)
+        :param resources: dict, supplier resources
         """
-        modes = set()
-        activities = set()
+        super().build(resources)
 
-        for plan in self.elems:
-            if plan.get('selected') == 'yes':
-                for stage in plan:
-                    if stage.tag == 'activity':
-                        activities.add(stage.get('type'))
-                    elif stage.tag == 'leg':
-                        mode = stage.get('mode')
-                        if mode == 'pt':
-                            route = stage.xpath('route')[0].text.split('===')[-2]
-                            mode = self.transit_schedule.mode_map.get(route)
-                        modes.add(mode)
-        return list(modes), list(activities)
+        path = resources['output_config_path'].path
+        elems = etree.parse(path)
+
+        for e in elems.xpath(
+                '//module/parameterset/parameterset/param[@name="mode"]'
+        ):
+            self.modes.add(e.get('value'))
+
+        for e in elems.xpath(
+                '//module/parameterset/parameterset/param[@name="activityType"]'
+        ):
+            self.activities.add(e.get('value'))
+
+        for e in elems.xpath(
+                '//module/parameterset/param[@name="subpopulation"]'
+        ):
+            self.sub_populations.add(e.get('value'))
+
+        self.modes = list(self.modes) + ["transit_walk"]
+        self.activities = list(self.activities)
+        self.sub_populations = list(self.sub_populations)
 
 
 class ModeHierarchy(Tool):
@@ -424,10 +548,13 @@ class InputsWorkStation(WorkStation):
     tools = {
         'events': Events,
         'network': Network,
+        'osm:ways': OSMWays,
         'transit_schedule': TransitSchedule,
         'transit_vehicles': TransitVehicles,
+        'agents': Agents,
         'attributes': Attributes,
         'plans': Plans,
+        'output_config': OutputConfig,
         'mode_map': ModeMap,
         'mode_hierarchy': ModeHierarchy,
     }

@@ -3,3 +3,4 @@ bike,20000.0
 bus,40000.0
 car,40000.0
 transit_walk,0.0
+walk,0.0
