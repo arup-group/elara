@@ -468,7 +468,6 @@ class BenchmarkWorkStation(WorkStation):
         Calculates all sub scores from benchmarks, writes to disk and returns
         combined metascore.
         """
-
         summary = {}
         flat_summary = []
         for benchmark_name, benchmark in self.resources.items():
@@ -482,6 +481,9 @@ class BenchmarkWorkStation(WorkStation):
             summary[benchmark_name] = sub_summary
 
             for name, s in scores.items():
+                print("SCORING:")
+                print(name)
+                print(s)
                 flat_summary.append([benchmark_name, name, s])
                 self.meta_score += (s * weight)
 

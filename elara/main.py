@@ -68,7 +68,7 @@ def main(config):
         suppliers=[input_workstation]
     )
     input_workstation.connect(
-        managers=[event_handlers, plan_handlers],
+        managers=[event_handlers, plan_handlers, postprocessing],
         suppliers=[paths]
     )
     paths.connect(

@@ -38,7 +38,7 @@ class AgentTripLogs(PostProcessor):
 
         mode = self.option
 
-        file_name = "{}_agents_leg_logs_{}".format(self.config.name, self.option)
+        file_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
         file_path = os.path.join(self.config.output_path, file_name)
         legs_df = pd.read_csv(file_path)
 
@@ -47,11 +47,11 @@ class AgentTripLogs(PostProcessor):
             first_line = gr.iloc[0]
             last_line = gr.iloc[-1]
 
-            duration = sum(gr.duration)
+            # duration = sum(gr.duration)
             duration_s = sum(gr.duration_s)
             distance = sum(gr.distance)
 
-            modes = list(gr.modes)
+            modes = list(gr.loc[:, 'mode'])
             primary_mode = self.hierarchy.get(modes)
 
             return pd.Series(
@@ -62,7 +62,7 @@ class AgentTripLogs(PostProcessor):
                  'dy': last_line.dy,
                  'start': first_line.start,
                  'end': last_line.end,
-                 'duration': duration,
+                 # 'duration': duration,
                  'start_s': first_line.start_s,
                  'end_s': last_line.end_s,
                  'duration_s': duration_s,
@@ -77,7 +77,7 @@ class AgentTripLogs(PostProcessor):
 
         # Export results
         csv_path = os.path.join(
-            self.config.output_path, "{}_agent_trip_logs_{}.csv".format(self.config.name, mode)
+            self.config.output_path, "{}_trip_logs_{}.csv".format(self.config.name, mode)
         )
         trips_df.to_csv(csv_path)
 

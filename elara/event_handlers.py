@@ -73,65 +73,13 @@ class EventHandlerTool(Tool):
 
 class AgentWaitingTimes(EventHandlerTool):
     """
-    Extract Waiting times for agents by mode
-
-    waiting for pt:
-
-    <event time="25752.0" type="waitingForPt" agent="gerry" atStop="home_stop_out"
-    destinationStop="work_stop_in"/>
-
-    <event time="27001.0" type="PersonEntersVehicle" person="gerry" vehicle="bus1"/>
-
-    <event time="27300.0" type="VehicleDepartsAtFacility" vehicle="bus1"
-    facility="home_stop_out" delay="0.0"/>
-
-    interchange:
-
-    <event time="46589.0" type="PersonLeavesVehicle" person="census_1001" vehicle="veh_26916_rail"  />
-
-    <event time="46589.0" type="arrival" person="census_1001" link="pt_IRELANDWHOLE3575" legMode="pt"  />
-	<event time="46589.0" type="actstart" person="census_1001" link="pt_IRELANDWHOLE3575" actType="pt interaction"  />
-	<event time="46589.0" type="actend" person="census_1001" link="pt_IRELANDWHOLE3575" actType="pt interaction"  />
-	<event time="46589.0" type="departure" person="census_1001" link="pt_IRELANDWHOLE3575" legMode="transit_walk"  />
-	<event time="46589.0" type="VehicleDepartsAtFacility" vehicle="veh_8487_tram" facility="IRELANDWHOLE10719.link:pt_IRELANDWHOLE10719" delay="0.0"  />
-	<event time="46589.0" type="travelled" person="census_1001" distance="0.0"  />
-	<event time="46589.0" type="arrival" person="census_1001" link="491835" legMode="transit_walk"  />
-	<event time="46589.0" type="actstart" person="census_1001" link="491835" actType="pt interaction"  />
-	<event time="46589.0" type="actend" person="census_1001" link="491835" actType="pt interaction"  />
-	<event time="46589.0" type="departure" person="census_1001" link="491835" legMode="pt"  />
-	<event time="46589.0" type="waitingForPt" agent="census_1001" atStop="IRELANDWHOLE3575.link:491835" destinationStop="IRELANDWHOLE3633.link:857029"  />
-
-	<event time="47601.0" type="PersonEntersVehicle" person="census_1001" vehicle="veh_27216_bus"  />
-
-
-	EXIT:
-	<event time="27534.0" type="PersonLeavesVehicle" person="gerry" vehicle="bus1"  />
-	<event time="27534.0" type="arrival" person="gerry" link="3-4" legMode="pt"  />
-	<event time="27534.0" type="actstart" person="gerry" link="3-4" actType="pt interaction"  />
-	<event time="27534.0" type="actend" person="gerry" link="3-4" actType="pt interaction"  />
-	<event time="27534.0" type="departure" person="gerry" link="3-4" legMode="transit_walk"  />
-	<event time="28318.0" type="travelled" person="gerry" distance="653.2419153728579"  />
-	<event time="28318.0" type="arrival" person="gerry" link="3-4" legMode="transit_walk"  />
-	<event time="28318.0" type="actstart" person="gerry" link="3-4" actType="work"  />
-
-	1. get number of pt legs
-	2. minus number of unique agents
-	3. = number of start interactions and interchanges
-	4. stream events for pt interactions
-	5. keep dict of agents status {time at interaction}
-	6. stream events for agents entering pt vehicles
-	7. refer to dict to add wait to results
-	8. if agent starts a non pt interaction activity then clear dict
-
-	9. record type of interchange? (ie strart/inter)
-	10. record modes? (bus-bus/train-bus etc)
-	11. collect time and loc
+    Extract Waiting times for agents.
     """
 
     requirements = [
         'events',
-        # 'agent_logs',
         'transit_schedule',
+        'transit_vehicles',
         'attributes',
     ]
 
@@ -219,10 +167,17 @@ class AgentWaitingTimes(EventHandlerTool):
             time = int(float(elem.get("time")))
             stop = elem.get("facility")
 
+            # get loc
+            point = self.resources['transit_schedule'].stop_gdf.loc[stop, 'geometry']
+            x, y = point.x, point.y
+
             for agent_id in self.veh_waiting_occupancy[veh_ident]:
 
                 if agent_id not in self.agent_status:  # ignore (ie driver)
                     continue
+
+                # get subpop
+                subpop = self.resources['attributes'].map.get(agent_id)
 
                 start_time, previous_mode = self.agent_status[agent_id]
 
@@ -235,13 +190,16 @@ class AgentWaitingTimes(EventHandlerTool):
                         'prev_mode': previous_mode,
                         'mode': veh_mode,
                         'stop': stop,
+                        'x': x,
+                        'y': y,
                         'duration': waiting_time,
-                        'departure': time
+                        'departure': time,
+                        'subpop': subpop
                     }
                 )
 
                 # update agent status for 'previous mode'
-                self.agent_status[agent_id] = [None, veh_mode]
+                self.agent_status[agent_id] = [time, veh_mode]
 
             # clear veh_waiting_occupancy
             self.veh_waiting_occupancy.pop('veh_ident', None)
@@ -706,6 +664,7 @@ class EventHandlerWorkStation(WorkStation):
         "volume_counts": VolumeCounts,
         "passenger_counts": PassengerCounts,
         "stop_interactions": StopInteractions,
+        "waiting_times": AgentWaitingTimes,
     }
 
     def __str__(self):
@@ -716,6 +675,9 @@ class EventHandlerWorkStation(WorkStation):
         Build all required handlers, then finalise and save results.
         :return: None
         """
+        if not self.resources:
+            return None
+
         # build tools
         super().build(spinner)
 
