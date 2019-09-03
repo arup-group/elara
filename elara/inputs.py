@@ -65,11 +65,11 @@ class Network(Tool):
         link_df.set_index("id", inplace=True)
         link_df.sort_index(inplace=True)
 
+        # transform
         self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
         self.node_gdf.crs = {'init': crs}
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
         self.link_gdf.crs = {'init': crs}
-
         self.node_gdf.to_crs(epsg=4326, inplace=True)
         self.link_gdf.to_crs(epsg=4326, inplace=True)
 
@@ -93,7 +93,6 @@ class Network(Tool):
         """
         Convert raw node XML element into dictionary.
         :param elem: Node XML element
-        :param crs: Original coordinate reference system code
         :return: Dictionary
         """
         x = float(elem.get("x"))
@@ -162,7 +161,6 @@ class OSMWays(Tool):
         """
         Convert raw link XML element into tuple of ident and named attribute.
         :param elem: Link XML element
-        :param name: str, name of attribute
         :return: tuple of ident and attribute
         """
 
@@ -197,7 +195,7 @@ class TransitSchedule(Tool):
 
         # Retrieve stop attributes
         stops = [
-            self.transform_stop_elem(elem, crs)
+            self.get_node_elem(elem)
             for elem in get_elems(path, "stopFacility")
         ]
 
@@ -208,6 +206,10 @@ class TransitSchedule(Tool):
 
         self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
 
+        # transform
+        self.stop_gdf.crs = {'init': crs}
+        self.stop_gdf.to_crs(epsg=4326, inplace=True)
+
         # Generate routes to modes map
         self.mode_map = dict(
             [
@@ -216,6 +218,26 @@ class TransitSchedule(Tool):
         )
 
         self.modes = list(set(self.mode_map.values()))
+
+    @staticmethod
+    def get_node_elem(elem):
+        """
+        Convert raw node XML element into dictionary.
+        :param elem: Node XML element
+        :param crs: Original coordinate reference system code
+        :return: Dictionary
+        """
+        x = float(elem.get("x"))
+        y = float(elem.get("y"))
+
+        geometry = Point(x, y)
+
+        return {
+            "id": str(elem.get("id")),
+            "link": str(elem.get("linkRefId")),
+            "stop_area": str(elem.get("stopAreaId")),
+            "geometry": geometry,
+        }
 
     @staticmethod
     def transform_stop_elem(elem, crs):
@@ -457,7 +479,7 @@ class OutputConfig(Tool):
         ):
             self.sub_populations.add(e.get('value'))
 
-        self.modes = list(self.modes)
+        self.modes = list(self.modes) + ["transit_walk"]
         self.activities = list(self.activities)
         self.sub_populations = list(self.sub_populations)
 

@@ -216,7 +216,7 @@ def test_load_xml_output_config(test_xml_config, test_paths):
     out_config = inputs.OutputConfig(test_xml_config)
     out_config.build(test_paths.resources)
     assert set(out_config.activities) == set(['home', 'work'])
-    assert set(out_config.modes) == set(['pt', 'walk', 'bike', 'car'])
+    assert set(out_config.modes) == set(['pt', 'walk', 'bike', 'car', 'transit_walk'])
     assert set(out_config.sub_populations) == set(['rich', 'poor', 'default'])
 
 

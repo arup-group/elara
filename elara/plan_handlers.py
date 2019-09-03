@@ -328,7 +328,7 @@ class AgentPlansHandler(PlanHandlerTool):
                             'y': y,
                             'start': arrival_dt.time(),
                             'end': end_dt.time(),
-                            'duration': duration,
+                            # 'duration': duration,
                             'start_s': self.get_seconds(arrival_dt),
                             'end_s': self.get_seconds(end_dt),
                             'duration_s': duration.total_seconds()
@@ -344,8 +344,8 @@ class AgentPlansHandler(PlanHandlerTool):
                         mode = self.resources['transit_schedule'].mode_map.get(route)
 
                     trav_time = stage.get('trav_time')
-                    t = datetime.strptime(trav_time, '%H:%M:%S')
-                    td = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+                    h, m, s = trav_time.split(":")
+                    td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
                     arrival_dt = end_dt + td
 
@@ -361,7 +361,7 @@ class AgentPlansHandler(PlanHandlerTool):
                             'dy': None,
                             'start': end_dt.time(),
                             'end': arrival_dt.time(),
-                            'duration': t,
+                            # 'duration': td,
                             'start_s': self.get_seconds(end_dt),
                             'end_s': self.get_seconds(arrival_dt),
                             'duration_s': td.total_seconds(),
@@ -540,7 +540,7 @@ class PlanHandlerWorkStation(WorkStation):
     tools = {
         "mode_share": ModeShareHandler,
         "agent_logs": AgentPlansHandler,
-        "agent_highway_distances": AgentHighwayDistanceHandler,
+        "highway_distances": AgentHighwayDistanceHandler,
     }
 
     def build(self, spinner=None):
@@ -548,6 +548,10 @@ class PlanHandlerWorkStation(WorkStation):
         Build all required handlers, then finalise and save results.
         :return: None
         """
+
+        if not self.resources:
+            return None
+
         # build tools
         super().build(spinner)
 

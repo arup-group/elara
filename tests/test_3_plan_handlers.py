@@ -71,8 +71,8 @@ def agent_log_handler(test_config, input_manager):
     resources = input_manager.resources
     handler.build(resources)
 
-    assert len(handler.activities) == 0
-    assert len(handler.legs) == 0
+    assert len(handler.activities_log.chunk) == 0
+    assert len(handler.legs_log.chunk) == 0
 
     return handler
 
@@ -84,8 +84,8 @@ def test_agent_log_handler(agent_log_handler):
     for plan in plans.elems:
         handler.process_plan(plan)
 
-    assert len(handler.activities) == 23
-    assert len(handler.legs) == 18
+    assert len(handler.activities_log.chunk) == 23
+    assert len(handler.legs_log.chunk) == 18
 
 
 @pytest.fixture
@@ -98,17 +98,10 @@ def agent_log_handler_finalised(agent_log_handler):
     return handler
 
 
-def test_finalised_mode_counts_car(agent_log_handler_finalised):
+def test_finalised_logs(agent_log_handler_finalised):
     handler = agent_log_handler_finalised
 
-    assert len(handler.results) == 2
-
-    for name, result in handler.results.items():
-        if 'activity' in name:
-            assert len(result) == 23
-
-        else:
-            assert len(result) == 18
+    assert len(handler.results) == 0
 
 
 ### Highway Distance Handler ###

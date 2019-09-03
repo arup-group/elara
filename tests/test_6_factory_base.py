@@ -30,6 +30,7 @@ class VKT(ExampleTool):
 
 
 class VolumeCounts(ExampleTool):
+    options_enabled = True
     requirements = ['network', 'events']
     valid_options = ['car', 'bus']
 
@@ -38,6 +39,7 @@ class VolumeCounts(ExampleTool):
 
 
 class ModeShare(ExampleTool):
+    options_enabled = True
     requirements = ['network', 'events']
     valid_options = ['all']
 
