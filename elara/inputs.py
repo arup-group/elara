@@ -428,7 +428,7 @@ class Attributes(Tool):
 
 class Plans(Tool):
     requirements = ['plans_path']
-    elems = None
+    plans = None
 
     def build(self, resources: dict):
         """
@@ -440,7 +440,8 @@ class Plans(Tool):
 
         path = resources['plans_path'].path
 
-        self.elems = get_elems(path, "plan")
+        self.plans = get_elems(path, "plan")
+        self.persons = get_elems(path, "person")
 
         # self.agents = get_elems(path, "person")
 
