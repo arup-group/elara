@@ -172,12 +172,17 @@ include:
 * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
 * ``agent_logs``: Produce flat output of agent activity logs and leg logs, including times, 
 sequences, durations and categories.
+* ``agent_plans``: Produce flat output of agent plans (logs and activities) including unselected 
+plans and scores, 
+including times, 
+sequences, durations and categories.
 * ``highway_distances``: Produce flat output of agent distances by car on different road 
 types (as described by the input network osm:way).
 
 The associated list attached to each handler allows specification of additional options:
 
 * in most cases ``all``
+* agent_plans support subpopulation selection, eg ``rich, poor``
 * highway_distances only supports ``car``
 
 **#** post_processors.**[post-processor name]** *list of strings* *(optional)*

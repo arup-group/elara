@@ -733,7 +733,7 @@ class PlanHandlerWorkStation(WorkStation):
     tools = {
         "mode_share": ModeShareHandler,
         "agent_logs": AgentLogsHandler,
-        "agent_plan_scores": AgentPlansHandler,
+        "agent_plans": AgentPlansHandler,
         "highway_distances": AgentHighwayDistanceHandler,
     }
 
