@@ -38,12 +38,15 @@ class EventHandlerTool(Tool):
         :param vehicle_id: Vehicle ID string
         :return: Vehicle mode type string
         """
-        if vehicle_id in self.resources['transit_vehicles'].veh_id_veh_type_map.keys():
-            return self.resources['transit_vehicles'].veh_type_mode_map[
-                self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id]
-            ]
-        else:
-            return "car"
+        # if vehicle_id in self.resources['transit_vehicles'].veh_id_veh_type_map.keys():
+        #     return self.resources['transit_vehicles'].veh_type_mode_map[
+        #         self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id]
+        #     ]
+        # else:
+        #     return "car"
+
+        return self.resources['transit_vehicles'].veh_id_veh_type_map.get(vehicle_id, "car")
+
 
     def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
