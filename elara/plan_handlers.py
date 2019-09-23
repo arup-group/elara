@@ -108,53 +108,54 @@ class ModeShareHandler(PlanHandlerTool):
 
         self.results = dict()
 
-    def process_plan(self, elem):
+    def process_plans(self, elem):
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
         events to determine link volume counts.
         :param elem: Plan XML element
         """
-        if elem.get('selected') == 'yes':
+        for plan in elem:
+            if plan.get('selected') == 'yes':
 
-            ident = elem.getparent().get('id')
-            attribute_class = self.resources['attributes'].map.get(ident, 'not found')
+                ident = elem.get('id')
+                attribute_class = self.resources['attributes'].map.get(ident, 'not found')
 
-            end_time = None
-            modes = []
+                end_time = None
+                modes = []
 
-            for stage in elem:
+                for stage in plan:
 
-                if stage.tag == 'leg':
-                    mode = stage.get('mode')
-                    if mode == 'pt':
-                        route = stage.xpath('route')[0].text.split('===')[-2]
-                        mode = self.resources['transit_schedule'].mode_map.get(route)
-                    modes.append(mode)
+                    if stage.tag == 'leg':
+                        mode = stage.get('mode')
+                        if mode == 'pt':
+                            route = stage.xpath('route')[0].text.split('===')[-2]
+                            mode = self.resources['transit_schedule'].mode_map.get(route)
+                        modes.append(mode)
 
-                elif stage.tag == 'activity':
-                    activity = stage.get('type')
+                    elif stage.tag == 'activity':
+                        activity = stage.get('type')
 
-                    if activity == 'pt interaction':  # ignore pt interaction activities
-                        continue
+                        if activity == 'pt interaction':  # ignore pt interaction activities
+                            continue
 
-                    # only add activity modes when there has been previous activity
-                    # (ie trip start time)
-                    if end_time:
-                        mode = self.resources['mode_hierarchy'].get(modes)
-                        x, y, z, w = self.table_position(
-                            mode,
-                            attribute_class,
-                            activity,
-                            end_time
-                        )
+                        # only add activity modes when there has been previous activity
+                        # (ie trip start time)
+                        if end_time:
+                            mode = self.resources['mode_hierarchy'].get(modes)
+                            x, y, z, w = self.table_position(
+                                mode,
+                                attribute_class,
+                                activity,
+                                end_time
+                            )
 
-                        self.mode_counts[x, y, z, w] += 1
+                            self.mode_counts[x, y, z, w] += 1
 
-                    # update endtime for next activity
-                    end_time = convert_time(stage.get('end_time'))
+                        # update endtime for next activity
+                        end_time = convert_time(stage.get('end_time'))
 
-                    # reset modes
-                    modes = []
+                        # reset modes
+                        modes = []
 
     def finalise(self):
         """
@@ -230,7 +231,7 @@ class ModeShareHandler(PlanHandlerTool):
         return x, y, z, w
 
 
-class AgentPlansHandler(PlanHandlerTool):
+class AgentLogsHandler(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule']
     valid_options = ['all']
@@ -273,7 +274,7 @@ class AgentPlansHandler(PlanHandlerTool):
         csv_path = os.path.join(self.config.output_path, csv_name)
         self.legs_log = ChunkWriter(csv_path)
 
-    def process_plan(self, plan):
+    def process_plans(self, elem):
 
         """
         Build list of leg and activity logs (dicts) for each selected plan.
@@ -283,16 +284,190 @@ class AgentPlansHandler(PlanHandlerTool):
 
         :return: Tuple[List[dict]]
         """
+        for plan in elem:
+            if plan.get('selected') == 'yes':
 
-        if plan.get('selected') == 'yes':
+                activities = []
+                legs = []
+
+                ident = plan.getparent().get('id')
+
+                leg_seq_idx = 0
+                trip_seq_idx = 0
+                act_seq_idx = 0
+
+                arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
+
+                for stage in plan:
+
+                    if stage.tag == 'activity':
+                        act_seq_idx += 1
+
+                        act_type = stage.get('type')
+
+                        if not act_type == 'pt interaction':
+
+                            trip_seq_idx += 1  # increment for a new trip idx
+
+                            end = stage.get('end_time', '23:59:59')
+                            end_dt = safe_strptime(end)
+
+                            duration = end_dt - arrival_dt
+
+                        else:
+                            end_dt = arrival_dt  # zero duration
+                            duration = arrival_dt - arrival_dt
+
+                        x = stage.get('x')
+                        y = stage.get('y')
+
+                        activities.append(
+                            {
+                                'agent': ident,
+                                'seq': act_seq_idx,
+                                'act': act_type,
+                                'x': x,
+                                'y': y,
+                                'start': arrival_dt.time(),
+                                'end': end_dt.time(),
+                                # 'duration': duration,
+                                'start_s': self.get_seconds(arrival_dt),
+                                'end_s': self.get_seconds(end_dt),
+                                'duration_s': duration.total_seconds()
+                            }
+                        )
+
+                    elif stage.tag == 'leg':
+                        leg_seq_idx += 1
+
+                        mode = stage.get('mode')
+                        if mode == 'pt':
+                            route = stage.xpath('route')[0].text.split('===')[-2]
+                            mode = self.resources['transit_schedule'].mode_map.get(route)
+
+                        trav_time = stage.get('trav_time')
+                        h, m, s = trav_time.split(":")
+                        td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+
+                        arrival_dt = end_dt + td
+
+                        legs.append(
+                            {
+                                'agent': ident,
+                                'seq': leg_seq_idx,
+                                'trip': trip_seq_idx,
+                                'mode': mode,
+                                'ox': x,
+                                'oy': y,
+                                'dx': None,
+                                'dy': None,
+                                'start': end_dt.time(),
+                                'end': arrival_dt.time(),
+                                # 'duration': td,
+                                'start_s': self.get_seconds(end_dt),
+                                'end_s': self.get_seconds(arrival_dt),
+                                'duration_s': td.total_seconds(),
+                                'distance': stage.get('distance')
+                            }
+                        )
+
+                # back-fill leg destinations
+                for idx, leg in enumerate(legs):
+                    leg['dx'] = activities[idx + 1]['x']
+                    leg['dy'] = activities[idx + 1]['y']
+
+                self.activities_log.add(activities)
+                self.legs_log.add(legs)
+
+    def finalise(self):
+        """
+        Finalise aggregates and joins these results as required and creates a dataframe.
+        """
+
+        self.activities_log.finish()
+        self.legs_log.finish()
+
+    @staticmethod
+    def get_seconds(dt: datetime) -> int:
+        """
+        Extract time of day in seconds from datetime.
+        :param dt: datetime
+        :return: int, seconds
+        """
+        h = dt.hour
+        m = dt.minute
+        s = dt.second
+        return s + (60 * (m + (60 * h)))
+
+
+class AgentPlansHandler(PlanHandlerTool):
+    """
+    Write log of all plans, including selection and score.
+    Format will we mostly duplicate of legs log.
+    """
+
+    requirements = ['plans', 'transit_schedule', 'attributes']
+    # valid_options = ['all']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate handler.
+        :param config: config
+        :param option: str, mode option
+        """
+
+        super().__init__(config, option)
+
+        self.option = option
+
+        self.plans_log = None
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+
+    def __str__(self):
+        return f'ScoreHandler'
+
+    def build(self, resources: dict) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :return: None
+        """
+        super().build(resources)
+
+        csv_name = "{}_scores_log_{}.csv".format(self.config.name, self.option)
+        csv_path = os.path.join(self.config.output_path, csv_name)
+        self.plans_log = ChunkWriter(csv_path)
+
+    def process_plans(self, elem):
+
+        """
+        Build list of leg logs (dicts) for each selected plan.
+
+        Note that this assumes that first stage of a plan is ALWAYS an activity.
+        Note that activity wrapping is not dealt with here.
+
+        :return: Tuple[List[dict]]
+        """
+
+        ident = elem.get('id')
+        # get subpop
+        subpop = self.resources['attributes'].map.get(ident)
+        # todo is it slow calling a dict every time? Could keep these closer.
+
+        if not subpop == self.option:
+            return None
+
+        for pidx, plan in enumerate(elem):
+
+            selected = str(plan.get('selected'))
+            score = float(plan.get('score'))
 
             activities = []
             legs = []
-
-            ident = plan.getparent().get('id')
-
             leg_seq_idx = 0
-            trip_seq_idx = 0
+            # trip_seq_idx = 0
             act_seq_idx = 0
 
             arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
@@ -306,10 +481,10 @@ class AgentPlansHandler(PlanHandlerTool):
 
                     if not act_type == 'pt interaction':
 
-                        trip_seq_idx += 1  # increment for a new trip idx
+                        # trip_seq_idx += 1  # increment for a new trip idx
 
                         end = stage.get('end_time', '23:59:59')
-                        end_dt = datetime.strptime(end, '%H:%M:%S')
+                        end_dt = safe_strptime(end)
                         duration = end_dt - arrival_dt
 
                     else:
@@ -322,16 +497,22 @@ class AgentPlansHandler(PlanHandlerTool):
                     activities.append(
                         {
                             'agent': ident,
-                            'seq': act_seq_idx,
-                            'act': act_type,
-                            'x': x,
-                            'y': y,
+                            'pidx': pidx,
+                            'score': score,
+                            'selected': selected,
+                            'stage_type': 'act',
+                            # 'seq': act_seq_idx,
+                            'type': act_type,
+                            'ox': x,
+                            'oy': y,
+                            'dx': x,
+                            'dy': y,
                             'start': arrival_dt.time(),
                             'end': end_dt.time(),
                             # 'duration': duration,
                             'start_s': self.get_seconds(arrival_dt),
                             'end_s': self.get_seconds(end_dt),
-                            'duration_s': duration.total_seconds()
+                            'duration_s': duration.total_seconds(),
                         }
                     )
 
@@ -352,9 +533,13 @@ class AgentPlansHandler(PlanHandlerTool):
                     legs.append(
                         {
                             'agent': ident,
-                            'seq': leg_seq_idx,
-                            'trip': trip_seq_idx,
-                            'mode': mode,
+                            'pidx': pidx,
+                            'score': score,
+                            'selected': selected,
+                            'stage_type': 'leg',
+                            # 'seq': leg_seq_idx,
+                            # 'trip': trip_seq_idx,
+                            'type': mode,
                             'ox': x,
                             'oy': y,
                             'dx': None,
@@ -365,25 +550,33 @@ class AgentPlansHandler(PlanHandlerTool):
                             'start_s': self.get_seconds(end_dt),
                             'end_s': self.get_seconds(arrival_dt),
                             'duration_s': td.total_seconds(),
-                            'distance': stage.get('distance')
+                            # 'distance': stage.get('distance'),
                         }
                     )
 
             # back-fill leg destinations
             for idx, leg in enumerate(legs):
-                leg['dx'] = activities[idx + 1]['x']
-                leg['dy'] = activities[idx + 1]['y']
+                leg['dx'] = activities[idx + 1]['ox']
+                leg['dy'] = activities[idx + 1]['oy']
 
-            self.activities_log.add(activities)
-            self.legs_log.add(legs)
+            # combine into plan
+            # todo make this less shit.
+            assert len(activities) - len(legs) == 1
+
+            plans_log = []
+            for i in range(len(legs)):
+                plans_log.append(activities[i])
+                plans_log.append(legs[i])
+            plans_log.append(activities[-1])
+
+            self.plans_log.add(plans_log)
 
     def finalise(self):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
 
-        self.activities_log.finish()
-        self.legs_log.finish()
+        self.plans_log.finish()
 
     @staticmethod
     def get_seconds(dt: datetime) -> int:
@@ -457,36 +650,37 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         self.distances = np.zeros((len(self.agents_ids),
                                    len(self.ways)))
 
-    def process_plan(self, elem):
+    def process_plans(self, elem):
         """
         Iteratively aggregate distance on highway distances from legs of selected plans.
         :param elem: Plan XML element
         """
-        if elem.get('selected') == 'yes':
+        ident = elem.get('id')
 
-            ident = elem.getparent().get('id')
+        for plan in elem:
+            if plan.get('selected') == 'yes':
 
-            for stage in elem:
+                for stage in plan:
 
-                if stage.tag == 'leg':
-                    mode = stage.get('mode')
-                    if not mode == self.option:
-                        continue
+                    if stage.tag == 'leg':
+                        mode = stage.get('mode')
+                        if not mode == self.option:
+                            continue
 
-                    route = stage.xpath('route')[0].text.split(' ')
-                    length = len(route)
-                    for i, link in enumerate(route):
-                        way = str(self.osm_ways.ways.get(link, None))
-                        distance = float(self.osm_ways.lengths.get(link, 0))
-                        if i == 0 or i == length - 1:  # halve first and last link lengths
-                            distance /= 2
+                        route = stage.xpath('route')[0].text.split(' ')
+                        length = len(route)
+                        for i, link in enumerate(route):
+                            way = str(self.osm_ways.ways.get(link, None))
+                            distance = float(self.osm_ways.lengths.get(link, 0))
+                            if i == 0 or i == length - 1:  # halve first and last link lengths
+                                distance /= 2
 
-                        x, y = self.table_position(
-                            ident,
-                            way,
-                        )
+                            x, y = self.table_position(
+                                ident,
+                                way,
+                            )
 
-                        self.distances[x, y] += distance
+                            self.distances[x, y] += distance
 
     def finalise(self):
         """
@@ -539,7 +733,8 @@ class PlanHandlerWorkStation(WorkStation):
 
     tools = {
         "mode_share": ModeShareHandler,
-        "agent_logs": AgentPlansHandler,
+        "agent_logs": AgentLogsHandler,
+        "agent_plans": AgentPlansHandler,
         "highway_distances": AgentHighwayDistanceHandler,
     }
 
@@ -557,9 +752,9 @@ class PlanHandlerWorkStation(WorkStation):
 
         # iterate through plans
         plans = self.supplier_resources['plans']
-        for i, plan in enumerate(plans.elems):
+        for i, person in enumerate(plans.persons):
             for event_handler in self.resources.values():
-                event_handler.process_plan(plan)
+                event_handler.process_plans(person)
             if not i % 10000 and spinner:
                 spinner.text = f'{self} processed {i} plans.'
 
@@ -606,3 +801,13 @@ def export_geojson(gdf, path):
     """
     with open(path, "w") as file:
         file.write(gdf.to_json())
+
+
+def safe_strptime(time):
+    try:
+        dt = datetime.strptime(time, '%H:%M:%S')
+    except ValueError:
+        time = time.replace(' 24', ' 23')
+        dt = datetime.strptime(time, " %H:%M:%S")
+        dt += timedelta(hours=1)
+    return dt
