@@ -107,14 +107,14 @@ def test_load_gzip_transit_vehicles(test_gzip_config, test_zip_paths):
 def test_loading_xml_plans(test_xml_config, test_paths):
     plans = inputs.Plans(test_xml_config)
     plans.build(test_paths.resources)
-    num_plans = sum(1 for _ in plans.elems)
+    num_plans = sum(1 for _ in plans.plans)
     assert num_plans == 5
 
 
 def test_loading_gzip_plans(test_gzip_config, test_zip_paths):
     plans = inputs.Plans(test_gzip_config)
     plans.build(test_zip_paths.resources)
-    num_plans = sum(1 for _ in plans.elems)
+    num_plans = sum(1 for _ in plans.plans)
     assert num_plans == 5
 
 
@@ -253,7 +253,7 @@ def test_load_input_manager(test_xml_config, test_paths):
 
     assert len(attributes.map) == sum(attributes.attribute_count_map.values())
 
-    num_plans = sum(1 for _ in plans.elems)
+    num_plans = sum(1 for _ in plans.plans)
     assert num_plans == 5
 
     assert mode_map

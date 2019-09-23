@@ -66,7 +66,7 @@ def base_handler(test_config, input_manager):
 ### Log Handler ###
 @pytest.fixture
 def agent_log_handler(test_config, input_manager):
-    handler = plan_handlers.AgentPlansHandler(test_config, 'all')
+    handler = plan_handlers.AgentLogsHandler(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -81,8 +81,8 @@ def test_agent_log_handler(agent_log_handler):
     handler = agent_log_handler
 
     plans = handler.resources['plans']
-    for plan in plans.elems:
-        handler.process_plan(plan)
+    for person in plans.persons:
+        handler.process_plans(person)
 
     assert len(handler.activities_log.chunk) == 23
     assert len(handler.legs_log.chunk) == 18
@@ -92,14 +92,52 @@ def test_agent_log_handler(agent_log_handler):
 def agent_log_handler_finalised(agent_log_handler):
     handler = agent_log_handler
     plans = handler.resources['plans']
-    for plan in plans.elems:
-        handler.process_plan(plan)
+    for plan in plans.persons:
+        handler.process_plans(plan)
     handler.finalise()
     return handler
 
 
 def test_finalised_logs(agent_log_handler_finalised):
     handler = agent_log_handler_finalised
+
+    assert len(handler.results) == 0
+
+
+### Plan Handler ###
+@pytest.fixture
+def agent_plan_handler(test_config, input_manager):
+    handler = plan_handlers.AgentPlansHandler(test_config, 'poor')
+
+    resources = input_manager.resources
+    handler.build(resources)
+
+    assert len(handler.plans_log.chunk) == 0
+    return handler
+
+
+def test_agent_plans_handler(agent_plan_handler):
+    handler = agent_plan_handler
+
+    plans = handler.resources['plans']
+    for person in plans.persons:
+        handler.process_plans(person)
+
+    assert len(handler.plans_log.chunk) == 36
+
+
+@pytest.fixture
+def agent_plans_handler_finalised(agent_plan_handler):
+    handler = agent_plan_handler
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    handler.finalise()
+    return handler
+
+
+def test_finalised_plans(agent_plans_handler_finalised):
+    handler = agent_plans_handler_finalised
 
     assert len(handler.results) == 0
 
@@ -130,8 +168,8 @@ def test_agent_distances_handler_car_mode(agent_distances_handler_car_mode):
     handler = agent_distances_handler_car_mode
 
     plans = handler.resources['plans']
-    for plan in plans.elems:
-        handler.process_plan(plan)
+    for person in plans.persons:
+        handler.process_plans(person)
 
     assert np.sum(handler.distances) == 40600.0
 
@@ -146,8 +184,8 @@ def test_agent_distances_handler_car_mode(agent_distances_handler_car_mode):
 def agent_distances_handler_finalised_car(agent_distances_handler_car_mode):
     handler = agent_distances_handler_car_mode
     plans = handler.resources['plans']
-    for plan in plans.elems:
-        handler.process_plan(plan)
+    for plan in plans.persons:
+        handler.process_plans(plan)
     handler.finalise()
     return handler
 
@@ -203,8 +241,8 @@ def test_plan_handler_test_data(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
 
     plans = test_plan_modeshare_handler.resources['plans']
-    for plan in plans.elems:
-        handler.process_plan(plan)
+    for person in plans.persons:
+        handler.process_plans(person)
 
     assert np.sum(handler.mode_counts) == 10
 
@@ -233,8 +271,8 @@ def test_plan_handler_test_data(test_plan_modeshare_handler):
 def test_plan_handler_finalised(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
     plans = test_plan_modeshare_handler.resources['plans']
-    for plan in plans.elems:
-        handler.process_plan(plan)
+    for person in plans.persons:
+        handler.process_plans(person)
     handler.finalise()
     return handler
 
@@ -301,8 +339,6 @@ def test_load_plan_handler_manager(test_config, test_paths):
 
     tool = plan_workstation.tools['mode_share']
     plan_workstation.resources['mode_share'] = tool(test_config, 'all')
-
-
 
     plan_workstation.build()
 
