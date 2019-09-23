@@ -807,7 +807,7 @@ def safe_strptime(time):
     try:
         dt = datetime.strptime(time, '%H:%M:%S')
     except ValueError:
-        time = time.replace(' 24', ' 23')
+        time = time.replace('24', '23')
         dt = datetime.strptime(time, " %H:%M:%S")
         dt += timedelta(hours=1)
     return dt
