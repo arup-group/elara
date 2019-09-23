@@ -48,6 +48,9 @@ class Network(Tool):
         path = resources['network_path'].path
         crs = resources['crs'].path
 
+        print(len(nodes))
+        print(len(links))
+
         # Extract element properties
         nodes = [
             self.get_node_elem(elem) for elem in get_elems(path, "node")
