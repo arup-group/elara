@@ -310,7 +310,8 @@ class AgentLogsHandler(PlanHandlerTool):
                             trip_seq_idx += 1  # increment for a new trip idx
 
                             end = stage.get('end_time', '23:59:59')
-                            end_dt = datetime.strptime(end, '%H:%M:%S')
+                            end_dt = safe_strptime(end)
+
                             duration = end_dt - arrival_dt
 
                         else:
@@ -483,7 +484,7 @@ class AgentPlansHandler(PlanHandlerTool):
                         # trip_seq_idx += 1  # increment for a new trip idx
 
                         end = stage.get('end_time', '23:59:59')
-                        end_dt = datetime.strptime(end, '%H:%M:%S')
+                        end_dt = safe_strptime(end)
                         duration = end_dt - arrival_dt
 
                     else:
@@ -800,3 +801,13 @@ def export_geojson(gdf, path):
     """
     with open(path, "w") as file:
         file.write(gdf.to_json())
+
+
+def safe_strptime(time):
+    try:
+        dt = datetime.strptime(time, '%H:%M:%S')
+    except ValueError:
+        time = time.replace(' 24', ' 23')
+        dt = datetime.strptime(time, " %H:%M:%S")
+        dt += timedelta(hours=1)
+    return dt

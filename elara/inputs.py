@@ -492,6 +492,7 @@ class ModeHierarchy(Tool):
     hierarchy = [
         "ferry",
         "rail",
+        "subway",
         "tram",
         "bus",
         "car",
