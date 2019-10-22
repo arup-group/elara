@@ -2,16 +2,16 @@ import sys
 import os
 import pytest
 
-sys.path.append(os.path.abspath('../elara'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../elara")))
 from elara.config import Config
 from elara import benchmarking
 from elara.config import PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.event_handlers import EventHandlerWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
-sys.path.append(os.path.abspath('../tests'))
 
-config_path = os.path.join('tests/test_xml_scenario.toml')
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
 config = Config(config_path)
 
 
@@ -58,7 +58,7 @@ def test_town_mode_share_score_zero():
 # Config
 @pytest.fixture
 def test_config():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
     assert config
     return config

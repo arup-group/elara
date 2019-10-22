@@ -104,7 +104,7 @@ def test_build_df_indices(base_handler, test_df, test_list):
 
 
 def test_get_veh_mode(base_handler):
-    assert base_handler.vehicle_mode('bus1') == 'bus'
+    assert base_handler.vehicle_mode('bus1').lower() == 'bus'
     assert base_handler.vehicle_mode('not_a_transit_vehicle') == "car"
 
 
@@ -285,7 +285,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
 # Bus
 @pytest.fixture
 def test_bus_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'bus')
+    handler = event_handlers.VolumeCounts(test_config, 'Bus')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -342,7 +342,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
     for elem in events:
         handler.process_event(elem)
 
-    assert handler.option == 'bus'
+    assert handler.option.lower() == 'bus'
     assert handler.config.scale_factor == 0.0001
 
     handler.finalise()
@@ -359,7 +359,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 # Passenger Counts Handler Tests
 @pytest.fixture
 def test_bus_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.PassengerCounts(test_config, 'bus')
+    handler = event_handlers.PassengerCounts(test_config, 'Bus')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -499,7 +499,7 @@ def test_passenger_count_finalise_bus(
 # Stop Interactions
 @pytest.fixture
 def test_bus_passenger_interaction_handler(test_config, input_manager):
-    handler = event_handlers.StopInteractions(test_config, 'bus')
+    handler = event_handlers.StopInteractions(test_config, 'Bus')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -627,7 +627,7 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='bus')
+    event_workstation.load_all_tools(option='Bus')
     event_workstation.build()
 
     for handler_name, handler in event_workstation.resources.items():
