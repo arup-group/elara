@@ -10,6 +10,8 @@ from elara.event_handlers import EventHandlerWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
 sys.path.append(os.path.abspath('../tests'))
 
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
 
 def test_generate_period_headers():
     hours = 24
@@ -22,7 +24,7 @@ def test_generate_period_headers():
 # Config
 @pytest.fixture
 def test_config():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
     assert config
     return config
@@ -62,6 +64,7 @@ def test_vkt_build(vkt_post_processor, ):
     vkt_post_processor.build(None)
 
 
+@pytest.mark.skip(reason=None)
 def test_post_process_workstation(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
