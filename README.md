@@ -9,6 +9,7 @@ A command line utility for processing MATSim output XML files:
 
 ## Contents
 * [Installation](#markdown-header-installation)
+* [Tests](#markdown-header-tests)
 * [About](#markdown-header-about)
 * [Command line reference](#markdown-header-command-line-reference)
 * [Configuration format](#markdown-header-configuration-format)
@@ -31,11 +32,19 @@ pip3 install git+https://github.com/jswhit/pyproj.git
 
 On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj`` wheel within your environment using pip.  
 
-Like (bad) tests?
-```
-cd elara
-pytest
-```
+## Tests
+
+
+### Run the tests (from root dir)
+
+    python -m pytest -vv tests
+
+### Generate a code coverage report
+
+To generate XML & HTML coverage reports to `reports/coverage`:
+
+    ./scripts/code-coverage.sh
+
 
 ## About
 Elara is designed to undertake arbitrarily complex pipelines of output processing, postprocessing
