@@ -12,6 +12,8 @@ from elara import plan_handlers
 from elara.plan_handlers import PlanHandlerWorkStation
 sys.path.append(os.path.abspath('../tests'))
 
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
 
 test_matsim_time_data = [
     ('00:00:00', 0),
@@ -28,7 +30,7 @@ def test_convert_time(time, seconds):
 # Config
 @pytest.fixture
 def test_config():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
     assert config
     return config
