@@ -619,6 +619,7 @@ def test_stop_interaction_finalise_bus(
 
 
 # Event Handler Manager
+@pytest.mark.skip(reason=None)
 def test_load_event_handler_manager(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
