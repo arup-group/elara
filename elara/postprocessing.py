@@ -11,7 +11,7 @@ class PostProcessor(Tool):
     def check_prerequisites(self):
         return NotImplementedError
 
-    def build(self, resource):
+    def build(self, resource, write_path=None):
         return NotImplementedError
 
 
@@ -31,8 +31,8 @@ class AgentTripLogs(PostProcessor):
     def __str__(self):
         return f'AgentTripLogs modes'
 
-    def build(self, resource: dict):
-        super().build(resource)
+    def build(self, resource: dict, write_path=None):
+        super().build(resource, write_path=write_path)
 
         self.hierarchy = resource['mode_hierarchy']
 
@@ -92,8 +92,8 @@ class VKT(PostProcessor):
     def __str__(self):
         return f'VKT PostProcessor mode: {self.option}'
 
-    def build(self, resource: dict):
-        super().build(resource)
+    def build(self, resource: dict, write_path=None):
+        super().build(resource, write_path=write_path)
 
         mode = self.option
 
@@ -109,13 +109,25 @@ class VKT(PostProcessor):
         vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
 
         # Export results
-        csv_path = os.path.join(
-            self.config.output_path, "{}_vkt_{}.csv".format(self.config.name, mode)
-        )
-        geojson_path = os.path.join(
-            self.config.output_path,
-            "{}_vkt_{}.geojson".format(self.config.name, mode),
-        )
+        if write_path:
+            csv_path = os.path.join(
+                write_path,
+                "{}_vkt_{}.csv".format(self.config.name, mode)
+            )
+            geojson_path = os.path.join(
+                write_path,
+                "{}_vkt_{}.geojson".format(self.config.name, mode),
+            )
+        else:
+            csv_path = os.path.join(
+                self.config.output_path,
+                "{}_vkt_{}.csv".format(self.config.name, mode)
+            )
+            geojson_path = os.path.join(
+                self.config.output_path,
+                "{}_vkt_{}.geojson".format(self.config.name, mode),
+            )
+
         vkt_gdf.drop("geometry", axis=1).to_csv(csv_path)
         export_geojson(vkt_gdf, geojson_path)
 

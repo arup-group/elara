@@ -11,13 +11,21 @@ from elara.event_handlers import EventHandlerWorkStation
 from elara.postprocessing import PostProcessWorkStation
 from elara.benchmarking import BenchmarkWorkStation
 from elara import factory
-sys.path.append(os.path.abspath('../tests'))
+
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 # Config
 @pytest.fixture
 def test_config():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
     assert config
     return config
@@ -132,7 +140,7 @@ def test_dfs(requirements):
 
 
 def test_bfs(requirements):
-    factory.build(requirements)
+    factory.build(requirements, write_path=test_outputs)
     assert requirements.resources == {}
     assert set(requirements.suppliers[0].resources) == set({'vkt:car': factory.Tool})
 

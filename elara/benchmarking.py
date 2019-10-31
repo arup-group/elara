@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 import json
+from typing import Dict, List, Union, Optional
 
 from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
@@ -51,7 +52,7 @@ class Cordon(Tool):
                 links_df
             ))
 
-    def build(self, resource: dict) -> dict:
+    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
@@ -311,7 +312,7 @@ class ModeStats(Tool):
         self.benchmark_df.set_index('mode', inplace=True)
         self.name = self.config.name
 
-    def build(self, resource: dict) -> dict:
+    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for mode share outputs, loads and combines with model for scoring.
         :return: Dictionary of scores
@@ -463,7 +464,7 @@ class BenchmarkWorkStation(WorkStation):
         if not os.path.exists(benchmark_dir):
             os.makedirs(benchmark_dir)
 
-    def build(self, spinner=None) -> None:
+    def build(self, spinner=None, write_path=None) -> None:
         """
         Calculates all sub scores from benchmarks, writes to disk and returns
         combined metascore.
@@ -488,14 +489,20 @@ class BenchmarkWorkStation(WorkStation):
                 self.meta_score += (s * weight)
 
         # Write scores
-        self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
         csv_name = 'benchmark_scores.csv'
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
+        json_name = 'benchmark_scores.json'
+
+        if write_path:
+            csv_path = os.path.join(write_path, 'benchmarks', csv_name)
+            json_path = os.path.join(write_path, 'benchmarks', json_name)
+        else:
+            csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
+            json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
+
+        self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
         self.scores_df.to_csv(csv_path)
 
         summary['meta_score'] = self.meta_score
-        json_name = 'benchmark_scores.json'
-        json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
         with open(json_path, 'w') as outfile:
             json.dump(summary, outfile)
 

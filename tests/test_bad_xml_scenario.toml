@@ -24,7 +24,7 @@ stop_interactions = ["bus", "train"]
 mode_share = ["all"]
 
 [outputs]
-path = "./tests/test_outputs"
+path = "./tests/test_intermediate_data"
 contract = true
 post_processing = ["vkt"]
 

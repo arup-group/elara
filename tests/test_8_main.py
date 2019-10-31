@@ -3,8 +3,8 @@ import os
 import pytest
 import pandas as pd
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "/test_outputs")))
-sys.path.append(os.path.abspath('../elara'))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "/test_outputs")))
+#sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
@@ -12,24 +12,22 @@ from elara.event_handlers import EventHandlerWorkStation
 from elara.postprocessing import PostProcessWorkStation
 from elara.benchmarking import BenchmarkWorkStation
 from elara import factory
-sys.path.append(os.path.abspath('../tests'))
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-
-
-@pytest.fixture(scope="session")
-def test_path(tmpdir_factory):
-    path = tmpdir_factory.mktemp("data")
-    return path
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 # Config
 @pytest.fixture
-def test_config(test_path):
+def test_config():
     config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
-    config.output_path = test_path
-    # config.output_path = os.path.join(test_dir, '../test_outputs')
     return config
 
 
@@ -71,13 +69,13 @@ def test_main(test_config):
         suppliers=None
     )
 
-    factory.build(requirements)
+    factory.build(requirements, write_path=test_outputs)
 
-    path = test_config.output_path.join('test_town_boardings_bus.csv')
+    path = os.path.join(test_outputs, 'test_town_boardings_bus.csv')
     test_town_boardings_bus = pd.read_csv(path)
     assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
 
-    path = test_config.output_path.join('benchmarks').join('benchmark_scores.csv')
+    path = os.path.join(benchmarks_path, 'benchmark_scores.csv')
     benchmark_scores = pd.read_csv(path)
     assert benchmark_scores.score.sum() == 0
 
@@ -120,23 +118,23 @@ def test_main_ordering_graph(test_config):
         suppliers=None
     )
 
-    factory.build(requirements)
+    factory.build(requirements, write_path=test_outputs)
 
-    path = test_config.output_path.join('test_town_boardings_bus.csv')
+    path = os.path.join(test_outputs, 'test_town_boardings_bus.csv')
     test_town_boardings_bus = pd.read_csv(path)
     assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
 
-    path = test_config.output_path.join('benchmarks').join('benchmark_scores.csv')
+    path = os.path.join(benchmarks_path, 'benchmark_scores.csv')
     benchmark_scores = pd.read_csv(path)
     assert benchmark_scores.score.sum() == 0
 
 
 # Config
 @pytest.fixture
-def test_config_missing(test_path):
-    config_path = os.path.join('tests/test_xml_scenario_missing.toml')
+def test_config_missing():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_missing.toml')
     config = Config(config_path)
-    config.output_path = test_path
+    # config.output_path = test_path
     return config
 
 
@@ -178,23 +176,23 @@ def test_main_missing_requirement_still_fulfilled(test_config_missing):
         suppliers=None
     )
 
-    factory.build(requirements)
+    factory.build(requirements, write_path=test_outputs)
 
-    path = test_config_missing.output_path.join('test_town_boardings_bus.csv')
+    path = os.path.join(test_outputs, 'test_town_boardings_bus.csv')
     test_town_boardings_bus = pd.read_csv(path)
     assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
 
-    path = test_config_missing.output_path.join('benchmarks').join('benchmark_scores.csv')
+    path = os.path.join(benchmarks_path, 'benchmark_scores.csv')
     benchmark_scores = pd.read_csv(path)
     assert benchmark_scores.score.sum() == 0
 
 
 # Config
 @pytest.fixture
-def test_config_bad_path(test_path):
-    config_path = os.path.join('tests/test_xml_scenario_bad_path.toml')
+def test_config_bad_path():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_bad_path.toml')
     config = Config(config_path)
-    config.output_path = test_path
+    # config.output_path = test_path
     return config
 
 
@@ -237,4 +235,4 @@ def test_main_bad_input_path(test_config_bad_path):
     )
 
     with pytest.raises(Exception):
-        factory.build(requirements)
+        factory.build(requirements, write_path=test_outputs)

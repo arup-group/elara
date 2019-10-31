@@ -10,9 +10,15 @@ from elara.config import Config, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara import plan_handlers
 from elara.plan_handlers import PlanHandlerWorkStation
-sys.path.append(os.path.abspath('../tests'))
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 test_matsim_time_data = [
@@ -62,7 +68,7 @@ def input_manager(test_config, test_paths):
 def base_handler(test_config, input_manager):
     base_handler = plan_handlers.PlanHandlerTool(test_config, 'all')
     assert base_handler.option == 'all'
-    base_handler.build(input_manager.resources)
+    base_handler.build(input_manager.resources, write_path=test_outputs)
     return base_handler
 
 ### Log Handler ###
@@ -71,7 +77,7 @@ def agent_log_handler(test_config, input_manager):
     handler = plan_handlers.AgentLogsHandler(test_config, 'all')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     assert len(handler.activities_log.chunk) == 0
     assert len(handler.legs_log.chunk) == 0
@@ -112,8 +118,7 @@ def agent_plan_handler(test_config, input_manager):
     handler = plan_handlers.AgentPlansHandler(test_config, 'poor')
 
     resources = input_manager.resources
-    handler.build(resources)
-
+    handler.build(resources, write_path=test_outputs)
     assert len(handler.plans_log.chunk) == 0
     return handler
 
@@ -150,7 +155,7 @@ def agent_distances_handler_car_mode(test_config, input_manager):
     handler = plan_handlers.AgentHighwayDistanceHandler(test_config, 'car')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     assert len(handler.agents_ids) == len(handler.resources['agents'].idents)
     assert list(handler.agent_indices.keys()) == handler.agents_ids
@@ -217,7 +222,7 @@ def test_plan_modeshare_handler(test_config, input_manager):
     handler = plan_handlers.ModeShareHandler(test_config, 'all')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     periods = 24
 
@@ -342,7 +347,7 @@ def test_load_plan_handler_manager(test_config, test_paths):
     tool = plan_workstation.tools['mode_share']
     plan_workstation.resources['mode_share'] = tool(test_config, 'all')
 
-    plan_workstation.build()
+    plan_workstation.build(write_path=test_outputs)
 
     for handler in plan_workstation.resources.values():
         for name, result in handler.results.items():

@@ -5,7 +5,15 @@ import pytest
 
 sys.path.append(os.path.abspath('../elara'))
 from elara.factory import WorkStation, Tool, equals, build, build_graph_depth
-sys.path.append(os.path.abspath('../tests'))
+
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 class Config:
