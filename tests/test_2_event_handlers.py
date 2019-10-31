@@ -133,7 +133,7 @@ def gerry_waiting_event():
 def driver_enters_veh_event():
     time = 6.5 * 60 * 60 + (5 * 60)
     string = """
-        <event time="23700.0" type="PersonEntersVehicle" person="pt_bus1_Bus" vehicle="bus1"  />
+        <event time="23700.0" type="PersonEntersVehicle" person="pt_bus1_bus" vehicle="bus1"  />
         """
     return etree.fromstring(string)
 
@@ -282,10 +282,10 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
-# Bus
+# bus
 @pytest.fixture
 def test_bus_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'Bus')
+    handler = event_handlers.VolumeCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -359,7 +359,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 # Passenger Counts Handler Tests
 @pytest.fixture
 def test_bus_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.PassengerCounts(test_config, 'Bus')
+    handler = event_handlers.PassengerCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -378,7 +378,7 @@ def test_bus_passenger_count_handler(test_config, input_manager):
 def driver_enters_veh_event():
     time = 6.5 * 60 * 60
     string = """
-        <event time="23400.0" type="PersonEntersVehicle" person="pt_bus1_Bus" vehicle="bus1" />
+        <event time="23400.0" type="PersonEntersVehicle" person="pt_bus1_bus" vehicle="bus1" />
         """
     return etree.fromstring(string)
 
@@ -499,7 +499,7 @@ def test_passenger_count_finalise_bus(
 # Stop Interactions
 @pytest.fixture
 def test_bus_passenger_interaction_handler(test_config, input_manager):
-    handler = event_handlers.StopInteractions(test_config, 'Bus')
+    handler = event_handlers.StopInteractions(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources)
@@ -619,7 +619,6 @@ def test_stop_interaction_finalise_bus(
 
 
 # Event Handler Manager
-@pytest.mark.skip(reason=None)
 def test_load_event_handler_manager(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
@@ -628,7 +627,7 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='Bus')
+    event_workstation.load_all_tools(option='bus')
     event_workstation.build()
 
     for handler_name, handler in event_workstation.resources.items():

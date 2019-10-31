@@ -33,7 +33,6 @@ def test_config(test_path):
     return config
 
 
-@pytest.mark.skip(reason=None)
 def test_main(test_config):
     requirements = RequirementsWorkStation(test_config)
     postprocessing = PostProcessWorkStation(test_config)
@@ -83,7 +82,6 @@ def test_main(test_config):
     assert benchmark_scores.score.sum() == 0
 
 
-@pytest.mark.skip(reason=None)
 def test_main_ordering_graph(test_config):
     requirements = RequirementsWorkStation(test_config)
     postprocessing = PostProcessWorkStation(test_config)
@@ -142,7 +140,6 @@ def test_config_missing(test_path):
     return config
 
 
-@pytest.mark.skip(reason=None)
 def test_main_missing_requirement_still_fulfilled(test_config_missing):
     requirements = RequirementsWorkStation(test_config_missing)
     postprocessing = PostProcessWorkStation(test_config_missing)

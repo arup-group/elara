@@ -60,12 +60,10 @@ def test_vkt_prerequisites(vkt_post_processor):
     assert vkt_post_processor.check_prerequisites()
 
 
-@pytest.mark.skip(reason=None)
 def test_vkt_build(vkt_post_processor, ):
     vkt_post_processor.build(None)
 
 
-@pytest.mark.skip(reason=None)
 def test_post_process_workstation(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
