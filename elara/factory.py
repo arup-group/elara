@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from halo import Halo
 import pandas as pd
 
@@ -56,6 +56,7 @@ class Tool:
     def build(
             self,
             resource: Dict[str, list],
+            write_path: Optional[str] = None
     ) -> None:
         """
         Default build self.
@@ -184,7 +185,6 @@ class WorkStation:
             if self.requirements:
                 for req, options in self.requirements.items():
                     if self.suppliers and options:
-
                         for s in self.suppliers:
                             if s.tools:
                                 for name, tool in s.tools.items():
@@ -224,7 +224,7 @@ class WorkStation:
                 reqs.append(manager.requirements)
         return combine_reqs(reqs)
 
-    def build(self, spinner=None):
+    def build(self, spinner=None, write_path=None):
         """
         Gather resources from suppliers for current workstation and build() all resources in
         order of .resources map.
@@ -241,7 +241,7 @@ class WorkStation:
             for tool_name, tool in self.resources.items():
                 if spinner:
                     spinner.text = f"Building {tool_name}."
-                tool.build(self.supplier_resources)
+                tool.build(self.supplier_resources, write_path)
 
     def load_all_tools(self, option=None) -> None:
         """
@@ -298,7 +298,7 @@ class ChunkWriter:
         self.write()
 
 
-def build(start_node: WorkStation, verbose=False) -> list:
+def build(start_node: WorkStation, verbose=False, write_path=None) -> list:
     """
     Main function for validating graph requirements, then initiating and building minimum resources.
 
@@ -368,7 +368,7 @@ def build(start_node: WorkStation, verbose=False) -> list:
     while return_queue:
         current = return_queue.pop(0)
         with Halo(text=f"Building {current}...", spinner="dots") as spinner:
-            current.build(spinner)
+            current.build(spinner, write_path=write_path)
             visited.append(current)
             spinner.succeed(f"{current} build completed.")
 

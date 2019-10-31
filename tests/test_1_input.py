@@ -6,13 +6,21 @@ import pytest
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
-sys.path.append(os.path.abspath('../tests'))
+
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 # Config
 @pytest.fixture
 def test_xml_config():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
     assert config
     return config
@@ -20,7 +28,7 @@ def test_xml_config():
 
 @pytest.fixture
 def test_gzip_config():
-    config_path = os.path.join('tests/test_gzip_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_gzip_scenario.toml')
     config = Config(config_path)
     assert config
     return config

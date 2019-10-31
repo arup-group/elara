@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import os
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 
 from elara.factory import WorkStation, Tool, ChunkWriter
@@ -14,6 +14,12 @@ class EventHandlerTool(Tool):
     Base Tool class for Event Handling.
     """
     result_gdfs = dict()
+
+    def build(
+            self,
+            resources: dict,
+            write_path=None) -> None:
+        super().build(resources, write_path)
 
     @staticmethod
     def generate_elem_ids(
@@ -45,8 +51,7 @@ class EventHandlerTool(Tool):
         else:
             return "car"
 
-        return self.resources['transit_vehicles'].veh_id_veh_type_map.get(vehicle_id, "car")
-
+        #return self.resources['transit_vehicles'].veh_id_veh_type_map.get(vehicle_id, "car")
 
     def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -105,23 +110,23 @@ class AgentWaitingTimes(EventHandlerTool):
     def __str__(self):
         return f'AgentWaitingTimes'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
         :return: None
         """
-        super().build(resources)
-
-        # name = "{}_agents_leg_logs_{}".format(self.config.name, self.option)
-        # legs_df = self.resources['agent_logs'].results[name]
-        #
-        # unique_pt_interactions = legs_df.iloc[legs_df.act == 'pt interaction']
-        # num_pt_interactions = len(unique_pt_interactions)
-        # num_unique_agents = unique_pt_interactions.agent_id.nunique()
+        super().build(resources, write_path=write_path)
 
         csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
-        csv_path = os.path.join(self.config.output_path, csv_name)
+
+        if write_path:
+            csv_path = os.path.join(write_path, csv_name)
+        else:
+            csv_path = os.path.join(self.config.output_path, csv_name)
+
+        print(f"\nBUILD {write_path} {csv_path}")
+
         self.waiting_time_log = ChunkWriter(csv_path)
 
     def process_event(self, elem) -> None:
@@ -257,13 +262,13 @@ class VolumeCounts(EventHandlerTool):
     def __str__(self):
         return f'VolumeCounts'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
         :return: None
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
@@ -380,13 +385,13 @@ class PassengerCounts(EventHandlerTool):
     def __str__(self):
         return f'PassengerCounts'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build Handler.
         :param resources: dict, supplier resources
         :return: None
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
         # Check for car
         if self.option == 'car':
@@ -538,13 +543,13 @@ class StopInteractions(EventHandlerTool):
     def __str__(self):
         return f'StopInteractions'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler.
         :param resources: dict, supplier resources.
         :return: None
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
         # Check for car
         if self.option == 'car':
@@ -673,7 +678,7 @@ class EventHandlerWorkStation(WorkStation):
     def __str__(self):
         return f'Events Handler WorkStation'
 
-    def build(self, spinner=None) -> None:
+    def build(self, spinner=None, write_path=None) -> None:
         """
         Build all required handlers, then finalise and save results.
         :return: None
@@ -682,7 +687,7 @@ class EventHandlerWorkStation(WorkStation):
             return None
 
         # build tools
-        super().build(spinner)
+        super().build(spinner, write_path=write_path)
 
         # iterate through events
         events = self.supplier_resources['events']
@@ -701,17 +706,23 @@ class EventHandlerWorkStation(WorkStation):
             if self.config.contract:
                 event_handler.contract_results()
 
-            for name, gdf in event_handler.result_gdfs.items():
-                if spinner:
-                    spinner.text = f'{self} writing {name} results to disk.'
-                csv_name = "{}_{}.csv".format(self.config.name, name)
-                geojson_name = "{}_{}.geojson".format(self.config.name, name)
-                csv_path = os.path.join(self.config.output_path, csv_name)
-                geojson_path = os.path.join(self.config.output_path, geojson_name)
+            if event_handler.result_gdfs:
+                for name, gdf in event_handler.result_gdfs.items():
+                    if spinner:
+                        spinner.text = f'{self} writing {name} results to disk.'
+                    csv_name = "{}_{}.csv".format(self.config.name, name)
+                    geojson_name = "{}_{}.geojson".format(self.config.name, name)
 
-                # File exports
-                gdf.drop("geometry", axis=1).to_csv(csv_path)
-                export_geojson(gdf, geojson_path)
+                    if write_path:
+                        csv_path = os.path.join(write_path, csv_name)
+                        geojson_path = os.path.join(write_path, geojson_name)
+                    else:
+                        csv_path = os.path.join(self.config.output_path, csv_name)
+                        geojson_path = os.path.join(self.config.output_path, geojson_name)
+
+                    # File exports
+                    gdf.drop("geometry", axis=1).to_csv(csv_path)
+                    export_geojson(gdf, geojson_path)
 
 
 def table_position(elem_indices, class_indices, periods, elem_id, attribute_class, time):

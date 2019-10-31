@@ -32,6 +32,13 @@ class Config:
         self.output_path = self.parsed_toml["outputs"]["path"]
         self.contract = self.parsed_toml["outputs"].get("contract", False)
 
+        if not os.path.exists(self.output_path):
+            os.mkdir(self.output_path)
+            
+        benchmarks_path = os.path.join(self.output_path, "benchmarks")
+        if not os.path.exists(benchmarks_path):
+            os.mkdir(benchmarks_path)
+
     @property
     def dummy_path(self):
         return self.parsed_toml["scenario"]["name"]
@@ -126,7 +133,7 @@ class Config:
 class GetCRS(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.crs
 
@@ -134,7 +141,7 @@ class GetCRS(Tool):
 class GetEventsPath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.events_path
 
@@ -142,7 +149,7 @@ class GetEventsPath(Tool):
 class GetPlansPath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.plans_path
 
@@ -150,7 +157,7 @@ class GetPlansPath(Tool):
 class GetNetworkPath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.network_path
 
@@ -158,7 +165,7 @@ class GetNetworkPath(Tool):
 class GetAttributesPath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.attributes_path
 
@@ -166,7 +173,7 @@ class GetAttributesPath(Tool):
 class GetTransitSchedulePath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.transit_schedule_path
 
@@ -174,7 +181,7 @@ class GetTransitSchedulePath(Tool):
 class GetTransitVehiclesPath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.transit_vehicles_path
 
@@ -182,7 +189,7 @@ class GetTransitVehiclesPath(Tool):
 class GetOutputConfigPath(Tool):
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path=None):
         super().build(resource)
         self.path = self.config.output_config_path
 
