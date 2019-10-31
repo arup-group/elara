@@ -15,7 +15,6 @@ config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
 config = Config(config_path)
 
 
-@pytest.mark.skip(reason=None)
 def test_town_hourly_in_cordon_score_zero():
     benchmark = benchmarking.TestTownHourlyCordon
     test_bm = benchmark(
@@ -26,7 +25,6 @@ def test_town_hourly_in_cordon_score_zero():
     assert score['in'] == 0
 
 
-@pytest.mark.skip(reason=None)
 def test_town_hourly_out_cordon_score_zero():
     benchmark = benchmarking.TestTownHourlyCordon
     test_bm = benchmark(
@@ -37,7 +35,6 @@ def test_town_hourly_out_cordon_score_zero():
     assert score['out'] == 0
 
 
-@pytest.mark.skip(reason=None)
 def test_town_peak_in_cordon_score_zero():
     benchmark = benchmarking.TestTownPeakIn
     test_bm = benchmark(
@@ -48,7 +45,6 @@ def test_town_peak_in_cordon_score_zero():
     assert score['in'] == 0
 
 
-@pytest.mark.skip(reason=None)
 def test_town_mode_share_score_zero():
     benchmark = benchmarking.TestTownCommuterStats
     test_bm = benchmark(
@@ -79,7 +75,6 @@ def test_paths(test_config):
     return paths
 
 
-@pytest.mark.skip(reason=None)
 def test_benchmark_workstation(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
