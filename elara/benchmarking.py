@@ -68,11 +68,13 @@ class Cordon(Tool):
         # get scores and write outputs
         scores = {}
         for cordon_count in self.cordon_counts:
-            scores[cordon_count.direction] = cordon_count.output_and_score(results_df)
+            scores[cordon_count.direction] = cordon_count.output_and_score(
+                results_df, write_path=write_path
+            )
         return scores
 
 
-class CordonCount:
+class CordonCount(Tool):
 
     def __init__(self, parent, direction_name, dir_code, counts_df,
                  links_df):
@@ -189,13 +191,14 @@ class CordonCount:
 
 class HourlyCordonCount(CordonCount):
 
-    def output_and_score(self, result_df):
+    def output_and_score(self, result_df, write_path=None):
         """
         Cordon count for hourly data. Joins all results from different volume counts
         (modal) and extract counts for cordon. Scoring is calculated by summing the
         absolute difference between hourly total counts and model results,
         then normalising by the total of all counts.
         :param result_df: DataFrame object of model results
+        :param write_path: str object, optional
         :return: Float
         """
         # collect all results
@@ -206,8 +209,8 @@ class HourlyCordonCount(CordonCount):
 
         # write cordon model results
         csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        model_results.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(model_results, csv_path, write_path=write_path)
 
         # aggregate for each class
         classes_df = model_results.groupby('class').sum()
@@ -222,8 +225,8 @@ class HourlyCordonCount(CordonCount):
         # Label and write csv with counts by subpopulation
         classes_df.loc[:, 'source'] = 'model'
         csv_name = '{}_{}_classes.csv'.format(self.cordon_name, self.direction)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        classes_df.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(classes_df, csv_path, write_path=write_path)
 
         # Get cordon counts for mode
         counts_array = self.get_counts(self.counts_df)
@@ -233,8 +236,8 @@ class HourlyCordonCount(CordonCount):
         benchmark_df = pd.concat([count_df, classes_df]).groupby('source').sum()
 
         csv_name = '{}_{}_benchmark.csv'.format(self.cordon_name, self.direction)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        benchmark_df.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(benchmark_df, csv_path, write_path=write_path)
 
         # Calc score
         return sum(np.absolute(results_array - counts_array)) / counts_array.sum()
@@ -242,7 +245,7 @@ class HourlyCordonCount(CordonCount):
 
 class PeriodCordonCount(CordonCount):
 
-    def output_and_score(self, result_df):
+    def output_and_score(self, result_df, write_path=None):
         """
         Cordon count for single period data. Joins all results from different volume counts
         (modal) and extract counts for cordon. Scoring is calculated by summing the
@@ -260,8 +263,8 @@ class PeriodCordonCount(CordonCount):
 
         # write cordon model results
         csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        model_results.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(model_results, csv_path, write_path=write_path)
 
         # aggregate for each class
         classes_df = model_results.groupby('class').sum()
@@ -277,8 +280,8 @@ class PeriodCordonCount(CordonCount):
         # Label and write csv with counts by subpopulation
         classes_df.loc[:, 'source'] = 'model'
         csv_name = '{}_{}_classes.csv'.format(self.cordon_name, self.direction)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        classes_df.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(classes_df, csv_path, write_path=write_path)
 
         # Get cordon count for mode
         count = self.get_count(self.counts_df)
@@ -287,8 +290,8 @@ class PeriodCordonCount(CordonCount):
         # Label and write benchmark csv
         benchmark_df = pd.concat([count_df, result_df]).groupby('source').sum()
         csv_name = '{}_{}_benchmark.csv'.format(self.cordon_name, self.direction)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        benchmark_df.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(benchmark_df, csv_path, write_path=write_path)
 
         # Calc score
         return np.absolute(result - count) / count
@@ -331,8 +334,8 @@ class ModeStats(Tool):
 
         # write results
         csv_name = '{}_results.csv'.format(self.name)
-        csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-        summary_df.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(summary_df, csv_path, write_path=write_path)
 
         # get scores and write outputs
         score = sum(np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model)))
@@ -473,7 +476,7 @@ class BenchmarkWorkStation(WorkStation):
         flat_summary = []
         for benchmark_name, benchmark in self.resources.items():
 
-            scores = benchmark.build({})
+            scores = benchmark.build({}, write_path=write_path)
             weight = benchmark.weight
 
             sub_summary = {'scores': scores,
@@ -490,38 +493,32 @@ class BenchmarkWorkStation(WorkStation):
 
         # Write scores
         csv_name = 'benchmark_scores.csv'
-        json_name = 'benchmark_scores.json'
-
-        if write_path:
-            csv_path = os.path.join(write_path, 'benchmarks', csv_name)
-            json_path = os.path.join(write_path, 'benchmarks', json_name)
-        else:
-            csv_path = os.path.join(self.config.output_path, 'benchmarks', csv_name)
-            json_path = os.path.join(self.config.output_path, 'benchmarks', json_name)
 
         self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
-        self.scores_df.to_csv(csv_path)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(self.scores_df, csv_path, write_path=write_path)
 
         summary['meta_score'] = self.meta_score
-        with open(json_path, 'w') as outfile:
-            json.dump(summary, outfile)
+        json_name = 'benchmark_scores.json'
+        json_path = os.path.join('benchmarks', json_name)
+        self.write_json(summary, json_path, write_path=write_path)
 
     def __str__(self):
         return f'Benchmarking WorkStation'
 
 
-# maps of benchmarks to Classes and weights for scoring
-BENCHMARK_MAP = {"london_inner_cordon_car": LondonInnerCordonCar,
-                 "dublin_canal_cordon_car": DublinCanalCordonCar,
-                 "ireland_commuter_modeshare": IrelandCommuterStats,
-                 "test_town_cordon": TestTownHourlyCordon,
-                 "test_town_peak_cordon": TestTownPeakIn,
-                 "test_town_modeshare": TestTownCommuterStats}
-
-BENCHMARK_WEIGHTS = {"london_inner_cordon_car": 1,
-                     "dublin_canal_cordon_car": 1,
-                     "ireland_commuter_modeshare": 1,
-                     "test_town_cordon": 1,
-                     "test_town_peak_cordon": 1,
-                     "test_town_modeshare": 1}
+# # maps of benchmarks to Classes and weights for scoring
+# BENCHMARK_MAP = {"london_inner_cordon_car": LondonInnerCordonCar,
+#                  "dublin_canal_cordon_car": DublinCanalCordonCar,
+#                  "ireland_commuter_modeshare": IrelandCommuterStats,
+#                  "test_town_cordon": TestTownHourlyCordon,
+#                  "test_town_peak_cordon": TestTownPeakIn,
+#                  "test_town_modeshare": TestTownCommuterStats}
+#
+# BENCHMARK_WEIGHTS = {"london_inner_cordon_car": 1,
+#                      "dublin_canal_cordon_car": 1,
+#                      "ireland_commuter_modeshare": 1,
+#                      "test_town_cordon": 1,
+#                      "test_town_peak_cordon": 1,
+#                      "test_town_modeshare": 1}
 

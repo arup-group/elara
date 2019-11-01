@@ -29,7 +29,7 @@ def test_town_hourly_in_cordon_score_zero():
         config,
         'car',
     )
-    score = test_bm.build({})
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['in'] == 0
 
 
@@ -39,7 +39,7 @@ def test_town_hourly_out_cordon_score_zero():
         config,
         'car',
     )
-    score = test_bm.build({})
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['out'] == 0
 
 
@@ -49,7 +49,7 @@ def test_town_peak_in_cordon_score_zero():
         config,
         'car',
     )
-    score = test_bm.build({})
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['in'] == 0
 
 
@@ -59,7 +59,7 @@ def test_town_mode_share_score_zero():
         config,
         'all',
     )
-    score = test_bm.build({})
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['modeshare'] == 0
 
 

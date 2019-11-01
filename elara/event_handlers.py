@@ -120,14 +120,7 @@ class AgentWaitingTimes(EventHandlerTool):
 
         csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
 
-        if write_path:
-            csv_path = os.path.join(write_path, csv_name)
-        else:
-            csv_path = os.path.join(self.config.output_path, csv_name)
-
-        print(f"\nBUILD {write_path} {csv_path}")
-
-        self.waiting_time_log = ChunkWriter(csv_path)
+        self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_event(self, elem) -> None:
         """
@@ -713,16 +706,8 @@ class EventHandlerWorkStation(WorkStation):
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     geojson_name = "{}_{}.geojson".format(self.config.name, name)
 
-                    if write_path:
-                        csv_path = os.path.join(write_path, csv_name)
-                        geojson_path = os.path.join(write_path, geojson_name)
-                    else:
-                        csv_path = os.path.join(self.config.output_path, csv_name)
-                        geojson_path = os.path.join(self.config.output_path, geojson_name)
-
-                    # File exports
-                    gdf.drop("geometry", axis=1).to_csv(csv_path)
-                    export_geojson(gdf, geojson_path)
+                    self.write_csv(gdf, csv_name, write_path=write_path)
+                    self.write_geojson(gdf, geojson_name, write_path=write_path)
 
 
 def table_position(elem_indices, class_indices, periods, elem_id, attribute_class, time):
