@@ -76,10 +76,8 @@ class AgentTripLogs(PostProcessor):
         trips_df.reset_index(inplace=True)
 
         # Export results
-        csv_path = os.path.join(
-            self.config.output_path, "{}_trip_logs_{}.csv".format(self.config.name, mode)
-        )
-        trips_df.to_csv(csv_path)
+        csv_name = "{}_trip_logs_{}.csv".format(self.config.name, mode)
+        self.write_csv(trips_df, csv_name, write_path=write_path)
 
 
 class VKT(PostProcessor):
@@ -108,28 +106,11 @@ class VKT(PostProcessor):
         vkt = volumes.multiply(link_lengths, axis=0)
         vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
 
-        # Export results
-        if write_path:
-            csv_path = os.path.join(
-                write_path,
-                "{}_vkt_{}.csv".format(self.config.name, mode)
-            )
-            geojson_path = os.path.join(
-                write_path,
-                "{}_vkt_{}.geojson".format(self.config.name, mode),
-            )
-        else:
-            csv_path = os.path.join(
-                self.config.output_path,
-                "{}_vkt_{}.csv".format(self.config.name, mode)
-            )
-            geojson_path = os.path.join(
-                self.config.output_path,
-                "{}_vkt_{}.geojson".format(self.config.name, mode),
-            )
+        csv_name = "{}_vkt_{}.csv".format(self.config.name, mode)
+        geojson_name = "{}_vkt_{}.geojson".format(self.config.name, mode)
 
-        vkt_gdf.drop("geometry", axis=1).to_csv(csv_path)
-        export_geojson(vkt_gdf, geojson_path)
+        self.write_csv(vkt_gdf, csv_name, write_path=write_path)
+        self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
 
 
 def generate_period_headers(time_periods):

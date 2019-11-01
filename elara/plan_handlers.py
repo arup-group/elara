@@ -273,15 +273,8 @@ class AgentLogsHandler(PlanHandlerTool):
         activity_csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
         legs_csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
 
-        if write_path:
-            activity_csv_path = os.path.join(write_path, activity_csv_name)
-            legs_csv_path = os.path.join(write_path, legs_csv_name)
-        else:
-            activity_csv_path = os.path.join(self.config.output_path, activity_csv_name)
-            legs_csv_path = os.path.join(self.config.output_path, legs_csv_name)
-
-        self.activities_log = ChunkWriter(activity_csv_path)
-        self.legs_log = ChunkWriter(legs_csv_path)
+        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
+        self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path)
 
     def process_plans(self, elem):
 
@@ -445,13 +438,7 @@ class AgentPlansHandler(PlanHandlerTool):
         super().build(resources, write_path=write_path)
 
         csv_name = "{}_scores_log_{}.csv".format(self.config.name, self.option)
-
-        if write_path:
-            csv_path = os.path.join(write_path, csv_name)
-        else:
-            csv_path = os.path.join(self.config.output_path, csv_name)
-
-        self.plans_log = ChunkWriter(csv_path)
+        self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_plans(self, elem):
 
@@ -786,14 +773,7 @@ class PlanHandlerWorkStation(WorkStation):
                         spinner.text = f'{self} writing {name} results to disk.'
 
                     csv_name = "{}_{}.csv".format(self.config.name, name)
-
-                    if write_path:
-                        csv_path = os.path.join(write_path, csv_name)
-                    else:
-                        csv_path = os.path.join(self.config.output_path, csv_name)
-
-                    # File exports
-                    result.to_csv(csv_path, header=True)
+                    self.write_csv(result, csv_name, write_path=write_path)
 
     def __str__(self):
         return f'Plan Handling WorkStation'
