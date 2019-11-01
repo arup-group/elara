@@ -272,6 +272,7 @@ class AgentLogsHandler(PlanHandlerTool):
 
         activity_csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
         legs_csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+
         if write_path:
             activity_csv_path = os.path.join(write_path, activity_csv_name)
             legs_csv_path = os.path.join(write_path, legs_csv_name)
@@ -280,7 +281,7 @@ class AgentLogsHandler(PlanHandlerTool):
             legs_csv_path = os.path.join(self.config.output_path, legs_csv_name)
 
         self.activities_log = ChunkWriter(activity_csv_path)
-        self.legs_log = ChunkWriter(legs_csv_name)
+        self.legs_log = ChunkWriter(legs_csv_path)
 
     def process_plans(self, elem):
 
