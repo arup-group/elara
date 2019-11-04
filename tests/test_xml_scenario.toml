@@ -29,6 +29,6 @@ vkt = ["car"]
 test_town_cordon = ["car"]
 
 [outputs]
-path = "./tests/test_outputs"
+path = "./tests/test_intermediate_data"
 contract = true
 

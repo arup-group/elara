@@ -1,6 +1,9 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from halo import Halo
 import pandas as pd
+import geopandas as gpd
+import os
+import json
 
 
 # Define tools to be used by Sub Processes
@@ -56,6 +59,7 @@ class Tool:
     def build(
             self,
             resource: Dict[str, list],
+            write_path: Optional[str] = None
     ) -> None:
         """
         Default build self.
@@ -82,6 +86,93 @@ class Tool:
             if option in self.invalid_options:
                 raise UserWarning(f'Invalid option: {option} at tool: {self}')
         return option
+
+    def start_chunk_writer(self, csv_name: str, write_path=None):
+        """
+        Return a simple csv ChunkWriter, default to config path if write_path (used for testing)
+        not given.
+        """
+        if write_path:
+            path = os.path.join(write_path, csv_name)
+        else:
+            path = os.path.join(self.config.output_path, csv_name)
+
+        return ChunkWriter(path)
+
+    def write_csv(
+            self,
+            write_object: Union[pd.DataFrame, gpd.GeoDataFrame],
+            csv_name: str,
+            write_path=None
+    ):
+        """
+        Simple write to csv, default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            csv_path = os.path.join(write_path, csv_name)
+        else:
+            csv_path = os.path.join(self.config.output_path, csv_name)
+
+        # File exports
+        if isinstance(write_object, gpd.GeoDataFrame):
+            write_object.drop("geometry", axis=1).to_csv(csv_path, header=True)
+
+        elif isinstance(write_object, (pd.DataFrame, pd.Series)):
+            write_object.to_csv(csv_path, header=True)
+
+        else:
+            raise TypeError(f"don't know how to write object of type {type(write_object)} to csv")
+
+    def write_geojson(
+            self,
+            write_object: gpd.GeoDataFrame,
+            name: str,
+            write_path=None
+    ):
+        """
+        Simple write to geojson, default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            path = os.path.join(write_path, name)
+        else:
+            path = os.path.join(self.config.output_path, name)
+
+        # File exports
+        if isinstance(write_object, gpd.GeoDataFrame):
+            with open(path, "w") as file:
+                file.write(write_object.to_json())
+
+        else:
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to geojson"
+            )
+
+    def write_json(
+            self,
+            write_object: dict,
+            name: str,
+            write_path=None
+    ):
+        """
+        Simple write to json, default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            path = os.path.join(write_path, name)
+        else:
+            path = os.path.join(self.config.output_path, name)
+
+        # File exports
+        if isinstance(write_object, dict):
+            with open(path, 'w') as outfile:
+                json.dump(write_object, outfile)
+
+        else:
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to json"
+            )
 
 
 class WorkStation:
@@ -184,7 +275,6 @@ class WorkStation:
             if self.requirements:
                 for req, options in self.requirements.items():
                     if self.suppliers and options:
-
                         for s in self.suppliers:
                             if s.tools:
                                 for name, tool in s.tools.items():
@@ -224,7 +314,7 @@ class WorkStation:
                 reqs.append(manager.requirements)
         return combine_reqs(reqs)
 
-    def build(self, spinner=None):
+    def build(self, spinner=None, write_path=None):
         """
         Gather resources from suppliers for current workstation and build() all resources in
         order of .resources map.
@@ -241,7 +331,7 @@ class WorkStation:
             for tool_name, tool in self.resources.items():
                 if spinner:
                     spinner.text = f"Building {tool_name}."
-                tool.build(self.supplier_resources)
+                tool.build(self.supplier_resources, write_path)
 
     def load_all_tools(self, option=None) -> None:
         """
@@ -254,6 +344,81 @@ class WorkStation:
             if option is None and tool.valid_options is not None:
                 option = tool.valid_options[0]
             self.resources[name] = tool(self.config, option)
+
+    def write_csv(
+            self,
+            write_object: Union[pd.DataFrame, gpd.GeoDataFrame],
+            csv_name: str,
+            write_path=None
+    ):
+        """
+        Simple write to csv, default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            csv_path = os.path.join(write_path, csv_name)
+        else:
+            csv_path = os.path.join(self.config.output_path, csv_name)
+
+        # File exports
+        if isinstance(write_object, gpd.GeoDataFrame):
+            write_object.drop("geometry", axis=1).to_csv(csv_path, header=True)
+
+        elif isinstance(write_object, (pd.DataFrame, pd.Series)):
+            write_object.to_csv(csv_path, header=True)
+
+        else:
+            raise TypeError(f"don't know how to write object of type {type(write_object)} to csv")
+
+    def write_geojson(
+            self,
+            write_object: gpd.GeoDataFrame,
+            name: str,
+            write_path=None
+    ):
+        """
+        Simple write to geojson, default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            path = os.path.join(write_path, name)
+        else:
+            path = os.path.join(self.config.output_path, name)
+
+        # File exports
+        if isinstance(write_object, gpd.GeoDataFrame):
+            with open(path, "w") as file:
+                file.write(write_object.to_json())
+
+        else:
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to geojson"
+            )
+
+    def write_json(
+            self,
+            write_object: dict,
+            name: str,
+            write_path=None
+    ):
+        """
+        Simple write to json, default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            path = os.path.join(write_path, name)
+        else:
+            path = os.path.join(self.config.output_path, name)
+
+        # File exports
+        if isinstance(write_object, dict):
+            with open(path, 'w') as outfile:
+                json.dump(write_object, outfile)
+
+        else:
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to json"
+            )
 
 
 class ChunkWriter:
@@ -298,7 +463,7 @@ class ChunkWriter:
         self.write()
 
 
-def build(start_node: WorkStation, verbose=False) -> list:
+def build(start_node: WorkStation, verbose=False, write_path=None) -> list:
     """
     Main function for validating graph requirements, then initiating and building minimum resources.
 
@@ -368,7 +533,7 @@ def build(start_node: WorkStation, verbose=False) -> list:
     while return_queue:
         current = return_queue.pop(0)
         with Halo(text=f"Building {current}...", spinner="dots") as spinner:
-            current.build(spinner)
+            current.build(spinner, write_path=write_path)
             visited.append(current)
             spinner.succeed(f"{current} build completed.")
 

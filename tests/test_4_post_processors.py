@@ -8,9 +8,15 @@ from elara.config import Config, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.event_handlers import EventHandlerWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
-sys.path.append(os.path.abspath('../tests'))
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 def test_generate_period_headers():
@@ -60,12 +66,10 @@ def test_vkt_prerequisites(vkt_post_processor):
     assert vkt_post_processor.check_prerequisites()
 
 
-@pytest.mark.skip(reason=None)
 def test_vkt_build(vkt_post_processor, ):
-    vkt_post_processor.build(None)
+    vkt_post_processor.build(None, write_path=test_outputs)
 
 
-@pytest.mark.skip(reason=None)
 def test_post_process_workstation(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
@@ -75,19 +79,19 @@ def test_post_process_workstation(test_config, test_paths):
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
     event_workstation.load_all_tools(option='bus')
-    event_workstation.build()
+    event_workstation.build(write_path=test_outputs)
 
-    plan_workstation = PlanHandlerWorkStation(test_config)
-    plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
-    plan_workstation.build()
+    # plan_workstation = PlanHandlerWorkStation(test_config)
+    # plan_workstation.connect(managers=None, suppliers=[input_workstation])
+    # tool = plan_workstation.tools['mode_share']
+    # plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    # plan_workstation.build(write_path=test_outputs)
 
-    pp_workstation = postprocessing.PostProcessWorkStation(test_config)
-    pp_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
-    tool = pp_workstation.tools['vkt']
-    pp_workstation.resources['vkt'] = tool(test_config, 'bus')
-    pp_workstation.build()
+    # pp_workstation = postprocessing.PostProcessWorkStation(test_config)
+    # pp_workstation.connect(managers=None, suppliers=[event_workstation])
+    # tool = pp_workstation.tools['vkt']
+    # pp_workstation.resources['vkt'] = tool(test_config, 'bus')
+    # pp_workstation.build(write_path=test_outputs)
 
 
 

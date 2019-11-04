@@ -12,7 +12,14 @@ from elara import inputs
 from elara import event_handlers
 from elara.event_handlers import EventHandlerWorkStation
 
-sys.path.append(os.path.abspath('../tests'))
+test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+test_inputs = os.path.join(test_dir, "test_intermediate_data")
+test_outputs = os.path.join(test_dir, "test_outputs")
+if not os.path.exists(test_outputs):
+    os.mkdir(test_outputs)
+benchmarks_path = os.path.join(test_outputs, "benchmarks")
+if not os.path.exists(benchmarks_path):
+    os.mkdir(benchmarks_path)
 
 
 test_floor_data = [
@@ -54,7 +61,7 @@ def test_df(test_list):
 # Config
 @pytest.fixture
 def test_config():
-    config_path = os.path.join('tests/test_xml_scenario.toml')
+    config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
     config = Config(config_path)
     assert config
     return config
@@ -133,7 +140,7 @@ def gerry_waiting_event():
 def driver_enters_veh_event():
     time = 6.5 * 60 * 60 + (5 * 60)
     string = """
-        <event time="23700.0" type="PersonEntersVehicle" person="pt_bus1_Bus" vehicle="bus1"  />
+        <event time="23700.0" type="PersonEntersVehicle" person="pt_bus1_bus" vehicle="bus1"  />
         """
     return etree.fromstring(string)
 
@@ -163,7 +170,7 @@ def test_agent_waiting_times_log_handler(test_config, input_manager):
     handler = event_handlers.AgentWaitingTimes(test_config, 'all')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     return handler
 
@@ -224,7 +231,7 @@ def test_car_volume_count_handler(test_config, input_manager):
     handler = event_handlers.VolumeCounts(test_config, 'car')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     periods = 24
 
@@ -282,13 +289,13 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
-# Bus
+# bus
 @pytest.fixture
 def test_bus_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'Bus')
+    handler = event_handlers.VolumeCounts(test_config, 'bus')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     periods = 24
 
@@ -359,10 +366,10 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 # Passenger Counts Handler Tests
 @pytest.fixture
 def test_bus_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.PassengerCounts(test_config, 'Bus')
+    handler = event_handlers.PassengerCounts(test_config, 'bus')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     periods = 24
 
@@ -378,7 +385,7 @@ def test_bus_passenger_count_handler(test_config, input_manager):
 def driver_enters_veh_event():
     time = 6.5 * 60 * 60
     string = """
-        <event time="23400.0" type="PersonEntersVehicle" person="pt_bus1_Bus" vehicle="bus1" />
+        <event time="23400.0" type="PersonEntersVehicle" person="pt_bus1_bus" vehicle="bus1" />
         """
     return etree.fromstring(string)
 
@@ -499,10 +506,10 @@ def test_passenger_count_finalise_bus(
 # Stop Interactions
 @pytest.fixture
 def test_bus_passenger_interaction_handler(test_config, input_manager):
-    handler = event_handlers.StopInteractions(test_config, 'Bus')
+    handler = event_handlers.StopInteractions(test_config, 'bus')
 
     resources = input_manager.resources
-    handler.build(resources)
+    handler.build(resources, write_path=test_outputs)
 
     periods = 24
 
@@ -619,7 +626,6 @@ def test_stop_interaction_finalise_bus(
 
 
 # Event Handler Manager
-@pytest.mark.skip(reason=None)
 def test_load_event_handler_manager(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
@@ -628,8 +634,8 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='Bus')
-    event_workstation.build()
+    event_workstation.load_all_tools(option='bus')
+    event_workstation.build(write_path=test_outputs)
 
     for handler_name, handler in event_workstation.resources.items():
         for name, gdf in handler.result_gdfs.items():
