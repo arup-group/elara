@@ -14,8 +14,12 @@ class PlanHandlerTool(Tool):
     def __init__(self, config, option=None):
         super().__init__(config, option)
 
-    def build(self, resources: dict) -> None:
-        super().build(resources)
+    def build(
+            self,
+            resources: dict,
+            write_path=None) -> None:
+
+        super().build(resources, write_path)
 
     @staticmethod
     def generate_indices_map(list_in):
@@ -70,13 +74,13 @@ class ModeShareHandler(PlanHandlerTool):
     def __str__(self):
         return f'ModeShare'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path=None) -> None:
         """
         Build Handler.
         :param resources:
         :return:
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
         modes = self.resources['output_config'].modes + self.resources['transit_schedule'].modes
         if 'pt' in modes:
@@ -258,21 +262,19 @@ class AgentLogsHandler(PlanHandlerTool):
     def __str__(self):
         return f'LogHandler'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path=None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
         :return: None
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
-        csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
-        csv_path = os.path.join(self.config.output_path, csv_name)
-        self.activities_log = ChunkWriter(csv_path)
+        activity_csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
+        legs_csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
 
-        csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
-        csv_path = os.path.join(self.config.output_path, csv_name)
-        self.legs_log = ChunkWriter(csv_path)
+        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
+        self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path)
 
     def process_plans(self, elem):
 
@@ -383,7 +385,6 @@ class AgentLogsHandler(PlanHandlerTool):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
-
         self.activities_log.finish()
         self.legs_log.finish()
 
@@ -428,17 +429,16 @@ class AgentPlansHandler(PlanHandlerTool):
     def __str__(self):
         return f'ScoreHandler'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path=None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
         :return: None
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
         csv_name = "{}_scores_log_{}.csv".format(self.config.name, self.option)
-        csv_path = os.path.join(self.config.output_path, csv_name)
-        self.plans_log = ChunkWriter(csv_path)
+        self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_plans(self, elem):
 
@@ -629,13 +629,13 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
     def __str__(self):
         return f'AgentHighwayDistance)'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path=None) -> None:
         """
         Build Handler.
         :param resources: dict, resources from suppliers
         :return: None
         """
-        super().build(resources)
+        super().build(resources, write_path=write_path)
 
         self.agents = resources['agents']
         self.osm_ways = resources['osm:ways']
@@ -738,7 +738,7 @@ class PlanHandlerWorkStation(WorkStation):
         "highway_distances": AgentHighwayDistanceHandler,
     }
 
-    def build(self, spinner=None):
+    def build(self, spinner=None, write_path=None):
         """
         Build all required handlers, then finalise and save results.
         :return: None
@@ -753,8 +753,8 @@ class PlanHandlerWorkStation(WorkStation):
         # iterate through plans
         plans = self.supplier_resources['plans']
         for i, person in enumerate(plans.persons):
-            for event_handler in self.resources.values():
-                event_handler.process_plans(person)
+            for plan_handler in self.resources.values():
+                plan_handler.process_plans(person)
             if not i % 10000 and spinner:
                 spinner.text = f'{self} processed {i} plans.'
 
@@ -767,14 +767,13 @@ class PlanHandlerWorkStation(WorkStation):
             # if self.config.contract:
             #     handler.contract_results()
 
-            for name, result in handler.results.items():
-                if spinner:
-                    spinner.text = f'{self} writing {name} results to disk.'
-                csv_name = "{}_{}.csv".format(self.config.name, name)
-                csv_path = os.path.join(self.config.output_path, csv_name)
+            if handler.results:
+                for name, result in handler.results.items():
+                    if spinner:
+                        spinner.text = f'{self} writing {name} results to disk.'
 
-                # File exports
-                result.to_csv(csv_path, header=True)
+                    csv_name = "{}_{}.csv".format(self.config.name, name)
+                    self.write_csv(result, csv_name, write_path=write_path)
 
     def __str__(self):
         return f'Plan Handling WorkStation'

@@ -8,7 +8,7 @@ import gzip
 from io import BytesIO
 from math import floor
 from datetime import datetime, timedelta
-
+from typing import Dict, List, Union, Optional
 
 from elara.factory import WorkStation, Tool
 
@@ -20,7 +20,7 @@ class Events(Tool):
     requirements = ['events_path']
     elems = None
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Events object constructor.
         :param resources: GetPath resources from suppliers
@@ -38,7 +38,7 @@ class Network(Tool):
     node_gdf = None
     link_gdf = None
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Network object constructor.
         :param resources: dict, resources from suppliers
@@ -138,7 +138,7 @@ class OSMWays(Tool):
     lengths = None
     classes = None
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         OSM highway attribute map.
         :param resources: dict, resources from suppliers
@@ -183,7 +183,7 @@ class TransitSchedule(Tool):
     mode_map = None
     modes = None
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
@@ -281,7 +281,7 @@ class TransitVehicles(Tool):
     veh_id_veh_type_map = None
     transit_vehicle_counts = None
 
-    def build(self, resources):
+    def build(self, resources, write_path: Optional[str] = None):
         """
         Transit vehicles object constructor.
         :param path: Path to MATSim transit vehicles XML file (.xml)
@@ -337,7 +337,7 @@ class Agents(Tool):
     attribute_fields = None
     attributes_df = None
 
-    def build(self, resources: dict):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Population subpopulation attributes constructor.
         :param resources: dict, of resources from suppliers
@@ -386,7 +386,7 @@ class Attributes(Tool):
     classes = None
     attribute_count_map = None
 
-    def build(self, resources: dict):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Population subpopulation attribute constructor.
         :param resources: dict, of supplier resources.
@@ -430,7 +430,7 @@ class Plans(Tool):
     requirements = ['plans_path']
     plans = None
 
-    def build(self, resources: dict):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Plans object constructor.
         :param path: Path to MATSim events XML file (.xml)
@@ -454,7 +454,7 @@ class OutputConfig(Tool):
     activities = set()
     sub_populations = set()
 
-    def build(self, resources: dict):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Config object constructor.
         :param path: Path to MATSim events XML file (.xml)

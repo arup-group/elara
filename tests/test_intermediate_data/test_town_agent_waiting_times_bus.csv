@@ -1,0 +1,5 @@
+,agent_id,departure,duration,mode,prev_mode,stop,subpop,x,y
+0,gerry,27300,2022,bus,,home_stop_out,poor,-7.556468775892206,49.766840480865724
+1,fred,30900,2022,bus,,home_stop_out,poor,-7.556468775892206,49.766840480865724
+2,gerry,63303,3825,bus,,work_stop_out,poor,-7.418236964472031,49.77340708836448
+3,fred,63303,225,bus,,work_stop_out,poor,-7.418236964472031,49.77340708836448
