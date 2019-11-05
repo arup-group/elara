@@ -3,13 +3,6 @@ image: thinkwhere/gdal-python:3.6-ubuntu
 pipelines:
   default:
       - step:
-          deployment : test
-          script:
-            - pip install -r requirements.txt
-            - ./scripts/code-coverage.sh
-  branches:
-    master:
-      - step:
           deployment : production
           script:
             - apt-get update
