@@ -3,12 +3,10 @@ from lxml import etree
 import pandas as pd
 import pyproj
 from shapely.geometry import Point, LineString
-from shapely.ops import transform
 import gzip
 from io import BytesIO
 from math import floor
-from datetime import datetime, timedelta
-from typing import Dict, List, Union, Optional
+from typing import Optional
 
 from elara.factory import WorkStation, Tool
 
@@ -24,6 +22,7 @@ class Events(Tool):
         """
         Events object constructor.
         :param resources: GetPath resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -38,10 +37,12 @@ class Network(Tool):
     node_gdf = None
     link_gdf = None
 
-    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None, re_proj=True) -> None:
         """
         Network object constructor.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
+        :param re_proj: Boolean to allow/disallow re projection
         """
         super().build(resources)
 
@@ -49,15 +50,19 @@ class Network(Tool):
         crs = resources['crs'].path
 
         # Extract element properties
+        print('building nodes')
         nodes = [
             self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
+        print('building nodes lookup')
         node_lookup = {node["id"]: node for node in nodes}
+        print('building links')
         links = [
             self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
         # Generate empty geodataframes
+        print('building dfs')
         node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
         node_df.sort_index(inplace=True)
@@ -70,8 +75,11 @@ class Network(Tool):
         self.node_gdf.crs = {'init': crs}
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
         self.link_gdf.crs = {'init': crs}
-        self.node_gdf.to_crs(epsg=4326, inplace=True)
-        self.link_gdf.to_crs(epsg=4326, inplace=True)
+        if re_proj:
+            print('node crs')
+            self.node_gdf.to_crs(epsg=4326, inplace=True)
+            print('link crs')
+            self.link_gdf.to_crs(epsg=4326, inplace=True)
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -107,6 +115,7 @@ class Network(Tool):
         """
         Convert raw link XML element into dictionary.
         :param elem: Link XML element
+        :param node_lookup: node lookup dict
         :return: Equivalent dictionary with relevant fields
         """
         from_id = str(elem.get("from"))
@@ -142,6 +151,7 @@ class OSMWays(Tool):
         """
         OSM highway attribute map.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -187,6 +197,7 @@ class TransitSchedule(Tool):
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -224,7 +235,6 @@ class TransitSchedule(Tool):
         """
         Convert raw node XML element into dictionary.
         :param elem: Node XML element
-        :param crs: Original coordinate reference system code
         :return: Dictionary
         """
         x = float(elem.get("x"))
@@ -281,10 +291,11 @@ class TransitVehicles(Tool):
     veh_id_veh_type_map = None
     transit_vehicle_counts = None
 
-    def build(self, resources, write_path: Optional[str] = None):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Transit vehicles object constructor.
-        :param path: Path to MATSim transit vehicles XML file (.xml)
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -341,6 +352,7 @@ class Agents(Tool):
         """
         Population subpopulation attributes constructor.
         :param resources: dict, of resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -390,6 +402,7 @@ class Attributes(Tool):
         """
         Population subpopulation attribute constructor.
         :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
         """
         super().build(resources)
 
@@ -429,12 +442,13 @@ class Attributes(Tool):
 class Plans(Tool):
     requirements = ['plans_path']
     plans = None
+    persons = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Plans object constructor.
-        :param path: Path to MATSim events XML file (.xml)
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -442,8 +456,6 @@ class Plans(Tool):
 
         self.plans = get_elems(path, "plan")
         self.persons = get_elems(path, "person")
-
-        # self.agents = get_elems(path, "person")
 
 
 class OutputConfig(Tool):
@@ -457,8 +469,8 @@ class OutputConfig(Tool):
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Config object constructor.
-        :param path: Path to MATSim events XML file (.xml)
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -568,6 +580,7 @@ class InputsWorkStation(WorkStation):
 def get_elems(path, tag):
     """
     Wrapper for unzipping and dealing with xml namespaces
+    :param path: xml path string
     :param tag: The tag type to extract , e.g. 'link'
     :return: Generator of elements
     """

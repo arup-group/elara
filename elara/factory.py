@@ -64,6 +64,7 @@ class Tool:
         """
         Default build self.
         :param resource: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         for requirement in convert_to_unique_keys(self.get_requirements()):
@@ -279,7 +280,7 @@ class WorkStation:
                             if s.tools:
                                 for name, tool in s.tools.items():
                                     if req == name and not tool.options_enabled:
-                                        self.requirements[name] = None
+                                        self.requirements[name] = []
 
     def validate_suppliers(self) -> None:
         """
@@ -483,6 +484,7 @@ def build(start_node: WorkStation, verbose=False, write_path=None) -> list:
 
     :param start_node: starting workstation
     :param verbose: bool, verbose behaviour
+    :param write_path: Optional output path overwrite
     :return: list, sequence of visits for stages 2 (initiation and validation) and 3 (building)
     """
 
@@ -504,8 +506,8 @@ def build(start_node: WorkStation, verbose=False, write_path=None) -> list:
         print("*****************************************************************")
 
     # stage 2:
-    visited = []
-    queue = []
+    visited = list()
+    queue = list()
     queue.append(start_node)
     visited.append(start_node)
 

@@ -1,10 +1,10 @@
 import numpy as np
 from math import floor
 import pandas as pd
-import os
 from datetime import datetime, timedelta
+from typing import Optional
 
-from elara.factory import Tool, WorkStation, ChunkWriter
+from elara.factory import Tool, WorkStation
 
 
 class PlanHandlerTool(Tool):
@@ -77,8 +77,8 @@ class ModeShareHandler(PlanHandlerTool):
     def build(self, resources: dict, write_path=None) -> None:
         """
         Build Handler.
-        :param resources:
-        :return:
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources, write_path=write_path)
 
@@ -266,7 +266,7 @@ class AgentLogsHandler(PlanHandlerTool):
         """
         Build handler from resources.
         :param resources: dict, supplier resources
-        :return: None
+        :param write_path: Optional output path overwrite
         """
         super().build(resources, write_path=write_path)
 
@@ -301,6 +301,10 @@ class AgentLogsHandler(PlanHandlerTool):
                 arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
 
                 for stage in plan:
+
+                    end_dt = safe_strptime('00:00:00')  # will be assigned after first activity
+                    y = None
+                    x = None
 
                     if stage.tag == 'activity':
                         act_seq_idx += 1
@@ -433,6 +437,7 @@ class AgentPlansHandler(PlanHandlerTool):
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -473,6 +478,10 @@ class AgentPlansHandler(PlanHandlerTool):
             arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
 
             for stage in plan:
+
+                end_dt = safe_strptime('00:00:00')  # will be assigned after first activity
+                y = None
+                x = None
 
                 if stage.tag == 'activity':
                     act_seq_idx += 1
@@ -633,6 +642,7 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         """
         Build Handler.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -779,10 +789,10 @@ class PlanHandlerWorkStation(WorkStation):
         return f'Plan Handling WorkStation'
 
 
-def convert_time(t: str) -> int:
+def convert_time(t: str) -> Optional[int]:
     """
-    Convert MATSim output plan times into seconds
-
+    Convert MATSim output plan times into seconds.
+    If t is None, must return None.
     :param t: MATSim str time
     :return: seconds int
     """
