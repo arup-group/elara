@@ -224,10 +224,11 @@ class WorkStation:
         if self.tools:
             tools = list(self.tools)
 
-        return f"👉️ {self}:\n" \
-               f"   ⛓  Managers: {managers}\n" \
-               f"   🕸  Suppliers: {suppliers}\n" \
-               f"   🔧 Tooling: {tools}\n"
+        return "--------------------------------" \
+               f"{self}:\n" \
+               f"> Managers: {managers}\n" \
+               f"> Suppliers: {suppliers}\n" \
+               f"> Tooling: {tools}\n"
 
     def engage(self) -> None:
         """
