@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 from typing import Optional
+import logging
 
 from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
@@ -9,6 +10,8 @@ from elara import get_benchmark_data
 
 # TODO this module has some over complex operations on the input data...
 # TODO - needs tests and data validation
+
+logger = logging.getLogger(__name__)
 
 
 class Cordon(Tool):
@@ -29,6 +32,7 @@ class Cordon(Tool):
         :param config: Config object
         :param option: str, mode
         """
+        self.logger = logging.getLogger(__name__)
         super().__init__(config, option)
 
         self.cordon_counts = []
@@ -51,12 +55,17 @@ class Cordon(Tool):
                 links_df
             ))
 
+    # def __str__(self):
+    #     return f'{self.__class__}'
+
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
         :return: Dictionary of scores {'in': float, 'out': float}
         """
+
+        logger.info(f'building {self.__str__()}')
 
         # Build paths and load appropriate volume counts
         results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
@@ -109,6 +118,9 @@ class CordonCount(Tool):
         """
         df = links_df.loc[links_df.dir == direction_code, :]
         return list(set(df.link))
+
+    def __str__(self):
+        return 'f{cls}'
 
     def get_counts(self, counts_df):
         """
@@ -481,6 +493,7 @@ class BenchmarkWorkStation(WorkStation):
 
     def __init__(self, config):
         super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
         # Create output folder if it does not exist
         benchmark_dir = os.path.join(self.config.output_path, 'benchmarks')

@@ -1,12 +1,17 @@
 import os
 import geopandas
 import pandas as pd
+import logging
 
 from elara.factory import WorkStation, Tool
 
 
 class PostProcessor(Tool):
     options_enabled = True
+
+    def __init__(self, config, option=None):
+        self.logger = logging.getLogger(__name__)
+        super().__init__(config, option)
 
     @staticmethod
     def check_prerequisites():
@@ -140,6 +145,10 @@ class PostProcessWorkStation(WorkStation):
         'trip_logs': AgentTripLogs,
         'vkt': VKT,
     }
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
     def __str__(self):
         return f'PostProcessing WorkStation'

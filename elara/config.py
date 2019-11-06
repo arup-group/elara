@@ -1,6 +1,9 @@
 import os.path
 import toml
 from elara.factory import WorkStation, Tool
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Config:
@@ -10,6 +13,8 @@ class Config:
         Config object constructor.
         :param path: Path to scenario configuration TOML file
         """
+        self.logger = logging.getLogger(__name__)
+
         self.parsed_toml = toml.load(path, _dict=dict)
 
         # Scenario settings
@@ -130,7 +135,14 @@ class Config:
         return path
 
 
-class GetCRS(Tool):
+class PathTool(Tool):
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.logger = logging.getLogger(__name__)
+
+
+class GetCRS(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -138,7 +150,7 @@ class GetCRS(Tool):
         self.path = self.config.crs
 
 
-class GetEventsPath(Tool):
+class GetEventsPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -146,7 +158,7 @@ class GetEventsPath(Tool):
         self.path = self.config.events_path
 
 
-class GetPlansPath(Tool):
+class GetPlansPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -154,7 +166,7 @@ class GetPlansPath(Tool):
         self.path = self.config.plans_path
 
 
-class GetNetworkPath(Tool):
+class GetNetworkPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -162,7 +174,7 @@ class GetNetworkPath(Tool):
         self.path = self.config.network_path
 
 
-class GetAttributesPath(Tool):
+class GetAttributesPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -170,7 +182,7 @@ class GetAttributesPath(Tool):
         self.path = self.config.attributes_path
 
 
-class GetTransitSchedulePath(Tool):
+class GetTransitSchedulePath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -178,7 +190,7 @@ class GetTransitSchedulePath(Tool):
         self.path = self.config.transit_schedule_path
 
 
-class GetTransitVehiclesPath(Tool):
+class GetTransitVehiclesPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -186,7 +198,7 @@ class GetTransitVehiclesPath(Tool):
         self.path = self.config.transit_vehicles_path
 
 
-class GetOutputConfigPath(Tool):
+class GetOutputConfigPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -206,13 +218,21 @@ class PathFinderWorkStation(WorkStation):
         'output_config_path': GetOutputConfigPath,
     }
 
-    def __str__(self):
-        return f'PathFinder WorkStation'
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
+
+    # def __str__(self):
+    #     return f'PathFinder WorkStation'
 
 
 class RequirementsWorkStation(WorkStation):
 
     tools = None
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
     def gather_manager_requirements(self):
         reqs = {}
@@ -222,5 +242,5 @@ class RequirementsWorkStation(WorkStation):
         reqs.update(self.config.benchmarks)
         return reqs
 
-    def __str__(self):
-        return f'Requirements WorkStation'
+    # def __str__(self):
+    #     return f'Requirements WorkStation'

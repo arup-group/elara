@@ -3,6 +3,7 @@ from math import floor
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Optional
+import logging
 
 from elara.factory import Tool, WorkStation
 
@@ -12,6 +13,7 @@ class PlanHandlerTool(Tool):
     Base Tool class for Plan Handling.
     """
     def __init__(self, config, option=None):
+        self.logger = logging.getLogger(__name__)
         super().__init__(config, option)
 
     def build(
@@ -748,7 +750,11 @@ class PlanHandlerWorkStation(WorkStation):
         "highway_distances": AgentHighwayDistanceHandler,
     }
 
-    def build(self, spinner=None, write_path=None):
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
+
+    def build(self, write_path=None):
         """
         Build all required handlers, then finalise and save results.
         :return: None
@@ -758,35 +764,31 @@ class PlanHandlerWorkStation(WorkStation):
             return None
 
         # build tools
-        super().build(spinner)
+        super().build()
 
         # iterate through plans
         plans = self.supplier_resources['plans']
+        self.logger.info(f'***Commencing Plans Iteration***')
         for i, person in enumerate(plans.persons):
             for plan_handler in self.resources.values():
                 plan_handler.process_plans(person)
-            if not i % 10000 and spinner:
-                spinner.text = f'{self} processed {i} plans.'
 
         # finalise
         # Generate event file outputs
         for handler_name, handler in self.resources.items():
-            if spinner:
-                spinner.text = f'{self} finalising {handler_name}.'
+            self.logger.info(f'Finalising {handler.__str__()}')
             handler.finalise()
             # if self.config.contract:
             #     handler.contract_results()
 
             if handler.results:
+                self.logger.info(f'Writing results from {handler.__str__()}')
                 for name, result in handler.results.items():
-                    if spinner:
-                        spinner.text = f'{self} writing {name} results to disk.'
-
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     self.write_csv(result, csv_name, write_path=write_path)
-
-    def __str__(self):
-        return f'Plan Handling WorkStation'
+    #
+    # def __str__(self):
+    #     return f'Plan Handling WorkStation'
 
 
 def convert_time(t: str) -> Optional[int]:

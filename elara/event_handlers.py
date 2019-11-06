@@ -3,9 +3,13 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 from typing import Union, Tuple, Optional
+import logging
+from halo import Halo
 
 
 from elara.factory import WorkStation, Tool
+
+logger = logging.getLogger(__name__)
 
 
 class EventHandlerTool(Tool):
@@ -14,10 +18,17 @@ class EventHandlerTool(Tool):
     """
     result_gdfs = dict()
 
+    def __init__(self, config, option=None):
+        self.logger = logging.getLogger(__name__)
+        super().__init__(config, option)
+
     def build(
             self,
             resources: dict,
             write_path=None) -> None:
+
+        # logger.info(f'Building {self.__str__()}')
+
         super().build(resources, write_path)
 
     @staticmethod
@@ -104,8 +115,8 @@ class AgentWaitingTimes(EventHandlerTool):
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
-    def __str__(self):
-        return f'AgentWaitingTimes'
+    # def __str__(self):
+    #     return f'{self.__class__}'
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -114,6 +125,8 @@ class AgentWaitingTimes(EventHandlerTool):
         :param write_path: Optional output path overwrite
         :return: None
         """
+        # self.logger.info(f'Building {self.__str__}')
+
         super().build(resources, write_path=write_path)
 
         csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
@@ -250,8 +263,8 @@ class VolumeCounts(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def __str__(self):
-        return f'VolumeCounts'
+    # def __str__(self):
+    #     return f'VolumeCounts'
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -374,8 +387,8 @@ class PassengerCounts(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def __str__(self):
-        return f'PassengerCounts'
+    # def __str__(self):
+    #     return f'PassengerCounts'
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -533,8 +546,8 @@ class StopInteractions(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def __str__(self):
-        return f'StopInteractions'
+    # def __str__(self):
+    #     return f'StopInteractions'
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -669,41 +682,46 @@ class EventHandlerWorkStation(WorkStation):
         "waiting_times": AgentWaitingTimes,
     }
 
-    def __str__(self):
-        return f'Events Handler WorkStation'
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
-    def build(self, spinner=None, write_path=None) -> None:
+    # def __str__(self):
+    #     return f'Events Handler WorkStation'
+
+    def build(self, write_path=None) -> None:
         """
         Build all required handlers, then finalise and save results.
+        :param write_path: Optional output path overwrite
         :return: None
         """
+        # self.logger.info(f"Building {self.__str__()}.")
+
         if not self.resources:
             return None
 
         # build tools
-        super().build(spinner, write_path=write_path)
+        super().build(write_path=write_path)
 
         # iterate through events
         events = self.supplier_resources['events']
+        self.logger.info('***Commencing Event Iteration***')
         for i, event in enumerate(events.elems):
             for event_handler in self.resources.values():
                 event_handler.process_event(event)
-            if not i % 10000 and spinner:
-                spinner.text = f'{self} processed {i} events.'
 
         # finalise
         # Generate event file outputs
         for handler_name, event_handler in self.resources.items():
-            if spinner:
-                spinner.text = f'{self} finalising {handler_name}.'
+            self.logger.info(f'Finalising {event_handler.__str__()}')
             event_handler.finalise()
             if self.config.contract:
+                self.logger.info(f'Contracting {event_handler.__str__()}')
                 event_handler.contract_results()
 
             if event_handler.result_gdfs:
+                self.logger.info(f'Writing results for {event_handler.__str__()}')
                 for name, gdf in event_handler.result_gdfs.items():
-                    if spinner:
-                        spinner.text = f'{self} writing {name} results to disk.'
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     geojson_name = "{}_{}.geojson".format(self.config.name, name)
 
