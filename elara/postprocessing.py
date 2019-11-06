@@ -8,7 +8,8 @@ from elara.factory import WorkStation, Tool
 class PostProcessor(Tool):
     options_enabled = True
 
-    def check_prerequisites(self):
+    @staticmethod
+    def check_prerequisites():
         return NotImplementedError
 
     def build(self, resource, write_path=None):
@@ -133,10 +134,6 @@ def export_geojson(gdf, path):
         file.write(gdf.to_json())
 
 
-# # Dictionary used to map configuration string to post-processor type
-# POST_PROCESSOR_MAP = {"vkt": VKT}
-
-
 class PostProcessWorkStation(WorkStation):
 
     tools = {
@@ -146,4 +143,3 @@ class PostProcessWorkStation(WorkStation):
 
     def __str__(self):
         return f'PostProcessing WorkStation'
-

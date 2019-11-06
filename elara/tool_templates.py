@@ -8,6 +8,8 @@ Template Tools for WorkStations:
 6) TemplateBenchmark
 """
 
+from typing import Optional
+
 from elara.factory import Tool
 from elara.event_handlers import EventHandlerTool
 from elara.plan_handlers import PlanHandlerTool
@@ -23,7 +25,7 @@ class TemplateGetConfig(Tool):
 
     path = None
 
-    def build(self, resource: dict):
+    def build(self, resource: dict, write_path: Optional[str] = None):
         # base tool build
         super().build(resource)
         # retrieve item from config
@@ -41,10 +43,11 @@ class TemplateInput(Tool):
     data_1 = None
     data_2 = None
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Input object constructor.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         """
 
         # build base tool
@@ -86,10 +89,11 @@ class TemplateEventHandler(EventHandlerTool):
     def __str__(self):
         return f'<INSERT NAME> mode: {self.option}'
 
-    def build(self, resources: dict) -> None:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources)
@@ -147,19 +151,22 @@ class TemplatePostProcessor(PostProcessor):
     def __init__(self, config, option) -> None:
         """
         Optional pre processing at init (for validation/early fail)
+        :param config: Config object
+        :param option: str, mode
         """
         super().__init__(config, option)
 
         # prepare post processor
 
-    def build(self, resource: dict):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Build post processed output:
         1. read output from required handler.
         2. and/or consider requirement resources.
         3. Post process
         4. save to disk
-        :param resource:
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
 
@@ -186,17 +193,19 @@ class TemplateBenchmark(Tool):
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
-        :param name: String, cordon name
-        :param config: Config
+        :param config: Config object
+        :param option: str, mode
         """
         super().__init__(config, option)
 
         # prepare benchmark
 
-    def build(self, resource: dict) -> dict:
+    def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: Dictionary of scores {'in': float, 'out': float}
         """
 

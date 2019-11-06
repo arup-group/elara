@@ -224,4 +224,3 @@ class RequirementsWorkStation(WorkStation):
 
     def __str__(self):
         return f'Requirements WorkStation'
-

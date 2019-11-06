@@ -2,11 +2,10 @@ from math import floor
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import os
 from typing import Union, Tuple, Optional
 
 
-from elara.factory import WorkStation, Tool, ChunkWriter
+from elara.factory import WorkStation, Tool
 
 
 class EventHandlerTool(Tool):
@@ -50,8 +49,6 @@ class EventHandlerTool(Tool):
             ]
         else:
             return "car"
-
-        #return self.resources['transit_vehicles'].veh_id_veh_type_map.get(vehicle_id, "car")
 
     def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -114,6 +111,7 @@ class AgentWaitingTimes(EventHandlerTool):
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -259,6 +257,7 @@ class VolumeCounts(EventHandlerTool):
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -382,6 +381,7 @@ class PassengerCounts(EventHandlerTool):
         """
         Build Handler.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -539,7 +539,8 @@ class StopInteractions(EventHandlerTool):
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler.
-        :param resources: dict, supplier resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
