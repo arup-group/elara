@@ -1,6 +1,8 @@
 import os.path
 
 import click
+import logging
+import sys
 
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
@@ -33,8 +35,26 @@ def main(config):
         3) build all resulting graph requirements
     :param config: Session configuration object
     """
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    # create a file handler
+    handler = logging.FileHandler('temp.log')
+    handler.setLevel(logging.INFO)
+
+    # create a logging format
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+
+    # add the file handler to the logger
+    logger.addHandler(handler)
+
+    logger.info('Starting')
+
     # Create output folder if it does not exist
     if not os.path.exists(config.output_path):
+        logger.info(f'Creating new output directory {config.output_path}')
         os.makedirs(config.output_path)
 
     # 1: Define Work Stations
@@ -77,4 +97,6 @@ def main(config):
     )
 
     # 3: Build all requirements
-    factory.build(config_requirements, verbose=config.verbose)
+    factory.build(config_requirements)
+
+    logger.info('Done')

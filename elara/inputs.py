@@ -7,6 +7,7 @@ import gzip
 from io import BytesIO
 from math import floor
 from typing import Optional
+import logging
 
 from elara.factory import WorkStation, Tool
 
@@ -17,6 +18,10 @@ class Events(Tool):
 
     requirements = ['events_path']
     elems = None
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.logger = logging.getLogger(__name__)
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -50,19 +55,15 @@ class Network(Tool):
         crs = resources['crs'].path
 
         # Extract element properties
-        print('building nodes')
         nodes = [
             self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
-        print('building nodes lookup')
         node_lookup = {node["id"]: node for node in nodes}
-        print('building links')
         links = [
             self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
         # Generate empty geodataframes
-        print('building dfs')
         node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
         node_df.sort_index(inplace=True)
@@ -76,9 +77,7 @@ class Network(Tool):
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
         self.link_gdf.crs = {'init': crs}
         if re_proj:
-            print('node crs')
             self.node_gdf.to_crs(epsg=4326, inplace=True)
-            print('link crs')
             self.link_gdf.to_crs(epsg=4326, inplace=True)
 
     @staticmethod
@@ -573,8 +572,12 @@ class InputsWorkStation(WorkStation):
         'mode_hierarchy': ModeHierarchy,
     }
 
-    def __str__(self):
-        return f'Inputs WorkStation'
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
+
+    # def __str__(self):
+    #     return f'Inputs WorkStation'
 
 
 def get_elems(path, tag):
