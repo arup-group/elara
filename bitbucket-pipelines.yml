@@ -5,6 +5,13 @@ pipelines:
       - step:
           deployment : production
           script:
+            - apt-get update
+            - apt-get install -y zip
+            - apt-get install ca-certificates
+            - export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+            - pip install awscli==1.16.164
             - pip install -r requirements.txt
             - ./scripts/code-coverage.sh
             - echo $BITBUCKET_COMMIT > release
+            - zip -r app.zip .
+            - aws s3 cp app.zip s3://arup-arup-ukimea-tcs-dev-test-code/$BITBUCKET_REPO_SLUG.zip
