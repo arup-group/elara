@@ -32,6 +32,9 @@ pip3 install git+https://github.com/jswhit/pyproj.git
 
 On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj`` wheel within your environment using pip.  
 
+We require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
+between coordinate reference systems.
+
 ## Tests
 
 
@@ -44,6 +47,15 @@ On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https:
 To generate XML & HTML coverage reports to `reports/coverage`:
 
     ./scripts/code-coverage.sh
+    
+### Debug
+
+Logging level can be set in the config, or otherwise defaults to False (INFO). We currently 
+support the following levels: DEBUG, INFO, WARN/WARNING
+
+Note that the configured or default logging level can be overwritten using an env variable:
+
+    export ELARA_LOGGINGLEVEL='True'
 
 
 ## About
@@ -94,7 +106,7 @@ name = "test_town"
 time_periods = 24
 scale_factor = 0.01
 crs = "EPSG:27700"
-verbose = true
+verbose = INFO
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
