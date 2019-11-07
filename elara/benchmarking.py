@@ -14,7 +14,14 @@ from elara import get_benchmark_data
 logger = logging.getLogger(__name__)
 
 
-class Cordon(Tool):
+class BenchmarkTool(Tool):
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.logger = logging.getLogger(__name__)
+
+
+class Cordon(BenchmarkTool):
 
     cordon_counter = None
     benchmark_path = None
@@ -32,7 +39,6 @@ class Cordon(Tool):
         :param config: Config object
         :param option: str, mode
         """
-        self.logger = logging.getLogger(__name__)
         super().__init__(config, option)
 
         self.cordon_counts = []
@@ -54,9 +60,6 @@ class Cordon(Tool):
                 counts_df,
                 links_df
             ))
-
-    # def __str__(self):
-    #     return f'{self.__class__}'
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -82,7 +85,7 @@ class Cordon(Tool):
         return scores
 
 
-class CordonCount(Tool):
+class CordonCount(BenchmarkTool):
 
     def __init__(self, parent, direction_name, dir_code, counts_df,
                  links_df):
@@ -95,6 +98,7 @@ class CordonCount(Tool):
         :param links_df: DataFrame of cordon-count to links
         """
         super().__init__(config=None, option=None)
+
         self.cordon_name = parent.name
         self.config = parent.config
         self.year = parent.year
@@ -310,7 +314,7 @@ class PeriodCordonCount(CordonCount):
         return np.absolute(result - count) / count
 
 
-class ModeStats(Tool):
+class ModeStats(BenchmarkTool):
 
     benchmark_path = None
 
@@ -517,12 +521,12 @@ class BenchmarkWorkStation(WorkStation):
                            }
             summary[benchmark_name] = sub_summary
 
-            for name, s in scores.items():
-                print("SCORING:")
-                print(name)
-                print(s)
-                flat_summary.append([benchmark_name, name, s])
-                self.meta_score += (s * weight)
+            for name, score in scores.items():
+                self.logger.info(f' *** {benchmark_name} {name} = {score} *** ')
+                flat_summary.append([benchmark_name, name, score])
+                self.meta_score += (score * weight)
+
+        self.logger.info(f' *** Meta Score = {self.meta_score} ***')
 
         # Write scores
         csv_name = 'benchmark_scores.csv'
@@ -535,6 +539,3 @@ class BenchmarkWorkStation(WorkStation):
         json_name = 'benchmark_scores.json'
         json_path = os.path.join('benchmarks', json_name)
         self.write_json(summary, json_path, write_path=write_path)
-
-    def __str__(self):
-        return f'Benchmarking WorkStation'

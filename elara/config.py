@@ -15,33 +15,66 @@ class Config:
         """
         self.logger = logging.getLogger(__name__)
 
+        self.logger.debug(f'Loading config from {path}')
         self.parsed_toml = toml.load(path, _dict=dict)
 
         # Scenario settings
+        self.logger.debug(f'Loading scenario settings from config')
+
         self.name = self.parsed_toml["scenario"]["name"]
+        self.logger.debug(f'Scenario name = {self.name}')
+
         self.time_periods = self.valid_time_periods(
             self.parsed_toml["scenario"]["time_periods"]
         )
+        self.logger.debug(f'Scenario time periods = {self.time_periods}')
+
         self.scale_factor = self.valid_scale_factor(
             self.parsed_toml["scenario"]["scale_factor"]
         )
-        self.verbose = self.parsed_toml["scenario"].get("verbose", False)
+        self.logger.debug(f'Scale factor = {self.scale_factor}')
+
+        self.logging = self.valid_verbosity(
+            self.parsed_toml["scenario"].get("verbose", False)
+        )
+
+        env_level = os.environ.get('ELARA_LOGLEVEL', False)
+        if env_level:
+            self.logging = self.valid_verbosity(env_level)
+            self.logger.warning(f'***Config logging level overwritten by env to {env_level}***')
+        self.logger.debug(f'Verbosity/logging = {self.logging}')
 
         # Factory requirements
+        self.logger.debug(f'Loading factory build requirements from config')
+
         self.event_handlers = self.parsed_toml.get("event_handlers", {})
+        self.logger.debug(f'Required Event Handlers = {self.event_handlers}')
+
         self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
+        self.logger.debug(f'Required Plan Handlers = {self.plan_handlers}')
+
         self.post_processors = self.parsed_toml.get("post_processors", {})
+        self.logger.debug(f'Required Post Processors = {self.post_processors}')
+
         self.benchmarks = self.parsed_toml.get("benchmarks", {})
+        self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
 
         # Output settings
+        self.logger.debug(f'Loading output settings from config')
+
         self.output_path = self.parsed_toml["outputs"]["path"]
+        self.logger.debug(f'Output Path = {self.output_path}')
+
         self.contract = self.parsed_toml["outputs"].get("contract", False)
+        self.logger.debug(f'Contract = {self.contract}')
 
         if not os.path.exists(self.output_path):
+            self.logger.info(f'Creating output path: {self.output_path}')
             os.mkdir(self.output_path)
             
         benchmarks_path = os.path.join(self.output_path, "benchmarks")
         if not os.path.exists(benchmarks_path):
+            self.logger.info(f'Creating output path: {benchmarks_path}')
             os.mkdir(benchmarks_path)
 
     @property
@@ -134,6 +167,25 @@ class Config:
             raise Exception("Specified path for {} does not exist".format(field_name))
         return path
 
+    @staticmethod
+    def valid_verbosity(inp):
+        """
+        Raise exception if specified verbosity does not exist, otherwise return logging level.
+        :param inp: Proposed logging level
+        :return: logging level
+        """
+        options = {
+            'true': logging.DEBUG,
+            'false': logging.INFO,
+            'info': logging.INFO,
+            'debug': logging.DEBUG,
+            'warn': logging.WARN,
+            'warning': logging.WARNING
+        }
+        if not str(inp).lower() in options:
+            raise Exception(f"Config verbosity/logging level must be one of: {options.keys()}")
+        return options[str(inp).lower()]
+
 
 class PathTool(Tool):
 
@@ -222,9 +274,6 @@ class PathFinderWorkStation(WorkStation):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
 
-    # def __str__(self):
-    #     return f'PathFinder WorkStation'
-
 
 class RequirementsWorkStation(WorkStation):
 
@@ -241,6 +290,3 @@ class RequirementsWorkStation(WorkStation):
         reqs.update(self.config.post_processors)
         reqs.update(self.config.benchmarks)
         return reqs
-
-    # def __str__(self):
-    #     return f'Requirements WorkStation'

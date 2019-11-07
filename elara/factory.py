@@ -1,5 +1,4 @@
 from typing import Dict, List, Union, Optional
-from halo import Halo
 import pandas as pd
 import geopandas as gpd
 import os
@@ -7,10 +6,9 @@ import json
 import logging
 
 
-# Define tools to be used by Sub Processes
 class Tool:
     """
-    Base tool class, defines basic behaviour for all tools at each Workstation.
+    Base Tool class, defines basic behaviour for all tools at each Workstation.
     Values:
         .requirements: list, of requirements that that must be provided by suppliers.
         .options_enabled: bool, for if requirements should carry through manager options.
@@ -40,7 +38,6 @@ class Tool:
         """
         self.config = config
         self.option = self._validate_option(option)
-        self.logger = logging.getLogger(__name__)
 
     def __str__(self):
         return f'{self.__class__}'
@@ -51,7 +48,7 @@ class Tool:
         Returns None if .option is None.
         :return: dict of requirements
         """
-        self.logger.debug(f'getting requirements for {self.__str__}')
+        self.logger.debug(f'getting requirements for {self.__str__()}')
 
         if not self.requirements:
             return None
@@ -74,7 +71,8 @@ class Tool:
         :param write_path: Optional output path overwrite
         :return: None
         """
-        self.logger.info(f'Building {self.__str__()}')
+        self.logger.info(f'Building Tool {self.__str__()}')
+        self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
 
         for requirement in convert_to_unique_keys(self.get_requirements()):
             if requirement not in list(resource):
@@ -121,7 +119,7 @@ class Tool:
 
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
-            self.logger.info(f'writing to {csv_path}')
+            self.logger.warning(f'path overwritten to {csv_path}')
         else:
             csv_path = os.path.join(self.config.output_path, csv_name)
             self.logger.info(f'writing to {csv_path}')
@@ -148,7 +146,7 @@ class Tool:
 
         if write_path:
             path = os.path.join(write_path, name)
-            self.logger.info(f'writing to {path}')
+            self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
             self.logger.info(f'writing to {path}')
@@ -175,7 +173,7 @@ class Tool:
 
         if write_path:
             path = os.path.join(write_path, name)
-            self.logger.info(f'writing to {path}')
+            self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
             self.logger.info(f'writing to {path}')
@@ -235,17 +233,21 @@ class WorkStation:
         self.suppliers = suppliers
 
     def display_string(self):
-        managers, suppliers, tools = "-None-", "-None-", "-None-"
+        managers, suppliers, tools = ["-None-"], ["-None-"], ["-None-"]
         if self.managers:
-            managers = str([str(m) for m in list(self.managers)])
+            managers = [str(m) for m in list(self.managers)]
         if self.suppliers:
-            suppliers = str([str(s) for s in list(self.suppliers)])
+            suppliers = [str(s) for s in list(self.suppliers)]
         if self.tools:
             tools = list(self.tools)
 
-        self.logger.info(f'init {self}: Managers: {managers}')
-        self.logger.info(f'init {self}: Suppliers: {suppliers}')
-        self.logger.info(f'init {self}: Tooling: {tools}')
+        self.logger.info(f' *** Created {self}')
+        for manager in managers:
+            self.logger.info(f'   * Manager: {manager}')
+        for supplier in suppliers:
+            self.logger.info(f'   * Supplier: {supplier}')
+        for tool in tools:
+            self.logger.info(f'   * Tooling: {tool}')
 
     def engage(self) -> None:
         """
@@ -273,9 +275,10 @@ class WorkStation:
                     if manager_requirement == tool_name:
                         if options:
                             for option in options:
-                                # init
+                                # build unique key for tool initiated with option
                                 key = str(tool_name) + ':' + str(option)
                                 self.resources[key] = tool(self.config, option)
+
                                 tool_requirements = self.resources[key].get_requirements()
                                 all_requirements.append(tool_requirements)
                         else:
@@ -341,7 +344,7 @@ class WorkStation:
         :param write_path: Optional output path overwrite
         :return: None
         """
-        self.logger.info(f'Building {self.__str__()}')
+        self.logger.info(f'Building Workstation {self.__str__()}')
 
         # gather resources
         if self.suppliers:
@@ -378,8 +381,10 @@ class WorkStation:
 
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
+            self.logger.warning(f'path overwritten to {write_path}')
         else:
             csv_path = os.path.join(self.config.output_path, csv_name)
+            self.logger.info(f'Writing to {csv_path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -403,8 +408,10 @@ class WorkStation:
 
         if write_path:
             path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {write_path}')
         else:
             path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'Writing to {path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -428,8 +435,10 @@ class WorkStation:
 
         if write_path:
             path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {write_path}')
         else:
             path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'Writing to {path}')
 
         # File exports
         if isinstance(write_object, dict):
@@ -447,12 +456,15 @@ class ChunkWriter:
     Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
     """
 
-    def __init__(self, path, chunksize=1000) -> None:
+    def __init__(self, path, chunksize=10000) -> None:
         self.path = path
         self.chunksize = chunksize
 
         self.chunk = []
         self.idx = 0
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
 
     def add(self, lines: list) -> None:
         """
@@ -482,6 +494,7 @@ class ChunkWriter:
 
     def finish(self) -> None:
         self.write()
+        self.logger.info(f'Chunkwriter finished for {self.path}')
 
 
 def build(start_node: WorkStation, write_path=None) -> list:

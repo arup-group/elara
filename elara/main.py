@@ -35,20 +35,13 @@ def main(config):
         3) build all resulting graph requirements
     :param config: Session configuration object
     """
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+    logging.basicConfig(
+        level=config.logging,
+        format='%(asctime)s %(name)-12s %(levelname)-3s %(message)s',
+        datefmt='%m-%d %H:%M'
+    )
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    # create a file handler
-    handler = logging.FileHandler('temp.log')
-    handler.setLevel(logging.INFO)
-
-    # create a logging format
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-
-    # add the file handler to the logger
-    logger.addHandler(handler)
 
     logger.info('Starting')
 

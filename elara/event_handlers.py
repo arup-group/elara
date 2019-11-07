@@ -115,9 +115,6 @@ class AgentWaitingTimes(EventHandlerTool):
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
-    # def __str__(self):
-    #     return f'{self.__class__}'
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
@@ -278,6 +275,7 @@ class VolumeCounts(EventHandlerTool):
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
             self.resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
@@ -387,9 +385,6 @@ class PassengerCounts(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    # def __str__(self):
-    #     return f'PassengerCounts'
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build Handler.
@@ -405,6 +400,7 @@ class PassengerCounts(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
@@ -546,9 +542,6 @@ class StopInteractions(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    # def __str__(self):
-    #     return f'StopInteractions'
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler.
@@ -564,6 +557,7 @@ class StopInteractions(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
@@ -686,18 +680,15 @@ class EventHandlerWorkStation(WorkStation):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
 
-    # def __str__(self):
-    #     return f'Events Handler WorkStation'
-
     def build(self, write_path=None) -> None:
         """
         Build all required handlers, then finalise and save results.
         :param write_path: Optional output path overwrite
         :return: None
         """
-        # self.logger.info(f"Building {self.__str__()}.")
 
         if not self.resources:
+            self.logger.warning(f'{self.__str__} has no resources, build returning None.')
             return None
 
         # build tools
@@ -706,22 +697,37 @@ class EventHandlerWorkStation(WorkStation):
         # iterate through events
         events = self.supplier_resources['events']
         self.logger.info('***Commencing Event Iteration***')
+        base = 1
+
         for i, event in enumerate(events.elems):
-            for event_handler in self.resources.values():
-                event_handler.process_event(event)
+
+            if not (i+1) % base:
+                self.logger.info(f'parsed {i + 1} events')
+                base *= 2
+
+            for handler in self.resources.values():
+                handler.process_event(event)
+
+        self.logger.info('*** Completed Event Iteration ***')
 
         # finalise
         # Generate event file outputs
-        for handler_name, event_handler in self.resources.items():
-            self.logger.info(f'Finalising {event_handler.__str__()}')
-            event_handler.finalise()
-            if self.config.contract:
-                self.logger.info(f'Contracting {event_handler.__str__()}')
-                event_handler.contract_results()
+        self.logger.debug(f'{self.__str__()} .resources = {self.resources}')
 
-            if event_handler.result_gdfs:
-                self.logger.info(f'Writing results for {event_handler.__str__()}')
-                for name, gdf in event_handler.result_gdfs.items():
+        for handler_name, handler in self.resources.items():
+            self.logger.info(f'Finalising {handler.__str__()}')
+            handler.finalise()
+
+            if self.config.contract:
+                self.logger.info(f'Contracting {handler.__str__()}')
+                handler.contract_results()
+
+            self.logger.debug(f'{len(handler.result_gdfs)} result_gdfs at {handler.__str__()}')
+
+            if handler.result_gdfs:
+                self.logger.info(f'Writing results for {handler.__str__()}')
+
+                for name, gdf in handler.result_gdfs.items():
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     geojson_name = "{}_{}.geojson".format(self.config.name, name)
 
