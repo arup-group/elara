@@ -87,9 +87,12 @@ class ModeShareHandler(PlanHandlerTool):
         modes = self.resources['output_config'].modes + self.resources['transit_schedule'].modes
         if 'pt' in modes:
             modes.remove('pt')
+        self.logger.debug(f'modes = {modes}')
 
         activities = self.resources['output_config'].activities
+        self.logger.debug(f'activities = {activities}')
         sub_populations = self.resources['output_config'].sub_populations
+        self.logger.debug(f'sub_populations = {sub_populations}')
 
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(modes)
@@ -761,6 +764,7 @@ class PlanHandlerWorkStation(WorkStation):
         """
 
         if not self.resources:
+            self.logger.warning(f'{self.__str__} has no resources, build returning None.')
             return None
 
         # build tools
@@ -768,27 +772,36 @@ class PlanHandlerWorkStation(WorkStation):
 
         # iterate through plans
         plans = self.supplier_resources['plans']
-        self.logger.info(f'***Commencing Plans Iteration***')
+        self.logger.info(f' *** Commencing Plans Iteration ***')
+        base = 1
+
         for i, person in enumerate(plans.persons):
+
+            if not (i+1) % base:
+                self.logger.info(f'parsed {i + 1} persons plans')
+                base *= 2
+
             for plan_handler in self.resources.values():
                 plan_handler.process_plans(person)
 
+        self.logger.info('***Completed Plan Iteration***')
+
         # finalise
         # Generate event file outputs
+        self.logger.debug(f'{self.__str__()} .resources = {self.resources}')
+
         for handler_name, handler in self.resources.items():
             self.logger.info(f'Finalising {handler.__str__()}')
             handler.finalise()
-            # if self.config.contract:
-            #     handler.contract_results()
+
+            self.logger.debug(f'{len(handler.results)} result_gdfs at {handler.__str__()}')
 
             if handler.results:
                 self.logger.info(f'Writing results from {handler.__str__()}')
+
                 for name, result in handler.results.items():
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     self.write_csv(result, csv_name, write_path=write_path)
-    #
-    # def __str__(self):
-    #     return f'Plan Handling WorkStation'
 
 
 def convert_time(t: str) -> Optional[int]:

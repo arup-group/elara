@@ -135,12 +135,11 @@ def test_hierarchy_get_bad_type():
         assert hierarchy[[1]]
 
 
-def test_hierarchy_get_unknown(capsys):
+def test_hierarchy_get_unknown(caplog):
     hierarchy = inputs.ModeHierarchy(None)
     modes = ['one', 'two', 'three']
     mode = hierarchy.get(modes)
-    captured = capsys.readouterr()
-    assert captured.out
+    assert caplog.records
     assert mode == modes[1]
 
 

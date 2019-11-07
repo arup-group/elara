@@ -90,9 +90,6 @@ class VKT(PostProcessor):
     requirements = ['volume_counts']
     valid_options = ['car', 'bus', 'train', 'subway', 'ferry']
 
-    # def __init__(self, config, option=None):
-    #     super().__init__(config, option)
-
     def __str__(self):
         return f'VKT PostProcessor mode: {self.option}'
 

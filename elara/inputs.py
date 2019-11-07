@@ -14,14 +14,17 @@ from elara.factory import WorkStation, Tool
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
 
-class Events(Tool):
-
-    requirements = ['events_path']
-    elems = None
+class InputTool(Tool):
 
     def __init__(self, config, option=None):
         super().__init__(config, option)
         self.logger = logging.getLogger(__name__)
+
+
+class Events(InputTool):
+
+    requirements = ['events_path']
+    elems = None
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -36,13 +39,18 @@ class Events(Tool):
         self.elems = get_elems(path, "event")
 
 
-class Network(Tool):
+class Network(InputTool):
 
     requirements = ['network_path', 'crs']
     node_gdf = None
     link_gdf = None
 
-    def build(self, resources: dict, write_path: Optional[str] = None, re_proj=True) -> None:
+    def build(
+            self,
+            resources: dict,
+            write_path: Optional[str] = None,
+            re_proj=True
+    ) -> None:
         """
         Network object constructor.
         :param resources: dict, resources from suppliers
@@ -55,10 +63,12 @@ class Network(Tool):
         crs = resources['crs'].path
 
         # Extract element properties
+        self.logger.debug(f'Loading nodes')
         nodes = [
             self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
         node_lookup = {node["id"]: node for node in nodes}
+        self.logger.debug(f'Loading links')
         links = [
             self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
@@ -76,9 +86,14 @@ class Network(Tool):
         self.node_gdf.crs = {'init': crs}
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
         self.link_gdf.crs = {'init': crs}
+
         if re_proj:
+            self.logger.debug(f'Reprojecting nodes')
             self.node_gdf.to_crs(epsg=4326, inplace=True)
+            self.logger.debug(f'Reprojecting links')
             self.link_gdf.to_crs(epsg=4326, inplace=True)
+        else:
+            self.logger.warning(f'Reprojection disabled at {self.__str__()}')
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -136,7 +151,7 @@ class Network(Tool):
         }
 
 
-class OSMWays(Tool):
+class OSMWays(InputTool):
     """
     Light weight network input with no geometries - just osm way attribute and length.
     """
@@ -157,6 +172,7 @@ class OSMWays(Tool):
         path = resources['network_path'].path
 
         # Extract element properties
+        self.logger.debug(f'Extracting links for OSM Ways input')
         links = [
                 self.get_link_attribute(elem)
                 for elem in get_elems(path, "link")
@@ -164,6 +180,7 @@ class OSMWays(Tool):
         self.ways = {link['id']: link['way'] for link in links}
         self.lengths = {link['id']: link['length'] for link in links}
         self.classes = list(set(self.ways.values()))
+        self.logger.debug(f'OSM classes = {self.classes}')
 
     @staticmethod
     def get_link_attribute(elem):
@@ -186,17 +203,23 @@ class OSMWays(Tool):
         }
 
 
-class TransitSchedule(Tool):
+class TransitSchedule(InputTool):
     requirements = ['transit_schedule_path', 'crs']
     stop_gdf = None
     mode_map = None
     modes = None
 
-    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+    def build(
+            self,
+            resources: dict,
+            write_path: Optional[str] = None,
+            re_proj=True
+    ) -> None:
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
         :param write_path: Optional output path overwrite
+        :param re_proj: Boolean to allow/disallow re projection
         """
         super().build(resources)
 
@@ -204,6 +227,7 @@ class TransitSchedule(Tool):
         crs = resources['crs'].path
 
         # Retrieve stop attributes
+        self.logger.debug(f'Loading transit stops')
         stops = [
             self.get_node_elem(elem)
             for elem in get_elems(path, "stopFacility")
@@ -217,6 +241,7 @@ class TransitSchedule(Tool):
         self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
 
         # transform
+        self.logger.debug(f'Reprojecting stops')
         self.stop_gdf.crs = {'init': crs}
         self.stop_gdf.to_crs(epsg=4326, inplace=True)
 
@@ -228,6 +253,7 @@ class TransitSchedule(Tool):
         )
 
         self.modes = list(set(self.mode_map.values()))
+        self.logger.debug(f'Transit Schedule nodes = {self.modes}')
 
     @staticmethod
     def get_node_elem(elem):
@@ -282,7 +308,7 @@ class TransitSchedule(Tool):
         return route_id, mode
 
 
-class TransitVehicles(Tool):
+class TransitVehicles(InputTool):
     requirements = ['transit_vehicles_path']
     veh_type_mode_map = None
     veh_type_capacity_map = None
@@ -309,6 +335,7 @@ class TransitVehicles(Tool):
             "Tram": "tram",
             "Ferry": "ferry"
         }
+        self.logger.debug(f'veh type mode map = {self.veh_type_mode_map}')
 
         # Vehicle type to total capacity correspondence
         self.veh_type_capacity_map = dict(
@@ -317,13 +344,16 @@ class TransitVehicles(Tool):
                 for elem in get_elems(path, "vehicleType")
             ]
         )
+        self.logger.debug(f'veh type capacity map = {self.veh_type_capacity_map}')
 
         # Vehicle ID to vehicle type correspondence
+        self.logger.debug('Building veh id to veh type map')
         self.veh_id_veh_type_map = {
             elem.get("id"): elem.get("type") for elem in get_elems(path, "vehicle")
         }
 
         self.types, self.transit_vehicle_counts = count_values(self.veh_id_veh_type_map)
+        self.logger.debug(f'veh types = {self.types}')
 
     @staticmethod
     def transform_veh_type_elem(elem):
@@ -339,7 +369,7 @@ class TransitVehicles(Tool):
         return id, seated_capacity + standing_capacity
 
 
-class Agents(Tool):
+class Agents(InputTool):
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
@@ -390,7 +420,7 @@ class Agents(Tool):
         return ident, attributes
 
 
-class Attributes(Tool):
+class Attributes(InputTool):
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
@@ -438,7 +468,7 @@ class Attributes(Tool):
         return ident, attribute
 
 
-class Plans(Tool):
+class Plans(InputTool):
     requirements = ['plans_path']
     plans = None
     persons = None
@@ -457,7 +487,7 @@ class Plans(Tool):
         self.persons = get_elems(path, "person")
 
 
-class OutputConfig(Tool):
+class OutputConfig(InputTool):
 
     requirements = ['output_config_path']
 
@@ -496,7 +526,7 @@ class OutputConfig(Tool):
         self.sub_populations = list(self.sub_populations)
 
 
-class ModeHierarchy(Tool):
+class ModeHierarchy(InputTool):
 
     requirements = []
 
@@ -521,7 +551,7 @@ class ModeHierarchy(Tool):
             raise TypeError("ModeHierarchy get method expects list of strings")
         for mode in modes:
             if mode not in self.hierarchy:
-                print(f"WARNING {mode} not found in hierarchy")
+                self.logger.warning(f"WARNING {mode} not found in hierarchy")
         for h in self.hierarchy:
             for mode in modes:
                 if h == mode:
@@ -529,11 +559,11 @@ class ModeHierarchy(Tool):
         # if mode not found in hierarchy then return middle mode
         mode_index = floor(len(modes) / 2)
         mode = modes[mode_index]
-        print(f"WARNING {modes} not in hierarchy, returning {mode}")
+        self.logger.warning(f"WARNING {modes} not in hierarchy, returning {mode}")
         return mode
 
 
-class ModeMap(Tool):
+class ModeMap(InputTool):
 
     requirements = []
 
@@ -575,9 +605,6 @@ class InputsWorkStation(WorkStation):
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
-
-    # def __str__(self):
-    #     return f'Inputs WorkStation'
 
 
 def get_elems(path, tag):
