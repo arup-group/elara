@@ -417,7 +417,6 @@ class AgentPlansHandler(PlanHandlerTool):
     """
 
     requirements = ['plans', 'transit_schedule', 'attributes']
-    # valid_options = ['all']
 
     def __init__(self, config, option=None):
         """
