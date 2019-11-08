@@ -27,8 +27,6 @@ class EventHandlerTool(Tool):
             resources: dict,
             write_path=None) -> None:
 
-        # logger.info(f'Building {self.__str__()}')
-
         super().build(resources, write_path)
 
     @staticmethod
@@ -113,7 +111,7 @@ class AgentWaitingTimes(EventHandlerTool):
         self.waiting_time_log = None
 
         # Initialise results storage
-        self.results = dict()  # Result dataframes ready to export
+        self.results = dict()
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -122,8 +120,6 @@ class AgentWaitingTimes(EventHandlerTool):
         :param write_path: Optional output path overwrite
         :return: None
         """
-        # self.logger.info(f'Building {self.__str__}')
-
         super().build(resources, write_path=write_path)
 
         csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
@@ -259,9 +255,6 @@ class VolumeCounts(EventHandlerTool):
 
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
-
-    # def __str__(self):
-    #     return f'VolumeCounts'
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -431,6 +424,7 @@ class PassengerCounts(EventHandlerTool):
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
                 attribute_class = self.resources['attributes'].map[agent_id]
+
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
 
@@ -438,6 +432,7 @@ class PassengerCounts(EventHandlerTool):
                     self.veh_occupancy[veh_id][attribute_class] = 1
                 else:
                     self.veh_occupancy[veh_id][attribute_class] += 1
+
         elif event_type == "PersonLeavesVehicle":
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
@@ -446,12 +441,14 @@ class PassengerCounts(EventHandlerTool):
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
                 attribute_class = self.resources['attributes'].map[agent_id]
+
                 if not self.veh_occupancy[veh_id][attribute_class]:
                     pass
                 else:
                     self.veh_occupancy[veh_id][attribute_class] -= 1
                     if not self.veh_occupancy[veh_id]:
                         self.veh_occupancy.pop(veh_id, None)
+
         elif event_type == "left link" or event_type == "vehicle leaves traffic":
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
@@ -461,6 +458,7 @@ class PassengerCounts(EventHandlerTool):
                 time = float(elem.get("time"))
                 link = elem.get("link")
                 occupancy_dict = self.veh_occupancy.get(veh_id, {})
+
                 for attribute_class, occupancy in occupancy_dict.items():
                     x, y, z = table_position(
                         self.elem_indices,
@@ -580,17 +578,20 @@ class StopInteractions(EventHandlerTool):
         'PersonLeavesVehicle' events to determine stop boardings and alightings.
         :param elem: Event XML element
         """
-
         event_type = elem.get("type")
+
         if event_type == "waitingForPt":
             agent_id = elem.get("agent")
             origin_stop = elem.get("atStop")
             destination_stop = elem.get("destinationStop")
             self.agent_status[agent_id] = [origin_stop, destination_stop]
+
         elif event_type == "PersonEntersVehicle":
             veh_mode = self.vehicle_mode(elem.get("vehicle"))
+
             if veh_mode == self.option:
                 agent_id = elem.get("person")
+
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
                     attribute_class = self.resources['attributes'].map[agent_id]
@@ -604,10 +605,13 @@ class StopInteractions(EventHandlerTool):
                         time
                     )
                     self.boardings[x, y, z] += 1
+
         elif event_type == "PersonLeavesVehicle":
             veh_mode = self.vehicle_mode(elem.get("vehicle"))
+
             if veh_mode == self.option:
                 agent_id = elem.get("person")
+
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
                     attribute_class = self.resources['attributes'].map[agent_id]

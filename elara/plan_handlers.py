@@ -464,7 +464,6 @@ class AgentPlansHandler(PlanHandlerTool):
         ident = elem.get('id')
         # get subpop
         subpop = self.resources['attributes'].map.get(ident)
-        # todo is it slow calling a dict every time? Could keep these closer.
 
         if not subpop == self.option:
             return None
