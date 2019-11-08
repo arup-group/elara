@@ -20,6 +20,34 @@ class InputTool(Tool):
         super().__init__(config, option)
         self.logger = logging.getLogger(__name__)
 
+    def set_and_change_crs(self, target: gdp.GeoDataFrame, set_crs=None, to_crs='epsg:4326'):
+        """
+        Set and change a target GeoDataFrame crs. Wrapper for geopandas .crs and .to_crs.
+        If set_crs or to_crs are None then warning is logged and no action taken.
+        :param target: geopandas GeoDataFrame
+        :param set_crs: optional string crs
+        :param to_crs: optional string crs
+        :return: None
+        """
+        if not isinstance(target, gdp.GeoDataFrame):
+            raise TypeError(f'Expected geopandas.GeoDataFrame not {type(target)}')
+
+        if set_crs is None:
+            self.logger.warning(f'No set_crs, re-projection disabled at {self.__str__()}')
+            return None
+
+        else:
+            self.logger.debug(f'Setting target projection to {set_crs}')
+            target.crs = {'init': set_crs}
+
+        if to_crs is None:
+            self.logger.warning(f'No to_crs, re-projection disabled at {self.__str__()}')
+            return None
+
+        else:
+            self.logger.debug(f'Re-projecting target to {to_crs}')
+            target.to_crs(to_crs, inplace=True)
+
 
 class Events(InputTool):
 
@@ -48,14 +76,12 @@ class Network(InputTool):
     def build(
             self,
             resources: dict,
-            write_path: Optional[str] = None,
-            re_proj=True
+            write_path: Optional[str] = None
     ) -> None:
         """
         Network object constructor.
         :param resources: dict, resources from suppliers
         :param write_path: Optional output path overwrite
-        :param re_proj: Boolean to allow/disallow re projection
         """
         super().build(resources)
 
@@ -68,32 +94,30 @@ class Network(InputTool):
             self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
         node_lookup = {node["id"]: node for node in nodes}
+
         self.logger.debug(f'Loading links')
         links = [
             self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
-        # Generate empty geodataframes
+
+        self.logger.debug(f'Building network nodes geodataframe')
         node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
         node_df.sort_index(inplace=True)
+        self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
+
+        self.logger.debug(f'Building network links geodataframe')
         link_df = pd.DataFrame(links)
         link_df.set_index("id", inplace=True)
         link_df.sort_index(inplace=True)
+        self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
 
         # transform
-        self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
-        self.node_gdf.crs = {'init': crs}
-        self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
-        self.link_gdf.crs = {'init': crs}
-
-        if re_proj:
-            self.logger.debug(f'Reprojecting nodes')
-            self.node_gdf.to_crs(epsg=4326, inplace=True)
-            self.logger.debug(f'Reprojecting links')
-            self.link_gdf.to_crs(epsg=4326, inplace=True)
-        else:
-            self.logger.warning(f'Reprojection disabled at {self.__str__()}')
+        self.logger.debug(f'Re-projecting network nodes geodataframe')
+        self.set_and_change_crs(self.node_gdf, set_crs=crs)
+        self.logger.debug(f'Re-projecting network links geodataframe')
+        self.set_and_change_crs(self.link_gdf, set_crs=crs)
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -212,14 +236,12 @@ class TransitSchedule(InputTool):
     def build(
             self,
             resources: dict,
-            write_path: Optional[str] = None,
-            re_proj=True
+            write_path: Optional[str] = None
     ) -> None:
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
         :param write_path: Optional output path overwrite
-        :param re_proj: Boolean to allow/disallow re projection
         """
         super().build(resources)
 
@@ -242,8 +264,7 @@ class TransitSchedule(InputTool):
 
         # transform
         self.logger.debug(f'Reprojecting stops')
-        self.stop_gdf.crs = {'init': crs}
-        self.stop_gdf.to_crs(epsg=4326, inplace=True)
+        self.set_and_change_crs(self.stop_gdf, set_crs=crs)
 
         # Generate routes to modes map
         self.mode_map = dict(
@@ -363,10 +384,10 @@ class TransitVehicles(InputTool):
         :return: (vehicle type, capacity) tuple
         """
         strip_namespace(elem)  # TODO only needed for this input = janky
-        id = elem.xpath("@id")[0]
+        ident = elem.xpath("@id")[0]
         seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
         standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
-        return id, seated_capacity + standing_capacity
+        return ident, seated_capacity + standing_capacity
 
 
 class Agents(InputTool):
