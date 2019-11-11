@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE population SYSTEM "http://www.matsim.org/files/dtd/population_v6.dtd">
+
+<population>
+
+	<person id="fred">
+
+		<plan score="-100" selected="yes">
+
+			<activity type="home_8_p" link="264218" x="500000.0" y="200000.0" end_time="08:26:41" >
+			</activity>
+
+			<leg mode="access_walk" dep_time="08:26:41" trav_time="25:32:17">
+				<route type="generic" start_link="264218" end_link="246338" trav_time="25:32:17" distance="76614.33063076386"></route>
+			</leg>
+
+			<activity type="work_9to5" link="246338" x="529258.0" y="181972.0" end_time="16:37:37" >
+			</activity>
+
+			<leg mode="access_walk" dep_time="16:37:37" trav_time="25:32:40">
+				<route type="generic" start_link="246338" end_link="264218" trav_time="25:32:40" distance="76634.02925000094"></route>
+			</leg>
+
+			<activity type="shop" link="264218" x="471039.0" y="172722.0" end_time="18:59:55" >
+			</activity>
+
+			<leg mode="walk" dep_time="18:59:55" trav_time="00:00:01">
+				<route type="generic" start_link="264218" end_link="264218" trav_time="00:00:01" distance="1.3"></route>
+			</leg>
+
+			<activity type="shop" link="264218" x="471038.0" y="172722.0" end_time="21:16:30" >
+			</activity>
+
+			<leg mode="walk" dep_time="21:16:30" trav_time="00:01:04">
+				<route type="generic" start_link="264218" end_link="264218" trav_time="00:01:04" distance="53.60037313302959"></route>
+			</leg>
+
+			<activity type="home_8_p" link="264218" x="500000.0" y="200000.0" >
+			</activity>
+
+		</plan>
+
+	</person>
+
+</population>
