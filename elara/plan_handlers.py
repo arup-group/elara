@@ -841,37 +841,6 @@ def export_geojson(gdf, path):
     with open(path, "w") as file:
         file.write(gdf.to_json())
 
-#
-# def non_wrapping_step(
-#         last_time_str: Optional[str],
-#         time_str: str,
-#         day: int,
-#         logger=None
-# ) -> (datetime, str, int):
-#     """
-#     Function to step time strings and day counter to avoid wrapping of times around the
-#     same day. Also converts "24:00:00" to "00:00:00" and adds a day.
-#     :param last_time_str: time string from previous event
-#     :param time_str: new time string
-#     :param day: day counter, int
-#     :param logger: optional logger
-#     :return: time string, day
-#     """
-#     if last_time_str is None:
-#         last_time_str = "00:00:00"
-#
-#     if time_str[-8:] == '24:00:00':
-#         if logger:
-#             logger.warn('"24:00:00" time string encountered, adding day to time.')
-#         return datetime.strptime(f"{day + 1}-00:00:00", '%d-%H:%M:%S'), '00:00:00', day + 1
-#
-#     if time_str < last_time_str:  # infer that single day has passed
-#         if logger:
-#             logger.warn('Time Wrapping prevented by adding day to time.')
-#         return datetime.strptime(f"{day + 1}-{time_str}", '%d-%H:%M:%S'), time_str, day + 1
-#
-#     return datetime.strptime(f"{day}-{time_str}", '%d-%H:%M:%S'), time_str, day
-
 
 def non_wrapping_datetime(
         current_time: datetime,
