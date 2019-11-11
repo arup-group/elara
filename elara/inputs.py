@@ -119,6 +119,7 @@ class Network(InputTool):
         self.logger.debug(f'Re-projecting network links geodataframe')
         self.set_and_change_crs(self.link_gdf, set_crs=crs)
 
+
     @staticmethod
     def transform_node_elem(elem, crs):
         """
