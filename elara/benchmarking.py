@@ -1,8 +1,8 @@
 import pandas as pd
 import os
 import numpy as np
-import json
-from typing import Dict, List, Union, Optional
+from typing import Optional
+import logging
 
 from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
@@ -11,8 +11,17 @@ from elara import get_benchmark_data
 # TODO this module has some over complex operations on the input data...
 # TODO - needs tests and data validation
 
+logger = logging.getLogger(__name__)
 
-class Cordon(Tool):
+
+class BenchmarkTool(Tool):
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.logger = logging.getLogger(__name__)
+
+
+class Cordon(BenchmarkTool):
 
     cordon_counter = None
     benchmark_path = None
@@ -27,8 +36,8 @@ class Cordon(Tool):
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
-        :param name: String, cordon name
-        :param config: Config
+        :param config: Config object
+        :param option: str, mode
         """
         super().__init__(config, option)
 
@@ -59,6 +68,8 @@ class Cordon(Tool):
         :return: Dictionary of scores {'in': float, 'out': float}
         """
 
+        logger.info(f'building {self.__str__()}')
+
         # Build paths and load appropriate volume counts
         results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
@@ -74,20 +85,20 @@ class Cordon(Tool):
         return scores
 
 
-class CordonCount(Tool):
+class CordonCount(BenchmarkTool):
 
     def __init__(self, parent, direction_name, dir_code, counts_df,
                  links_df):
         """
         Cordon count parent object for counts in or out of a cordon. Includes
         methods for calculating hourly or aggregated period counts.
-        :param name: String
-        :param config: Config
         :param direction_name: String
         :param dir_code: Int
         :param counts_df: DataFrame of all benchmark counts for cordon
         :param links_df: DataFrame of cordon-count to links
         """
+        super().__init__(config=None, option=None)
+
         self.cordon_name = parent.name
         self.config = parent.config
         self.year = parent.year
@@ -101,7 +112,8 @@ class CordonCount(Tool):
         # Get cordon links
         self.link_ids = self.get_links(links_df, dir_code)
 
-    def get_links(self, links_df, direction_code):
+    @staticmethod
+    def get_links(links_df, direction_code):
         """
         Filter given DataFrame for direction and return list of unique link ids.
         :param links_df: DataFrame
@@ -110,6 +122,9 @@ class CordonCount(Tool):
         """
         df = links_df.loc[links_df.dir == direction_code, :]
         return list(set(df.link))
+
+    def __str__(self):
+        return 'f{cls}'
 
     def get_counts(self, counts_df):
         """
@@ -125,7 +140,7 @@ class CordonCount(Tool):
 
         df = df.loc[df.Hour.isin(self.hours), :]
         assert(len(df)),\
-            f'No {self.cordon_name} benchmark counts left from after filtering by hours:{self.hours}'
+            f'No {self.cordon_name} BM counts left from after filtering by hours:{self.hours}'
 
         df = df.loc[counts_df.Direction == self.dir_code, :]
         site_indexes = list(set(df.Site))
@@ -176,7 +191,8 @@ class CordonCount(Tool):
 
         return count
 
-    def count_to_df(self, count, source='benchmark'):
+    @staticmethod
+    def count_to_df(count, source='benchmark'):
         """
         Build count dataframe from int.
         :param count: Int
@@ -252,6 +268,7 @@ class PeriodCordonCount(CordonCount):
         absolute difference between count and model results, then normalising by the
         total of all counts.
         :param result_df: DataFrame object of model results
+        :param write_path: Optional output path overwrite
         :return: Float
         """
 
@@ -297,15 +314,15 @@ class PeriodCordonCount(CordonCount):
         return np.absolute(result - count) / count
 
 
-class ModeStats(Tool):
+class ModeStats(BenchmarkTool):
 
     benchmark_path = None
 
     def __init__(self, config, option):
         """
         ModeStat parent object for benchmarking with mode share data.
-        :param name: String
-        :param config: Config
+        :param config: Config object
+        :param option: str, mode
         """
         super().__init__(config, option)
 
@@ -351,8 +368,12 @@ class LondonInnerCordonCar(Cordon):
 
     weight = 1
     cordon_counter = HourlyCordonCount
-    benchmark_path = get_benchmark_data(os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv'))
-    cordon_path = get_benchmark_data(os.path.join('london', 'inner_cordon', 'cordon_links.csv'))
+    benchmark_path = get_benchmark_data(
+        os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv')
+    )
+    cordon_path = get_benchmark_data(
+        os.path.join('london', 'inner_cordon', 'cordon_links.csv')
+    )
 
     directions = {'in': 1, 'out': 2}
     year = 2016
@@ -368,8 +389,12 @@ class DublinCanalCordonCar(Cordon):
 
     weight = 1
     cordon_counter = PeriodCordonCount
-    benchmark_path = get_benchmark_data(os.path.join('ireland', 'dublin_cordon', '2016_counts.csv'))
-    cordon_path = get_benchmark_data(os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv'))
+    benchmark_path = get_benchmark_data(
+        os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
+    )
+    cordon_path = get_benchmark_data(
+        os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
+    )
 
     directions = {'in': 1}
     year = 2016
@@ -384,7 +409,9 @@ class IrelandCommuterStats(ModeStats):
     options_enabled = True
 
     weight = 1
-    benchmark_path = get_benchmark_data(os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv'))
+    benchmark_path = get_benchmark_data(
+        os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
+    )
 
 
 class TestTownHourlyCordon(Cordon):
@@ -395,8 +422,12 @@ class TestTownHourlyCordon(Cordon):
 
     weight = 1
     cordon_counter = HourlyCordonCount
-    benchmark_path = get_benchmark_data(os.path.join('test_town', 'test_town_cordon', '2016_counts.csv'))
-    cordon_path = get_benchmark_data(os.path.join('test_town', 'test_town_cordon', 'test_town_cordon.csv'))
+    benchmark_path = get_benchmark_data(
+        os.path.join('test_town', 'test_town_cordon', '2016_counts.csv')
+    )
+    cordon_path = get_benchmark_data(
+        os.path.join('test_town', 'test_town_cordon', 'test_town_cordon.csv')
+    )
 
     directions = {'in': 1, 'out': 2}
     year = 2016
@@ -412,8 +443,12 @@ class TestTownPeakIn(Cordon):
 
     weight = 1
     cordon_counter = PeriodCordonCount
-    benchmark_path = get_benchmark_data(os.path.join('test_town', 'test_town_peak_cordon', '2016_peak_in_counts.csv'))
-    cordon_path = get_benchmark_data(os.path.join('test_town', 'test_town_peak_cordon', 'test_town_cordon.csv'))
+    benchmark_path = get_benchmark_data(
+        os.path.join('test_town', 'test_town_peak_cordon', '2016_peak_in_counts.csv')
+    )
+    cordon_path = get_benchmark_data(
+        os.path.join('test_town', 'test_town_peak_cordon', 'test_town_cordon.csv')
+    )
 
     directions = {'in': 1}
     year = 2016
@@ -428,8 +463,9 @@ class TestTownCommuterStats(ModeStats):
     options_enabled = True
 
     weight = 1
-    benchmark_path = get_benchmark_data(os.path.join('test_town', 'census_modestats',
-                                                      'test_town_modestats.csv'))
+    benchmark_path = get_benchmark_data(
+        os.path.join('test_town', 'census_modestats', 'test_town_modestats.csv')
+    )
 
 
 class BenchmarkWorkStation(WorkStation):
@@ -461,6 +497,7 @@ class BenchmarkWorkStation(WorkStation):
 
     def __init__(self, config):
         super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
         # Create output folder if it does not exist
         benchmark_dir = os.path.join(self.config.output_path, 'benchmarks')
@@ -484,12 +521,12 @@ class BenchmarkWorkStation(WorkStation):
                            }
             summary[benchmark_name] = sub_summary
 
-            for name, s in scores.items():
-                print("SCORING:")
-                print(name)
-                print(s)
-                flat_summary.append([benchmark_name, name, s])
-                self.meta_score += (s * weight)
+            for name, score in scores.items():
+                self.logger.info(f' *** {benchmark_name} {name} = {score} *** ')
+                flat_summary.append([benchmark_name, name, score])
+                self.meta_score += (score * weight)
+
+        self.logger.info(f' *** Meta Score = {self.meta_score} ***')
 
         # Write scores
         csv_name = 'benchmark_scores.csv'
@@ -502,23 +539,3 @@ class BenchmarkWorkStation(WorkStation):
         json_name = 'benchmark_scores.json'
         json_path = os.path.join('benchmarks', json_name)
         self.write_json(summary, json_path, write_path=write_path)
-
-    def __str__(self):
-        return f'Benchmarking WorkStation'
-
-
-# # maps of benchmarks to Classes and weights for scoring
-# BENCHMARK_MAP = {"london_inner_cordon_car": LondonInnerCordonCar,
-#                  "dublin_canal_cordon_car": DublinCanalCordonCar,
-#                  "ireland_commuter_modeshare": IrelandCommuterStats,
-#                  "test_town_cordon": TestTownHourlyCordon,
-#                  "test_town_peak_cordon": TestTownPeakIn,
-#                  "test_town_modeshare": TestTownCommuterStats}
-#
-# BENCHMARK_WEIGHTS = {"london_inner_cordon_car": 1,
-#                      "dublin_canal_cordon_car": 1,
-#                      "ireland_commuter_modeshare": 1,
-#                      "test_town_cordon": 1,
-#                      "test_town_peak_cordon": 1,
-#                      "test_town_modeshare": 1}
-

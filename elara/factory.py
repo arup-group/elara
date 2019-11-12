@@ -1,15 +1,14 @@
 from typing import Dict, List, Union, Optional
-from halo import Halo
 import pandas as pd
 import geopandas as gpd
 import os
 import json
+import logging
 
 
-# Define tools to be used by Sub Processes
 class Tool:
     """
-    Base tool class, defines basic behaviour for all tools at each Workstation.
+    Base Tool class, defines basic behaviour for all tools at each Workstation.
     Values:
         .requirements: list, of requirements that that must be provided by suppliers.
         .options_enabled: bool, for if requirements should carry through manager options.
@@ -40,12 +39,17 @@ class Tool:
         self.config = config
         self.option = self._validate_option(option)
 
+    def __str__(self):
+        return f'{self.__class__}'
+
     def get_requirements(self) -> Union[None, Dict[str, list]]:
         """
         Default return requirements of tool for given .option.
         Returns None if .option is None.
         :return: dict of requirements
         """
+        self.logger.debug(f'getting requirements for {self.__str__()}')
+
         if not self.requirements:
             return None
 
@@ -64,8 +68,12 @@ class Tool:
         """
         Default build self.
         :param resource: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
+        self.logger.info(f'Building Tool {self.__str__()}')
+        self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
+
         for requirement in convert_to_unique_keys(self.get_requirements()):
             if requirement not in list(resource):
                 raise ValueError(f'Missing requirement @{self}: {requirement}')
@@ -111,8 +119,10 @@ class Tool:
 
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
+            self.logger.warning(f'path overwritten to {csv_path}')
         else:
             csv_path = os.path.join(self.config.output_path, csv_name)
+            self.logger.info(f'writing to {csv_path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -136,8 +146,10 @@ class Tool:
 
         if write_path:
             path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'writing to {path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -161,8 +173,10 @@ class Tool:
 
         if write_path:
             path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'writing to {path}')
 
         # File exports
         if isinstance(write_object, dict):
@@ -198,6 +212,10 @@ class WorkStation:
         self.managers = None
         self.suppliers = None
         self.supplier_resources = {}
+        self.logger = logging.getLogger(__name__)
+
+    def __str__(self):
+        return f'{self.__class__}'
 
     def connect(
             self,
@@ -215,18 +233,21 @@ class WorkStation:
         self.suppliers = suppliers
 
     def display_string(self):
-        managers, suppliers, tools = "-None-", "-None-", "-None-"
+        managers, suppliers, tools = ["-None-"], ["-None-"], ["-None-"]
         if self.managers:
-            managers = str([str(m) for m in list(self.managers)])
+            managers = [str(m) for m in list(self.managers)]
         if self.suppliers:
-            suppliers = str([str(s) for s in list(self.suppliers)])
+            suppliers = [str(s) for s in list(self.suppliers)]
         if self.tools:
             tools = list(self.tools)
 
-        return f"👉️ {self}:\n" \
-               f"   ⛓  Managers: {managers}\n" \
-               f"   🕸  Suppliers: {suppliers}\n" \
-               f"   🔧 Tooling: {tools}\n"
+        self.logger.info(f' *** Created {self}')
+        for manager in managers:
+            self.logger.info(f'   * Manager: {manager}')
+        for supplier in suppliers:
+            self.logger.info(f'   * Supplier: {supplier}')
+        for tool in tools:
+            self.logger.info(f'   * Tooling: {tool}')
 
     def engage(self) -> None:
         """
@@ -254,9 +275,10 @@ class WorkStation:
                     if manager_requirement == tool_name:
                         if options:
                             for option in options:
-                                # init
+                                # build unique key for tool initiated with option
                                 key = str(tool_name) + ':' + str(option)
                                 self.resources[key] = tool(self.config, option)
+
                                 tool_requirements = self.resources[key].get_requirements()
                                 all_requirements.append(tool_requirements)
                         else:
@@ -279,7 +301,7 @@ class WorkStation:
                             if s.tools:
                                 for name, tool in s.tools.items():
                                     if req == name and not tool.options_enabled:
-                                        self.requirements[name] = None
+                                        self.requirements[name] = []
 
     def validate_suppliers(self) -> None:
         """
@@ -308,19 +330,21 @@ class WorkStation:
         Gather manager requirements.
         :return: dict of manager reqs, eg {a: [1,2], b:[1]}
         """
+        self.logger.info("Gathering manager requirements ")
         reqs = []
         if self.managers:
             for manager in self.managers:
                 reqs.append(manager.requirements)
         return combine_reqs(reqs)
 
-    def build(self, spinner=None, write_path=None):
+    def build(self, write_path=None):
         """
         Gather resources from suppliers for current workstation and build() all resources in
         order of .resources map.
-        :param: spinner: optional spinner for verbose behaviour.
+        :param write_path: Optional output path overwrite
         :return: None
         """
+        self.logger.info(f'Building Workstation {self.__str__()}')
 
         # gather resources
         if self.suppliers:
@@ -329,8 +353,7 @@ class WorkStation:
 
         if self.resources:
             for tool_name, tool in self.resources.items():
-                if spinner:
-                    spinner.text = f"Building {tool_name}."
+
                 tool.build(self.supplier_resources, write_path)
 
     def load_all_tools(self, option=None) -> None:
@@ -340,6 +363,7 @@ class WorkStation:
         :param option: option, default None, must be valid for tools
         :return: NOne
         """
+        self.logger.info(f"Loading all tools for {self.__str__()}")
         for name, tool in self.tools.items():
             if option is None and tool.valid_options is not None:
                 option = tool.valid_options[0]
@@ -357,8 +381,10 @@ class WorkStation:
 
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
+            self.logger.warning(f'path overwritten to {write_path}')
         else:
             csv_path = os.path.join(self.config.output_path, csv_name)
+            self.logger.info(f'Writing to {csv_path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -382,8 +408,10 @@ class WorkStation:
 
         if write_path:
             path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {write_path}')
         else:
             path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'Writing to {path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -407,8 +435,10 @@ class WorkStation:
 
         if write_path:
             path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {write_path}')
         else:
             path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'Writing to {path}')
 
         # File exports
         if isinstance(write_object, dict):
@@ -426,12 +456,15 @@ class ChunkWriter:
     Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
     """
 
-    def __init__(self, path, chunksize=1000) -> None:
+    def __init__(self, path, chunksize=10000) -> None:
         self.path = path
         self.chunksize = chunksize
 
         self.chunk = []
         self.idx = 0
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
 
     def add(self, lines: list) -> None:
         """
@@ -461,9 +494,10 @@ class ChunkWriter:
 
     def finish(self) -> None:
         self.write()
+        self.logger.info(f'Chunkwriter finished for {self.path}')
 
 
-def build(start_node: WorkStation, verbose=False, write_path=None) -> list:
+def build(start_node: WorkStation, write_path=None) -> list:
     """
     Main function for validating graph requirements, then initiating and building minimum resources.
 
@@ -482,62 +516,56 @@ def build(start_node: WorkStation, verbose=False, write_path=None) -> list:
     for the factory.
 
     :param start_node: starting workstation
-    :param verbose: bool, verbose behaviour
+    :param write_path: Optional output path overwrite
     :return: list, sequence of visits for stages 2 (initiation and validation) and 3 (building)
     """
+    logger = logging.getLogger(__name__)
 
     # stage 1:
-    with Halo(text="Initialising workflow graph...", spinner="dots") as spinner:
+    logger.info(f'Starting DAG')
 
-        if is_cyclic(start_node):
-            raise UserWarning(f"Cyclic dependency found at {is_cyclic(start_node)}")
-        if is_broken(start_node):
-            raise UserWarning(f"Broken dependency found at {is_broken(start_node)}")
+    if is_cyclic(start_node):
+        raise UserWarning(f"Cyclic dependency found at {is_cyclic(start_node)}")
+    if is_broken(start_node):
+        raise UserWarning(f"Broken dependency found at {is_broken(start_node)}")
 
-        build_graph_depth(start_node)
+    build_graph_depth(start_node)
 
-        spinner.stop_and_persist(symbol='✅'.encode('utf-8'), text="Workflow graph prepared.")
+    display_graph(start_node)
 
-    if verbose:
-        print("****************************** DAG ******************************")
-        display_graph(start_node)
-        print("*****************************************************************")
+    logger.info(f'DAG prepared')
 
     # stage 2:
-    visited = []
-    queue = []
+    logger.info(f'Initiating DAG')
+
+    visited = list()
+    queue = list()
     queue.append(start_node)
     visited.append(start_node)
 
     while queue:
         current = queue.pop(0)
-        with Halo(text="Engaging {current}...", spinner="dots") as spinner:
-            current.engage()
+        current.engage()
 
-            if current.suppliers:
-                current.validate_suppliers()
+        if current.suppliers:
+            current.validate_suppliers()
 
-                for supplier in order_by_distance(current.suppliers):
-                    if supplier not in visited:
-                        queue.append(supplier)
-                        visited.append(supplier)
+            for supplier in order_by_distance(current.suppliers):
+                if supplier not in visited:
+                    queue.append(supplier)
+                    visited.append(supplier)
 
-            spinner.succeed(f"{current} engaged and suppliers validated.")
-
-    print('✅', "All Workstations initiated and validated.")
+    logger.info(f'All Workstations Initiated and Validated')
 
     # stage 3:
+    logger.info(f'Initiating Build')
     sequence = visited
     return_queue = visited[::-1]
     visited = []
     while return_queue:
         current = return_queue.pop(0)
-        with Halo(text=f"Building {current}...", spinner="dots") as spinner:
-            current.build(spinner, write_path=write_path)
-            visited.append(current)
-            spinner.succeed(f"{current} build completed.")
-
-    print('✅', "All complete.")
+        current.build(write_path=write_path)
+        visited.append(current)
 
     # return full sequence for testing
     return sequence + visited
@@ -629,7 +657,7 @@ def display_graph(node: WorkStation) -> None:
     visited = set()
 
     def visit(vertex):
-        print(vertex.display_string())
+        vertex.display_string()
         visited.add(vertex)
         if vertex.suppliers:
             for supplier in vertex.suppliers:

@@ -1,6 +1,8 @@
 import sys
 import os
 import pytest
+from shapely.geometry import Point
+import geopandas as gpd
 
 
 sys.path.append(os.path.abspath('../elara'))
@@ -52,6 +54,30 @@ def test_zip_paths(test_gzip_config):
     paths.build()
     assert set(paths.resources) == set(paths.tools)
     return paths
+
+
+# Re-project method
+@pytest.fixture
+def example_gdf():
+    data = {
+        'a': [1, 2],
+        'geometry': [Point(0, 0), Point(1000, 1000)]
+    }
+    return gpd.GeoDataFrame(data, geometry='geometry')
+
+
+test_hierarchy_get_data = [
+    ('epsg:27700', 'epsg:4326', 'epsg:4326'),
+    (None, 'epsg:4326', None),
+    ('epsg:27700', None, {'init': 'epsg:27700'})
+]
+
+
+@pytest.mark.parametrize("set_crs,to_crs,result_crs", test_hierarchy_get_data)
+def test_set_reproject(example_gdf, set_crs, to_crs, result_crs):
+    input_example = inputs.InputTool(None)
+    input_example.set_and_change_crs(target=example_gdf, set_crs=set_crs, to_crs=to_crs)
+    assert example_gdf.crs == result_crs
 
 
 # Events
@@ -135,12 +161,11 @@ def test_hierarchy_get_bad_type():
         assert hierarchy[[1]]
 
 
-def test_hierarchy_get_unknown(capsys):
+def test_hierarchy_get_unknown(caplog):
     hierarchy = inputs.ModeHierarchy(None)
     modes = ['one', 'two', 'three']
     mode = hierarchy.get(modes)
-    captured = capsys.readouterr()
-    assert captured.out
+    assert caplog.records
     assert mode == modes[1]
 
 
@@ -170,7 +195,6 @@ def test_loading_gzip_network(test_gzip_config, test_zip_paths):
     network.build(test_zip_paths.resources)
     assert len(network.link_gdf) == 8
     assert len(network.node_gdf) == 5
-
 
 # OSMWay
 def test_loading_osm_highways_map_from_xml(test_xml_config, test_paths):

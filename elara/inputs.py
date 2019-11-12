@@ -3,19 +3,53 @@ from lxml import etree
 import pandas as pd
 import pyproj
 from shapely.geometry import Point, LineString
-from shapely.ops import transform
 import gzip
 from io import BytesIO
 from math import floor
-from datetime import datetime, timedelta
-from typing import Dict, List, Union, Optional
+from typing import Optional
+import logging
 
 from elara.factory import WorkStation, Tool
 
 WGS_84 = pyproj.Proj(init="epsg:4326")
 
 
-class Events(Tool):
+class InputTool(Tool):
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.logger = logging.getLogger(__name__)
+
+    def set_and_change_crs(self, target: gdp.GeoDataFrame, set_crs=None, to_crs='epsg:4326'):
+        """
+        Set and change a target GeoDataFrame crs. Wrapper for geopandas .crs and .to_crs.
+        If set_crs or to_crs are None then warning is logged and no action taken.
+        :param target: geopandas GeoDataFrame
+        :param set_crs: optional string crs
+        :param to_crs: optional string crs
+        :return: None
+        """
+        if not isinstance(target, gdp.GeoDataFrame):
+            raise TypeError(f'Expected geopandas.GeoDataFrame not {type(target)}')
+
+        if set_crs is None:
+            self.logger.warning(f'No set_crs, re-projection disabled at {self.__str__()}')
+            return None
+
+        else:
+            self.logger.debug(f'Setting target projection to {set_crs}')
+            target.crs = {'init': set_crs}
+
+        if to_crs is None:
+            self.logger.warning(f'No to_crs, re-projection disabled at {self.__str__()}')
+            return None
+
+        else:
+            self.logger.debug(f'Re-projecting target to {to_crs}')
+            target.to_crs(to_crs, inplace=True)
+
+
+class Events(InputTool):
 
     requirements = ['events_path']
     elems = None
@@ -24,6 +58,7 @@ class Events(Tool):
         """
         Events object constructor.
         :param resources: GetPath resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -32,16 +67,21 @@ class Events(Tool):
         self.elems = get_elems(path, "event")
 
 
-class Network(Tool):
+class Network(InputTool):
 
     requirements = ['network_path', 'crs']
     node_gdf = None
     link_gdf = None
 
-    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+    def build(
+            self,
+            resources: dict,
+            write_path: Optional[str] = None
+    ) -> None:
         """
         Network object constructor.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -49,29 +89,36 @@ class Network(Tool):
         crs = resources['crs'].path
 
         # Extract element properties
+        self.logger.debug(f'Loading nodes')
         nodes = [
             self.get_node_elem(elem) for elem in get_elems(path, "node")
         ]
         node_lookup = {node["id"]: node for node in nodes}
+
+        self.logger.debug(f'Loading links')
         links = [
             self.get_link_elem(elem, node_lookup)
             for elem in get_elems(path, "link")
         ]
-        # Generate empty geodataframes
+
+        self.logger.debug(f'Building network nodes geodataframe')
         node_df = pd.DataFrame(nodes)
         node_df.set_index("id", inplace=True)
         node_df.sort_index(inplace=True)
+        self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
+
+        self.logger.debug(f'Building network links geodataframe')
         link_df = pd.DataFrame(links)
         link_df.set_index("id", inplace=True)
         link_df.sort_index(inplace=True)
+        self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
 
         # transform
-        self.node_gdf = gdp.GeoDataFrame(node_df, geometry="geometry").sort_index()
-        self.node_gdf.crs = {'init': crs}
-        self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
-        self.link_gdf.crs = {'init': crs}
-        self.node_gdf.to_crs(epsg=4326, inplace=True)
-        self.link_gdf.to_crs(epsg=4326, inplace=True)
+        self.logger.debug(f'Re-projecting network nodes geodataframe')
+        self.set_and_change_crs(self.node_gdf, set_crs=crs)
+        self.logger.debug(f'Re-projecting network links geodataframe')
+        self.set_and_change_crs(self.link_gdf, set_crs=crs)
+
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -107,6 +154,7 @@ class Network(Tool):
         """
         Convert raw link XML element into dictionary.
         :param elem: Link XML element
+        :param node_lookup: node lookup dict
         :return: Equivalent dictionary with relevant fields
         """
         from_id = str(elem.get("from"))
@@ -128,7 +176,7 @@ class Network(Tool):
         }
 
 
-class OSMWays(Tool):
+class OSMWays(InputTool):
     """
     Light weight network input with no geometries - just osm way attribute and length.
     """
@@ -142,12 +190,14 @@ class OSMWays(Tool):
         """
         OSM highway attribute map.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
         path = resources['network_path'].path
 
         # Extract element properties
+        self.logger.debug(f'Extracting links for OSM Ways input')
         links = [
                 self.get_link_attribute(elem)
                 for elem in get_elems(path, "link")
@@ -155,6 +205,7 @@ class OSMWays(Tool):
         self.ways = {link['id']: link['way'] for link in links}
         self.lengths = {link['id']: link['length'] for link in links}
         self.classes = list(set(self.ways.values()))
+        self.logger.debug(f'OSM classes = {self.classes}')
 
     @staticmethod
     def get_link_attribute(elem):
@@ -177,16 +228,21 @@ class OSMWays(Tool):
         }
 
 
-class TransitSchedule(Tool):
+class TransitSchedule(InputTool):
     requirements = ['transit_schedule_path', 'crs']
     stop_gdf = None
     mode_map = None
     modes = None
 
-    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+    def build(
+            self,
+            resources: dict,
+            write_path: Optional[str] = None
+    ) -> None:
         """
         Transit schedule object constructor.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -194,6 +250,7 @@ class TransitSchedule(Tool):
         crs = resources['crs'].path
 
         # Retrieve stop attributes
+        self.logger.debug(f'Loading transit stops')
         stops = [
             self.get_node_elem(elem)
             for elem in get_elems(path, "stopFacility")
@@ -207,8 +264,8 @@ class TransitSchedule(Tool):
         self.stop_gdf = gdp.GeoDataFrame(stop_df, geometry="geometry").sort_index()
 
         # transform
-        self.stop_gdf.crs = {'init': crs}
-        self.stop_gdf.to_crs(epsg=4326, inplace=True)
+        self.logger.debug(f'Reprojecting stops')
+        self.set_and_change_crs(self.stop_gdf, set_crs=crs)
 
         # Generate routes to modes map
         self.mode_map = dict(
@@ -218,13 +275,13 @@ class TransitSchedule(Tool):
         )
 
         self.modes = list(set(self.mode_map.values()))
+        self.logger.debug(f'Transit Schedule nodes = {self.modes}')
 
     @staticmethod
     def get_node_elem(elem):
         """
         Convert raw node XML element into dictionary.
         :param elem: Node XML element
-        :param crs: Original coordinate reference system code
         :return: Dictionary
         """
         x = float(elem.get("x"))
@@ -273,7 +330,7 @@ class TransitSchedule(Tool):
         return route_id, mode
 
 
-class TransitVehicles(Tool):
+class TransitVehicles(InputTool):
     requirements = ['transit_vehicles_path']
     veh_type_mode_map = None
     veh_type_capacity_map = None
@@ -281,10 +338,11 @@ class TransitVehicles(Tool):
     veh_id_veh_type_map = None
     transit_vehicle_counts = None
 
-    def build(self, resources, write_path: Optional[str] = None):
+    def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Transit vehicles object constructor.
-        :param path: Path to MATSim transit vehicles XML file (.xml)
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -299,6 +357,7 @@ class TransitVehicles(Tool):
             "Tram": "tram",
             "Ferry": "ferry"
         }
+        self.logger.debug(f'veh type mode map = {self.veh_type_mode_map}')
 
         # Vehicle type to total capacity correspondence
         self.veh_type_capacity_map = dict(
@@ -307,13 +366,16 @@ class TransitVehicles(Tool):
                 for elem in get_elems(path, "vehicleType")
             ]
         )
+        self.logger.debug(f'veh type capacity map = {self.veh_type_capacity_map}')
 
         # Vehicle ID to vehicle type correspondence
+        self.logger.debug('Building veh id to veh type map')
         self.veh_id_veh_type_map = {
             elem.get("id"): elem.get("type") for elem in get_elems(path, "vehicle")
         }
 
         self.types, self.transit_vehicle_counts = count_values(self.veh_id_veh_type_map)
+        self.logger.debug(f'veh types = {self.types}')
 
     @staticmethod
     def transform_veh_type_elem(elem):
@@ -323,13 +385,13 @@ class TransitVehicles(Tool):
         :return: (vehicle type, capacity) tuple
         """
         strip_namespace(elem)  # TODO only needed for this input = janky
-        id = elem.xpath("@id")[0]
+        ident = elem.xpath("@id")[0]
         seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
         standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
-        return id, seated_capacity + standing_capacity
+        return ident, seated_capacity + standing_capacity
 
 
-class Agents(Tool):
+class Agents(InputTool):
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
@@ -341,6 +403,7 @@ class Agents(Tool):
         """
         Population subpopulation attributes constructor.
         :param resources: dict, of resources from suppliers
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -379,7 +442,7 @@ class Agents(Tool):
         return ident, attributes
 
 
-class Attributes(Tool):
+class Attributes(InputTool):
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
@@ -390,6 +453,7 @@ class Attributes(Tool):
         """
         Population subpopulation attribute constructor.
         :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
         """
         super().build(resources)
 
@@ -426,15 +490,16 @@ class Attributes(Tool):
         return ident, attribute
 
 
-class Plans(Tool):
+class Plans(InputTool):
     requirements = ['plans_path']
     plans = None
+    persons = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Plans object constructor.
-        :param path: Path to MATSim events XML file (.xml)
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -443,10 +508,8 @@ class Plans(Tool):
         self.plans = get_elems(path, "plan")
         self.persons = get_elems(path, "person")
 
-        # self.agents = get_elems(path, "person")
 
-
-class OutputConfig(Tool):
+class OutputConfig(InputTool):
 
     requirements = ['output_config_path']
 
@@ -457,8 +520,8 @@ class OutputConfig(Tool):
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Config object constructor.
-        :param path: Path to MATSim events XML file (.xml)
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources)
 
@@ -485,7 +548,7 @@ class OutputConfig(Tool):
         self.sub_populations = list(self.sub_populations)
 
 
-class ModeHierarchy(Tool):
+class ModeHierarchy(InputTool):
 
     requirements = []
 
@@ -510,7 +573,7 @@ class ModeHierarchy(Tool):
             raise TypeError("ModeHierarchy get method expects list of strings")
         for mode in modes:
             if mode not in self.hierarchy:
-                print(f"WARNING {mode} not found in hierarchy")
+                self.logger.warning(f"WARNING {mode} not found in hierarchy")
         for h in self.hierarchy:
             for mode in modes:
                 if h == mode:
@@ -518,11 +581,11 @@ class ModeHierarchy(Tool):
         # if mode not found in hierarchy then return middle mode
         mode_index = floor(len(modes) / 2)
         mode = modes[mode_index]
-        print(f"WARNING {modes} not in hierarchy, returning {mode}")
+        self.logger.warning(f"WARNING {modes} not in hierarchy, returning {mode}")
         return mode
 
 
-class ModeMap(Tool):
+class ModeMap(InputTool):
 
     requirements = []
 
@@ -561,13 +624,15 @@ class InputsWorkStation(WorkStation):
         'mode_hierarchy': ModeHierarchy,
     }
 
-    def __str__(self):
-        return f'Inputs WorkStation'
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
 
 def get_elems(path, tag):
     """
     Wrapper for unzipping and dealing with xml namespaces
+    :param path: xml path string
     :param tag: The tag type to extract , e.g. 'link'
     :return: Generator of elements
     """

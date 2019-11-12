@@ -2,11 +2,14 @@ from math import floor
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import os
 from typing import Union, Tuple, Optional
+import logging
+from halo import Halo
 
 
-from elara.factory import WorkStation, Tool, ChunkWriter
+from elara.factory import WorkStation, Tool
+
+logger = logging.getLogger(__name__)
 
 
 class EventHandlerTool(Tool):
@@ -15,10 +18,15 @@ class EventHandlerTool(Tool):
     """
     result_gdfs = dict()
 
+    def __init__(self, config, option=None):
+        self.logger = logging.getLogger(__name__)
+        super().__init__(config, option)
+
     def build(
             self,
             resources: dict,
             write_path=None) -> None:
+
         super().build(resources, write_path)
 
     @staticmethod
@@ -50,8 +58,6 @@ class EventHandlerTool(Tool):
             ]
         else:
             return "car"
-
-        #return self.resources['transit_vehicles'].veh_id_veh_type_map.get(vehicle_id, "car")
 
     def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -105,15 +111,13 @@ class AgentWaitingTimes(EventHandlerTool):
         self.waiting_time_log = None
 
         # Initialise results storage
-        self.results = dict()  # Result dataframes ready to export
-
-    def __str__(self):
-        return f'AgentWaitingTimes'
+        self.results = dict()
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -252,13 +256,11 @@ class VolumeCounts(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def __str__(self):
-        return f'VolumeCounts'
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -266,6 +268,7 @@ class VolumeCounts(EventHandlerTool):
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
             self.resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
@@ -375,13 +378,11 @@ class PassengerCounts(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def __str__(self):
-        return f'PassengerCounts'
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build Handler.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -392,6 +393,7 @@ class PassengerCounts(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
@@ -422,6 +424,7 @@ class PassengerCounts(EventHandlerTool):
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
                 attribute_class = self.resources['attributes'].map[agent_id]
+
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
 
@@ -429,6 +432,7 @@ class PassengerCounts(EventHandlerTool):
                     self.veh_occupancy[veh_id][attribute_class] = 1
                 else:
                     self.veh_occupancy[veh_id][attribute_class] += 1
+
         elif event_type == "PersonLeavesVehicle":
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
@@ -437,12 +441,14 @@ class PassengerCounts(EventHandlerTool):
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
                 attribute_class = self.resources['attributes'].map[agent_id]
+
                 if not self.veh_occupancy[veh_id][attribute_class]:
                     pass
                 else:
                     self.veh_occupancy[veh_id][attribute_class] -= 1
                     if not self.veh_occupancy[veh_id]:
                         self.veh_occupancy.pop(veh_id, None)
+
         elif event_type == "left link" or event_type == "vehicle leaves traffic":
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
@@ -452,6 +458,7 @@ class PassengerCounts(EventHandlerTool):
                 time = float(elem.get("time"))
                 link = elem.get("link")
                 occupancy_dict = self.veh_occupancy.get(veh_id, {})
+
                 for attribute_class, occupancy in occupancy_dict.items():
                     x, y, z = table_position(
                         self.elem_indices,
@@ -533,13 +540,11 @@ class StopInteractions(EventHandlerTool):
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
 
-    def __str__(self):
-        return f'StopInteractions'
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler.
-        :param resources: dict, supplier resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -550,6 +555,7 @@ class StopInteractions(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
@@ -572,17 +578,20 @@ class StopInteractions(EventHandlerTool):
         'PersonLeavesVehicle' events to determine stop boardings and alightings.
         :param elem: Event XML element
         """
-
         event_type = elem.get("type")
+
         if event_type == "waitingForPt":
             agent_id = elem.get("agent")
             origin_stop = elem.get("atStop")
             destination_stop = elem.get("destinationStop")
             self.agent_status[agent_id] = [origin_stop, destination_stop]
+
         elif event_type == "PersonEntersVehicle":
             veh_mode = self.vehicle_mode(elem.get("vehicle"))
+
             if veh_mode == self.option:
                 agent_id = elem.get("person")
+
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
                     attribute_class = self.resources['attributes'].map[agent_id]
@@ -596,10 +605,13 @@ class StopInteractions(EventHandlerTool):
                         time
                     )
                     self.boardings[x, y, z] += 1
+
         elif event_type == "PersonLeavesVehicle":
             veh_mode = self.vehicle_mode(elem.get("vehicle"))
+
             if veh_mode == self.option:
                 agent_id = elem.get("person")
+
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
                     attribute_class = self.resources['attributes'].map[agent_id]
@@ -668,41 +680,58 @@ class EventHandlerWorkStation(WorkStation):
         "waiting_times": AgentWaitingTimes,
     }
 
-    def __str__(self):
-        return f'Events Handler WorkStation'
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
-    def build(self, spinner=None, write_path=None) -> None:
+    def build(self, write_path=None) -> None:
         """
         Build all required handlers, then finalise and save results.
+        :param write_path: Optional output path overwrite
         :return: None
         """
+
         if not self.resources:
+            self.logger.warning(f'{self.__str__} has no resources, build returning None.')
             return None
 
         # build tools
-        super().build(spinner, write_path=write_path)
+        super().build(write_path=write_path)
 
         # iterate through events
         events = self.supplier_resources['events']
+        self.logger.info('***Commencing Event Iteration***')
+        base = 1
+
         for i, event in enumerate(events.elems):
-            for event_handler in self.resources.values():
-                event_handler.process_event(event)
-            if not i % 10000 and spinner:
-                spinner.text = f'{self} processed {i} events.'
+
+            if not (i+1) % base:
+                self.logger.info(f'parsed {i + 1} events')
+                base *= 2
+
+            for handler in self.resources.values():
+                handler.process_event(event)
+
+        self.logger.info('*** Completed Event Iteration ***')
 
         # finalise
         # Generate event file outputs
-        for handler_name, event_handler in self.resources.items():
-            if spinner:
-                spinner.text = f'{self} finalising {handler_name}.'
-            event_handler.finalise()
-            if self.config.contract:
-                event_handler.contract_results()
+        self.logger.debug(f'{self.__str__()} .resources = {self.resources}')
 
-            if event_handler.result_gdfs:
-                for name, gdf in event_handler.result_gdfs.items():
-                    if spinner:
-                        spinner.text = f'{self} writing {name} results to disk.'
+        for handler_name, handler in self.resources.items():
+            self.logger.info(f'Finalising {handler.__str__()}')
+            handler.finalise()
+
+            if self.config.contract:
+                self.logger.info(f'Contracting {handler.__str__()}')
+                handler.contract_results()
+
+            self.logger.debug(f'{len(handler.result_gdfs)} result_gdfs at {handler.__str__()}')
+
+            if handler.result_gdfs:
+                self.logger.info(f'Writing results for {handler.__str__()}')
+
+                for name, gdf in handler.result_gdfs.items():
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     geojson_name = "{}_{}.geojson".format(self.config.name, name)
 

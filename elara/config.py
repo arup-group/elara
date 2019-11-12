@@ -1,6 +1,10 @@
 import os.path
 import toml
 from elara.factory import WorkStation, Tool
+import logging
+from elara import ConfigError
+
+logger = logging.getLogger(__name__)
 
 
 class Config:
@@ -10,9 +14,14 @@ class Config:
         Config object constructor.
         :param path: Path to scenario configuration TOML file
         """
+        self.logger = logging.getLogger(__name__)
+
+        self.logger.debug(f'Loading config from {path}')
         self.parsed_toml = toml.load(path, _dict=dict)
 
         # Scenario settings
+        self.logger.debug(f'Loading scenario settings from config')
+
         self.name = self.parsed_toml["scenario"]["name"]
         self.time_periods = self.valid_time_periods(
             self.parsed_toml["scenario"]["time_periods"]
@@ -20,24 +29,50 @@ class Config:
         self.scale_factor = self.valid_scale_factor(
             self.parsed_toml["scenario"]["scale_factor"]
         )
-        self.verbose = self.parsed_toml["scenario"].get("verbose", False)
+        self.logging = self.valid_verbosity(
+            self.parsed_toml["scenario"].get("verbose", False)
+        )
+
+        self.logger.debug(f'Scenario name = {self.name}')
+        self.logger.debug(f'Scenario time periods = {self.time_periods}')
+        self.logger.debug(f'Scale factor = {self.scale_factor}')
+        self.logger.debug(f'Verbosity/logging = {self.logging}')
 
         # Factory requirements
+        self.logger.debug(f'Loading factory build requirements from config')
+
         self.event_handlers = self.parsed_toml.get("event_handlers", {})
         self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
         self.post_processors = self.parsed_toml.get("post_processors", {})
         self.benchmarks = self.parsed_toml.get("benchmarks", {})
 
+        self.logger.debug(f'Required Event Handlers = {self.event_handlers}')
+        self.logger.debug(f'Required Plan Handlers = {self.plan_handlers}')
+        self.logger.debug(f'Required Post Processors = {self.post_processors}')
+        self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
+
         # Output settings
+        self.logger.debug(f'Loading output settings from config')
+
         self.output_path = self.parsed_toml["outputs"]["path"]
         self.contract = self.parsed_toml["outputs"].get("contract", False)
 
+        self.logger.debug(f'Output Path = {self.output_path}')
+        self.logger.debug(f'Contract = {self.contract}')
+
         if not os.path.exists(self.output_path):
+            self.logger.info(f'Creating output path: {self.output_path}')
             os.mkdir(self.output_path)
             
         benchmarks_path = os.path.join(self.output_path, "benchmarks")
         if not os.path.exists(benchmarks_path):
+            self.logger.info(f'Creating output path: {benchmarks_path}')
             os.mkdir(benchmarks_path)
+
+    """
+    Property methods used for config dependant requirements.
+    For example crs is only required if spatial processing required.
+    """
 
     @property
     def dummy_path(self):
@@ -45,7 +80,9 @@ class Config:
 
     @property
     def crs(self):
-        return self.parsed_toml["scenario"]["crs"]
+        return self.valid_crs(
+            self.parsed_toml["scenario"]["crs"]
+        )
 
     @property
     def events_path(self):
@@ -98,7 +135,7 @@ class Config:
         :return: Pass through number of time periods if valid
         """
         if inp <= 0 or inp > 96:
-            raise Exception(
+            raise ConfigError(
                 "Specified time periods ({}) not in valid range".format(inp)
             )
         return int(inp)
@@ -112,7 +149,7 @@ class Config:
         :return: Pass through scale factor if valid
         """
         if inp <= 0 or inp > 1:
-            raise Exception(
+            raise ConfigError(
                 "Specified scale factor ({}) not in valid range".format(inp)
             )
         return float(inp)
@@ -126,11 +163,60 @@ class Config:
         :return: Pass through path if it exists
         """
         if not os.path.exists(path):
-            raise Exception("Specified path for {} does not exist".format(field_name))
+            raise ConfigError("Specified path for {} does not exist".format(field_name))
         return path
 
+    def valid_verbosity(self, inp):
+        """
+        Raise exception if specified verbosity does not exist, otherwise return logging level.
+        Allows overwrite by env variable.
+        :param inp: Proposed logging level
+        :return: logging level
+        """
+        env_level = os.environ.get('ELARA_LOGLEVEL', None)
+        if env_level is not None:
+            self.logger.warning(f'*** Config logging level overwritten by env to {env_level} ***')
+            inp = env_level
 
-class GetCRS(Tool):
+        options = {
+            'true': logging.DEBUG,
+            'false': logging.INFO,
+            'info': logging.INFO,
+            'debug': logging.DEBUG,
+            'warn': logging.WARN,
+            'warning': logging.WARNING
+        }
+        if not str(inp).lower() in options:
+            raise ConfigError(f"Config verbosity/logging level must be one of: {options.keys()}")
+        return options[str(inp).lower()]
+
+    def valid_crs(self, inp):
+        """
+        Raise exception if specified verbosity does not exist, otherwise return logging level.
+        :param inp: Proposed crs
+        :return: logging level
+        """
+        if inp == 'None':
+            self.logger.warning(f'Re-projection disabled at configuration')
+            return None
+
+        if isinstance(inp, int):
+            inp = f"EPSG:{inp}"
+            self.logger.warning(f'Configured CRS inferred as {inp}.')
+
+        if not isinstance(inp, str):
+            raise ConfigError('Configured CRS should be string format, for example: "EPSG:27700"')
+        return inp
+
+
+class PathTool(Tool):
+
+    def __init__(self, config, option=None):
+        super().__init__(config, option)
+        self.logger = logging.getLogger(__name__)
+
+
+class GetCRS(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -138,7 +224,7 @@ class GetCRS(Tool):
         self.path = self.config.crs
 
 
-class GetEventsPath(Tool):
+class GetEventsPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -146,7 +232,7 @@ class GetEventsPath(Tool):
         self.path = self.config.events_path
 
 
-class GetPlansPath(Tool):
+class GetPlansPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -154,7 +240,7 @@ class GetPlansPath(Tool):
         self.path = self.config.plans_path
 
 
-class GetNetworkPath(Tool):
+class GetNetworkPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -162,7 +248,7 @@ class GetNetworkPath(Tool):
         self.path = self.config.network_path
 
 
-class GetAttributesPath(Tool):
+class GetAttributesPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -170,7 +256,7 @@ class GetAttributesPath(Tool):
         self.path = self.config.attributes_path
 
 
-class GetTransitSchedulePath(Tool):
+class GetTransitSchedulePath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -178,7 +264,7 @@ class GetTransitSchedulePath(Tool):
         self.path = self.config.transit_schedule_path
 
 
-class GetTransitVehiclesPath(Tool):
+class GetTransitVehiclesPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -186,7 +272,7 @@ class GetTransitVehiclesPath(Tool):
         self.path = self.config.transit_vehicles_path
 
 
-class GetOutputConfigPath(Tool):
+class GetOutputConfigPath(PathTool):
     path = None
 
     def build(self, resource: dict, write_path=None):
@@ -206,13 +292,18 @@ class PathFinderWorkStation(WorkStation):
         'output_config_path': GetOutputConfigPath,
     }
 
-    def __str__(self):
-        return f'PathFinder WorkStation'
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
 
 class RequirementsWorkStation(WorkStation):
 
     tools = None
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
     def gather_manager_requirements(self):
         reqs = {}
@@ -221,7 +312,3 @@ class RequirementsWorkStation(WorkStation):
         reqs.update(self.config.post_processors)
         reqs.update(self.config.benchmarks)
         return reqs
-
-    def __str__(self):
-        return f'Requirements WorkStation'
-

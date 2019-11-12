@@ -3,6 +3,7 @@ import os
 import pytest
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 
 sys.path.append(os.path.abspath('../elara'))
@@ -30,7 +31,7 @@ test_matsim_time_data = [
 
 @pytest.mark.parametrize("time,seconds", test_matsim_time_data)
 def test_convert_time(time, seconds):
-    assert plan_handlers.convert_time(time) == seconds
+    assert plan_handlers.convert_time_to_seconds(time) == seconds
 
 
 # Config
@@ -72,6 +73,30 @@ def base_handler(test_config, input_manager):
     return base_handler
 
 ### Log Handler ###
+# Wrapping
+test_matsim_time_data = [
+    (['06:00:00', '12:45:00', '18:30:00'], '1-18:30:00'),
+    (['06:00:00', '12:45:00', '24:00:00'], '2-00:00:00'),
+    (['06:00:00', '24:00:00', '08:30:00'], '2-08:30:00'),
+    (['06:00:00', '18:45:00', '12:30:00'], '2-12:30:00'),
+    (['06:00:00', '18:45:00', '18:45:00'], '1-18:45:00'),
+    (['00:00:00', '12:45:00', '18:45:00'], '1-18:45:00'),
+    (['06:00:00', '04:45:00', '02:45:00'], '3-02:45:00'),
+    (['00:00:00'], '1-00:00:00'),
+    (['24:00:00'], '2-00:00:00'),
+]
+
+
+@pytest.mark.parametrize("times,final_string", test_matsim_time_data)
+def test_day_wrapping(times, final_string):
+    current_dt = None
+    for new_time_str in times:
+        current_dt = plan_handlers.non_wrapping_datetime(current_dt, new_time_str)
+    assert isinstance(current_dt, datetime)
+    assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
+
+
+# Normal Case
 @pytest.fixture
 def agent_log_handler(test_config, input_manager):
     handler = plan_handlers.AgentLogsHandler(test_config, 'all')
@@ -112,10 +137,72 @@ def test_finalised_logs(agent_log_handler_finalised):
     assert len(handler.results) == 0
 
 
-### Plan Handler ###
+# Plans Wrapping case
+
+# Bad Config (plans wrap past 24hrs)
 @pytest.fixture
-def agent_plan_handler(test_config, input_manager):
-    handler = plan_handlers.AgentPlansHandler(test_config, 'poor')
+def test_bad_plans_config():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_bad_plans.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+# Paths
+@pytest.fixture
+def test_bad_plans_paths(test_bad_plans_config):
+    paths = PathFinderWorkStation(test_bad_plans_config)
+    paths.connect(managers=None, suppliers=None)
+    paths.load_all_tools()
+    paths.build()
+    assert set(paths.resources) == set(paths.tools)
+    return paths
+
+
+# Input Manager
+@pytest.fixture
+def input_bad_plans_manager(test_bad_plans_config, test_bad_plans_paths):
+    input_workstation = InputsWorkStation(test_bad_plans_config)
+    input_workstation.connect(managers=None, suppliers=[test_bad_plans_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+    return input_workstation
+
+
+@pytest.fixture
+def agent_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
+    handler = plan_handlers.AgentLogsHandler(test_bad_plans_config, 'all')
+
+    resources = input_bad_plans_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.activities_log.chunk) == 0
+    assert len(handler.legs_log.chunk) == 0
+
+    return handler
+
+
+@pytest.fixture
+def agent_log_handler_finalised_bad_plans(agent_log_handler_bad_plans):
+    handler = agent_log_handler_bad_plans
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    assert handler.activities_log.chunk[-1].get('end_day') == 3
+    assert handler.legs_log.chunk[-1].get('end_day') == 3
+    handler.finalise()
+    return handler
+
+
+def test_finalised_logs_bad_plans(agent_log_handler_finalised_bad_plans):
+    handler = agent_log_handler_finalised_bad_plans
+    assert len(handler.results) == 0
+
+
+# Plan Handler ###
+@pytest.fixture
+def agent_plan_handler(test_bad_plans_config, input_manager):
+    handler = plan_handlers.AgentPlansHandler(test_bad_plans_config, 'poor')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -146,6 +233,36 @@ def agent_plans_handler_finalised(agent_plan_handler):
 def test_finalised_plans(agent_plans_handler_finalised):
     handler = agent_plans_handler_finalised
 
+    assert len(handler.results) == 0
+
+
+# Plans Wrapping case
+
+# Bad Config (plans wrap past 24hrs)
+@pytest.fixture
+def agent_plans_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
+    handler = plan_handlers.AgentPlansHandler(test_bad_plans_config, 'poor')
+
+    resources = input_bad_plans_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.plans_log.chunk) == 0
+    return handler
+
+
+@pytest.fixture
+def agent_plans_handler_finalised_bad_plans(agent_plans_handler_bad_plans):
+    handler = agent_plans_handler_bad_plans
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    assert handler.plans_log.chunk[-1].get('end_day') == 3
+    handler.finalise()
+    return handler
+
+
+def test_finalised_plans_bad_plans(agent_plans_handler_finalised_bad_plans):
+    handler = agent_plans_handler_finalised_bad_plans
     assert len(handler.results) == 0
 
 
