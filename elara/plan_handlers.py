@@ -1,10 +1,11 @@
 import numpy as np
 from math import floor
 import pandas as pd
-import os
 from datetime import datetime, timedelta
+from typing import Optional
+import logging
 
-from elara.factory import Tool, WorkStation, ChunkWriter
+from elara.factory import Tool, WorkStation
 
 
 class PlanHandlerTool(Tool):
@@ -12,6 +13,7 @@ class PlanHandlerTool(Tool):
     Base Tool class for Plan Handling.
     """
     def __init__(self, config, option=None):
+        self.logger = logging.getLogger(__name__)
         super().__init__(config, option)
 
     def build(
@@ -77,17 +79,20 @@ class ModeShareHandler(PlanHandlerTool):
     def build(self, resources: dict, write_path=None) -> None:
         """
         Build Handler.
-        :param resources:
-        :return:
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         """
         super().build(resources, write_path=write_path)
 
         modes = self.resources['output_config'].modes + self.resources['transit_schedule'].modes
         if 'pt' in modes:
             modes.remove('pt')
+        self.logger.debug(f'modes = {modes}')
 
         activities = self.resources['output_config'].activities
+        self.logger.debug(f'activities = {activities}')
         sub_populations = self.resources['output_config'].sub_populations
+        self.logger.debug(f'sub_populations = {sub_populations}')
 
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(modes)
@@ -156,7 +161,7 @@ class ModeShareHandler(PlanHandlerTool):
                             self.mode_counts[x, y, z, w] += 1
 
                         # update endtime for next activity
-                        end_time = convert_time(stage.get('end_time'))
+                        end_time = convert_time_to_seconds(stage.get('end_time'))
 
                         # reset modes
                         modes = []
@@ -266,7 +271,7 @@ class AgentLogsHandler(PlanHandlerTool):
         """
         Build handler from resources.
         :param resources: dict, supplier resources
-        :return: None
+        :param write_path: Optional output path overwrite
         """
         super().build(resources, write_path=write_path)
 
@@ -287,7 +292,14 @@ class AgentLogsHandler(PlanHandlerTool):
         :return: Tuple[List[dict]]
         """
         for plan in elem:
+
             if plan.get('selected') == 'yes':
+
+                # check that plan starts with an activity
+                if not plan[0].tag == 'activity':
+                    raise UserWarning('Plan does not start with activity.')
+                if plan[0].get('type') == 'pt interaction':
+                    raise UserWarning('Plan cannot start with activity type "pt interaction".')
 
                 activities = []
                 legs = []
@@ -298,7 +310,10 @@ class AgentLogsHandler(PlanHandlerTool):
                 trip_seq_idx = 0
                 act_seq_idx = 0
 
-                arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
+                arrival_dt = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
+                activity_end_dt = None
+                x = None
+                y = None
 
                 for stage in plan:
 
@@ -311,14 +326,17 @@ class AgentLogsHandler(PlanHandlerTool):
 
                             trip_seq_idx += 1  # increment for a new trip idx
 
-                            end = stage.get('end_time', '23:59:59')
-                            end_dt = safe_strptime(end)
+                            end_time_str = stage.get('end_time', '23:59:59')
 
-                            duration = end_dt - arrival_dt
+                            activity_end_dt = non_wrapping_datetime(
+                                arrival_dt, end_time_str, self.logger
+                            )
+
+                            duration = activity_end_dt - arrival_dt
 
                         else:
-                            end_dt = arrival_dt  # zero duration
-                            duration = arrival_dt - arrival_dt
+                            activity_end_dt = arrival_dt
+                            duration = arrival_dt - arrival_dt  # zero duration
 
                         x = stage.get('x')
                         y = stage.get('y')
@@ -331,10 +349,11 @@ class AgentLogsHandler(PlanHandlerTool):
                                 'x': x,
                                 'y': y,
                                 'start': arrival_dt.time(),
-                                'end': end_dt.time(),
+                                'end': activity_end_dt.time(),
+                                'end_day': activity_end_dt.day,
                                 # 'duration': duration,
                                 'start_s': self.get_seconds(arrival_dt),
-                                'end_s': self.get_seconds(end_dt),
+                                'end_s': self.get_seconds(activity_end_dt),
                                 'duration_s': duration.total_seconds()
                             }
                         )
@@ -351,7 +370,7 @@ class AgentLogsHandler(PlanHandlerTool):
                         h, m, s = trav_time.split(":")
                         td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
-                        arrival_dt = end_dt + td
+                        arrival_dt = activity_end_dt + td
 
                         legs.append(
                             {
@@ -363,10 +382,11 @@ class AgentLogsHandler(PlanHandlerTool):
                                 'oy': y,
                                 'dx': None,
                                 'dy': None,
-                                'start': end_dt.time(),
+                                'start': activity_end_dt.time(),
                                 'end': arrival_dt.time(),
+                                'end_day': arrival_dt.day,
                                 # 'duration': td,
-                                'start_s': self.get_seconds(end_dt),
+                                'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
                                 'duration_s': td.total_seconds(),
                                 'distance': stage.get('distance')
@@ -395,10 +415,11 @@ class AgentLogsHandler(PlanHandlerTool):
         :param dt: datetime
         :return: int, seconds
         """
+        d = dt.day
         h = dt.hour
         m = dt.minute
         s = dt.second
-        return s + (60 * (m + (60 * h)))
+        return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
 
 
 class AgentPlansHandler(PlanHandlerTool):
@@ -408,7 +429,6 @@ class AgentPlansHandler(PlanHandlerTool):
     """
 
     requirements = ['plans', 'transit_schedule', 'attributes']
-    # valid_options = ['all']
 
     def __init__(self, config, option=None):
         """
@@ -433,6 +453,7 @@ class AgentPlansHandler(PlanHandlerTool):
         """
         Build handler from resources.
         :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -454,7 +475,6 @@ class AgentPlansHandler(PlanHandlerTool):
         ident = elem.get('id')
         # get subpop
         subpop = self.resources['attributes'].map.get(ident)
-        # todo is it slow calling a dict every time? Could keep these closer.
 
         if not subpop == self.option:
             return None
@@ -470,7 +490,10 @@ class AgentPlansHandler(PlanHandlerTool):
             # trip_seq_idx = 0
             act_seq_idx = 0
 
-            arrival_dt = datetime.strptime("00:00:00", '%H:%M:%S')
+            activity_end_dt = None
+            arrival_dt = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
+            y = None
+            x = None
 
             for stage in plan:
 
@@ -483,12 +506,16 @@ class AgentPlansHandler(PlanHandlerTool):
 
                         # trip_seq_idx += 1  # increment for a new trip idx
 
-                        end = stage.get('end_time', '23:59:59')
-                        end_dt = safe_strptime(end)
-                        duration = end_dt - arrival_dt
+                        end_time_str = stage.get('end_time', '23:59:59')
+
+                        activity_end_dt = non_wrapping_datetime(
+                            arrival_dt, end_time_str, self.logger
+                        )
+
+                        duration = activity_end_dt - arrival_dt
 
                     else:
-                        end_dt = arrival_dt  # zero duration
+                        activity_end_dt = arrival_dt  # zero duration
                         duration = arrival_dt - arrival_dt
 
                     x = stage.get('x')
@@ -508,10 +535,11 @@ class AgentPlansHandler(PlanHandlerTool):
                             'dx': x,
                             'dy': y,
                             'start': arrival_dt.time(),
-                            'end': end_dt.time(),
+                            'end': activity_end_dt.time(),
+                            'end_day': activity_end_dt.day,
                             # 'duration': duration,
                             'start_s': self.get_seconds(arrival_dt),
-                            'end_s': self.get_seconds(end_dt),
+                            'end_s': self.get_seconds(activity_end_dt),
                             'duration_s': duration.total_seconds(),
                         }
                     )
@@ -528,7 +556,7 @@ class AgentPlansHandler(PlanHandlerTool):
                     h, m, s = trav_time.split(":")
                     td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
-                    arrival_dt = end_dt + td
+                    arrival_dt = activity_end_dt + td
 
                     legs.append(
                         {
@@ -544,10 +572,11 @@ class AgentPlansHandler(PlanHandlerTool):
                             'oy': y,
                             'dx': None,
                             'dy': None,
-                            'start': end_dt.time(),
+                            'start': activity_end_dt.time(),
                             'end': arrival_dt.time(),
+                            'end_day': arrival_dt.day,
                             # 'duration': td,
-                            'start_s': self.get_seconds(end_dt),
+                            'start_s': self.get_seconds(activity_end_dt),
                             'end_s': self.get_seconds(arrival_dt),
                             'duration_s': td.total_seconds(),
                             # 'distance': stage.get('distance'),
@@ -560,7 +589,7 @@ class AgentPlansHandler(PlanHandlerTool):
                 leg['dy'] = activities[idx + 1]['oy']
 
             # combine into plan
-            # todo make this less shit.
+            # todo make this better.
             assert len(activities) - len(legs) == 1
 
             plans_log = []
@@ -633,6 +662,7 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         """
         Build Handler.
         :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
         :return: None
         """
         super().build(resources, write_path=write_path)
@@ -738,51 +768,61 @@ class PlanHandlerWorkStation(WorkStation):
         "highway_distances": AgentHighwayDistanceHandler,
     }
 
-    def build(self, spinner=None, write_path=None):
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
+
+    def build(self, write_path=None):
         """
         Build all required handlers, then finalise and save results.
         :return: None
         """
 
         if not self.resources:
+            self.logger.warning(f'{self.__str__} has no resources, build returning None.')
             return None
 
         # build tools
-        super().build(spinner)
+        super().build()
 
         # iterate through plans
         plans = self.supplier_resources['plans']
+        self.logger.info(f' *** Commencing Plans Iteration ***')
+        base = 1
+
         for i, person in enumerate(plans.persons):
+
+            if not (i+1) % base:
+                self.logger.info(f'parsed {i + 1} persons plans')
+                base *= 2
+
             for plan_handler in self.resources.values():
                 plan_handler.process_plans(person)
-            if not i % 10000 and spinner:
-                spinner.text = f'{self} processed {i} plans.'
+
+        self.logger.info('***Completed Plan Iteration***')
 
         # finalise
         # Generate event file outputs
+        self.logger.debug(f'{self.__str__()} .resources = {self.resources}')
+
         for handler_name, handler in self.resources.items():
-            if spinner:
-                spinner.text = f'{self} finalising {handler_name}.'
+            self.logger.info(f'Finalising {handler.__str__()}')
             handler.finalise()
-            # if self.config.contract:
-            #     handler.contract_results()
+
+            self.logger.debug(f'{len(handler.results)} result_gdfs at {handler.__str__()}')
 
             if handler.results:
-                for name, result in handler.results.items():
-                    if spinner:
-                        spinner.text = f'{self} writing {name} results to disk.'
+                self.logger.info(f'Writing results from {handler.__str__()}')
 
+                for name, result in handler.results.items():
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     self.write_csv(result, csv_name, write_path=write_path)
 
-    def __str__(self):
-        return f'Plan Handling WorkStation'
 
-
-def convert_time(t: str) -> int:
+def convert_time_to_seconds(t: str) -> Optional[int]:
     """
-    Convert MATSim output plan times into seconds
-
+    Convert MATSim output plan times into seconds.
+    If t is None, must return None.
     :param t: MATSim str time
     :return: seconds int
     """
@@ -802,11 +842,34 @@ def export_geojson(gdf, path):
         file.write(gdf.to_json())
 
 
-def safe_strptime(time):
-    try:
-        dt = datetime.strptime(time, '%H:%M:%S')
-    except ValueError:
-        time = time.replace('24', '23')
-        dt = datetime.strptime(time, "%H:%M:%S")
-        dt += timedelta(hours=1)
-    return dt
+def non_wrapping_datetime(
+        current_time: datetime,
+        new_time_str: str,
+        logger=None
+) -> datetime:
+    """
+    Function to step time strings and day counter to avoid wrapping of times around the
+    same day. Also converts "24:00:00" to "00:00:00" and adds a day.
+    :param current_time: datetime from previous event
+    :param new_time_str: new time string
+    :param logger: optional logger
+    :return: time string, day
+    """
+
+    if current_time is None:
+        current_time = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
+
+    current_day = current_time.day
+    current_time_str = current_time.strftime('%H:%M:%S')
+
+    if new_time_str[-8:] == '24:00:00':
+        if logger:
+            logger.warn('"24:00:00" time string encountered, adding day to time.')
+        return datetime.strptime(f"{current_day + 1}-00:00:00", '%d-%H:%M:%S')
+
+    if new_time_str < current_time_str:  # infer that single day has passed
+        if logger:
+            logger.warn('Time Wrapping prevented by adding day to time.')
+        return datetime.strptime(f"{current_day + 1}-{new_time_str}", '%d-%H:%M:%S')
+
+    return datetime.strptime(f"{current_day}-{new_time_str}", '%d-%H:%M:%S')

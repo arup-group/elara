@@ -1,6 +1,7 @@
 import sys
 import os
 import pytest
+import logging
 
 
 sys.path.append(os.path.abspath('../elara'))
@@ -27,6 +28,7 @@ class Config:
 
 
 class ExampleTool(Tool):
+    logger = logging.getLogger(__name__)
     pass
 
 
@@ -72,8 +74,10 @@ class GetPath(ExampleTool):
 
 
 # Work stations
+
 class StartProcess(WorkStation):
     tools = None
+    logger = logging.getLogger(__name__)
 
     def gather_manager_requirements(self):
 
@@ -84,6 +88,7 @@ class PostProcess(WorkStation):
     tools = {
         'vkt': VKT,
     }
+    logger = logging.getLogger(__name__)
 
 
 class HandlerProcess(WorkStation):
@@ -91,6 +96,7 @@ class HandlerProcess(WorkStation):
         'volume_counts': VolumeCounts,
         'mode_share': ModeShare,
     }
+    logger = logging.getLogger(__name__)
 
 
 class InputProcess(WorkStation):
@@ -99,6 +105,7 @@ class InputProcess(WorkStation):
         'plans': Plans,
         'network': Network
     }
+    logger = logging.getLogger(__name__)
 
 
 class PathProcess(WorkStation):
@@ -107,6 +114,7 @@ class PathProcess(WorkStation):
         'events_path': GetPath,
         'plans_path': GetPath,
     }
+    logger = logging.getLogger(__name__)
 
 
 config = Config()
