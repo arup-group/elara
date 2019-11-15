@@ -18,12 +18,19 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument("config_path", type=click.Path(exists=True))
-def cli(config_path):
+@click.option("--path_overrides", '-o', default=None)
+def cli(config_path, path_overrides: str):
     """
     Command line tool for processing a MATSim scenario events output.
     :param config_path: Configuration file path
     """
     config = Config(config_path)
+
+    if path_overrides:
+        path_overrides = dict(path_overrides)
+        for path in path_overrides:
+            config.parsed_toml['inputs'][path] = path_overrides[path]
+
     main(config)
 
 
