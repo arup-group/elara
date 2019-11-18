@@ -93,6 +93,13 @@ Usage: elara [OPTIONS] CONFIG_PATH
 
 Options:
   -h, --help  Show this message and exit.
+  -o, --path_overrides string representation of a dictionary mapping a set of input paths, and/our output 'path' to overrides
+
+
+Example:
+  elara tests/test_xml_scenario.toml
+
+  elara -o "{'events': 'some_event_path'}" tests/test_xml_scenario
 ```
 
 Given the path to a suitable configuration TOML file (see [here](#markdown-header-configuration-format)), processes a MATSim events file and produces the desired
