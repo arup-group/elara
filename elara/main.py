@@ -32,7 +32,10 @@ def cli(config_path, path_overrides: str):
         # Construct a dictionary from the path_overrides str
         path_overrides = ast.literal_eval(path_overrides)
         for path in path_overrides:
-            config.parsed_toml['inputs'][path] = path_overrides[path]
+            if path in config.parsed_toml['inputs']:
+                config.parsed_toml['inputs'][path] = path_overrides[path]
+            if path in config.parsed_toml['outputs']:
+                config.parsed_toml['outputs'][path] = path_overrides[path]
 
     main(config)
 
