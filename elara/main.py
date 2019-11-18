@@ -1,6 +1,5 @@
 import os.path
 
-import ast
 import click
 import logging
 import sys
@@ -29,13 +28,7 @@ def cli(config_path, path_overrides: str):
     config = Config(config_path)
 
     if path_overrides:
-        # Construct a dictionary from the path_overrides str
-        path_overrides = ast.literal_eval(path_overrides)
-        for path in path_overrides:
-            if path in config.parsed_toml['inputs']:
-                config.parsed_toml['inputs'][path] = path_overrides[path]
-            if path in config.parsed_toml['outputs']:
-                config.parsed_toml['outputs'][path] = path_overrides[path]
+        config.override(path_overrides)
 
     main(config)
 
