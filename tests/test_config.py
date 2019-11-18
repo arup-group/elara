@@ -1,6 +1,6 @@
 from elara.config import Config
 
-def test_config_override():
+def test_config_override_update_input_output():
     config = Config("tests/test_xml_scenario.toml")
     events = 'events'
     network = 'network'
@@ -19,7 +19,7 @@ def test_config_override():
     assert config.parsed_toml['outputs']['path'] == path
     assert config.output_path == path
 
-def test_config_override_extra():
+def test_config_override_ignore_extra_fields():
     config = Config("tests/test_xml_scenario.toml")
     events = 'events'
     network = 'network'
