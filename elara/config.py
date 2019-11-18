@@ -220,7 +220,7 @@ class Config:
                 self.parsed_toml['inputs'][path] = path_overrides[path]
             if path == 'path':
                 self.parsed_toml['outputs'][path] = path_overrides[path]
-                self.output_config_path = path_overrides[path]
+                self.output_path = path_overrides[path]
 
 
 class PathTool(Tool):
