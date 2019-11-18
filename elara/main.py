@@ -4,7 +4,6 @@ import click
 import logging
 import sys
 
-
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation

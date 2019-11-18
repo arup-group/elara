@@ -211,7 +211,7 @@ class Config:
 
     def override(self, path_overrides):
         """
-        :param path_overrides: list of paths to override the input with, and apply path to path_overrides
+        :param path_overrides: list of paths to override the input with, and/or 'path' to replace output path
         """
         # Construct a dictionary from the path_overrides str
         path_overrides = ast.literal_eval(path_overrides)
