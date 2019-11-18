@@ -1,8 +1,10 @@
 import os.path
 
+import ast
 import click
 import logging
 import sys
+
 
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
@@ -27,7 +29,8 @@ def cli(config_path, path_overrides: str):
     config = Config(config_path)
 
     if path_overrides:
-        path_overrides = dict(path_overrides)
+        # Construct a dictionary from the path_overrides str
+        path_overrides = ast.literal_eval(path_overrides)
         for path in path_overrides:
             config.parsed_toml['inputs'][path] = path_overrides[path]
 
