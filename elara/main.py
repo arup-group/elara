@@ -23,6 +23,7 @@ def cli(config_path, path_overrides: str):
     """
     Command line tool for processing a MATSim scenario events output.
     :param config_path: Configuration file path
+    :param path_overrides: str representation of a dictionary with paths to update for [inputs], outputs.path in toml
     """
     config = Config(config_path)
 
