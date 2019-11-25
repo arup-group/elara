@@ -23,7 +23,6 @@ def test_config_override_ignore_extra_fields():
     config = Config("tests/test_xml_scenario.toml")
     events = 'events'
     network = 'network'
-    extra = 'extra'
     overrides = "{" \
                     "'events': 'events'," \
                     "'network': 'network'," \
