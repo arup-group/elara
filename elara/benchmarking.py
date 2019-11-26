@@ -220,6 +220,11 @@ class HourlyCordonCount(CordonCount):
         # collect all results
         assert len(result_df), f"zero length results df at {self.cordon_name}."
 
+        for link_id in self.link_ids:
+            if link_id not in result_df.index:
+                self.logger.warning("Zero filling results for benchmark")
+                result_df.loc[link_id] = 0
+
         model_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
         model_results.loc[:, 'mode'] = self.mode
 
@@ -274,6 +279,11 @@ class PeriodCordonCount(CordonCount):
 
         # collect all results
         assert len(result_df), f"zero length results df at {self.cordon_name}."
+
+        for link_id in self.link_ids:
+            if link_id not in result_df.index:
+                self.logger.warning("Zero filling results for benchmark")
+                result_df.loc[link_id] = 0
 
         model_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
         model_results.loc[:, 'mode'] = self.mode
