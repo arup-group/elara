@@ -218,7 +218,6 @@ class Config:
             file_name = self.parsed_toml['inputs'][path].split('/')[-1]
             self.parsed_toml['inputs'][path] = "{}/{}".format(path_override, file_name)
 
-
         self.parsed_toml['outputs']['path'] = path_override
         self.output_path = path_override
 
