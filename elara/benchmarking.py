@@ -3,6 +3,7 @@ import os
 import numpy as np
 from typing import Optional
 import logging
+import json
 
 from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
@@ -19,6 +20,135 @@ class BenchmarkTool(Tool):
     def __init__(self, config, option=None):
         super().__init__(config, option)
         self.logger = logging.getLogger(__name__)
+
+
+class PointsCounter(BenchmarkTool):
+
+    name = None
+    benchmark_data_path = None
+    requirements = ['volume_counts']
+
+    def __init__(self, config, option) -> None:
+        """
+        Cordon parent object used for cordon benchmarks. Initiated with CordonCount
+        objects as required.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        self.name = self.config.name
+        self.mode = option
+
+        with open(self.benchmark_data_path) as json_file:
+            self.link_counts = json.load(json_file)
+
+        if self.mode not in self.link_counts.keys():
+            self.logger.warning(
+                f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
+            )
+
+    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
+        """
+        Builds paths for modal volume count outputs, loads and combines for scoring.
+        Collects scoring from CordonCount objects.
+        :return: Dictionary of scores {'in': float, 'out': float}
+        """
+
+        logger.info(f'building {self.__str__()}')
+
+        # extract benchmark mode count
+        mode_benchmark = self.link_counts.get(self.mode)
+
+        if not mode_benchmark:
+            self.logger.warning(
+                f"{self.mode} not available, returning score of one"
+            )
+            return {'counters': 1}
+
+        # extract counters
+        counter_ids = mode_benchmark.keys()
+        if not len(counter_ids):
+            self.logger.warning(
+                f"no benchmarks found for {self.mode}, returning score of one"
+            )
+            return {'counters': 1}
+
+        # Extract simulation results
+        # Build paths and load appropriate volume counts from previous workstation
+        results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
+        results_path = os.path.join(self.config.output_path, results_name)
+        results_df = pd.read_csv(results_path, index_col=0)
+
+        results_df = results_df.groupby('link_id').sum()  # remove class dis-aggregation
+        results_df = results_df.loc[: [str(h) for h in range(24)]]  # just keep counts
+
+        results_df.index.name = 'link_id'
+
+        # build benchmark results
+        bm_results = []
+        bm_scores = []
+
+        for counter_id, links in counter_ids.items():
+
+            for link_id, counter in links.items():
+
+                direction = counter['direction']
+                bm_counts = np.array(counter['counts'])
+
+                if link_id not in results_df.index:
+                    self.logger.warning(
+                        f"Zero filling sim results for benchmark: {counter_id} link: {link_id}"
+                    )
+                    sim_result = np.array([0 for _ in range(24)])
+                else:
+                    sim_result = np.array(results_df.loc[link_id])
+
+                # calc score
+                link_diff = np.absolute(sim_result - bm_counts)
+                link_score = sum(link_diff) / sum(bm_counts)
+                bm_scores.append(link_score)
+
+                # build result lines for df
+                sim_result_line = {
+                    'source': 'simulation',
+                    'counter_id': counter_id,
+                    'direction': direction,
+                    'link_id': link_id,
+                    'score': link_score,
+                    'mode': self.mode,
+                }
+                for h in range(24):
+                    sim_result_line[h] = sim_result[h]
+
+                bm_result_line = {
+                    'source': 'benchmark',
+                    'counter_id': counter_id,
+                    'direction': direction,
+                    'link_id': link_id,
+                    'score': link_score,
+                    'mode': self.mode,
+                }
+                for h in range(24):
+                    bm_result_line[h] = bm_counts[h]
+
+                bm_results.extend([sim_result_line, bm_result_line])
+
+        # build results df
+        bm_results_df = pd.DataFrame(bm_results)
+        bm_results_summary = bm_results_df.groupby('source').sum()
+
+        # write results
+        csv_name = '{}_{}_bm.csv'.format(self.config.name, self.name)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(bm_results_df, csv_path, write_path=write_path)
+
+        # write results
+        csv_name = '{}_{}_bm_summary.csv'.format(self.config.name, self.name)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(bm_results_summary, csv_path, write_path=write_path)
+
+        return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
 class Cordon(BenchmarkTool):
@@ -85,7 +215,7 @@ class Cordon(BenchmarkTool):
         return scores
 
 
-class CordonCount(BenchmarkTool):
+class CordonDirectionCount(BenchmarkTool):
 
     def __init__(self, parent, direction_name, dir_code, counts_df,
                  links_df):
@@ -205,7 +335,7 @@ class CordonCount(BenchmarkTool):
         return df
 
 
-class HourlyCordonCount(CordonCount):
+class HourlyCordonDirectionCount(CordonDirectionCount):
 
     def output_and_score(self, result_df, write_path=None):
         """
@@ -264,7 +394,7 @@ class HourlyCordonCount(CordonCount):
         return sum(np.absolute(results_array - counts_array)) / counts_array.sum()
 
 
-class PeriodCordonCount(CordonCount):
+class PeriodCordonDirectionCount(CordonDirectionCount):
 
     def output_and_score(self, result_df, write_path=None):
         """
@@ -377,7 +507,7 @@ class LondonInnerCordonCar(Cordon):
     options_enabled = True
 
     weight = 1
-    cordon_counter = HourlyCordonCount
+    cordon_counter = HourlyCordonDirectionCount
     benchmark_path = get_benchmark_data(
         os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv')
     )
@@ -398,7 +528,7 @@ class DublinCanalCordonCar(Cordon):
     options_enabled = True
 
     weight = 1
-    cordon_counter = PeriodCordonCount
+    cordon_counter = PeriodCordonDirectionCount
     benchmark_path = get_benchmark_data(
         os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
     )
@@ -431,7 +561,7 @@ class TestTownHourlyCordon(Cordon):
     options_enabled = True
 
     weight = 1
-    cordon_counter = HourlyCordonCount
+    cordon_counter = HourlyCordonDirectionCount
     benchmark_path = get_benchmark_data(
         os.path.join('test_town', 'test_town_cordon', '2016_counts.csv')
     )
@@ -452,7 +582,7 @@ class TestTownPeakIn(Cordon):
     options_enabled = True
 
     weight = 1
-    cordon_counter = PeriodCordonCount
+    cordon_counter = PeriodCordonDirectionCount
     benchmark_path = get_benchmark_data(
         os.path.join('test_town', 'test_town_peak_cordon', '2016_peak_in_counts.csv')
     )
