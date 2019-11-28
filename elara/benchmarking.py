@@ -80,8 +80,9 @@ class PointsCounter(BenchmarkTool):
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=0)
 
-        results_df = results_df.groupby('link_id').sum()  # remove class dis-aggregation
-        results_df = results_df.loc[: [str(h) for h in range(24)]]  # just keep counts
+        results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+
+        results_df = results_df[[str(h) for h in range(24)]]  # just keep counts
 
         results_df.index.name = 'link_id'
 
@@ -89,24 +90,30 @@ class PointsCounter(BenchmarkTool):
         bm_results = []
         bm_scores = []
 
-        for counter_id, links in counter_ids.items():
+        for counter_id, links in mode_benchmark.items():
 
             for link_id, counter in links.items():
 
-                direction = counter['direction']
+                direction = counter['dir']
                 bm_counts = np.array(counter['counts'])
 
                 if link_id not in results_df.index:
-                    self.logger.warning(
-                        f"Zero filling sim results for benchmark: {counter_id} link: {link_id}"
-                    )
+                    # self.logger.warning(
+                    #     f"Zero filling sim results for benchmark: {counter_id} link: {link_id}"
+                    # )
                     sim_result = np.array([0 for _ in range(24)])
                 else:
                     sim_result = np.array(results_df.loc[link_id])
 
                 # calc score
                 link_diff = np.absolute(sim_result - bm_counts)
-                link_score = sum(link_diff) / sum(bm_counts)
+                if sum(bm_counts):
+                    link_score = sum(link_diff) / sum(bm_counts)
+                else:
+                    link_score = 1
+                    # self.logger.warning(
+                    #     f"Zero size benchmark: {counter_id} link: {link_id}, returning 1"
+                    # )
                 bm_scores.append(link_score)
 
                 # build result lines for df
@@ -147,6 +154,9 @@ class PointsCounter(BenchmarkTool):
         csv_name = '{}_{}_bm_summary.csv'.format(self.config.name, self.name)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
+
+        print(sum(bm_scores))
+        print(len(bm_scores))
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -498,6 +508,20 @@ class ModeStats(BenchmarkTool):
         score = sum(np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model)))
 
         return {'modeshare': score}
+
+
+class IrelandHighwayCounters(PointsCounter):
+
+    name = 'ireland_highways'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('ireland', 'highways', 'irish_highways_bm.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
 
 
 class LondonInnerCordonCar(Cordon):
