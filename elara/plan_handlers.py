@@ -247,6 +247,14 @@ class AgentLogsHandler(PlanHandlerTool):
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
+    """
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
+    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
+    to calculate the start of the next activity. This results in time waiting to enter 
+    first link as being activity time. Therefore activity durations are slightly over reported 
+    and leg duration under reported.
+    """
+
     def __init__(self, config, option=None):
         """
         Initiate handler.
@@ -426,6 +434,14 @@ class AgentPlansHandler(PlanHandlerTool):
     """
     Write log of all plans, including selection and score.
     Format will we mostly duplicate of legs log.
+    """
+
+    """
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
+    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
+    to calculate the start of the next activity. This results in time waiting to enter 
+    first link as being activity time. Therefore activity durations are slightly over reported 
+    and leg duration under reported.
     """
 
     requirements = ['plans', 'transit_schedule', 'attributes']
