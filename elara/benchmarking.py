@@ -30,8 +30,8 @@ class PointsCounter(BenchmarkTool):
 
     def __init__(self, config, option) -> None:
         """
-        Cordon parent object used for cordon benchmarks. Initiated with CordonCount
-        objects as required.
+        Points Counter parent object used for highways traffic counter networks (ie 'coils' or
+        'loops').
         :param config: Config object
         :param option: str, mode
         """
@@ -51,8 +51,7 @@ class PointsCounter(BenchmarkTool):
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
-        Collects scoring from CordonCount objects.
-        :return: Dictionary of scores {'in': float, 'out': float}
+        :return: Dictionary of scores {'name': float}
         """
 
         logger.info(f'building {self.__str__()}')
@@ -667,15 +666,21 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
+        "test_town_highways": TestHighwayCounters,
+        "squeeze_town_highways": SqueezeTownHighwayCounters,
+        "ireland_highways": IrelandHighwayCounters,
         "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
-        "test_town_modeshare": TestTownCommuterStats
+        "test_town_modeshare": TestTownCommuterStats,
     }
 
     BENCHMARK_WEIGHTS = {
+        "test_town_highways": 1,
+        "squeeze_town_highways": 1,
+        "ireland_highways": 1,
         "london_inner_cordon_car": 1,
         "dublin_canal_cordon_car": 1,
         "ireland_commuter_modeshare": 1,
