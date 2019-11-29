@@ -98,9 +98,9 @@ class PointsCounter(BenchmarkTool):
                 bm_counts = np.array(counter['counts'])
 
                 if link_id not in results_df.index:
-                    # self.logger.warning(
-                    #     f"Zero filling sim results for benchmark: {counter_id} link: {link_id}"
-                    # )
+                    self.logger.warning(
+                        f"Zero filling sim results for benchmark: {counter_id} link: {link_id}"
+                    )
                     sim_result = np.array([0 for _ in range(24)])
                 else:
                     sim_result = np.array(results_df.loc[link_id])
@@ -111,9 +111,9 @@ class PointsCounter(BenchmarkTool):
                     link_score = sum(link_diff) / sum(bm_counts)
                 else:
                     link_score = 1
-                    # self.logger.warning(
-                    #     f"Zero size benchmark: {counter_id} link: {link_id}, returning 1"
-                    # )
+                    self.logger.warning(
+                        f"Zero size benchmark: {counter_id} link: {link_id}, returning 1"
+                    )
                 bm_scores.append(link_score)
 
                 # build result lines for df
@@ -154,9 +154,6 @@ class PointsCounter(BenchmarkTool):
         csv_name = '{}_{}_bm_summary.csv'.format(self.config.name, self.name)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
-
-        print(sum(bm_scores))
-        print(len(bm_scores))
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -510,6 +507,22 @@ class ModeStats(BenchmarkTool):
         return {'modeshare': score}
 
 
+# Highway Counters
+
+class TestHighwayCounters(PointsCounter):
+
+    name = 'test_highways'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_town', 'highways', 'test_hw_bm.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
+
 class IrelandHighwayCounters(PointsCounter):
 
     name = 'ireland_highways'
@@ -523,6 +536,8 @@ class IrelandHighwayCounters(PointsCounter):
 
     weight = 1
 
+
+# Cordons
 
 class LondonInnerCordonCar(Cordon):
 
