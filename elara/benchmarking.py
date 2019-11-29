@@ -537,6 +537,20 @@ class IrelandHighwayCounters(PointsCounter):
     weight = 1
 
 
+class SqueezeTownHighwayCounters(PointsCounter):
+
+    name = 'squeeze_town_highways'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('squeeze_town', 'highways', 'squeeze_town_highways_bm.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
+
 # Cordons
 
 class LondonInnerCordonCar(Cordon):
