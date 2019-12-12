@@ -99,3 +99,7 @@ def main(config):
     factory.build(config_requirements)
 
     logger.info('Done')
+
+
+if __name__ == '__main__':
+    cli([sys.argv[1]])
