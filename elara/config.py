@@ -164,7 +164,7 @@ class Config:
         :return: Pass through path if it exists
         """
         if not os.path.exists(path):
-            raise ConfigError("Specified path for {} does not exist".format(field_name))
+            raise ConfigError("Specified path {} for {} does not exist".format(path, field_name))
         return path
 
     def valid_verbosity(self, inp):
