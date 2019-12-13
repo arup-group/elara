@@ -496,7 +496,7 @@ class ModeStats(BenchmarkTool):
         summary_df.loc[:, 'diff'] = summary_df.model - summary_df.benchmark
 
         # write results
-        csv_name = '{}_results.csv'.format(self.name)
+        csv_name = '{}_modeshare_results.csv'.format(self.name)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(summary_df, csv_path, write_path=write_path)
 
@@ -541,6 +541,34 @@ class SqueezeTownHighwayCounters(PointsCounter):
     name = 'squeeze_town_highways'
     benchmark_data_path = get_benchmark_data(
         os.path.join('squeeze_town', 'highways', 'squeeze_town_highways_bm.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
+
+# Multimodal Test Scenario
+
+class MultimodalTownModeShare(ModeStats):
+
+    requirements = ['mode_share']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 1
+    benchmark_path = get_benchmark_data(
+        os.path.join('multimodal_town', 'modestats.csv')
+    )
+
+
+class MultimodalTownCarCounters(PointsCounter):
+
+    name = 'car_count'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('multimodal_town', 'highways_car_count_bm.json')
     )
 
     requirements = ['volume_counts']
@@ -668,6 +696,8 @@ class BenchmarkWorkStation(WorkStation):
     tools = {
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
+        "multimodal_town_modeshare": MultimodalTownModeShare,
+        "multimodal_town_cars_counts": MultimodalTownCarCounters,
         "ireland_highways": IrelandHighwayCounters,
         "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
@@ -680,6 +710,8 @@ class BenchmarkWorkStation(WorkStation):
     BENCHMARK_WEIGHTS = {
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
+        "multimodal_town_modeshare": 1,
+        "multimodal_town_cars_counts": 1,
         "ireland_highways": 1,
         "london_inner_cordon_car": 1,
         "dublin_canal_cordon_car": 1,
