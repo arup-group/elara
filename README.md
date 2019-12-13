@@ -122,6 +122,7 @@ transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
 transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
 attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
+output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [event_handlers]
 volume_counts = ["car"]
@@ -228,8 +229,13 @@ The associated list attached to each handler allows specification of which modes
 
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
-Specification of the benchmarks to be run post processing. Currently available benchmarks include:
+Specification of the benchmarks to be run. These include a variety of highway counters, 
+cordons and mode share benchmarks for specific projects. Currently available 
+benchmarks include:
 
+* ``test_town_highways``
+* ``squeeze_town_highways``
+* ``ireland_highways``
 * ``london_inner_cordon_car``
 * ``dublin_canal_cordon_car``
 * ``ireland_commuter_modeshare``

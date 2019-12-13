@@ -4,7 +4,6 @@ import pytest
 from shapely.geometry import Point
 import geopandas as gpd
 
-
 sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
@@ -165,7 +164,7 @@ def test_hierarchy_get_unknown(caplog):
     hierarchy = inputs.ModeHierarchy(None)
     modes = ['one', 'two', 'three']
     mode = hierarchy.get(modes)
-    assert caplog.records
+    assert caplog.text
     assert mode == modes[1]
 
 
