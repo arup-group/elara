@@ -228,8 +228,13 @@ The associated list attached to each handler allows specification of which modes
 
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
-Specification of the benchmarks to be run post processing. Currently available benchmarks include:
+Specification of the benchmarks to be run. These include a variety of highway counters, 
+cordons and mode share benchmarks for specific projects. Currently available 
+benchmarks include:
 
+* ``test_town_highways``
+* ``squeeze_town_highways``
+* ``ireland_highways``
 * ``london_inner_cordon_car``
 * ``dublin_canal_cordon_car``
 * ``ireland_commuter_modeshare``
