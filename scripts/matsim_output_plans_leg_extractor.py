@@ -3,7 +3,6 @@ import time
 
 import geojson
 import pyproj
-
 from lxml import etree
 
 
@@ -34,7 +33,7 @@ def filter_matching_legs(plans_xml_path, mode):
     return matching_legs
 
 
-def leg_as_tsv(leg_dict, link_database, node_database, source_crs, target_crs):
+def leg_as_tsv(leg_dict, link_database, node_database, crs_transformer):
     tsv_line = ''
     tsv_line += leg_dict['person_id']
     tsv_line += '\t'
@@ -55,24 +54,23 @@ def leg_as_tsv(leg_dict, link_database, node_database, source_crs, target_crs):
     tsv_line += make_polyline(route_element.text.split(' '),
                               link_database,
                               node_database,
-                              source_crs,
-                              target_crs)
+                              crs_transformer)
     return tsv_line + '\n'
 
 
-def make_polyline(route_point_ids, link_database, node_database, from_crs, to_crs):
+def make_polyline(route_point_ids, link_database, node_database, crs_transformer):
     print("\t\tMaking polyline from {} points".format(len(route_point_ids)))
     route_points = []
     for route_point in route_point_ids:
         from_node_id = link_database.get(route_point).get('from')
         from_x = node_database.get(from_node_id).get('x')
         from_y = node_database.get(from_node_id).get('y')
-        from_long, from_lat = pyproj.transform(from_crs, to_crs, from_x, from_y)
+        from_long, from_lat = crs_transformer.transform(from_x, from_y)
         route_points.append(geojson.Point((from_long, from_lat)))
         to_node_id = link_database.get(route_point).get('to')
         to_x = node_database.get(to_node_id).get('x')
         to_y = node_database.get(to_node_id).get('y')
-        to_long, to_lat = pyproj.transform(from_crs, to_crs, to_x, to_y)
+        to_long, to_lat = crs_transformer.transform(to_x, to_y)
         route_points.append(geojson.Point((to_long, to_lat)))
     return geojson.dumps(geojson.LineString(route_points))
 
@@ -147,9 +145,10 @@ if __name__ == '__main__':
         leg_count = 1
         epsg_27700 = pyproj.Proj(init='epsg:27700')
         epsg_4326 = pyproj.Proj(init='epsg:4326')
+        geometry_transformer = pyproj.Transformer.from_proj(epsg_27700, epsg_4326)
         for leg in matching_leg_elements:
             print('\tExporting leg {} : {}'.format(leg_count, leg))
-            out_file.write(leg_as_tsv(leg, link_database, node_database, epsg_27700, epsg_4326))
+            out_file.write(leg_as_tsv(leg, link_database, node_database, geometry_transformer))
             leg_count += 1
 
     print("\nFinished exporting plan data in {} seconds".format(time.time() - start_time))
