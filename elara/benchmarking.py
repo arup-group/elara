@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 class BenchmarkTool(Tool):
 
+    options_enabled = True
+
     def __init__(self, config, option=None):
         super().__init__(config, option)
         self.logger = logging.getLogger(__name__)

@@ -24,10 +24,11 @@ class Config:
         pass
 
     def get_requirements(self):
-        return {'volume_counts': ['car'], 'vkt': ['bus']}
+        return {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
 
 
 class ExampleTool(Tool):
+    options_enbled = False
     logger = logging.getLogger(__name__)
     pass
 
@@ -50,7 +51,7 @@ class VolumeCounts(ExampleTool):
 
 class ModeShare(ExampleTool):
     options_enabled = True
-    requirements = ['network', 'events']
+    requirements = ['network', 'plans']
     valid_options = ['all']
 
     def get_requirements(self):
@@ -91,9 +92,14 @@ class PostProcess(WorkStation):
     logger = logging.getLogger(__name__)
 
 
-class HandlerProcess(WorkStation):
+class EventHandlerProcess(WorkStation):
     tools = {
         'volume_counts': VolumeCounts,
+    }
+    logger = logging.getLogger(__name__)
+
+class PlanHandlerProcess(WorkStation):
+    tools = {
         'mode_share': ModeShare,
     }
     logger = logging.getLogger(__name__)
@@ -131,8 +137,13 @@ def post_process():
 
 
 @pytest.fixture
-def handler_process():
-    return HandlerProcess(config)
+def event_handler_process():
+    return EventHandlerProcess(config)
+
+
+@pytest.fixture
+def plan_handler_process():
+    return PlanHandlerProcess(config)
 
 
 @pytest.fixture
@@ -145,104 +156,160 @@ def config_paths():
     return PathProcess(config)
 
 
-def test_pipeline_connection(start, post_process, handler_process, inputs_process, config_paths):
-    start.connect(None, [post_process, handler_process])
-    post_process.connect([start], [handler_process])
-    handler_process.connect([start, post_process], [inputs_process])
-    inputs_process.connect([handler_process], [config_paths])
+def test_pipeline_connection(
+        start,
+        post_process,
+        event_handler_process,
+        plan_handler_process,
+        inputs_process,
+        config_paths
+):
+    start.connect(None, [post_process, event_handler_process, plan_handler_process])
+    post_process.connect([start], [event_handler_process, plan_handler_process])
+    event_handler_process.connect([start, post_process], [inputs_process])
+    plan_handler_process.connect([start, post_process], [inputs_process])
+    inputs_process.connect([event_handler_process, plan_handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
-    assert handler_process.managers == [start, post_process]
+    assert event_handler_process.managers == [start, post_process]
 
 
-def test_requirements(start, post_process, handler_process, inputs_process, config_paths):
-    start.connect(None, [post_process, handler_process])
-    post_process.connect([start], [handler_process])
-    handler_process.connect([start, post_process], [inputs_process])
-    inputs_process.connect([handler_process], [config_paths])
+def test_requirements(
+        start,
+        post_process,
+        event_handler_process,
+        plan_handler_process,
+        inputs_process,
+        config_paths
+):
+    start.connect(None, [post_process, event_handler_process, plan_handler_process])
+    post_process.connect([start], [event_handler_process, plan_handler_process])
+    event_handler_process.connect([start, post_process], [inputs_process])
+    plan_handler_process.connect([start, post_process], [inputs_process])
+    inputs_process.connect([event_handler_process, plan_handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
     build(start)
 
     assert equals(
         start.gather_manager_requirements(),
-        {'volume_counts': ['car'], 'vkt': ['bus']}
+        {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
     )
     assert equals(
         post_process.gather_manager_requirements(),
-        {'volume_counts': ['car'], 'vkt': ['bus']}
+        {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
     )
     assert equals(
-        handler_process.gather_manager_requirements(),
-        {'vkt': ['bus'], 'volume_counts': ['car', 'bus']}
+        event_handler_process.gather_manager_requirements(),
+        {'vkt': ['bus'], 'volume_counts': ['car', 'bus'], 'mode_share': ['all']}
+    )
+    assert equals(
+        plan_handler_process.gather_manager_requirements(),
+        {'vkt': ['bus'], 'volume_counts': ['car', 'bus'], 'mode_share': ['all']}
     )
     assert equals(
         inputs_process.gather_manager_requirements(),
-        {'events': None, 'network': None}
+        {'events': None, 'network': None, 'plans': None}
     )
     assert equals(
         config_paths.gather_manager_requirements(),
-        {'events_path': None, 'network_path': None}
+        {'events_path': None, 'network_path': None, 'plans_path': None}
     )
 
 
-def test_engage_start_suppliers(start, post_process, handler_process, inputs_process, config_paths):
-
-    start.connect(None, [post_process, handler_process])
-    post_process.connect([start], [handler_process])
-    handler_process.connect([start, post_process], [inputs_process])
-    inputs_process.connect([handler_process], [config_paths])
+def test_engage_start_suppliers(
+        start,
+        post_process,
+        event_handler_process,
+        plan_handler_process,
+        inputs_process,
+        config_paths
+):
+    start.connect(None, [post_process, event_handler_process, plan_handler_process])
+    post_process.connect([start], [event_handler_process, plan_handler_process])
+    event_handler_process.connect([start, post_process], [inputs_process])
+    plan_handler_process.connect([start, post_process], [inputs_process])
+    inputs_process.connect([event_handler_process, plan_handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
     start.engage()
     assert set(start.resources) == set()
     post_process.engage()
     assert set(post_process.resources) == {'vkt:bus'}
-    handler_process.engage()
-    assert set(handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
+    event_handler_process.engage()
+    assert set(event_handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
+    plan_handler_process.engage()
+    assert set(plan_handler_process.resources) == {'mode_share:all'}
     inputs_process.engage()
-    assert set(inputs_process.resources) == {'events', 'network'}
+    assert set(inputs_process.resources) == {'events', 'network', 'plans'}
 
 
-def test_dfs_distances(start, post_process, handler_process, inputs_process, config_paths):
-    start.connect(None, [handler_process, post_process])
-    post_process.connect([start], [handler_process])
-    handler_process.connect([start, post_process], [inputs_process])
-    inputs_process.connect([handler_process], [config_paths])
+def test_dfs_distances(
+        start,
+        post_process,
+        event_handler_process,
+        plan_handler_process,
+        inputs_process,
+        config_paths
+):
+    start.connect(None, [post_process, event_handler_process, plan_handler_process])
+    post_process.connect([start], [event_handler_process, plan_handler_process])
+    event_handler_process.connect([start, post_process], [inputs_process])
+    plan_handler_process.connect([start, post_process], [inputs_process])
+    inputs_process.connect([event_handler_process, plan_handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
     build_graph_depth(start)
 
     assert start.depth == 0
     assert post_process.depth == 1
-    assert handler_process.depth == 2
+    assert event_handler_process.depth == 2
+    assert plan_handler_process.depth == 2
     assert inputs_process.depth == 3
     assert config_paths.depth == 4
 
 
-def test_bfs(start, post_process, handler_process, inputs_process, config_paths):
-    start.connect(None, [handler_process, post_process])
-    post_process.connect([start], [handler_process])
-    handler_process.connect([start, post_process], [inputs_process])
-    inputs_process.connect([handler_process], [config_paths])
+def test_bfs(
+        start,
+        post_process,
+        event_handler_process,
+        plan_handler_process,
+        inputs_process,
+        config_paths
+):
+    start.connect(None, [post_process, event_handler_process, plan_handler_process])
+    post_process.connect([start], [event_handler_process, plan_handler_process])
+    event_handler_process.connect([start, post_process], [inputs_process])
+    plan_handler_process.connect([start, post_process], [inputs_process])
+    inputs_process.connect([event_handler_process, plan_handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
     sequence = build(start)
-    assert sequence == [start, post_process, handler_process, inputs_process, config_paths,
-                        config_paths, inputs_process, handler_process, post_process, start]
+    assert sequence == [start, post_process, event_handler_process,
+                        plan_handler_process, inputs_process, config_paths,
+                        config_paths, inputs_process, plan_handler_process,
+                        event_handler_process, post_process, start]
 
 
-def test_engage_supply_chain(start, post_process, handler_process, inputs_process, config_paths):
-
-    start.connect(None, [handler_process, post_process])
-    post_process.connect([start], [handler_process])
-    handler_process.connect([start, post_process], [inputs_process])
-    inputs_process.connect([handler_process], [config_paths])
+def test_engage_supply_chain(
+        start,
+        post_process,
+        event_handler_process,
+        plan_handler_process,
+        inputs_process,
+        config_paths
+):
+    start.connect(None, [post_process, event_handler_process, plan_handler_process])
+    post_process.connect([start], [event_handler_process, plan_handler_process])
+    event_handler_process.connect([start, post_process], [inputs_process])
+    plan_handler_process.connect([start, post_process], [inputs_process])
+    inputs_process.connect([event_handler_process, plan_handler_process], [config_paths])
     config_paths.connect([inputs_process], None)
 
     build(start)
 
     assert set(start.resources) == set()
     assert set(post_process.resources) == {'vkt:bus'}
-    assert set(handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
-    assert set(inputs_process.resources) == {'events', 'network'}
-    assert set(config_paths.resources) == {'events_path', 'network_path'}
+    assert set(event_handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
+    assert set(plan_handler_process.resources) == {'mode_share:all'}
+    assert set(inputs_process.resources) == {'events', 'network', 'plans'}
+    assert set(config_paths.resources) == {'events_path', 'network_path', 'plans_path'}
