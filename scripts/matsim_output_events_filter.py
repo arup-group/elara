@@ -142,7 +142,7 @@ if __name__ == '__main__':
           ' to {}'.format(events_file_path, network_file_path, output_file_path))
 
     vehicle_lookup_table = {}
-    if (vehicle_types):
+    if vehicle_types:
         if not vehicle_file_paths:
             print('!!! ERROR: You must supply paths to at least one vehicle file if you want to filter events based on '
                   'vehicle type')
@@ -154,8 +154,8 @@ if __name__ == '__main__':
         print('\tFound {} vehicle IDs matching specified types'.format(len(vehicle_lookup_table)))
 
     filtered_event_summaries, link_ids = build_event_table(events_file_path,
-                                                 ["entered link"],
-                                                 vehicle_lookup_table.keys())
+                                                           ["entered link"],
+                                                           vehicle_lookup_table.keys())
     print("Got raw event summaries, transforming to CSV")
 
     link_table, node_ids = make_link_table(link_ids, network_file_path)
