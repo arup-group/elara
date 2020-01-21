@@ -102,8 +102,8 @@ Example:
   elara -o "{'events': 'some_event_path'}" tests/test_xml_scenario
 ```
 
-Given the path to a suitable configuration TOML file (see [here](#markdown-header-configuration-format)), processes a MATSim events file and produces the desired
- summary metric files. For example: `elara scenario.toml`.
+Given the path to a suitable configuration TOML file (see [here](#markdown-header-configuration-format)), processes a 
+MATSim events file and produces the desired summary metric files. For example: `elara scenario.toml`.
 
 ## Configuration format
 This utility uses a TOML configuration format to specify input, output and metric generation options. For example:
@@ -154,11 +154,14 @@ The name of the scenario being processed, using when naming output files.
 
 **#** scenario.**time_periods** *integer* *(required)*
 
-The number of time slices used to split a 24-hour period for the purposes of reporting. A value of ``24`` will produce summary metrics for each our of the day. Similarly, a value of ``96`` will produce 15-minute summaries.
+The number of time slices used to split a 24-hour period for the purposes of reporting. A value of ``24`` will produce 
+summary metrics for each our of the day. Similarly, a value of ``96`` will produce 15-minute summaries.
 
 **#** scenario.**scale_factor** *float* *(required)*
 
-The sample size used in the originating MATSim scenario run. This is used to scale metrics such as volume counts. For example, if the underlying scenario was run with a 25% sample size, a value of ``0.25`` in this field will ensure that all calculated volume counts are scaled by 4 times.
+The sample size used in the originating MATSim scenario run. This is used to scale metrics such as volume counts. For 
+example, if the underlying scenario was run with a 25% sample size, a value of ``0.25`` in this field will ensure that 
+all calculated volume counts are scaled by 4 times.
 
 **#** scenario.**crs** *string* *(required)*
 
