@@ -45,7 +45,8 @@ class InputTool(Tool):
             return None
 
         else:
-            self.logger.debug(f'Re-projecting target to {to_crs}')
+            self.logger.debug(f'Re-projecting target geo dataframe of size {len(target.index)} to {to_crs}')
+
             target.to_crs(to_crs, inplace=True)
 
 
@@ -352,6 +353,7 @@ class TransitVehicles(InputTool):
         self.veh_type_mode_map = {
             "Rail": "train",
             "Suburban Railway": "train",
+            "Underground Service": "train",
             "Bus": "bus",
             "Coach Service": "bus",
             "Tram": "tram",
