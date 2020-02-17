@@ -17,6 +17,7 @@ class EventHandlerTool(Tool):
     Base Tool class for Event Handling.
     """
     result_gdfs = dict()
+    options_enabled = True
 
     def __init__(self, config, option=None):
         self.logger = logging.getLogger(__name__)
