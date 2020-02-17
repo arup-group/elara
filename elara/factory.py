@@ -73,11 +73,6 @@ class Tool:
         """
         self.logger.info(f'Building Tool {self.__str__()}')
         self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
-
-        for requirement in convert_to_unique_keys(self.get_requirements()):
-            if requirement not in list(resource):
-                raise ValueError(f'Missing requirement @{self}: {requirement}')
-
         self.resources = resource
 
     def _validate_option(self, option: str) -> str:
@@ -297,9 +292,9 @@ class WorkStation:
             if self.requirements:
                 for req, options in self.requirements.items():
                     if self.suppliers and options:
-                        for s in self.suppliers:
-                            if s.tools:
-                                for name, tool in s.tools.items():
+                        for supplier in self.suppliers:
+                            if supplier.tools:
+                                for name, tool in supplier.tools.items():
                                     if req == name and not tool.options_enabled:
                                         self.requirements[name] = []
 
@@ -332,9 +327,11 @@ class WorkStation:
         """
         self.logger.info("Gathering manager requirements ")
         reqs = []
+
         if self.managers:
             for manager in self.managers:
                 reqs.append(manager.requirements)
+
         return combine_reqs(reqs)
 
     def build(self, write_path=None):

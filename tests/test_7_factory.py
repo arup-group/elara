@@ -31,14 +31,24 @@ def test_config():
     return config
 
 
-def test_requirements(test_config):
-    requirments = RequirementsWorkStation(test_config)
-    assert requirments.get_requirements() == {
+# Config
+@pytest.fixture
+def test_config_dependencies():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_dependencies.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+def test_requirements_workstation(test_config):
+    requirements = RequirementsWorkStation(test_config)
+    assert requirements.gather_manager_requirements() == {
         'mode_share': ['all'],
         'passenger_counts': ['bus', 'train'],
         'stop_interactions': ['bus', 'train'],
         'vkt': ['car'],
-        'volume_counts': ['car']
+        'volume_counts': ['car'],
+        'test_town_cordon': ['car'],
     }
 
 
@@ -143,6 +153,81 @@ def test_bfs(requirements):
     factory.build(requirements, write_path=test_outputs)
     assert requirements.resources == {}
     assert set(requirements.suppliers[0].resources) == set({'vkt:car': factory.Tool})
+    assert set(requirements.suppliers[2].resources) == set(
+        {
+            'stop_interactions:train': factory.Tool,
+            'stop_interactions:bus': factory.Tool,
+            'passenger_counts:train': factory.Tool,
+            'passenger_counts:bus': factory.Tool,
+            'volume_counts:car': factory.Tool,
+        }
+    )
+
+
+
+#test_config_dependencies
+# Setup
+@pytest.fixture
+def requirements_depends(test_config_dependencies):
+    requirements = RequirementsWorkStation(test_config_dependencies)
+    postprocessing = PostProcessWorkStation(test_config_dependencies)
+    benchmarks = BenchmarkWorkStation(test_config_dependencies)
+    event_handlers = EventHandlerWorkStation(test_config_dependencies)
+    plan_handlers = PlanHandlerWorkStation(test_config_dependencies)
+    input_workstation = InputsWorkStation(test_config_dependencies)
+    paths = PathFinderWorkStation(test_config_dependencies)
+
+    requirements.connect(
+        managers=None,
+        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers]
+    )
+    benchmarks.connect(
+        managers=[requirements],
+        suppliers=[event_handlers, plan_handlers],
+    )
+    postprocessing.connect(
+        managers=[requirements],
+        suppliers=[event_handlers, plan_handlers]
+    )
+    event_handlers.connect(
+        managers=[postprocessing, benchmarks, requirements],
+        suppliers=[input_workstation]
+    )
+    plan_handlers.connect(
+        managers=[requirements, benchmarks, postprocessing],
+        suppliers=[input_workstation]
+    )
+    input_workstation.connect(
+        managers=[event_handlers, plan_handlers],
+        suppliers=[paths]
+    )
+    paths.connect(
+        managers=[input_workstation],
+        suppliers=None
+    )
+    return requirements
+
+
+def test_bfs_depends(requirements_depends):
+    requirements = requirements_depends
+    factory.build(requirements, write_path=test_outputs)
+    assert requirements.resources == {}
+    assert set(requirements.suppliers[0].resources) == set(
+        {
+            'vkt:car': factory.Tool,
+            'vkt:bus': factory.Tool,
+        }
+    )
+    assert set(requirements.suppliers[2].resources) == set(
+        {
+            'stop_interactions:train': factory.Tool,
+            'stop_interactions:bus': factory.Tool,
+            'passenger_counts:train': factory.Tool,
+            'passenger_counts:bus': factory.Tool,
+            'volume_counts:car': factory.Tool,
+            'volume_counts:bus': factory.Tool,
+        }
+    )
 
 
 def test_cycle_simple():

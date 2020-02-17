@@ -12,6 +12,8 @@ class PlanHandlerTool(Tool):
     """
     Base Tool class for Plan Handling.
     """
+    options_enabled = True
+
     def __init__(self, config, option=None):
         self.logger = logging.getLogger(__name__)
         super().__init__(config, option)

@@ -7,6 +7,7 @@ from elara.factory import WorkStation, Tool
 
 
 class PostProcessor(Tool):
+
     options_enabled = True
 
     def __init__(self, config, option=None):
