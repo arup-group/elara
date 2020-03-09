@@ -1,0 +1,22 @@
+ [scenario]
+name = "time_squeeze"
+time_periods = 24
+scale_factor = 1
+crs = "EPSG:27700"
+verbose = true
+
+[inputs]
+events = "./out/output_events.xml.gz"
+network = "./out/output_network.xml.gz"
+transit_schedule = "./out/output_transitSchedule.xml.gz"
+transit_vehicles = "./out/output_transitVehicles.xml.gz"
+attributes = "./out/output_personAttributes.xml.gz"
+plans = "./out/output_plans.xml.gz"
+
+[event_handlers]
+volume_counts = ["car"]
+
+[outputs]
+path = "./out"
+contract = true
+

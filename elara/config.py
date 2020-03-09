@@ -164,7 +164,7 @@ class Config:
         :return: Pass through path if it exists
         """
         if not os.path.exists(path):
-            raise ConfigError("Specified path for {} does not exist".format(field_name))
+            raise ConfigError("Specified path {} for {} does not exist".format(path, field_name))
         return path
 
     def valid_verbosity(self, inp):
@@ -209,18 +209,17 @@ class Config:
             raise ConfigError('Configured CRS should be string format, for example: "EPSG:27700"')
         return inp
 
-    def override(self, path_overrides):
+    def override(self, path_override):
         """
-        :param path_overrides: list of paths to override the input with, and/or 'path' to replace output path
+        :param path_overrides: alternating list of paths to override the input with, and/or 'path' to replace output path
         """
         # Construct a dictionary from the path_overrides str
-        path_overrides = ast.literal_eval(path_overrides)
-        for path in path_overrides:
-            if path in self.parsed_toml['inputs']:
-                self.parsed_toml['inputs'][path] = path_overrides[path]
-            if path == 'path':
-                self.parsed_toml['outputs'][path] = path_overrides[path]
-                self.output_path = path_overrides[path]
+        for path in self.parsed_toml['inputs']:
+            file_name = self.parsed_toml['inputs'][path].split('/')[-1]
+            self.parsed_toml['inputs'][path] = "{}/{}".format(path_override, file_name)
+
+        self.parsed_toml['outputs']['path'] = path_override
+        self.output_path = path_override
 
 
 class PathTool(Tool):
