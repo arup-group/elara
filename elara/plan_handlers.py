@@ -339,7 +339,7 @@ class AgentLogsHandler(PlanHandlerTool):
                             end_time_str = stage.get('end_time', '23:59:59')
 
                             activity_end_dt = non_wrapping_datetime(
-                                arrival_dt, end_time_str, self.logger
+                                arrival_dt, end_time_str, self.logger, idx=ident
                             )
 
                             duration = activity_end_dt - arrival_dt
@@ -372,9 +372,10 @@ class AgentLogsHandler(PlanHandlerTool):
                         leg_seq_idx += 1
 
                         mode = stage.get('mode')
+                        route = stage.xpath('route')[0]
                         if mode == 'pt':
-                            route = stage.xpath('route')[0].text.split('===')[-2]
-                            mode = self.resources['transit_schedule'].mode_map.get(route)
+                            route_id = route.text.split('===')[-2]
+                            mode = self.resources['transit_schedule'].mode_map.get(route_id)
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
@@ -392,6 +393,8 @@ class AgentLogsHandler(PlanHandlerTool):
                                 'oy': y,
                                 'dx': None,
                                 'dy': None,
+                                'o_act': act_type,
+                                'd_act': None,
                                 'start': activity_end_dt.time(),
                                 'end': arrival_dt.time(),
                                 'end_day': arrival_dt.day,
@@ -399,14 +402,16 @@ class AgentLogsHandler(PlanHandlerTool):
                                 'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
                                 'duration_s': td.total_seconds(),
-                                'distance': stage.get('distance')
+                                'distance': route.get('distance')
                             }
                         )
 
-                # back-fill leg destinations
                 for idx, leg in enumerate(legs):
+                    # back-fill leg destinations
                     leg['dx'] = activities[idx + 1]['x']
                     leg['dy'] = activities[idx + 1]['y']
+                    # back-fill destination activities for legs
+                    leg['d_act'] = activities[idx + 1]['act']
 
                 self.activities_log.add(activities)
                 self.legs_log.add(legs)
@@ -527,7 +532,7 @@ class AgentPlansHandler(PlanHandlerTool):
                         end_time_str = stage.get('end_time', '23:59:59')
 
                         activity_end_dt = non_wrapping_datetime(
-                            arrival_dt, end_time_str, self.logger
+                            arrival_dt, end_time_str, self.logger, idx=ident
                         )
 
                         duration = activity_end_dt - arrival_dt
@@ -566,9 +571,10 @@ class AgentPlansHandler(PlanHandlerTool):
                     leg_seq_idx += 1
 
                     mode = stage.get('mode')
+                    route = stage.xpath('route')[0]
                     if mode == 'pt':
-                        route = stage.xpath('route')[0].text.split('===')[-2]
-                        mode = self.resources['transit_schedule'].mode_map.get(route)
+                        route_id = route.text.split('===')[-2]
+                        mode = self.resources['transit_schedule'].mode_map.get(route_id)
 
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")
@@ -597,7 +603,7 @@ class AgentPlansHandler(PlanHandlerTool):
                             'start_s': self.get_seconds(activity_end_dt),
                             'end_s': self.get_seconds(arrival_dt),
                             'duration_s': td.total_seconds(),
-                            # 'distance': stage.get('distance'),
+                            'distance': route.get('distance'),
                         }
                     )
 
@@ -863,7 +869,8 @@ def export_geojson(gdf, path):
 def non_wrapping_datetime(
         current_time: datetime,
         new_time_str: str,
-        logger=None
+        logger=None,
+        idx=None,
 ) -> datetime:
     """
     Function to step time strings and day counter to avoid wrapping of times around the
@@ -871,6 +878,7 @@ def non_wrapping_datetime(
     :param current_time: datetime from previous event
     :param new_time_str: new time string
     :param logger: optional logger
+    :param idx: optional idx
     :return: time string, day
     """
 
@@ -880,14 +888,19 @@ def non_wrapping_datetime(
     current_day = current_time.day
     current_time_str = current_time.strftime('%H:%M:%S')
 
-    if new_time_str[-8:] == '24:00:00':
-        if logger:
-            logger.warn('"24:00:00" time string encountered, adding day to time.')
-        return datetime.strptime(f"{current_day + 1}-00:00:00", '%d-%H:%M:%S')
+    hour = int(new_time_str[-8:-6])
+    if hour > 23:
+        temp = datetime.strptime(f"{current_day + 1}-{hour-24}:{new_time_str[-5:]}", '%d-%H:%M:%S')
+        # if logger:
+        #     logger.warning(f'Bad time str: {new_time_str}, converting: {temp}, idx: {idx}')
+        return temp
 
     if new_time_str < current_time_str:  # infer that single day has passed
-        if logger:
-            logger.warn('Time Wrapping prevented by adding day to time.')
-        return datetime.strptime(f"{current_day + 1}-{new_time_str}", '%d-%H:%M:%S')
+        temp = datetime.strptime(f"{current_day + 1}-{new_time_str}", '%d-%H:%M:%S')
+        # if logger:
+        #     logger.warning(f'Time Wrapping ({new_time_str} < {current_time_str}) '
+        #                    f'prevented by adding day to time: {new_time_str} -> {temp}, '
+        #                    f'idx: {idx}')
+        return temp
 
     return datetime.strptime(f"{current_day}-{new_time_str}", '%d-%H:%M:%S')
