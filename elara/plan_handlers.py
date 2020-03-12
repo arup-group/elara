@@ -141,6 +141,10 @@ class ModeShareHandler(PlanHandlerTool):
                         if mode == 'pt':
                             route = stage.xpath('route')[0].text.split('===')[-2]
                             mode = self.resources['transit_schedule'].mode_map.get(route)
+                        if not mode:
+                            raise UserWarning(f"Not found mode for "
+                                              f"agent: {ident}, "
+                                              f"route: {route}")
                         modes.append(mode)
 
                     elif stage.tag == 'activity':
