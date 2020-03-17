@@ -23,6 +23,36 @@ config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
 config = Config(config_path)
 
 
+def test_pt_interactions_counter_bus():
+    benchmark = benchmarking.TestPTInteraction
+    test_bm = benchmark(
+        config,
+        'bus',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['counters'] == 0
+
+
+def test_links_counter_car_init():
+    benchmark = benchmarking.TestCordon
+    test_bm = benchmark(
+        config,
+        'car',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['counters'] == 0
+
+
+def test_links_counter_bus_init():
+    benchmark = benchmarking.TestCordon
+    test_bm = benchmark(
+        config,
+        'bus',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['counters'] == 0
+
+
 def test_points_counter_init():
     benchmark = benchmarking.TestHighwayCounters
     test_bm = benchmark(
