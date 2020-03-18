@@ -10,65 +10,108 @@ logger = logging.getLogger(__name__)
 
 class Config:
 
-    def __init__(self, path):
+    default_settings = {
+        "scenario":
+            {
+                "name": 'default',
+                "time_periods": 24,
+                "scale_factor": .1,
+                "crs": "EPSG:27700",
+                "verbose": False,
+            },
+        "inputs":
+            {
+                "events": "./output_events.xml.gz",
+                "network": "./output_network.xml.gz",
+                "transit_schedule": "./output_transitSchedule.xml.gz",
+                "transit_vehicles": "./output_transitVehicles.xml.gz",
+                "attributes": "./output_personAttributes.xml.gz",
+                "plans": "./output_plans.xml.gz",
+                "output_config_path": "./output_config.xml",
+            },
+        "outputs":
+            {
+                "path": './elara_outputs',
+                "contract": True,
+            },
+    }
+
+    def __init__(self, path=None, override=None):
         """
         Config object constructor.
         :param path: Path to scenario configuration TOML file
         """
         self.logger = logging.getLogger(__name__)
+        self.name = None
+        self.time_periods = None
+        self.scale_factor = None
+        self.logging = None
+        self.event_handlers = None
+        self.plan_handlers = None
+        self.post_processors = None
+        self.benchmarks = None
+        self.output_path = None
+        self.contract = None
 
-        self.logger.debug(f'Loading config from {path}')
-        self.parsed_toml = toml.load(path, _dict=dict)
+        if path:
+            self.logger.debug(f' Loading config from {path}')
+            self.settings = toml.load(path, _dict=dict)
+        elif override:
+            self.logger.debug(f' Loading config from dict override')
+            self.settings = override
+        else:
+            self.logger.debug(f' Loading default config')
+            self.settings = self.default_settings
 
-        # Scenario settings
-        self.logger.debug(f'Loading scenario settings from config')
-
-        self.name = self.parsed_toml["scenario"]["name"]
-        self.time_periods = self.valid_time_periods(
-            self.parsed_toml["scenario"]["time_periods"]
-        )
-        self.scale_factor = self.valid_scale_factor(
-            self.parsed_toml["scenario"]["scale_factor"]
-        )
-        self.logging = self.valid_verbosity(
-            self.parsed_toml["scenario"].get("verbose", False)
-        )
-
-        self.logger.debug(f'Scenario name = {self.name}')
-        self.logger.debug(f'Scenario time periods = {self.time_periods}')
-        self.logger.debug(f'Scale factor = {self.scale_factor}')
-        self.logger.debug(f'Verbosity/logging = {self.logging}')
-
-        # Factory requirements
-        self.logger.debug(f'Loading factory build requirements from config')
-
-        self.event_handlers = self.parsed_toml.get("event_handlers", {})
-        self.plan_handlers = self.parsed_toml.get("plan_handlers", {})
-        self.post_processors = self.parsed_toml.get("post_processors", {})
-        self.benchmarks = self.parsed_toml.get("benchmarks", {})
-
-        self.logger.debug(f'Required Event Handlers = {self.event_handlers}')
-        self.logger.debug(f'Required Plan Handlers = {self.plan_handlers}')
-        self.logger.debug(f'Required Post Processors = {self.post_processors}')
-        self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
-
-        # Output settings
-        self.logger.debug(f'Loading output settings from config')
-
-        self.output_path = self.parsed_toml["outputs"]["path"]
-        self.contract = self.parsed_toml["outputs"].get("contract", False)
-
-        self.logger.debug(f'Output Path = {self.output_path}')
-        self.logger.debug(f'Contract = {self.contract}')
+        self.load_required_settings()
 
         if not os.path.exists(self.output_path):
             self.logger.info(f'Creating output path: {self.output_path}')
             os.mkdir(self.output_path)
-            
+
         benchmarks_path = os.path.join(self.output_path, "benchmarks")
         if not os.path.exists(benchmarks_path):
             self.logger.info(f'Creating output path: {benchmarks_path}')
             os.mkdir(benchmarks_path)
+
+        self.logger.debug(f'Scenario name = {self.name}')
+        self.logger.debug(f'Output Path = {self.output_path}')
+        self.logger.debug(f'Scenario time periods = {self.time_periods}')
+        self.logger.debug(f'Scale factor = {self.scale_factor}')
+        self.logger.debug(f'Verbosity/logging = {self.logging}')
+        self.logger.debug(f'Required Event Handlers = {self.event_handlers}')
+        self.logger.debug(f'Required Plan Handlers = {self.plan_handlers}')
+        self.logger.debug(f'Required Post Processors = {self.post_processors}')
+        self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
+        self.logger.debug(f'Contract = {self.contract}')
+
+    def load_required_settings(self):
+
+        # Scenario settings
+        self.logger.debug(f'Loading and validating required settings from config')
+
+        self.name = self.settings["scenario"]["name"]
+        self.time_periods = self.valid_time_periods(
+            self.settings["scenario"]["time_periods"]
+        )
+        self.scale_factor = self.valid_scale_factor(
+            self.settings["scenario"]["scale_factor"]
+        )
+        self.logging = self.valid_verbosity(
+            self.settings["scenario"].get("verbose", False)
+        )
+
+        # Factory requirements
+        self.logger.debug(f'Loading factory build requirements from config')
+        self.event_handlers = self.settings.get("event_handlers", {})
+        self.plan_handlers = self.settings.get("plan_handlers", {})
+        self.post_processors = self.settings.get("post_processors", {})
+        self.benchmarks = self.settings.get("benchmarks", {})
+
+        # Output settings
+        self.logger.debug(f'Loading output settings from config')
+        self.output_path = self.settings["outputs"]["path"]
+        self.contract = self.settings["outputs"].get("contract", False)
 
     """
     Property methods used for config dependant requirements.
@@ -77,54 +120,54 @@ class Config:
 
     @property
     def dummy_path(self):
-        return self.parsed_toml["scenario"]["name"]
+        return self.settings["scenario"]["name"]
 
     @property
     def crs(self):
         return self.valid_crs(
-            self.parsed_toml["scenario"]["crs"]
+            self.settings["scenario"]["crs"]
         )
 
     @property
     def events_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["events"], "events"
+            self.settings["inputs"]["events"], "events"
         )
 
     @property
     def plans_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["plans"], "plans"
+            self.settings["inputs"]["plans"], "plans"
         )
 
     @property
     def network_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["network"], "network"
+            self.settings["inputs"]["network"], "network"
         )
 
     @property
     def attributes_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["attributes"], "attributes"
+            self.settings["inputs"]["attributes"], "attributes"
         )
 
     @property
     def transit_schedule_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["transit_schedule"], "transit_schedule"
+            self.settings["inputs"]["transit_schedule"], "transit_schedule"
         )
 
     @property
     def transit_vehicles_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["transit_vehicles"], "transit_vehicles"
+            self.settings["inputs"]["transit_vehicles"], "transit_vehicles"
         )
 
     @property
     def output_config_path(self):
         return self.valid_path(
-            self.parsed_toml["inputs"]["output_config_path"], "output_config"
+            self.settings["inputs"]["output_config_path"], "output_config"
         )
 
     @staticmethod
@@ -211,14 +254,14 @@ class Config:
 
     def override(self, path_override):
         """
-        :param path_overrides: alternating list of paths to override the input with, and/or 'path' to replace output path
+        :param path_override: override the config input paths
         """
         # Construct a dictionary from the path_overrides str
-        for path in self.parsed_toml['inputs']:
-            file_name = self.parsed_toml['inputs'][path].split('/')[-1]
-            self.parsed_toml['inputs'][path] = "{}/{}".format(path_override, file_name)
+        for path in self.settings['inputs']:
+            file_name = self.settings['inputs'][path].split('/')[-1]
+            self.settings['inputs'][path] = "{}/{}".format(path_override, file_name)
 
-        self.parsed_toml['outputs']['path'] = path_override
+        self.settings['outputs']['path'] = path_override
         self.output_path = path_override
 
 
