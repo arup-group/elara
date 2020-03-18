@@ -14,23 +14,12 @@ from elara.benchmarking import BenchmarkWorkStation
 from elara import factory
 
 
-@click.group()
+@click.group(cls=NaturalOrderGroup)
 def cli():
     """
     Command line tool for processing a MATSim scenario events output.
     """
     pass
-
-
-@cli.command()
-@click.argument("config_path", type=click.Path(exists=True))
-def run(config_path):
-    """
-    Run Elara using a config.toml, examples are included in the repo and readme.
-    :param config_path: Configuration file path
-    """
-    config = Config(config_path)
-    main(config)
 
 
 def common_options(func):
@@ -143,7 +132,7 @@ def stop_interactions(
     main(config)
 
 
-@cli.group(name="plan-handlers")
+@cli.group(name="plan-handlers", cls=NaturalOrderGroup)
 def plan_handlers():
     """
     Access plan handler output group.
@@ -231,7 +220,7 @@ def highway_distances(
     main(config)
 
 
-@cli.group(name="post-processors")
+@cli.group(name="post-processors", cls=NaturalOrderGroup)
 def post_processors():
     """
     Access post processing output group.
@@ -259,7 +248,7 @@ def vkt(
     main(config)
 
 
-@cli.group(name="benchmarks")
+@cli.group(name="benchmarks", cls=NaturalOrderGroup)
 def benchmarks():
     """
     Access benchmarks output group.
@@ -284,6 +273,17 @@ def london_central_cordon(
     )
     override["benchmarks"]["london_central_cordon"] = list(modes)
     config = Config(override=override)
+    main(config)
+
+
+@cli.command()
+@click.argument("config_path", type=click.Path(exists=True))
+def run(config_path):
+    """
+    Run Elara using a config.
+    :param config_path: Configuration file path
+    """
+    config = Config(config_path)
     main(config)
 
 
