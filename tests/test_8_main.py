@@ -1,10 +1,7 @@
-import sys
 import os
 import pytest
 import pandas as pd
 
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "/test_outputs")))
-#sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
@@ -134,7 +131,6 @@ def test_main_ordering_graph(test_config):
 def test_config_missing():
     config_path = os.path.join(test_dir, 'test_xml_scenario_missing.toml')
     config = Config(config_path)
-    # config.output_path = test_path
     return config
 
 
