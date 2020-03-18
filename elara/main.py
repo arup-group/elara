@@ -34,16 +34,45 @@ def run(config_path):
 
 
 def common_options(func):
-    func = click.option('-d', '--debug', is_flag=True)(func)
-    func = click.option('-n', '--name', type=click.STRING, default=str(Path(os.getcwd())).split('/')[-1])(func)
-    func = click.option('-i', '--inputs_path', type=PathPath(exists=True), default=Path(os.getcwd()))(func)
-    func = click.option('-o', '--outputs_path', type=PathPath(), default=Path(os.getcwd()) / 'elara_out')(func)
-    func = click.option('-p', '--time_periods', type=click.INT, default=24)(func)
-    func = click.option('-s', '--scale_factor', type=click.FLOAT, default=0.1)(func)
-    func = click.option('-e', '--epsg', type=click.STRING, default="EPSG:27700")(func)
+    func = click.option(
+        '-d', '--debug', is_flag=True, help="Switch on debug verbosity."
+    )(func)
+
+    func = click.option(
+        '-n', '--name', type=click.STRING, default=str(Path(os.getcwd())).split('/')[-1],
+        help="Scenario name, defaults to root dir name."
+    )(func)
+
+    func = click.option(
+        '-i', '--inputs_path', type=PathPath(exists=True), default=Path(os.getcwd()),
+        help="Inputs path location, defaults to current root."
+    )(func)
+
+    func = click.option(
+        '-o', '--outputs_path', type=PathPath(), default=Path(os.getcwd()) / 'elara_out',
+        help="Outputs path, defaults to './elara_out'."
+    )(func)
+
+    func = click.option(
+        '-p', '--time_periods', type=click.INT, default=24,
+        help="Time period breakdown, defaults to 24 (hourly."
+    )(func)
+
+    func = click.option(
+        '-s', '--scale_factor', type=click.FLOAT, default=0.1,
+        help="Scale factor, defaults to 0.1 (10%)."
+    )(func)
+
+    func = click.option(
+        '-e', '--epsg', type=click.STRING, default="EPSG:27700",
+        help="EPSG string, defaults to 'EPSG:27700' (UK)."
+    )(func)
+
     func = click.option(
         '-f', '--full', is_flag=True, default=True,
-        help="Option to disable output contracting.")(func)
+        help="Option to disable output contracting."
+    )(func)
+
     return func
 
 
