@@ -357,7 +357,8 @@ class TransitVehicles(InputTool):
             "Bus": "bus",
             "Coach Service": "bus",
             "Tram": "tram",
-            "Ferry": "ferry"
+            "Ferry": "ferry",
+            "Gondola": "cable"
         }
         self.logger.debug(f'veh type mode map = {self.veh_type_mode_map}')
 
