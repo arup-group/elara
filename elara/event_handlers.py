@@ -54,9 +54,10 @@ class EventHandlerTool(Tool):
         :return: Vehicle mode type string
         """
         if vehicle_id in self.resources['transit_vehicles'].veh_id_veh_type_map.keys():
-            return self.resources['transit_vehicles'].veh_type_mode_map[
+            return self.resources['transit_vehicles'].veh_type_mode_map.get(
+                self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id],
                 self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id]
-            ]
+            )
         else:
             return "car"
 
