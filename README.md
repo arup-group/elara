@@ -18,19 +18,25 @@ A command line utility for processing MATSim output XML files:
 * [What does the name mean?](#markdown-header-what-does-the-name-mean)
 
 ## Installation
-Clone or download the repository from the [downloads section](https://bitbucket.org/arupdigital/elara/downloads/). Once available locally, navigate to the folder and run:
+Clone or download the repository from the 
+[downloads section](https://bitbucket.org/arupdigital/elara/downloads/). Once available locally, 
+navigate to the folder and run:
 ```
 pip3 install -e .
 elara --help
 ```
 
-The ``GeoPandas`` library requires ``pyproj`` as a dependency. This can be a bit of a pain to install. For Mac OSX, activate the environment Elara lives in and run the following commands before installing the tool:
+The ``GeoPandas`` library requires ``pyproj`` as a dependency. This can be a bit of a pain to 
+install. For Mac OSX, activate the environment Elara lives in and run the following commands 
+before installing the tool:
 ```
 pip3 install cython
 pip3 install git+https://github.com/jswhit/pyproj.git
 ```
 
-On Windows, pre-compiled wheels of ``pyproj`` can be found on [this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj`` wheel within your environment using pip.  
+On Windows, pre-compiled wheels of ``pyproj`` can be found on
+[this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj``
+ wheel within your environment using pip.  
 
 We require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
 between coordinate reference systems.
@@ -93,7 +99,8 @@ Usage: elara [OPTIONS] CONFIG_PATH
 
 Options:
   -h, --help  Show this message and exit.
-  -o, --path_overrides string representation of a dictionary mapping a set of input paths, and/our output 'path' to overrides
+  -o, --path_overrides string representation of a dictionary mapping a set of input paths, 
+  and/our output 'path' to overrides
 
 
 Example:
@@ -102,11 +109,13 @@ Example:
   elara -o "{'events': 'some_event_path'}" tests/test_xml_scenario
 ```
 
-Given the path to a suitable configuration TOML file (see [here](#markdown-header-configuration-format)), processes a 
-MATSim events file and produces the desired summary metric files. For example: `elara scenario.toml`.
+Given the path to a suitable configuration TOML file
+(see[here](#markdown-header-configuration-format)), processes a MATSim events file and produces 
+the desired summary metric files. For example: `elara scenario.toml`.
 
 ## Configuration format
-This utility uses a TOML configuration format to specify input, output and metric generation options. For example:
+This utility uses a TOML configuration format to specify input, output and metric generation 
+options. For example:
 ```
  [scenario]
 name = "test_town"
@@ -139,7 +148,8 @@ highway_distances = ["car"]
 vkt = ["car"]
 
 [benchmarks]
-test_town_cordon = ["car"]
+test_pt_interaction_counter = ["bus"]
+test_link_cordon = ["car"]
 
 [outputs]
 path = "./tests/test_outputs"
@@ -154,14 +164,15 @@ The name of the scenario being processed, using when naming output files.
 
 **#** scenario.**time_periods** *integer* *(required)*
 
-The number of time slices used to split a 24-hour period for the purposes of reporting. A value of ``24`` will produce 
-summary metrics for each our of the day. Similarly, a value of ``96`` will produce 15-minute summaries.
+The number of time slices used to split a 24-hour period for the purposes of reporting. A value 
+of ``24`` will produce summary metrics for each our of the day. Similarly, a value of ``96`` will
+ produce 15-minute summaries.
 
 **#** scenario.**scale_factor** *float* *(required)*
 
-The sample size used in the originating MATSim scenario run. This is used to scale metrics such as volume counts. For 
-example, if the underlying scenario was run with a 25% sample size, a value of ``0.25`` in this field will ensure that 
-all calculated volume counts are scaled by 4 times.
+The sample size used in the originating MATSim scenario run. This is used to scale metrics such 
+as volume counts. For example, if the underlying scenario was run with a 25% sample size, a value
+ of ``0.25`` in this field will ensure that all calculated volume counts are scaled by 4 times.
 
 **#** scenario.**crs** *string* *(required)*
 
@@ -182,7 +193,8 @@ Path to additional MATSim resources.
 
 **#** event_handlers.**[handler name]** *list of strings* *(optional)*
 
-Specification of the event handlers to be run during processing. Currently available handlers include:
+Specification of the event handlers to be run during processing. Currently available handlers 
+include:
 
 * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
 * ``passenger_counts``: Produce vehicle occupancy by time slice.
@@ -225,7 +237,9 @@ Specification of the event handlers to be run post processing. Currently availab
 * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
 with multiple leg modes.
 
-The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
+The associated list attached to each handler allows specification of which modes of transport 
+should be processed using that handler. This allows certain handlers to be activated for public 
+transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, ...``
 * note that ``trip_logs`` only supports the option of ``["all"]``.
@@ -233,26 +247,47 @@ The associated list attached to each handler allows specification of which modes
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
 Specification of the benchmarks to be run. These include a variety of highway counters, 
-cordons and mode share benchmarks for specific projects. Currently available 
-benchmarks include:
+cordons and mode share benchmarks for specific projects. Benchmarks calculated using preprocessed
+ data unique to the given scenario network. This means that a given benchmark will not work for a
+  given scenario (say 'London') unless the same network and/or schedule are in use. Where a 
+  network or schedule has been changed, the project [bench](https://github.com/arup-group/bench) 
+  has been created to pre-process this data. 
 
-* ``test_town_highways``
-* ``squeeze_town_highways``
+Currently available benchmarks include:
+
+_newer formats (produced using `bench`):_
+
+* ``london_rods``
+* ``london_central_cordon``
+* ``london_inner_cordon``
+* ``london_outer_cordon``
+* ``london_thames_screen``
+* ``test_pt_interaction_counter``
+* ``test_link_cordon``
+
+_older formats:_
+
 * ``ireland_highways``
 * ``london_inner_cordon_car``
 * ``dublin_canal_cordon_car``
 * ``ireland_commuter_modeshare``
+
+* ``test_town_highways``
+* ``squeeze_town_highways``
 * ``test_town_cordon``
 * ``test_town_peak_cordon``
 * ``test_town_modeshare``
 
-The associated list attached to each handler allows specification of which modes of transport should be processed using that handler. This allows certain handlers to be activated for public transport modes but not private vehicles for example. Possible modes currently include:
+The associated list attached to each handler allows specification of which modes of transport 
+should be processed using that handler. This allows certain handlers to be activated for public 
+transport modes but not private vehicles for example. Possible modes currently include:
 
-* eg ``car, bus, train, ...``
+* eg ``car, bus, train, subway...``
 
 **#** outputs.**path** *directory* *(required)*
 
-Desired output directory. Can be absolute or relative to the invocation location. If the directory does not exist it will be created.
+Desired output directory. Can be absolute or relative to the invocation location. If the 
+directory does not exist it will be created.
 
 **#** outputs.**contract** *boolean*
 
@@ -289,7 +324,8 @@ available).
 
 **Nice to have**
 
-* More descriptive generated column headers in handler results. Right now column headers are simply numbers mapped to the particular time slice during the modelled day. 
+* More descriptive generated column headers in handler results. Right now column headers are 
+simply numbers mapped to the particular time slice during the modelled day. 
 * More outputs, ie mode distances/times/animations.
 * S3 integration (read and write).
 * automatic discovery of inputs in directory.
@@ -301,4 +337,6 @@ available).
  ![dag](images/design.png)
 
 ## What does the name mean?
-[Elara]("https://en.wikipedia.org/wiki/Elara_(moon)") is a moon of Jupiter. There's not much else interesting to say about it, other than that the wikipedia article states that it orbits 11-13 *gigametres* from the planet. Gigametres is a cool unit of measurement. 
+[Elara]("https://en.wikipedia.org/wiki/Elara_(moon)") is a moon of Jupiter. There's not much else
+ interesting to say about it, other than that the wikipedia article states that it orbits 11-13 
+ *gigametres* from the planet. Gigametres is a cool unit of measurement. 

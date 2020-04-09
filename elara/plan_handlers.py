@@ -141,7 +141,12 @@ class ModeShareHandler(PlanHandlerTool):
                         if mode == 'pt':
                             route = stage.xpath('route')[0].text.split('===')[-2]
                             mode = self.resources['transit_schedule'].mode_map.get(route)
-                        modes.append(mode)
+                        if not mode:
+                            self.logger.error(f"Not found mode for "
+                                              f"agent: {ident}, "
+                                              f"route: {route}")
+                        else:
+                            modes.append(mode)
 
                     elif stage.tag == 'activity':
                         activity = stage.get('type')
@@ -377,6 +382,11 @@ class AgentLogsHandler(PlanHandlerTool):
                             route_id = route.text.split('===')[-2]
                             mode = self.resources['transit_schedule'].mode_map.get(route_id)
 
+                            if not mode:
+                                raise UserWarning(f"Not found mode for "
+                                                  f"agent: {ident}, "
+                                                  f"route: {route_id}")
+
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
                         td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
@@ -575,6 +585,11 @@ class AgentPlansHandler(PlanHandlerTool):
                     if mode == 'pt':
                         route_id = route.text.split('===')[-2]
                         mode = self.resources['transit_schedule'].mode_map.get(route_id)
+
+                        if not mode:
+                            raise UserWarning(f"Not found mode for "
+                                              f"agent: {ident}, "
+                                              f"route: {route_id}")
 
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")

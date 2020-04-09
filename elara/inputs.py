@@ -571,9 +571,13 @@ class ModeHierarchy(InputTool):
 
     def get(self, modes: list) -> str:
         if not isinstance(modes, list):
-            raise TypeError("ModeHierarchy get method expects list")
+            raise TypeError(
+                f"ModeHierarchy get method expects list, received: {modes}, type: {type(modes)}"
+            )
         if not all(isinstance(mode, str) for mode in modes):
-            raise TypeError("ModeHierarchy get method expects list of strings")
+            raise TypeError(
+                f"ModeHierarchy get method expects list of strings, received: {modes}, "
+                f"type: {type(modes[0])}")
         for mode in modes:
             if mode not in self.hierarchy:
                 self.logger.warning(f"WARNING {mode} not found in hierarchy")
