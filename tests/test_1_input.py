@@ -166,13 +166,13 @@ def test_hierarchy_get_unknown(capsys):
     mode = hierarchy.get(modes)
     captured = capsys.readouterr()
     assert captured
-    assert mode == modes[1]
+    assert mode == modes[0]
 
 
 test_hierarchy_get_data = [
     (['transit_walk', 'bus', 'egress_walk'], "bus"),
     (['transit_walk', 'bus', 'rail', 'transit_walk'], "rail"),
-    (['car', 'helicopter', 'transit_walk'], "car"),
+    (['car', 'helicopter', 'transit_walk'], "helicopter"),
 ]
 
 
