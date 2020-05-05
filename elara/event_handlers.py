@@ -4,7 +4,8 @@ import pandas as pd
 import geopandas as gpd
 from typing import Union, Tuple, Optional
 import logging
-from halo import Halo
+import os
+import networkx as nx
 
 
 from elara.factory import WorkStation, Tool
@@ -87,9 +88,87 @@ class EventHandlerTool(Tool):
         }
 
 
-class AgentWaitingTimes(EventHandlerTool):
+class AgentGraph(EventHandlerTool):
     """
     Extract Waiting times for agents.
+    """
+
+    requirements = [
+        'events',
+        'transit_vehicles',
+        'attributes',
+    ]
+
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        self.veh_occupancy = dict()
+
+        # Initialise results storage
+        self.graph = nx.Graph()
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        for person, subpopulation in self.resources['attributes'].map.items():
+            self.graph.add_node(person, subpop=subpopulation)
+
+    def process_event(self, elem) -> None:
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
+        events to determine link volume counts.
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+
+            if agent_id not in self.resources['attributes'].map:
+                return None
+
+            veh_ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_ident)
+
+            if veh_mode == 'car':  # can ignore cars
+                return None
+
+            # update veh occupancy
+            if not self.veh_occupancy.get(veh_ident):
+                self.veh_occupancy[veh_ident] = [agent_id]
+            else:
+                for passenger in self.veh_occupancy[veh_ident]:
+                    self.graph.add_edge(
+                        agent_id,
+                        passenger,
+                        mode=veh_mode,
+                        occupancy=len(self.veh_occupancy[veh_ident])
+                    )
+
+                self.veh_occupancy[veh_ident].append(agent_id)
+
+            return None
+
+    def finalise(self):
+        name = "graph.pkl".format(self.option)
+        path = os.path.join(self.config.output_path, name)
+        nx.write_gpickle(self.graph, path)
+
+
+class AgentWaitingTimes(EventHandlerTool):
+    """
+    Extract interaction graph for agents.
     """
 
     requirements = [
@@ -680,6 +759,7 @@ class EventHandlerWorkStation(WorkStation):
         "passenger_counts": PassengerCounts,
         "stop_interactions": StopInteractions,
         "waiting_times": AgentWaitingTimes,
+        "graph": AgentGraph,
     }
 
     def __init__(self, config):

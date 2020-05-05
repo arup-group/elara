@@ -527,7 +527,7 @@ class OutputConfig(InputTool):
         """
         super().build(resources)
 
-        path = resources['output_config_path'].path
+        path = str(resources['output_config_path'].path)
         elems = etree.parse(path)
 
         for e in elems.xpath(
