@@ -560,6 +560,7 @@ class ModeHierarchy(InputTool):
         "subway",
         "tram",
         "bus",
+        # "gondola",
         "car",
         "bike",
         "walk",
@@ -579,16 +580,17 @@ class ModeHierarchy(InputTool):
                 f"type: {type(modes[0])}")
         for mode in modes:
             if mode not in self.hierarchy:
-                self.logger.warning(f"WARNING {mode} not found in hierarchy")
+                self.logger.warning(f" {mode} not found in hierarchy, returning {mode} as main mode")
+                return mode
         for h in self.hierarchy:
             for mode in modes:
                 if h == mode:
                     return mode
-        # if mode not found in hierarchy then return middle mode
-        mode_index = floor(len(modes) / 2)
-        mode = modes[mode_index]
-        self.logger.warning(f"WARNING {modes} not in hierarchy, returning {mode}")
-        return mode
+        # # if mode not found in hierarchy then return middle mode
+        # mode_index = floor(len(modes) / 2)
+        # mode = modes[mode_index]
+        # self.logger.warning(f"WARNING {modes} not in hierarchy, returning {mode}")
+        # return mode
 
 
 class ModeMap(InputTool):
