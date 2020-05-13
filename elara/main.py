@@ -278,12 +278,19 @@ def london_central_cordon(
 
 @cli.command()
 @click.argument("config_path", type=click.Path(exists=True))
+@click.option("--path_override", '-o', default=None)
 def run(config_path):
     """
     Run Elara using a config.
     :param config_path: Configuration file path
+    :param path_override: containing directory to update for [inputs], outputs.path in toml
     """
+
     config = Config(config_path)
+
+    if path_override:
+        config.override(path_override)
+        
     main(config)
 
 
