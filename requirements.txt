@@ -1,6 +1,6 @@
 click==7.0
 geojson==2.5.0
-geopandas==0.6.2
+geopandas==0.7.0
 halo==0.0.28
 lxml==4.2.5
 networkx==2.4

@@ -143,8 +143,8 @@ if __name__ == '__main__':
                        'distance\t'
                        'polyline\n')
         leg_count = 1
-        epsg_27700 = pyproj.Proj(init='epsg:27700')
-        epsg_4326 = pyproj.Proj(init='epsg:4326')
+        epsg_27700 = pyproj.Proj('epsg:27700')
+        epsg_4326 = pyproj.Proj('epsg:4326')
         geometry_transformer = pyproj.Transformer.from_proj(epsg_27700, epsg_4326)
         for leg in matching_leg_elements:
             print('\tExporting leg {} : {}'.format(leg_count, leg))
