@@ -1,31 +1,31 @@
-on:
-  push:
-    branches:
-      - master
-
-name: Zip and drop in S3 (for AWS CodeBuild to do magic)
-
-jobs:
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-1
-    - name: Zip and Send to S3
-      run: |
-        echo $GITHUB_REPOSITORY
-        repo_slug=`echo $GITHUB_REPOSITORY | awk -F'/' '{print $2}'`;
-        echo $repo_slug
-        echo $GITHUB_SHA
-        echo $GITHUB_SHA > release
-        zip -r app.zip .
-        aws s3 cp app.zip s3://arup-arup-ukimea-tcs-dev-test-code/$repo_slug.zip
+#on:
+#  push:
+#    branches:
+#      - master
+#
+#name: Zip and drop in S3 (for AWS CodeBuild to do magic)
+#
+#jobs:
+#  deploy:
+#    name: Deploy
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - name: Checkout
+#      uses: actions/checkout@v2
+#
+#    - name: Configure AWS credentials
+#      uses: aws-actions/configure-aws-credentials@v1
+#      with:
+#        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#        aws-region: eu-west-1
+#    - name: Zip and Send to S3
+#      run: |
+#        echo $GITHUB_REPOSITORY
+#        repo_slug=`echo $GITHUB_REPOSITORY | awk -F'/' '{print $2}'`;
+#        echo $repo_slug
+#        echo $GITHUB_SHA
+#        echo $GITHUB_SHA > release
+#        zip -r app.zip .
+#        aws s3 cp app.zip s3://arup-arup-ukimea-tcs-dev-test-code/$repo_slug.zip
