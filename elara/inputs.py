@@ -11,7 +11,7 @@ import logging
 
 from elara.factory import WorkStation, Tool
 
-WGS_84 = pyproj.Proj(init="epsg:4326")
+WGS_84 = pyproj.Proj("epsg:4326")
 
 
 class InputTool(Tool):
@@ -38,7 +38,7 @@ class InputTool(Tool):
 
         else:
             self.logger.debug(f'Setting target projection to {set_crs}')
-            target.crs = {'init': set_crs}
+            target.crs = set_crs
 
         if to_crs is None:
             self.logger.warning(f'No to_crs, re-projection disabled at {self.__str__()}')
@@ -730,7 +730,7 @@ def generate_point(x, y, crs):
     :param crs: Initial coordinate reference system EPSG code
     :return: Point object
     """
-    proj = pyproj.Proj(init=crs)
+    proj = pyproj.Proj(crs)
     lon, lat = pyproj.transform(proj, WGS_84, x, y)
     return Point(lon, lat)
 

@@ -162,7 +162,7 @@ if __name__ == '__main__':
     node_table = make_node_table(node_ids, network_file_path)
 
     print("Creating output CSV file at {}".format(output_file_path))
-    geometry_transformer = pyproj.Transformer.from_proj(pyproj.Proj(init='epsg:27700'), pyproj.Proj(init='epsg:4326'))
+    geometry_transformer = pyproj.Transformer.from_proj(pyproj.Proj('epsg:27700'), pyproj.Proj('epsg:4326'))
     with open(output_file_path, 'w') as out_file:
         out_file.write('vehicle ID,vehicle type,time,lat,lon\n')
         for vehicle in filtered_event_summaries.keys():
