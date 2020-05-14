@@ -68,7 +68,7 @@ def example_gdf():
 test_hierarchy_get_data = [
     ('epsg:27700', 'epsg:4326', 'epsg:4326'),
     (None, 'epsg:4326', None),
-    ('epsg:27700', None, {'init': 'epsg:27700'})
+    ('epsg:27700', None, 'epsg:27700')
 ]
 
 
