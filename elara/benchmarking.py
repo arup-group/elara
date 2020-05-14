@@ -147,7 +147,7 @@ class LinkCounter(BenchmarkTool):
                 }
 
                 for i, time in enumerate(bm_hours):
-                    result_line[f"sim_{str(time)}"] = sim_result[i] # where we are seeing 0
+                    result_line[f"sim_{str(time)}"] = sim_result[i]
 
                 for i, time in enumerate(bm_hours):
                     result_line[f"bm_{str(time)}"] = counts_array[i]
