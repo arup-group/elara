@@ -91,6 +91,8 @@ class LinkCounter(BenchmarkTool):
             for direction, counter in counter_location.items():
 
                 links = counter['links']
+                if links==[]:
+                    continue # some links are empty lists, we skip them
                 bm_hours = list(counter['counts'])
                 counts_array = np.array(list(counter['counts'].values()))
 
@@ -103,7 +105,7 @@ class LinkCounter(BenchmarkTool):
 
                 # combine mode link counts
                 for link_id in links:
-                    if link_id not in results_df.index:
+                    if int(link_id) not in results_df.index:
                         failed_snaps += 1
                         self.logger.warning(
                             f" Missing model link: {link_id}, zero filling count for benchmark: "
@@ -111,7 +113,7 @@ class LinkCounter(BenchmarkTool):
                         )
                     else:
                         snaps += 1
-                        sim_result += np.array(results_df.loc[link_id, bm_hours])
+                        sim_result += np.array(results_df.loc[int(link_id), bm_hours])
 
                 if not sum(sim_result):
                     found = False
@@ -144,7 +146,7 @@ class LinkCounter(BenchmarkTool):
                 }
 
                 for i, time in enumerate(bm_hours):
-                    result_line[f"sim_{str(time)}"] = sim_result[i]
+                    result_line[f"sim_{str(time)}"] = sim_result[i] # where we are seeing 0
 
                 for i, time in enumerate(bm_hours):
                     result_line[f"bm_{str(time)}"] = counts_array[i]
