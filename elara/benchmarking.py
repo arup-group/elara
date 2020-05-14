@@ -78,6 +78,7 @@ class LinkCounter(BenchmarkTool):
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         results_df.index.name = 'link_id'
+        results_df.index = results_df.index.map(str)
 
         # build benchmark results
         snaps = 0
@@ -105,7 +106,7 @@ class LinkCounter(BenchmarkTool):
 
                 # combine mode link counts
                 for link_id in links:
-                    if int(link_id) not in results_df.index:
+                    if link_id not in results_df.index:
                         failed_snaps += 1
                         self.logger.warning(
                             f" Missing model link: {link_id}, zero filling count for benchmark: "
@@ -113,7 +114,7 @@ class LinkCounter(BenchmarkTool):
                         )
                     else:
                         snaps += 1
-                        sim_result += np.array(results_df.loc[int(link_id), bm_hours])
+                        sim_result += np.array(results_df.loc[link_id, bm_hours])
 
                 if not sum(sim_result):
                     found = False
