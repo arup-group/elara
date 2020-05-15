@@ -1,3 +1,4 @@
+from plotnine import * 
 import pandas as pd
 import os
 import numpy as np
@@ -11,6 +12,33 @@ from elara import get_benchmark_data
 
 logger = logging.getLogger(__name__)
 
+def comparative_plots(bm_results_summary):
+
+    bm_results_summary = bm_results_summary.reset_index()
+
+    data = json.loads(bm_results_summary.to_json(orient='records'))
+
+    results = []
+
+    for record in data:
+        record_type = record['source']
+        
+        record.pop("score")
+        record.pop("source")
+        
+        if record_type != "difference":
+            for measurement in list(record):
+                results.append(
+                    {
+                    "hour" : int(measurement),
+                    "volume" : record[measurement],
+                    "type" : record_type
+
+                    })
+
+    results_df = pd.DataFrame(results)
+
+    return ggplot(aes(y="volume",x="hour",color="type"),data=results_df) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
 
 class BenchmarkTool(Tool):
 
@@ -93,7 +121,7 @@ class LinkCounter(BenchmarkTool):
 
                 links = counter['links']
                 if links==[]:
-                    continue # some links are empty lists, we skip them
+                    continue # some links are empty lists, we skip them
                 bm_hours = list(counter['counts'])
                 counts_array = np.array(list(counter['counts'].values()))
 
@@ -217,6 +245,12 @@ class LinkCounter(BenchmarkTool):
         csv_name = f'{self.name}_{self.mode}_summary.csv'
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
+
+        bm_results_summary_plot = comparative_plots(bm_results_summary)
+
+        plot_name = f'{self.name}_{self.mode}_summary.png'
+
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks",plot_name))
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -519,8 +553,13 @@ class TransitInteraction(BenchmarkTool):
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
-        return {'counters': sum(bm_scores) / len(bm_scores)}
+        bm_results_summary_plot = comparative_plots(bm_results_summary)
 
+        plot_name = f'{self.name}_{self.mode}_summary.png'
+
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks",plot_name))
+
+        return {'counters': sum(bm_scores) / len(bm_scores)}
 
 class TestPTInteraction(TransitInteraction):
 
@@ -684,6 +723,12 @@ class PointsCounter(BenchmarkTool):
         csv_name = '{}_{}_bm_summary.csv'.format(self.config.name, self.name)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
+
+        bm_results_summary_plot = comparative_plots(bm_results_summary)
+
+        plot_name = f'{self.name}_{self.mode}_summary.png'
+
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks",plot_name))
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
