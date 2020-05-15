@@ -38,9 +38,7 @@ def comparative_plots(bm_results_summary):
 
     results_df = pd.DataFrame(results)
 
-    plot = ggplot(aes(y="volume",x="hour",color="type"),data=results_df) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
-
-    return plot
+    return ggplot(aes(y="volume",x="hour",color="type"),data=results_df) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
 
 class BenchmarkTool(Tool):
 
