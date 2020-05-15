@@ -78,6 +78,7 @@ class LinkCounter(BenchmarkTool):
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         results_df.index.name = 'link_id'
+        results_df.index = results_df.index.map(str)
 
         # build benchmark results
         snaps = 0
@@ -91,6 +92,8 @@ class LinkCounter(BenchmarkTool):
             for direction, counter in counter_location.items():
 
                 links = counter['links']
+                if links==[]:
+                    continue # some links are empty lists, we skip them
                 bm_hours = list(counter['counts'])
                 counts_array = np.array(list(counter['counts'].values()))
 
@@ -236,7 +239,7 @@ class LondonCentralCordon(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_central_2017_car-bus.json')
+        os.path.join('london', 'london_Apr2020_pt2matsim_central_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -250,7 +253,7 @@ class LondonInnerCordon(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_inner_2016_car-bus.json')
+        os.path.join('london', 'london_Apr2020_pt2matsim_inner_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -264,7 +267,7 @@ class LondonOuterCordon(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_outer_2017_car-bus.json')
+        os.path.join('london', 'london_Apr2020_pt2matsim_boundary_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -278,7 +281,7 @@ class LondonThamesScreen(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_thames_2016_bus-car.json')
+        os.path.join('london', 'london_Apr2020_pt2matsim_thames_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -286,6 +289,35 @@ class LondonThamesScreen(LinkCounter):
     options_enabled = True
 
     weight = 1
+
+
+class LondonNorthScreen(LinkCounter):
+
+    name = 'london_northern_screen'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london_Apr2020_pt2matsim_northern_screen.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonPeriphScreen(LinkCounter):
+
+    name = 'london_peripheral_screen'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london_Apr2020_pt2matsim_peripheral_screen.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
 
 
 class TransitInteraction(BenchmarkTool):
@@ -508,7 +540,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_rods_2017_subway.json')
+        os.path.join('london', 'london_Apr2020_pt2matsim_board_alight.json')
     )
 
     requirements = ['stop_interactions']
@@ -1193,14 +1225,15 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
-        "test_pt_interaction_counter": TestPTInteraction,
-        "london_rods": LondonRODS,
-        "test_link_cordon": TestCordon,
+        "london_board_alight": LondonRODS,
+        "london_boundary_cordon": LondonOuterCordon,
         "london_central_cordon": LondonCentralCordon,
         "london_inner_cordon": LondonInnerCordon,
-        "london_outer_cordon": LondonOuterCordon,
+        "london_northern_screen": LondonNorthScreen,
+        "london_peripheral_screen": LondonPeriphScreen,
         "london_thames_screen": LondonThamesScreen,
 
+        "test_pt_interaction_counter": TestPTInteraction,
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
@@ -1209,6 +1242,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
+        "test_link_cordon": TestCordon,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
         "test_town_modeshare": TestTownCommuterStats,
