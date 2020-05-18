@@ -12,7 +12,7 @@ from elara import get_benchmark_data
 
 logger = logging.getLogger(__name__)
 
-def comparative_plots(bm_results_summary):
+def merge_summary_stats(bm_results_summary):
 
     bm_results_summary = bm_results_summary.reset_index()
 
@@ -36,9 +36,12 @@ def comparative_plots(bm_results_summary):
 
                     })
 
-    results_df = pd.DataFrame(results)
+    return pd.DataFrame(results)
 
-    return ggplot(aes(y="volume",x="hour",color="type"),data=results_df) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
+
+def comparative_plots(results):
+
+    return ggplot(aes(y="volume",x="hour",color="type"),data=results) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
 
 class BenchmarkTool(Tool):
 
@@ -246,7 +249,9 @@ class LinkCounter(BenchmarkTool):
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
-        bm_results_summary_plot = comparative_plots(bm_results_summary)
+        bm_results_summary_df = merge_summary_stats(bm_results_summary)
+
+        bm_results_summary_plot = comparative_plots(bm_results_summary_df)
 
         plot_name = f'{self.name}_{self.mode}_summary.png'
 
@@ -553,7 +558,9 @@ class TransitInteraction(BenchmarkTool):
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
-        bm_results_summary_plot = comparative_plots(bm_results_summary)
+        bm_results_summary_df = merge_summary_stats(bm_results_summary)
+
+        bm_results_summary_plot = comparative_plots(bm_results_summary_df)
 
         plot_name = f'{self.name}_{self.mode}_summary.png'
 
@@ -724,7 +731,9 @@ class PointsCounter(BenchmarkTool):
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
-        bm_results_summary_plot = comparative_plots(bm_results_summary)
+        bm_results_summary_df = merge_summary_stats(bm_results_summary)
+
+        bm_results_summary_plot = comparative_plots(bm_results_summary_df)
 
         plot_name = f'{self.name}_{self.mode}_summary.png'
 
