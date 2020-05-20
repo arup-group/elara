@@ -509,7 +509,27 @@ class PassengerCounts(EventHandlerTool):
         Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
         events to determine passenger volumes by link.
         :param elem: Event XML element
-        <event time="300.0" type="PersonEntersVehicle" person="pt_veh_41173_bus_Bus" vehicle="veh_41173_bus"  />
+
+        The events of interest to this handler look like
+          <event time="300.0"
+                 type="PersonEntersVehicle"
+                 person="pt_veh_41173_bus_Bus"
+                 vehicle="veh_41173_bus"/>
+          <event time="600.0"
+                 type="PersonLeavesVehicle"
+                 person="pt_veh_41173_bus_Bus"
+                 vehicle="veh_41173_bus"/>
+          <event time="25656.0"
+                 type="left link"
+                 vehicle="veh_41173_bus"
+                 link="2-3"  />
+          <event time="67360.0"
+                 type="vehicle leaves traffic"
+                 person="pt_bus4_Bus"
+                 link="2-1"
+                 vehicle="bus4"
+                 networkMode="car"
+                 relativePosition="1.0"  />
         """
         event_type = elem.get("type")
         if event_type == "PersonEntersVehicle":
@@ -603,6 +623,8 @@ class PassengerCounts(EventHandlerTool):
         self.result_gdfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
+
+        # TODO create route passenger counts output
 
         # calc sum across all recorded attribute classes
         total_counts = self.counts.sum(1)
