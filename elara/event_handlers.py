@@ -62,6 +62,18 @@ class EventHandlerTool(Tool):
         else:
             return "car"
 
+    def vehicle_route(self, vehicle_id: str) -> str:
+        """
+        Given a vehicle's ID, return the ID of the route it belongs to.
+        :param vehicle_id: Vehicle ID string
+        :return: ID of the parent route
+        """
+        print("looking up route name for vehicle ID {}".format(vehicle_id))
+        if vehicle_id in self.resources['transit_schedule'].route_map.keys():
+            return self.resources['transit_schedule'].route_map.get(vehicle_id)
+        else:
+            return 'unknown_route'
+
     def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Remove rows from given results dataframe if time period columns only contain
@@ -455,6 +467,7 @@ class PassengerCounts(EventHandlerTool):
         self.counts = None
         self.total_counts = None
         self.veh_occupancy = None
+        self.service_occupancy = None
 
         # Initialise results storage
         self.result_gdfs = dict()  # Result geodataframes ready to export
@@ -487,6 +500,7 @@ class PassengerCounts(EventHandlerTool):
 
         # Initialise vehicle occupancy mapping
         self.veh_occupancy = dict()  # vehicle_id : occupancy
+        self.service_occupancy = dict() # service_name : occupancy
 
         self.total_counts = None
 
@@ -495,12 +509,14 @@ class PassengerCounts(EventHandlerTool):
         Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
         events to determine passenger volumes by link.
         :param elem: Event XML element
+        <event time="300.0" type="PersonEntersVehicle" person="pt_veh_41173_bus_Bus" vehicle="veh_41173_bus"  />
         """
         event_type = elem.get("type")
         if event_type == "PersonEntersVehicle":
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
+            veh_service = self.vehicle_route(veh_id)
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
@@ -508,16 +524,23 @@ class PassengerCounts(EventHandlerTool):
 
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
-
                 elif not self.veh_occupancy[veh_id].get(attribute_class, None):
                     self.veh_occupancy[veh_id][attribute_class] = 1
                 else:
                     self.veh_occupancy[veh_id][attribute_class] += 1
 
+                if self.service_occupancy.get(veh_service, None) is None:
+                    self.service_occupancy[veh_service] = {attribute_class: 1}
+                elif not self.service_occupancy[veh_service].get(attribute_class, None):
+                    self.service_occupancy[veh_service][attribute_class] = 1
+                else:
+                    self.service_occupancy[veh_service][attribute_class] += 1
+
         elif event_type == "PersonLeavesVehicle":
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
+            veh_service = self.vehicle_route(veh_id)
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
@@ -529,6 +552,13 @@ class PassengerCounts(EventHandlerTool):
                     self.veh_occupancy[veh_id][attribute_class] -= 1
                     if not self.veh_occupancy[veh_id]:
                         self.veh_occupancy.pop(veh_id, None)
+
+                if not self.service_occupancy[veh_service]:
+                    pass
+                else:
+                    self.service_occupancy[veh_service][attribute_class] -= 1
+                    if not self.service_occupancy[veh_service]:
+                        self.service_occupancy.pop(veh_service, None)
 
         elif event_type == "left link" or event_type == "vehicle leaves traffic":
             veh_id = elem.get("vehicle")

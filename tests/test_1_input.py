@@ -4,7 +4,10 @@ import pytest
 from shapely.geometry import Point
 import geopandas as gpd
 
-sys.path.append(os.path.abspath('../elara'))
+# paths in config files etc. assume we're in the repo's root, so make sure we always are
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.chdir(root_dir)
+
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
 
@@ -112,6 +115,13 @@ def test_load_gzip_transit_schedule(test_gzip_config, test_zip_paths):
     transit_schedule = inputs.TransitSchedule(test_gzip_config)
     transit_schedule.build(test_zip_paths.resources)
     assert len(transit_schedule.stop_gdf) == 4
+
+
+def test_builds_vehicle_to_route_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
+    transit_schedule = inputs.TransitSchedule(test_gzip_config)
+    transit_schedule.build(test_zip_paths.resources)
+    # assert len(transit_schedule.stop_gdf) == 4
+    print(transit_schedule)
 
 
 def test_load_xml_transit_vehicles(test_xml_config, test_paths):

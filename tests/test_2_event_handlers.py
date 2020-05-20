@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 import lxml.etree as etree
 
+# paths in config files etc. assume we're in the repo's root, so make sure we always are
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.chdir(root_dir)
 
-sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
 from elara import event_handlers
