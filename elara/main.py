@@ -235,7 +235,7 @@ def vkt(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     """
-    Create a VKT output for a given mode or mnodes. Example invocation for mode "car", name
+    Create a VKT output for a given mode or modes. Example invocation for mode "car", name
     "test" and scale factor at 20% is:
 
     $ elara plan-processors vkt car -n test -s .2
@@ -244,6 +244,26 @@ def vkt(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
     )
     override["post_processors"]["vkt"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@post_processors.command()
+@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@common_options
+def plan_summary(
+        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a Plan Summary output. Example invocation for option "all", name
+    "test" and scale factor at 20% is:
+
+    $ elara plan-processors plan-summary all -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["post_processors"]["plan_summary"] = list(options)
     config = Config(override=override)
     main(config)
 
