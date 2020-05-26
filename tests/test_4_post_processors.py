@@ -94,6 +94,14 @@ def test_post_process_workstation(test_config, test_paths):
     pp_workstation.build(write_path=test_outputs)
 
 
+@pytest.fixture
+def leg_summary_processor(test_config):
+    return postprocessing.PlanLegSummary(test_config, 'all')
 
 
+def test_leg_summary_prerequisites(leg_summary_processor):
+    assert leg_summary_processor.check_prerequisites()
 
+
+def test_leg_summary_build(leg_summary_processor):
+    leg_summary_processor.build(None, write_path=test_outputs)
