@@ -23,7 +23,7 @@ class PostProcessor(Tool):
         return NotImplementedError
 
 
-class PlanLegSummary(PostProcessor):
+class PlanTimeSummary(PostProcessor):
     """
     Process Leg Logs into Trip Logs into plan summary.
     """
@@ -36,7 +36,7 @@ class PlanLegSummary(PostProcessor):
     hierarchy = None
 
     def __str__(self):
-        return f'PlanSummary'
+        return 'PlanTimeSummary'
 
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
@@ -222,6 +222,7 @@ def export_geojson(gdf, path):
 class PostProcessWorkStation(WorkStation):
 
     tools = {
+        'plan_summary': PlanTimeSummary,
         'trip_logs': AgentTripLogs,
         'vkt': VKT,
     }
