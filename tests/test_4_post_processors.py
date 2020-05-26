@@ -96,7 +96,7 @@ def test_post_process_workstation(test_config, test_paths):
 
 @pytest.fixture
 def leg_summary_processor(test_config):
-    return postprocessing.PlanLegSummary(test_config, 'all')
+    return postprocessing.PlanTimeSummary(test_config, 'all')
 
 
 def test_leg_summary_prerequisites(leg_summary_processor):
