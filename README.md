@@ -184,6 +184,8 @@ highway_distances = ["car"]
 
 [post_processors]
 vkt = ["car"]
+plan_summary = ["all"]
+trip_logs = ["all"]
 
 [benchmarks]
 test_pt_interaction_counter = ["bus"]
@@ -276,6 +278,7 @@ The associated list attached to each handler allows specification of additional 
 Specification of the event handlers to be run post processing. Currently available handlers include:
 
 * ``vkt``: Produce link volume vehicle kms by time slice.
+* ``plan_summary``: Produce leg and activity time and duration summaries.
 * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
 with multiple leg modes.
 
@@ -284,7 +287,7 @@ should be processed using that handler. This allows certain handlers to be activ
 transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, ...``
-* note that ``trip_logs`` only supports the option of ``["all"]``.
+* note that ``trip_logs`` and ``plan_summary`` only support the option of ``["all"]``.
 
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
