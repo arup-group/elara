@@ -507,7 +507,8 @@ class PassengerCounts(EventHandlerTool):
         events to determine passenger volumes by link.
         :param elem: Event XML element
 
-        The events of interest to this handler look like
+        The events of interest to this handler look like:
+
           <event time="300.0"
                  type="PersonEntersVehicle"
                  person="pt_veh_41173_bus_Bus"
@@ -619,7 +620,7 @@ class PassengerCounts(EventHandlerTool):
 
 class RoutePassengerCounts(EventHandlerTool):
     """
-    Build Passenger Counts for given mode in mode vehicles.
+    Build Passenger Counts per transit route for given mode.
     """
     requirements = [
         'events',
@@ -658,11 +659,6 @@ class RoutePassengerCounts(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        # TODO - move this validation to the constructor?
-        if self.option in self.invalid_options:
-            raise ValueError("Route Passenger Counts Handlers not intended for use with mode type = {}"
-                             .format(self.option))
-
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
@@ -686,7 +682,8 @@ class RoutePassengerCounts(EventHandlerTool):
         events to determine passenger volumes by route.
         :param elem: Event XML element
 
-        The events of interest to this handler look like
+        The events of interest to this handler look like:
+
           <event time="300.0"
                  type="PersonEntersVehicle"
                  person="pt_veh_41173_bus_Bus"
@@ -695,6 +692,17 @@ class RoutePassengerCounts(EventHandlerTool):
                  type="PersonLeavesVehicle"
                  person="pt_veh_41173_bus_Bus"
                  vehicle="veh_41173_bus"/>
+          <event time="25656.0"
+                 type="left link"
+                 vehicle="veh_41173_bus"
+                 link="2-3"  />
+          <event time="67360.0"
+                 type="vehicle leaves traffic"
+                 person="pt_bus4_Bus"
+                 link="2-1"
+                 vehicle="bus4"
+                 networkMode="car"
+                 relativePosition="1.0"  />
         """
         event_type = elem.get("type")
         if event_type == "PersonEntersVehicle":

@@ -517,6 +517,12 @@ def test_passenger_count_finalise_bus(
             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
+def test_route_passenger_count_handler_rejects_car_as_mode():
+    with pytest.raises(UserWarning) as ex_info:
+        event_handlers.PassengerCounts(test_config, 'car')
+    assert "Invalid option: car at tool" in str(ex_info.value)
+
+
 def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, events):
     for elem in events:
         bus_route_passenger_count_handler.process_event(elem)
