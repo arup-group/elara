@@ -281,7 +281,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
     for elem in events:
         handler.process_event(elem)
     handler.finalise()
-    for name, gdf in handler.result_gdfs.items():
+    for name, gdf in handler.result_dfs.items():
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
@@ -355,7 +355,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
     assert handler.config.scale_factor == 0.0001
 
     handler.finalise()
-    for name, gdf in handler.result_gdfs.items():
+    for name, gdf in handler.result_dfs.items():
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
@@ -367,7 +367,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 
 # Passenger Counts Handler Tests
 @pytest.fixture
-def test_bus_passenger_count_handler(test_config, input_manager):
+def bus_passenger_count_handler(test_config, input_manager):
     handler = event_handlers.PassengerCounts(test_config, 'bus')
 
     resources = input_manager.resources
@@ -383,9 +383,26 @@ def test_bus_passenger_count_handler(test_config, input_manager):
     return handler
 
 
+# Route Passenger Counts Handler Tests
+@pytest.fixture
+def bus_route_passenger_count_handler(test_config, input_manager):
+    handler = event_handlers.RoutePassengerCounts(test_config, 'bus')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert 'not_applicable' in handler.classes
+    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert list(handler.class_indices.keys()) == handler.classes
+    assert handler.counts.shape == (
+        len(set(resources['transit_schedule'].route_map.values())), len(resources['attributes'].classes), periods)
+    return handler
+
+
 @pytest.fixture
 def driver_enters_veh_event():
-    time = 6.5 * 60 * 60
     string = """
         <event time="23400.0" type="PersonEntersVehicle" person="pt_bus1_bus" vehicle="bus1" />
         """
@@ -394,7 +411,6 @@ def driver_enters_veh_event():
 
 @pytest.fixture
 def person_enters_veh_event():
-    time = 6.5 * 60 * 60
     string = """
         <event time="23401.0" type="PersonEntersVehicle" person="gerry" vehicle="bus1"  />
         """
@@ -403,7 +419,6 @@ def person_enters_veh_event():
 
 @pytest.fixture
 def person2_enters_veh_event():
-    time = 6.5 * 60 * 60
     string = """
         <event time="23401.0" type="PersonEntersVehicle" person="chris" vehicle="bus1"  />
         """
@@ -412,7 +427,6 @@ def person2_enters_veh_event():
 
 @pytest.fixture
 def bus_leaves_link_event():
-    time = 6.5 * 60 * 60
     string = """
         <event time="23405.0" type="left link" vehicle="bus1" link="2-3"  />
         """
@@ -421,7 +435,6 @@ def bus_leaves_link_event():
 
 @pytest.fixture
 def person_leaves_veh_event():
-    time = 6.5 * 60 * 60
     string = """
         <event time="23410.0" type="PersonLeavesVehicle" person="gerry" vehicle="bus1" />
         """
@@ -430,7 +443,6 @@ def person_leaves_veh_event():
 
 @pytest.fixture
 def person2_leaves_veh_event():
-    time = 6.5 * 60 * 60
     string = """
         <event time="23410.0" type="PersonLeavesVehicle" person="chris" vehicle="bus1" />
         """
@@ -438,9 +450,9 @@ def person2_leaves_veh_event():
 
 
 def test_passenger_count_process_single_event_driver(
-        test_bus_passenger_count_handler,
+        bus_passenger_count_handler,
         driver_enters_veh_event):
-    handler = test_bus_passenger_count_handler
+    handler = bus_passenger_count_handler
     elem = driver_enters_veh_event
     handler.process_event(elem)
     assert sum(handler.veh_occupancy.values()) == 0
@@ -448,9 +460,9 @@ def test_passenger_count_process_single_event_driver(
 
 
 def test_passenger_count_process_single_event_link(
-        test_bus_passenger_count_handler,
+        bus_passenger_count_handler,
         bus_leaves_link_event):
-    handler = test_bus_passenger_count_handler
+    handler = bus_passenger_count_handler
     elem = bus_leaves_link_event
     handler.process_event(elem)
     assert sum(handler.veh_occupancy.values()) == 0
@@ -458,9 +470,9 @@ def test_passenger_count_process_single_event_link(
 
 
 def test_passenger_count_process_single_event_passenger(
-        test_bus_passenger_count_handler,
+        bus_passenger_count_handler,
         person_enters_veh_event):
-    handler = test_bus_passenger_count_handler
+    handler = bus_passenger_count_handler
     elem = person_enters_veh_event
     handler.process_event(elem)
     assert sum([v for vo in handler.veh_occupancy.values() for v in vo.values()]) == 1
@@ -468,12 +480,12 @@ def test_passenger_count_process_single_event_passenger(
 
 
 def test_passenger_count_process_events(
-        test_bus_passenger_count_handler,
+        bus_passenger_count_handler,
         person_enters_veh_event,
         person2_enters_veh_event,
         car_enters_link_event,
         bus_leaves_link_event):
-    handler = test_bus_passenger_count_handler
+    handler = bus_passenger_count_handler
     handler.process_event(person_enters_veh_event)
     handler.process_event(person2_enters_veh_event)
     handler.process_event(car_enters_link_event)
@@ -488,14 +500,14 @@ def test_passenger_count_process_events(
 
 
 def test_passenger_count_finalise_bus(
-        test_bus_passenger_count_handler,
+        bus_passenger_count_handler,
         events
 ):
-    handler = test_bus_passenger_count_handler
+    handler = bus_passenger_count_handler
     for elem in events:
         handler.process_event(elem)
     handler.finalise()
-    for name, gdf in handler.result_gdfs.items():
+    for name, gdf in handler.result_dfs.items():
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
@@ -503,6 +515,21 @@ def test_passenger_count_finalise_bus(
         assert np.sum(df.values) == 8 / handler.config.scale_factor
         if 'class' in gdf.columns:
             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+
+
+def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, events):
+    for elem in events:
+        bus_route_passenger_count_handler.process_event(elem)
+    bus_route_passenger_count_handler.finalise()
+
+    for name, gdf in bus_route_passenger_count_handler.result_dfs.items():
+        cols = list(range(bus_route_passenger_count_handler.config.time_periods))
+        for c in cols:
+            assert c in gdf.columns
+        df = gdf.loc[:, cols]
+        assert np.sum(df.values) == 8 / bus_route_passenger_count_handler.config.scale_factor
+        if 'class' in gdf.columns:
+            assert set(gdf.loc[:, 'class']) == set(bus_route_passenger_count_handler.resources['attributes'].classes)
 
 
 # Stop Interactions
@@ -617,7 +644,7 @@ def test_stop_interaction_finalise_bus(
     for elem in events:
         handler.process_event(elem)
     handler.finalise()
-    for name, gdf in handler.result_gdfs.items():
+    for name, gdf in handler.result_dfs.items():
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
@@ -640,7 +667,7 @@ def test_load_event_handler_manager(test_config, test_paths):
     event_workstation.build(write_path=test_outputs)
 
     for handler_name, handler in event_workstation.resources.items():
-        for name, gdf in handler.result_gdfs.items():
+        for name, gdf in handler.result_dfs.items():
             cols = list(range(handler.config.time_periods))
             for c in cols:
                 assert c in gdf.columns

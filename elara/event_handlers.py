@@ -17,7 +17,7 @@ class EventHandlerTool(Tool):
     """
     Base Tool class for Event Handling.
     """
-    result_gdfs = dict()
+    result_dfs = dict()
     options_enabled = True
 
     def __init__(self, config, option=None):
@@ -68,7 +68,6 @@ class EventHandlerTool(Tool):
         :param vehicle_id: Vehicle ID string
         :return: ID of the parent route
         """
-        print("looking up route name for vehicle ID {}".format(vehicle_id))
         if vehicle_id in self.resources['transit_schedule'].route_map.keys():
             return self.resources['transit_schedule'].route_map.get(vehicle_id)
         else:
@@ -95,8 +94,8 @@ class EventHandlerTool(Tool):
         """
         Remove zero-sum rows from all results dataframes.
         """
-        self.result_gdfs = {
-            k: self.remove_empty_rows(df) for (k, df) in self.result_gdfs.items()
+        self.result_dfs = {
+            k: self.remove_empty_rows(df) for (k, df) in self.result_dfs.items()
         }
 
 
@@ -347,7 +346,7 @@ class VolumeCounts(EventHandlerTool):
         self.counts = None
 
         # Initialise results storage
-        self.result_gdfs = dict()  # Result geodataframes ready to export
+        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -421,7 +420,7 @@ class VolumeCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
         # Create volume counts output
         key = "volume_counts_{}".format(self.option)
-        self.result_gdfs[key] = self.elem_gdf.join(
+        self.result_dfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
 
@@ -433,7 +432,7 @@ class VolumeCounts(EventHandlerTool):
         ).sort_index()
 
         key = "volume_counts_{}_total".format(self.option)
-        self.result_gdfs[key] = self.elem_gdf.join(
+        self.result_dfs[key] = self.elem_gdf.join(
             totals_df, how="left"
         )
 
@@ -467,10 +466,9 @@ class PassengerCounts(EventHandlerTool):
         self.counts = None
         self.total_counts = None
         self.veh_occupancy = None
-        self.service_occupancy = None
 
         # Initialise results storage
-        self.result_gdfs = dict()  # Result geodataframes ready to export
+        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -500,7 +498,6 @@ class PassengerCounts(EventHandlerTool):
 
         # Initialise vehicle occupancy mapping
         self.veh_occupancy = dict()  # vehicle_id : occupancy
-        self.service_occupancy = dict() # service_name : occupancy
 
         self.total_counts = None
 
@@ -536,7 +533,6 @@ class PassengerCounts(EventHandlerTool):
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
-            veh_service = self.vehicle_route(veh_id)
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
@@ -548,19 +544,10 @@ class PassengerCounts(EventHandlerTool):
                     self.veh_occupancy[veh_id][attribute_class] = 1
                 else:
                     self.veh_occupancy[veh_id][attribute_class] += 1
-
-                if self.service_occupancy.get(veh_service, None) is None:
-                    self.service_occupancy[veh_service] = {attribute_class: 1}
-                elif not self.service_occupancy[veh_service].get(attribute_class, None):
-                    self.service_occupancy[veh_service][attribute_class] = 1
-                else:
-                    self.service_occupancy[veh_service][attribute_class] += 1
-
         elif event_type == "PersonLeavesVehicle":
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
-            veh_service = self.vehicle_route(veh_id)
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
@@ -572,13 +559,6 @@ class PassengerCounts(EventHandlerTool):
                     self.veh_occupancy[veh_id][attribute_class] -= 1
                     if not self.veh_occupancy[veh_id]:
                         self.veh_occupancy.pop(veh_id, None)
-
-                if not self.service_occupancy[veh_service]:
-                    pass
-                else:
-                    self.service_occupancy[veh_service][attribute_class] -= 1
-                    if not self.service_occupancy[veh_service]:
-                        self.service_occupancy.pop(veh_service, None)
 
         elif event_type == "left link" or event_type == "vehicle leaves traffic":
             veh_id = elem.get("vehicle")
@@ -620,11 +600,9 @@ class PassengerCounts(EventHandlerTool):
 
         # Create volume counts output
         key = "passenger_counts_{}".format(self.option)
-        self.result_gdfs[key] = self.elem_gdf.join(
+        self.result_dfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
-
-        # TODO create route passenger counts output
 
         # calc sum across all recorded attribute classes
         total_counts = self.counts.sum(1)
@@ -634,9 +612,170 @@ class PassengerCounts(EventHandlerTool):
         ).sort_index()
 
         key = "passenger_counts_{}_total".format(self.option)
-        self.result_gdfs[key] = self.elem_gdf.join(
+        self.result_dfs[key] = self.elem_gdf.join(
             totals_df, how="left"
         )
+
+
+class RoutePassengerCounts(EventHandlerTool):
+    """
+    Build Passenger Counts for given mode in mode vehicles.
+    """
+    requirements = [
+        'events',
+        'network',
+        'transit_schedule',
+        'transit_vehicles',
+        'attributes',
+    ]
+    invalid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+        self.total_counts = None
+        self.route_occupancy = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # TODO - move this validation to the constructor?
+        if self.option in self.invalid_options:
+            raise ValueError("Route Passenger Counts Handlers not intended for use with mode type = {}"
+                             .format(self.option))
+
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
+
+        # Initialise element attributes
+        all_routes = set(resources['transit_schedule'].route_map.values())
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(list(all_routes))
+
+        # Initialise passenger count table
+        self.counts = np.zeros((len(self.elem_ids),
+                                len(self.classes),
+                                self.config.time_periods))
+
+        self.route_occupancy = dict()
+
+        self.total_counts = None
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
+        events to determine passenger volumes by route.
+        :param elem: Event XML element
+
+        The events of interest to this handler look like
+          <event time="300.0"
+                 type="PersonEntersVehicle"
+                 person="pt_veh_41173_bus_Bus"
+                 vehicle="veh_41173_bus"/>
+          <event time="600.0"
+                 type="PersonLeavesVehicle"
+                 person="pt_veh_41173_bus_Bus"
+                 vehicle="veh_41173_bus"/>
+        """
+        event_type = elem.get("type")
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+            veh_route = self.vehicle_route(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.option:
+                attribute_class = self.resources['attributes'].map[agent_id]
+
+                if self.route_occupancy.get(veh_route, None) is None:
+                    self.route_occupancy[veh_route] = {attribute_class: 1}
+                elif not self.route_occupancy[veh_route].get(attribute_class, None):
+                    self.route_occupancy[veh_route][attribute_class] = 1
+                else:
+                    self.route_occupancy[veh_route][attribute_class] += 1
+        elif event_type == "PersonLeavesVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+            veh_route = self.vehicle_route(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.option:
+                attribute_class = self.resources['attributes'].map[agent_id]
+
+                if self.route_occupancy[veh_route][attribute_class]:
+                    self.route_occupancy[veh_route][attribute_class] -= 1
+                    if not self.route_occupancy[veh_route]:
+                        self.route_occupancy.pop(veh_route, None)
+        elif event_type == "left link" or event_type == "vehicle leaves traffic":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+            veh_route = self.vehicle_route(veh_id)
+
+            if veh_mode == self.option:
+                time = float(elem.get("time"))
+                occupancy_dict = self.route_occupancy.get(veh_route, {})
+
+                for attribute_class, occupancy in occupancy_dict.items():
+                    x, y, z = table_position(
+                        self.elem_indices,
+                        self.class_indices,
+                        self.config.time_periods,
+                        veh_route,
+                        attribute_class,
+                        time
+                    )
+                    self.counts[x, y, z] += occupancy
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain passenger
+        counts by route by time slice. The only thing left to do is scale by the
+        sample size and create dataframes.
+        """
+
+        # Scale final counts
+        self.counts *= 1.0 / self.config.scale_factor
+
+        names = ['elem', 'class', 'hour']
+        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+        counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.reset_index().set_index('elem')
+
+        # Create volume counts output
+        key = "route_passenger_counts_{}".format(self.option)
+        self.result_dfs[key] = counts_df
+
+        # calc sum across all recorded attribute classes
+        total_counts = self.counts.sum(1)
+
+        totals_df = pd.DataFrame(
+            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+        ).sort_index()
+        key = "route_passenger_counts_{}_total".format(self.option)
+        self.result_dfs[key] = totals_df
 
 
 class StopInteractions(EventHandlerTool):
@@ -671,7 +810,7 @@ class StopInteractions(EventHandlerTool):
         self.total_counts = None
 
         # Initialise results storage
-        self.result_gdfs = dict()  # Result geodataframes ready to export
+        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -783,7 +922,7 @@ class StopInteractions(EventHandlerTool):
 
             # Create volume counts output
             key = "{}_{}".format(name, self.option)
-            self.result_gdfs[key] = self.elem_gdf.join(
+            self.result_dfs[key] = self.elem_gdf.join(
                 counts_df, how="left"
             )
 
@@ -795,7 +934,7 @@ class StopInteractions(EventHandlerTool):
             ).sort_index()
 
             key = "{}_{}_total".format(name, self.option)
-            self.result_gdfs[key] = self.elem_gdf.join(
+            self.result_dfs[key] = self.elem_gdf.join(
                 totals_df, how="left"
             )
 
@@ -809,6 +948,7 @@ class EventHandlerWorkStation(WorkStation):
     tools = {
         "volume_counts": VolumeCounts,
         "passenger_counts": PassengerCounts,
+        "route_passenger_counts": RoutePassengerCounts,
         "stop_interactions": StopInteractions,
         "waiting_times": AgentWaitingTimes,
         "graph": AgentGraph,
@@ -860,17 +1000,18 @@ class EventHandlerWorkStation(WorkStation):
                 self.logger.info(f'Contracting {handler.__str__()}')
                 handler.contract_results()
 
-            self.logger.debug(f'{len(handler.result_gdfs)} result_gdfs at {handler.__str__()}')
+            self.logger.debug(f'{len(handler.result_dfs)} result_dfs at {handler.__str__()}')
 
-            if handler.result_gdfs:
+            if handler.result_dfs:
                 self.logger.info(f'Writing results for {handler.__str__()}')
 
-                for name, gdf in handler.result_gdfs.items():
+                for name, df in handler.result_dfs.items():
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     geojson_name = "{}_{}.geojson".format(self.config.name, name)
 
-                    self.write_csv(gdf, csv_name, write_path=write_path)
-                    self.write_geojson(gdf, geojson_name, write_path=write_path)
+                    self.write_csv(df, csv_name, write_path=write_path)
+                    if isinstance(df, gpd.GeoDataFrame):
+                        self.write_geojson(df, geojson_name, write_path=write_path)
 
 
 def table_position(elem_indices, class_indices, periods, elem_id, attribute_class, time):
