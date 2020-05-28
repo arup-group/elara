@@ -120,8 +120,12 @@ def test_load_gzip_transit_schedule(test_gzip_config, test_zip_paths):
 def test_builds_vehicle_to_route_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
     transit_schedule = inputs.TransitSchedule(test_gzip_config)
     transit_schedule.build(test_zip_paths.resources)
-    # assert len(transit_schedule.stop_gdf) == 4
-    print(transit_schedule)
+    assert transit_schedule.route_map == {
+        'bus1': 'work_bound',
+        'bus2': 'work_bound',
+        'bus3': 'home_bound',
+        'bus4': 'home_bound'
+    }
 
 
 def test_load_xml_transit_vehicles(test_xml_config, test_paths):
