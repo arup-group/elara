@@ -275,6 +275,13 @@ class TransitSchedule(InputTool):
             ]
         )
 
+        # generate vehicles to routes map
+        self.route_map = {}
+        for elem in get_elems(path, "transitRoute"):
+            route_id, route_vehicles = self.get_route_vehicles(elem)
+            for vehicle_id in route_vehicles:
+                self.route_map[vehicle_id] = route_id
+
         self.modes = list(set(self.mode_map.values()))
         self.logger.debug(f'Transit Schedule nodes = {self.modes}')
 
@@ -329,6 +336,21 @@ class TransitSchedule(InputTool):
         mode = elem.xpath('transportMode')[0].text
 
         return route_id, mode
+
+    @staticmethod
+    def get_route_vehicles(elem):
+        """
+        Get all vehicle IDs for a given transit route
+        :param elem: TransitRoute XML element
+        :return: a list of vehicle IDs, empty if no departures were found on the route
+        """
+        route_vehicles = []
+
+        route_id = elem.get('id')
+        for departure in elem.xpath('departures')[0]:
+            route_vehicles.append(departure.get('vehicleRefId'))
+
+        return route_id, route_vehicles
 
 
 class TransitVehicles(InputTool):
