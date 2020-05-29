@@ -848,7 +848,7 @@ class PlanHandlerWorkStation(WorkStation):
             self.logger.info(f'Finalising {handler.__str__()}')
             handler.finalise()
 
-            self.logger.debug(f'{len(handler.results)} result_gdfs at {handler.__str__()}')
+            self.logger.debug(f'{len(handler.results)} result_dfs at {handler.__str__()}')
 
             if handler.results:
                 self.logger.info(f'Writing results from {handler.__str__()}')
