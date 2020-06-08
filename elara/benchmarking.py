@@ -278,7 +278,7 @@ class LondonCentralCordon(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_central_cordon.json')
+        os.path.join('london', 'central_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -292,7 +292,7 @@ class LondonInnerCordon(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_inner_cordon.json')
+        os.path.join('london', 'inner_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -306,7 +306,7 @@ class LondonOuterCordon(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_boundary_cordon.json')
+        os.path.join('london', 'boundary_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -320,7 +320,7 @@ class LondonThamesScreen(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_thames_screen.json')
+        os.path.join('london', 'thames_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -334,7 +334,7 @@ class LondonNorthScreen(LinkCounter):
 
     name = 'london_northern_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_northern_screen.json')
+        os.path.join('london', 'northern_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -348,7 +348,7 @@ class LondonPeriphScreen(LinkCounter):
 
     name = 'london_peripheral_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_peripheral_screen.json')
+        os.path.join('london', 'peripheral_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -586,7 +586,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_board_alight.json')
+        os.path.join('london', 'board_alight.json')
     )
 
     requirements = ['stop_interactions']
