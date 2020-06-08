@@ -255,7 +255,7 @@ class LinkCounter(BenchmarkTool):
 
         plot_name = f'{self.name}_{self.mode}_summary.png'
 
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks",plot_name))
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -564,7 +564,7 @@ class TransitInteraction(BenchmarkTool):
 
         plot_name = f'{self.name}_{self.mode}_summary.png'
 
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks",plot_name))
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -737,7 +737,7 @@ class PointsCounter(BenchmarkTool):
 
         plot_name = f'{self.name}_{self.mode}_summary.png'
 
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks",plot_name))
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
