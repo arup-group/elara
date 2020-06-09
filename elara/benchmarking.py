@@ -71,10 +71,22 @@ class LinkCounter(BenchmarkTool):
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
+ 
+        
         if self.mode not in self.counts.keys():
             self.logger.warning(
                 f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
             )
+
+        mode_counts = self.counts.get(self.mode)
+        
+        for counter_id, counter_location in mode_counts.items():
+
+            for direction, counter in counter_location.items():
+
+                links = counter['links']
+
+                assert links, "Benchmarks feature no snapped links - suggests error with Bench (i.e. MATSIM network has not matched to BM). Exiting for your own good"
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
