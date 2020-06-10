@@ -84,7 +84,7 @@ class TemplateEventHandler(EventHandlerTool):
         self.data2 = None
 
         # Initialise results storage
-        self.result_gdfs = dict()  # Result geodataframes ready to export
+        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
         return f'<INSERT NAME> mode: {self.option}'
