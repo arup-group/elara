@@ -68,13 +68,40 @@ class LinkCounter(BenchmarkTool):
 
         self.mode = option
 
+
+
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
+        missing_bms = 0
+        total_bms = 0
+        
         if self.mode not in self.counts.keys():
             self.logger.warning(
                 f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
             )
+
+        mode_counts = self.counts.get(self.mode)
+        
+        for counter_id, counter_location in mode_counts.items():
+
+            for direction, counter in counter_location.items():
+
+                total_bms = total_bms + 1
+
+                links = counter['links']
+
+                if not links:
+                    
+                    missing_bms = missing_bms + 1
+                    self.logger.warning(f"Benchmarks feature no snapped links - suggests error with Bench (i.e. MATSIM network has not matched to BM).")
+
+        # If more than 33% of BM's are missing, hard fails
+        self.logger.warning("{} percentage of BMs are missing snapped links.".format(missing_bms/total_bms*100.0))
+        
+        if missing_bms / total_bms > 0.66:
+
+            raise UserWarning(f"Exiting for your own good - too many BM's (over 33%) are missing matched links. This is an issue with Bench")
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -278,7 +305,7 @@ class LondonCentralCordon(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_central_cordon.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'central_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -292,7 +319,7 @@ class LondonInnerCordon(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_inner_cordon.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'inner_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -306,7 +333,7 @@ class LondonOuterCordon(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_boundary_cordon.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'boundary_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -320,7 +347,7 @@ class LondonThamesScreen(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_thames_screen.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'thames_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -334,7 +361,7 @@ class LondonNorthScreen(LinkCounter):
 
     name = 'london_northern_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_northern_screen.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'northern_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -348,7 +375,7 @@ class LondonPeriphScreen(LinkCounter):
 
     name = 'london_peripheral_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_peripheral_screen.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'peripheral_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -586,7 +613,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london_Apr2020_pt2matsim_board_alight.json')
+        os.path.join('london', 'london-1-4-puma-2016' 'board_alight.json')
     )
 
     requirements = ['stop_interactions']
