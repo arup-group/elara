@@ -2,6 +2,10 @@ import sys
 import os
 import pytest
 
+# paths in config files etc. assume we're in the repo's root, so make sure we always are
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.chdir(root_dir)
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../elara")))
 from elara.config import Config
 from elara import benchmarking
