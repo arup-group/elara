@@ -101,9 +101,7 @@ class LinkCounter(BenchmarkTool):
         
         if missing_bms / total_bms > 0.66:
 
-            print("Exiting for your own good - too many BM's (over 33%) are missing matched links. This is an issue with Bench")
-
-            sys.exit(1)
+            raise UserWarning(f"Exiting for your own good - too many BM's (over 33%) are missing matched links. This is an issue with Bench")
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
