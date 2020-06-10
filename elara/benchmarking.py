@@ -68,10 +68,13 @@ class LinkCounter(BenchmarkTool):
 
         self.mode = option
 
+
+
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
- 
+        missing_bms = 0
+        total_bms = 0
         
         if self.mode not in self.counts.keys():
             self.logger.warning(
@@ -84,9 +87,19 @@ class LinkCounter(BenchmarkTool):
 
             for direction, counter in counter_location.items():
 
+                total_bms = total_bms + 1
+
                 links = counter['links']
 
-                assert links, "Benchmarks feature no snapped links - suggests error with Bench (i.e. MATSIM network has not matched to BM). Exiting for your own good"
+                if not links:
+                    
+                    missing_bms = missing_bms + 1
+                    self.logger.warning(f"Benchmarks feature no snapped links - suggests error with Bench (i.e. MATSIM network has not matched to BM).")
+
+        # If more than 33% of BM's are missing, hard fails
+        self.logger.warning("{} percentage of BMs are missing snapped links.".format(missing_bms/total_bms*100.0))
+        
+        assert(missing_bms / total_bms > 0.66,"Exiting for your own good - too many BM's are missing matched links. This is an issue with Bench")
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
