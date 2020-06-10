@@ -99,7 +99,11 @@ class LinkCounter(BenchmarkTool):
         # If more than 33% of BM's are missing, hard fails
         self.logger.warning("{} percentage of BMs are missing snapped links.".format(missing_bms/total_bms*100.0))
         
-        assert(missing_bms / total_bms > 0.66,"Exiting for your own good - too many BM's are missing matched links. This is an issue with Bench")
+        if missing_bms / total_bms > 0.66:
+
+            print("Exiting for your own good - too many BM's (over 33%) are missing matched links. This is an issue with Bench")
+
+            sys.exit(1)
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
