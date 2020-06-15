@@ -157,7 +157,7 @@ class Tool:
                 f"don't know how to write object of type {type(write_object)} to geojson"
             )
 
-    def write_png(
+    def write_json(
             self,
             write_object: dict,
             name: str,
