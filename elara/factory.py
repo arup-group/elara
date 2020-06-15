@@ -175,7 +175,7 @@ class Tool:
             self.logger.info(f'writing to {path}')
 
         # File exports
-        if isinstance(write_object, Figure):
+        if isinstance(write_object, dict):
             with open(path, 'w') as outfile:
                 json.dump(write_object, outfile)
 
