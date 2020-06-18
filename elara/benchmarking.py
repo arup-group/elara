@@ -613,7 +613,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016' 'board_alight.json')
+        os.path.join('london', 'london-1-4-puma-2016', 'board_alight.json')
     )
 
     requirements = ['stop_interactions']
