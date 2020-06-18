@@ -1307,12 +1307,12 @@ class BenchmarkWorkStation(WorkStation):
 
     tools = {
         "london_board_alight": LondonRODS,
-        "london_boundary_cordon": LondonOuterCordon,
+        # "london_boundary_cordon": LondonOuterCordon,
         "london_central_cordon": LondonCentralCordon,
         "london_inner_cordon": LondonInnerCordon,
-        "london_northern_screen": LondonNorthScreen,
-        "london_peripheral_screen": LondonPeriphScreen,
-        "london_thames_screen": LondonThamesScreen,
+        # "london_northern_screen": LondonNorthScreen,
+        # "london_peripheral_screen": LondonPeriphScreen,
+        # "london_thames_screen": LondonThamesScreen,
 
         "test_pt_interaction_counter": TestPTInteraction,
         "test_town_highways": TestHighwayCounters,
