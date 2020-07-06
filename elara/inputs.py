@@ -216,7 +216,8 @@ class OSMWays(InputTool):
         :return: tuple of ident and attribute
         """
 
-        for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
+        # for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
+        for name in ['osm:highway', 'osm:railway', 'osm:network']:
             attribute = elem.find('.//attribute[@name="{}"]'.format(name))
             if attribute is not None:
                 attribute = attribute.text
