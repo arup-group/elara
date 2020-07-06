@@ -316,6 +316,26 @@ def london_central_cordon(
     main(config)
 
 
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def ireland_highways(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a ireland highways output for a given mode or modes. Example invocation for modes
+    "car" and "bus", name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-central-cordon car bus -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["ireland_highways"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
 @cli.command()
 @click.argument("config_path", type=click.Path(exists=True))
 @click.option("--path_override", '-o', default=None)
