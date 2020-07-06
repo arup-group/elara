@@ -43,6 +43,7 @@ def comparative_plots(results):
 
     return ggplot(aes(y="volume",x="hour",color="type"),data=results) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
 
+
 class BenchmarkTool(Tool):
 
     options_enabled = True
@@ -67,8 +68,6 @@ class LinkCounter(BenchmarkTool):
         super().__init__(config, option)
 
         self.mode = option
-
-
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
@@ -292,6 +291,20 @@ class TestCordon(LinkCounter):
     name = 'test_link_counter'
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_town', 'test_town_cordon', 'test_link_counter.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class IrelandHighwayCountersNew(LinkCounter):
+
+    name = 'ireland_highways_counters_new'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('ireland', 'highways', 'ireland_highways_counters_6july20.json')
     )
 
     requirements = ['volume_counts']
@@ -1306,6 +1319,7 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
+        "ireland_highways": IrelandHighwayCountersNew,
         "london_board_alight": LondonRODS,
         # "london_boundary_cordon": LondonOuterCordon,
         "london_central_cordon": LondonCentralCordon,
@@ -1319,7 +1333,7 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        "ireland_highways": IrelandHighwayCounters,
+        # "ireland_highways": IrelandHighwayCounters, # replaced with new
         "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
@@ -1333,6 +1347,7 @@ class BenchmarkWorkStation(WorkStation):
         "test_pt_interaction_counter": 1,
         "london_rods": 1,
         "test_link_cordon": 1,
+        "ireland_highways": 1,
         "london_central_cordon": 1,
         "london_inner_cordon": 1,
         "london_outer_cordon": 1,
@@ -1342,7 +1357,7 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": 1,
         "multimodal_town_modeshare": 1,
         "multimodal_town_cars_counts": 1,
-        "ireland_highways": 1,
+        # "ireland_highways": 1, # replaced with new
         "london_inner_cordon_car": 1,
         "dublin_canal_cordon_car": 1,
         "ireland_commuter_modeshare": 1,
