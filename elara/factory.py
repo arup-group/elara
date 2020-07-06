@@ -4,6 +4,7 @@ import geopandas as gpd
 import os
 import json
 import logging
+from matplotlib.figure import Figure
 
 
 class Tool:
@@ -181,6 +182,32 @@ class Tool:
         else:
             raise TypeError(
                 f"don't know how to write object of type {type(write_object)} to json"
+            )
+
+    def write_png(
+        self,
+        write_object: Figure,
+        name: str,
+        write_path=None
+    ):
+        """
+        Simple write to imaage (png), default to config path if write_path (used for testing) not given.
+        """
+
+        if write_path:
+            path = os.path.join(write_path, name)
+            self.logger.warning(f'path overwritten to {path}')
+        else:
+            path = os.path.join(self.config.output_path, name)
+            self.logger.info(f'writing to {path}')
+
+        # File exports
+        if isinstance(write_object, Figure):
+            write_object.savefig(path)
+
+        else:
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to png"
             )
 
 
