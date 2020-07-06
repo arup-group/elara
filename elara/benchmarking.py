@@ -43,6 +43,7 @@ def comparative_plots(results):
 
     return ggplot(aes(y="volume",x="hour",color="type"),data=results) + geom_point() + geom_line() + labs(y="Volume", x="Time (hour)")
 
+
 class BenchmarkTool(Tool):
 
     options_enabled = True
@@ -67,8 +68,6 @@ class LinkCounter(BenchmarkTool):
         super().__init__(config, option)
 
         self.mode = option
-
-
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
@@ -292,6 +291,20 @@ class TestCordon(LinkCounter):
     name = 'test_link_counter'
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_town', 'test_town_cordon', 'test_link_counter.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car', 'bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class IrelandHighwayCountersNew(LinkCounter):
+
+    name = 'ireland_highways_counters_new'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('ireland', 'highways', 'ireland_highways_counters_6july20.json')
     )
 
     requirements = ['volume_counts']
