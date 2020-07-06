@@ -1319,6 +1319,7 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
+        "ireland_highways": IrelandHighwayCountersNew,
         "london_board_alight": LondonRODS,
         # "london_boundary_cordon": LondonOuterCordon,
         "london_central_cordon": LondonCentralCordon,
@@ -1332,7 +1333,7 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        "ireland_highways": IrelandHighwayCounters,
+        # "ireland_highways": IrelandHighwayCounters, # replaced with new
         "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
@@ -1346,6 +1347,7 @@ class BenchmarkWorkStation(WorkStation):
         "test_pt_interaction_counter": 1,
         "london_rods": 1,
         "test_link_cordon": 1,
+        "ireland_highways": 1,
         "london_central_cordon": 1,
         "london_inner_cordon": 1,
         "london_outer_cordon": 1,
@@ -1355,7 +1357,7 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": 1,
         "multimodal_town_modeshare": 1,
         "multimodal_town_cars_counts": 1,
-        "ireland_highways": 1,
+        # "ireland_highways": 1, # replaced with new
         "london_inner_cordon_car": 1,
         "dublin_canal_cordon_car": 1,
         "ireland_commuter_modeshare": 1,
