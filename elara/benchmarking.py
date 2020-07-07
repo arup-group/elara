@@ -250,7 +250,6 @@ class LinkCounter(BenchmarkTool):
                     'counter_id': counter_id,
                     'direction': direction,
                     'score': counter_score,
-
                 }
 
                 for i, time in enumerate(bm_hours):

@@ -130,9 +130,9 @@ or, much more succinctly:
 `elara event-handlers volume-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
 Produce a **benchmark**, in this case we will assume that a benchmark has already been created 
-called `dublin_cordon` and that it works for buses, cars and trains.
+called `ireland-highways` and that it works for buses, cars and trains.
 
-`elara benchmarks dublin_cordon car bus`
+`elara benchmarks ireland-highways car bus`
 
 Note that commands with dependencies (such as post-processors and benchmarks) will have these 
 dependencies automatically fulfilled. In the case of the dublin benchmark, this means that 
@@ -180,7 +180,8 @@ waiting_times = ["all"]
 [plan_handlers]
 mode_share = ["all"]
 agent_logs = ["all"]
-highway_distances = ["car"]
+agent_highway_distances = ["car"]
+trip_highway_distances = ["car"]
 
 [post_processors]
 vkt = ["car"]
@@ -264,7 +265,9 @@ sequences, durations and categories.
 plans and scores, 
 including times, 
 sequences, durations and categories.
-* ``highway_distances``: Produce flat output of agent distances by car on different road 
+* ``agent_highway_distances``: Produce flat output of agent distances by car on different road 
+types (as described by the input network osm:way).
+* ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road 
 types (as described by the input network osm:way).
 
 The associated list attached to each handler allows specification of additional options:
