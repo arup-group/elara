@@ -480,7 +480,7 @@ class ChunkWriter:
     Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
     """
 
-    def __init__(self, path, chunksize=10000) -> None:
+    def __init__(self, path, chunksize=1000) -> None:
         self.path = path
         self.chunksize = chunksize
 
