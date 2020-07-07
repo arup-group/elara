@@ -223,11 +223,11 @@ def agent_plans(
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def highway_distances(
+def agent_highway_distances(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     """
-    Create a highways distances output for a given option. Example invocation for option "car" name
+    Create an agent highways distances output for a given option. Example invocation for option "car" name
     "test" and scale factor at 20% is:
 
     $ elara plan-handlers highway-distances car -n test -s .2
@@ -235,7 +235,27 @@ def highway_distances(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
     )
-    override["plan_handlers"]["highway_distances"] = list(options)
+    override["plan_handlers"]["agent_highway_distances"] = list(options)
+    config = Config(override=override)
+    main(config)
+
+
+@plan_handlers.command()
+@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@common_options
+def trip_highway_distances(
+        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a trip highways distances output for a given option. Example invocation for option "car" name
+    "test" and scale factor at 20% is:
+
+    $ elara plan-handlers highway-distances car -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["plan_handlers"]["trip_highway_distances"] = list(options)
     config = Config(override=override)
     main(config)
 
