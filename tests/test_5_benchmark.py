@@ -150,3 +150,33 @@ def test_benchmark_workstation(test_config, test_paths):
         test_config, 'car')
     pp_workstation.build(write_path=test_outputs)
 
+
+def test_benchmark_workstation_with_link_bms(test_config, test_paths):
+    input_workstation = InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    event_workstation = EventHandlerWorkStation(test_config)
+    event_workstation.connect(managers=None, suppliers=[input_workstation])
+    tool = event_workstation.tools['volume_counts']
+    event_workstation.resources['volume_counts'] = tool(test_config, 'all')
+    event_workstation.build(write_path=test_outputs)
+
+    plan_workstation = PlanHandlerWorkStation(test_config)
+    plan_workstation.connect(managers=None, suppliers=[input_workstation])
+    tool = plan_workstation.tools['mode_share']
+    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    plan_workstation.build(write_path=test_outputs)
+
+    pp_workstation = benchmarking.BenchmarkWorkStation(test_config)
+    pp_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
+
+    pp_workstation.resources['test_link_cordon:car'] = pp_workstation.tools['test_link_cordon'](
+        test_config, 'car')
+
+    pp_workstation.resources['test_town_cordon:car'] = pp_workstation.tools['test_town_cordon'](
+        test_config, 'car')
+        
+    pp_workstation.build(write_path=test_outputs)
+
