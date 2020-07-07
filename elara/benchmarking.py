@@ -33,7 +33,6 @@ def merge_summary_stats(bm_results_summary):
                     "hour" : int(measurement),
                     "volume" : record[measurement],
                     "type" : record_type
-
                     })
 
     return pd.DataFrame(results)
@@ -222,7 +221,6 @@ class LinkCounter(BenchmarkTool):
                     'counter_id': counter_id,
                     'direction': direction,
                     'score': counter_score,
-
                 }
 
                 for i, time in enumerate(bm_hours):
@@ -236,7 +234,6 @@ class LinkCounter(BenchmarkTool):
                     'counter_id': counter_id,
                     'direction': direction,
                     'score': counter_score,
-
                 }
 
                 for i, time in enumerate(bm_hours):
@@ -275,12 +272,10 @@ class LinkCounter(BenchmarkTool):
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
+        # plot
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
-
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
-
         plot_name = f'{self.name}_{self.mode}_summary.png'
-
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
