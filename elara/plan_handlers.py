@@ -477,7 +477,7 @@ class AgentPlansHandler(PlanHandlerTool):
         self.plans_log = None
 
         # Initialise results storage
-        self.results = dict()  # Result dataframes ready to export
+        self.results = dict()  # Results will remain empty as using writer
 
     def __str__(self):
         return f'ScoreHandler'
@@ -643,7 +643,6 @@ class AgentPlansHandler(PlanHandlerTool):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
-
         self.plans_log.finish()
 
     @staticmethod
@@ -661,7 +660,7 @@ class AgentPlansHandler(PlanHandlerTool):
 
 class AgentHighwayDistanceHandler(PlanHandlerTool):
     """
-    Extract modal distances from agent plans
+    Extract modal distances from agent plans.
     todo road only will not require transit schedule... maybe split road and pt
     """
 
@@ -795,6 +794,111 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         return x, y
 
 
+class TripHighwayDistanceHandler(PlanHandlerTool):
+    """
+    Extract modal distances from agent car trips.
+    """
+
+    requirements = [
+        'plans',
+        'osm:ways'
+        ]
+    valid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate handler.
+        :param config: config
+        :param option: str, mode option
+        """
+        super().__init__(config, option)
+
+        self.option = option
+        self.osm_ways = None
+        self.ways = None
+
+        # Initialise results storage
+        self.distances_log = None
+        self.results = dict()  # Results will remain empty as using writer
+
+    def __str__(self):
+        return f'TripHighwayDistance)'
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        self.osm_ways = resources['osm:ways']
+
+        # Initialise ways
+        self.ways = self.osm_ways.classes
+
+        # Initialise results writer
+        csv_name = "{}_trip_distances_{}.csv".format(self.config.name, self.option)
+        self.distances_log = self.start_chunk_writer(csv_name, write_path=write_path)
+
+    def process_plans(self, elem):
+        """
+        Iteratively aggregate distance on highway distances from legs of selected plans.
+        :param elem: Plan XML element
+        """
+        ident = elem.get('id')
+
+        for plan in elem:
+            if plan.get('selected') == 'yes':
+                
+                trips = []
+                trip_counter = None
+                trip_seq_idx = 0
+
+                for stage in plan:
+
+                    if stage.tag == 'activity':
+                        if not stage.get('type') == 'pt interaction':
+                            
+                            if trip_counter is not None:
+                                # record previous counts and move idx
+                                # this 'works' because plans must end with an activity
+                                trips.append(trip_counter)
+                                trip_seq_idx += 1
+                            
+                            # set counter
+                            trip_counter = {
+                                'agent': ident,
+                                'seq': trip_seq_idx
+                            }
+                            trip_counter.update(
+                                {k: 0 for k in self.ways}
+                            )
+
+                    if stage.tag == 'leg':
+                        mode = stage.get('mode')
+                        if not mode == self.option:
+                            continue
+
+                        route = stage.xpath('route')[0].text.split(' ')
+                        length = len(route)
+                        for i, link in enumerate(route):
+                            way = str(self.osm_ways.ways.get(link, None))
+                            distance = float(self.osm_ways.lengths.get(link, 0))
+                            if i == 0 or i == length - 1:  # halve first and last link lengths
+                                distance /= 2
+                            trip_counter[way] += distance
+
+                self.distances_log.add(trips)
+
+    def finalise(self):
+        """
+        Finish writer.
+        """
+        self.distances_log.finish()
+
+
 class PlanHandlerWorkStation(WorkStation):
     """
     Work Station class for collecting and building Plans Handlers.
@@ -804,7 +908,8 @@ class PlanHandlerWorkStation(WorkStation):
         "mode_share": ModeShareHandler,
         "agent_logs": AgentLogsHandler,
         "agent_plans": AgentPlansHandler,
-        "highway_distances": AgentHighwayDistanceHandler,
+        "agent_highway_distances": AgentHighwayDistanceHandler,
+        "trip_highway_distances": TripHighwayDistanceHandler,
     }
 
     def __init__(self, config):

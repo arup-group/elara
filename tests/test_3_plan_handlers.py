@@ -266,7 +266,7 @@ def test_finalised_plans_bad_plans(agent_plans_handler_finalised_bad_plans):
     assert len(handler.results) == 0
 
 
-### Highway Distance Handler ###
+### Agent Highway Distance Handler ###
 @pytest.fixture
 def agent_distances_handler_car_mode(test_config, input_manager):
     handler = plan_handlers.AgentHighwayDistanceHandler(test_config, 'car')
@@ -331,6 +331,48 @@ def test_finalised_agent_distances_car(agent_distances_handler_finalised_car):
             assert 'total' in result.columns
             df = result.loc[:, cols]
             assert np.sum(df.values) == 40600.0
+
+
+### Trips Highway Distance Handler ###
+@pytest.fixture
+def trip_distances_handler_car_mode(test_config, input_manager):
+    handler = plan_handlers.TripHighwayDistanceHandler(test_config, 'car')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.ways) == len(handler.resources['osm:ways'].classes)
+
+    return handler
+
+
+def test_trip_distances_handler_car_mode(trip_distances_handler_car_mode):
+    handler = trip_distances_handler_car_mode
+
+    plans = handler.resources['plans']
+    for person in plans.persons:
+        handler.process_plans(person)
+
+    assert len(handler.distances_log.chunk) == 10
+    assert sum([d['None'] for d in handler.distances_log.chunk]) == 10000
+    assert sum([d['trunk'] for d in handler.distances_log.chunk]) == 30600
+
+    # agent
+    assert sum([d['trunk'] for d in handler.distances_log.chunk if d['agent'] == 'chris']) == 20400.0
+
+
+def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
+    handler = trip_distances_handler_car_mode
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    handler.finalise()
+
+    path = handler.distances_log.path
+    results = pd.read_csv(path)
+    assert len(results) == 10
+    assert sum(results.trunk) == 30600
+    assert sum(results.loc[results.agent == 'chris'].trunk) == 20400
 
 
 ### Modeshare Handler ###
