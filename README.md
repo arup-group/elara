@@ -98,11 +98,11 @@ detailed further below and examples are also included in the repo:
 
 ```
  [scenario]
-name = "test_town" (This is used to prefix outputs)
+name = "test_town"
 time_periods = 24
-scale_factor = 0.01 (=1%)
-crs = "EPSG:27700" (UK GRID)
-verbose = INFO (or DEBUG for example)
+scale_factor = 0.01
+crs = "EPSG:27700"
+verbose = INFO
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
@@ -142,7 +142,7 @@ test_link_cordon = ["car"]
 
 **#** scenario.**name** *string* *(required)*
 
-The name of the scenario being processed, using when naming output files.
+The name of the scenario being processed, used to prefix output files.
 
 **#** scenario.**time_periods** *integer* *(required)*
 
@@ -159,7 +159,11 @@ as volume counts. For example, if the underlying scenario was run with a 25% sam
 **#** scenario.**crs** *string* *(required)*
 
 The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This
- is used to convert the results to WGS 84 as required. 
+ is used to convert the results to WGS 84 as required.
+
+**#** scenario.**verbose** *string* *(required)*
+
+Logging module [level](https://docs.python.org/3/library/logging.html#levels), for example, either ERROR, WARNING, INFO or DEBUG.
 
 **#** inputs.**events** *file*
 
