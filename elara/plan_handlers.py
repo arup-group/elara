@@ -865,7 +865,8 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
                                 # record previous counts and move idx
                                 # this 'works' because plans must end with an activity
                                 trips.append(trip_counter)
-                                trip_seq_idx += 1
+                            
+                            trip_seq_idx += 1
                             
                             # set counter
                             trip_counter = {
