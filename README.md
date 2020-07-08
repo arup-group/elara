@@ -2,29 +2,27 @@
 
 A command line utility for processing (in big batches or bit by bit) MATSim outputs:
 
-* **Event Based Outputs** (for example transport network 'flows' or agent waiting times)
+* **Event Based Outputs**:
   * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
   * ``passenger_counts``: Produce vehicle occupancy by time slice.
   * ``stop_interactions``: Boardings and Alightings by time slice.
   * ``waiting_times``: Agent waiting times for unique pt interaction events.
-* **Plan Based Outputs** (for example mode shares or final agent plan records)
+
+* **Plan Based Outputs**:
   * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``agent_logs``: Produce flat output of agent activity logs and leg logs, including times, 
-  sequences, durations and categories.
-  * ``agent_plans``: Produce flat output of agent plans (logs and activities) including unselected 
-  plans and scores, 
-  including times, 
-  sequences, durations and categories.
-  * ``agent_highway_distances``: Produce flat output of agent distances by car on different road 
-  types (as described by the input network osm:way).
-  * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road 
-  types (as described by the input network osm:way).
-* **Post Processing** of Outputs (for example for vehicle kms)
+  * ``agent_logs``: Produce agent activity logs and leg logs for all selected plans.
+  * ``agent_plans``: Produce agent plans including unselected plans and scores.
+  * ``agent_highway_distances``: Produce agent distances by car on different road 
+  types. Requires network to have `osm:way:highways` attribute.
+  * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+
+* **Post Processing** of outputs:
   * ``vkt``: Produce link volume vehicle kms by time slice.
   * ``plan_summary``: Produce leg and activity time and duration summaries.
   * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
   with multiple leg modes.
-* **Benchmarking** of Outputs (for example comparison to measured cordon counts)
+
+* **Benchmarking and Scoring** of specific subselections of outputs:
   * ``ireland_highways``
   * ``london_rods``
   * ``london_central_cordon``
@@ -41,9 +39,9 @@ EPSG:4326, which works in kepler.
 ## Contents
 * [Introduction](https://github.com/arup-group/elara#introduction)
 * [Installation](https://github.com/arup-group/elara#installation)
+* [Configuration](https://github.com/arup-group/elara#configuration)
 * [Command Line Reference](https://github.com/arup-group/elara#command-line-reference)
 * [Example CLI Commands](https://github.com/arup-group/elara#example-cli-commands)
-* [Configuration](https://github.com/arup-group/elara#configuration)
 * [Tests](https://github.com/arup-group/elara#tests)
 * [Debug](https://github.com/arup-group/elara#debug)
 * [About](https://github.com/arup-group/elara#about)
@@ -57,7 +55,7 @@ via a [config](https://github.com/arup-group/elara#configuration) or purely thro
 [CLI](https://github.com/arup-group/elara#command-line-reference). The CLI is preferred for 
 producing single outputs, for example to extract vehicle kms, whereas using
 a config can handle big batches of outputs in one go. So if you are after a quick output - best 
-to use the CLI, whereas if you need a large output and/or reproducibility, a config is preferred.
+to use the CLI, whereas if you need a collection of outputs and/or reproducibility, a config is preferred.
 
 The CLI and configs share naming conventions and structure so we recommend reading about both below.
 
@@ -85,91 +83,6 @@ On Windows, pre-compiled wheels of ``pyproj`` can be found on
 
 We require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
 between coordinate reference systems.
-
-## Command Line Reference
-
-Elara should be pretty discoverable, once installed, try the command `elara` in your terminal to 
-find out about the available options:
-
-```
-$ elara
-Usage: elara [OPTIONS] COMMAND [ARGS]...
-
-  Command line tool for processing a MATSim scenario events output.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  benchmarks       Access benchmarks output group.
-  event-handlers   Access event handler output group.
-  plan-handlers    Access plan handler output group.
-  post-processors  Access post processing output group.
-  run              Run Elara using a config.toml, examples are included in...
-
-```
-Further commands can then be explored. In general the commands and options available follow the 
-same structure as configuration, described in the next section:
-
-```
-$ elara event-handlers volume-counts --help
-
-Usage: elara event-handlers volume-counts [OPTIONS] MODES...
-
-  Create a volume counts output for a given mode or modes. Example
-  invocation for "car" and "bus" modes with name "test" and scale factor at
-  20% is:
-
-  $ elara event-handlers volume-counts car bus -n test -s .2
-
-Options:
-  -f, --full                  Option to disable output contracting.
-  -e, --epsg TEXT             EPSG string, defaults to 'EPSG:27700' (UK).
-  -s, --scale_factor FLOAT    Scale factor, defaults to 0.1 (10%).
-  -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
-  -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
-  -i, --inputs_path PATH      Inputs path location, defaults to current root.
-  -n, --name TEXT             Scenario name, defaults to root dir name.
-  -d, --debug                 Switch on debug verbosity.
-  --help                      Show this message and exit.
-```
-
-**Note that defaults will not always be suitable for your scenario. `-s` `--scale_factor` in 
-particular, should be updated accordingly.**
-
-Similarly, note that the CLI assumes inputs will have standard (at the time of writing) MATSim 
-names, ie `output_plans.xml.gz`, `output_personAttributes.xml.gz`, `output_config.xml` and so on.
-
-## Example CLI Commands
-
-Produce **vehicle kilometres travelled by car (VKT)** for a London scenario, all the defaults are correct but you'd like to read the 
-inputs from a different location to your current path:
-
-`elara post-processors vkt car -inputs_path ~/DIFFERENT/DATA/LOCATION`
-
-or, more succinctly:
-
-`elara post-processors vkt car -i ~/DIFFERENT/DATA/LOCATION`
-
-Produce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
-a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~/Data/nz_test':
-
-`elara event-handlers volume-counts car bus -epsg EPSG:2113 -scale_factor .01 -name nz_test 
--outputs_path ~/Data/nz_test`
-
-or, much more succinctly:
-
-`elara event-handlers volume-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
-
-Produce a **benchmark**, in this case we assume that a benchmark has already been created 
-called `ireland-highways` and that it works for buses and cars.
-
-`elara benchmarks ireland-highways car bus -e "ESPG:2157"`
-
-Note that we are assuming that all other option defaults are correct. ie:
-- --scale_factor = 0.1
-- --time_periods = 24
-- etc
 
 ## Configuration
 
@@ -364,6 +277,90 @@ transport modes but not private vehicles for example. Possible modes currently i
 
 * eg ``car, bus, train, subway...``
 
+## Command Line Reference
+
+Elara can also be more generally used via the CLI to process individual outputs. USed in this manner the CLI should be pretty discoverable, once installed, try the command `elara` in your terminal to find out about the available options:
+
+```
+$ elara
+Usage: elara [OPTIONS] COMMAND [ARGS]...
+
+  Command line tool for processing a MATSim scenario events output.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  benchmarks       Access benchmarks output group.
+  event-handlers   Access event handler output group.
+  plan-handlers    Access plan handler output group.
+  post-processors  Access post processing output group.
+  run              Run Elara using a config.toml, examples are included in...
+
+```
+Further commands can then be explored. In general the commands and options available follow the 
+same structure as configuration, described in the next section:
+
+```
+$ elara event-handlers volume-counts --help
+
+Usage: elara event-handlers volume-counts [OPTIONS] MODES...
+
+  Create a volume counts output for a given mode or modes. Example
+  invocation for "car" and "bus" modes with name "test" and scale factor at
+  20% is:
+
+  $ elara event-handlers volume-counts car bus -n test -s .2
+
+Options:
+  -f, --full                  Option to disable output contracting.
+  -e, --epsg TEXT             EPSG string, defaults to 'EPSG:27700' (UK).
+  -s, --scale_factor FLOAT    Scale factor, defaults to 0.1 (10%).
+  -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
+  -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
+  -i, --inputs_path PATH      Inputs path location, defaults to current root.
+  -n, --name TEXT             Scenario name, defaults to root dir name.
+  -d, --debug                 Switch on debug verbosity.
+  --help                      Show this message and exit.
+```
+
+**Note that defaults will not always be suitable for your scenario. `-s` `--scale_factor` in 
+particular, should be updated accordingly.**
+
+Similarly, note that the CLI assumes inputs will have standard (at the time of writing) MATSim 
+names, ie `output_plans.xml.gz`, `output_personAttributes.xml.gz`, `output_config.xml` and so on.
+
+## Example CLI Commands
+
+Produce **vehicle kilometres travelled by car (VKT)** for a London scenario, all the defaults are correct but you'd like to read the 
+inputs from a different location to your current path:
+
+`elara post-processors vkt car -inputs_path ~/DIFFERENT/DATA/LOCATION`
+
+or, more succinctly:
+
+`elara post-processors vkt car -i ~/DIFFERENT/DATA/LOCATION`
+
+Produce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
+a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~/Data/nz_test':
+
+`elara event-handlers volume-counts car bus -epsg EPSG:2113 -scale_factor .01 -name nz_test 
+-outputs_path ~/Data/nz_test`
+
+or, much more succinctly:
+
+`elara event-handlers volume-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
+
+Produce a **benchmark**, in this case we assume that a benchmark has already been created 
+called `ireland-highways` and that it works for buses and cars.
+
+`elara benchmarks ireland-highways car bus -e "ESPG:2157"`
+
+Note that we are assuming that all other option defaults are correct. ie:
+- --scale_factor = 0.1
+- --time_periods = 24
+- etc
+
 ## Tests
 
 ### Run the tests (from the elara root dir)
@@ -379,7 +376,7 @@ To generate XML & HTML coverage reports to `reports/coverage`:
 ## Debug
 
 Logging level can be set in the config or via the cli, or otherwise defaults to False (INFO). We 
-currently support the following levels: DEBUG, INFO, WARN/WARNING.
+currently support the following levels: DEBUG, INFO, WARNING.
 
 Note that the configured or default logging level can be overwritten to debug using an env variable:
 
