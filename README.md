@@ -3,9 +3,36 @@
 A command line utility for processing (in big batches or bit by bit) MATSim outputs:
 
 * **Event Based Outputs** (for example transport network 'flows' or agent waiting times)
+  * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
+  * ``passenger_counts``: Produce vehicle occupancy by time slice.
+  * ``stop_interactions``: Boardings and Alightings by time slice.
+  * ``waiting_times``: Agent waiting times for unique pt interaction events.
 * **Plan Based Outputs** (for example mode shares or final agent plan records)
+  * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``agent_logs``: Produce flat output of agent activity logs and leg logs, including times, 
+  sequences, durations and categories.
+  * ``agent_plans``: Produce flat output of agent plans (logs and activities) including unselected 
+  plans and scores, 
+  including times, 
+  sequences, durations and categories.
+  * ``agent_highway_distances``: Produce flat output of agent distances by car on different road 
+  types (as described by the input network osm:way).
+  * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road 
+  types (as described by the input network osm:way).
 * **Post Processing** of Outputs (for example for vehicle kms)
+  * ``vkt``: Produce link volume vehicle kms by time slice.
+  * ``plan_summary``: Produce leg and activity time and duration summaries.
+  * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
+  with multiple leg modes.
 * **Benchmarking** of Outputs (for example comparison to measured cordon counts)
+  * ``ireland_highways``
+  * ``london_rods``
+  * ``london_central_cordon``
+  * ``london_inner_cordon``
+  * ``london_outer_cordon``
+  * ``london_thames_screen``
+  * ``test_pt_interaction_counter``
+  * ``test_link_cordon``
 
 The outputs from elara can be used for further analysis, visualisation or calibration. Outputs 
 are typically available as csv and/or geojson. Spatial representations are converted to 
@@ -25,12 +52,17 @@ EPSG:4326, which works in kepler.
 * [What does the name mean?](https://github.com/arup-group/elara#what-does-the-name-mean)
 
 ## Introduction
-Elara uses a Command Line Interface (CLI), but within this interface you can choose to run elara 
-via a config or purely through the CLI. The CLI is preferred for producing single outputs, whereas 
-the config can handle big batches of outputs in one go. So if you are after a quick output - best 
+Elara uses a Command Line Interface (CLI), within this interface you can choose to run elara 
+via a [config](https://github.com/arup-group/elara#configuration) or purely through the 
+[CLI](https://github.com/arup-group/elara#command-line-reference). The CLI is preferred for 
+producing single outputs, for example to extract vehicle kms, whereas using
+a config can handle big batches of outputs in one go. So if you are after a quick output - best 
 to use the CLI, whereas if you need a large output and/or reproducibility, a config is preferred.
 
 The CLI and configs share naming conventions and structure so we recommend reading about both below.
+
+Also note that elara is often used within simulation pipelines 
+[ie BitSim](https://github.com/arup-group/bitsim). In which case it is typically run using a config. 
 
 ## Installation
 Clone or download this repository. Once available locally, navigate to the folder and run:
@@ -105,17 +137,17 @@ Options:
 **Note that defaults will not always be suitable for your scenario. `-s` `--scale_factor` in 
 particular, should be updated accordingly.**
 
-Similarly, not that the CLI assumes inputs will have standard (at the time of writing) MATSim 
+Similarly, note that the CLI assumes inputs will have standard (at the time of writing) MATSim 
 names, ie `output_plans.xml.gz`, `output_personAttributes.xml.gz`, `output_config.xml` and so on.
 
 ## Example CLI Commands
 
-Produce **car VKT** for a London scenario, all the defaults are correct but you'd like to read the 
-inputs from a different location to your current location:
+Produce **vehicle kilometres travelled by car (VKT)** for a London scenario, all the defaults are correct but you'd like to read the 
+inputs from a different location to your current path:
 
 `elara post-processors vkt car -inputs_path ~/DIFFERENT/DATA/LOCATION`
 
-or, slightly more succinctly:
+or, more succinctly:
 
 `elara post-processors vkt car -i ~/DIFFERENT/DATA/LOCATION`
 
@@ -129,14 +161,15 @@ or, much more succinctly:
 
 `elara event-handlers volume-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
-Produce a **benchmark**, in this case we will assume that a benchmark has already been created 
-called `ireland-highways` and that it works for buses, cars and trains.
+Produce a **benchmark**, in this case we assume that a benchmark has already been created 
+called `ireland-highways` and that it works for buses and cars.
 
-`elara benchmarks ireland-highways car bus`
+`elara benchmarks ireland-highways car bus -e "ESPG:2157"`
 
-Note that commands with dependencies (such as post-processors and benchmarks) will have these 
-dependencies automatically fulfilled. In the case of the dublin benchmark, this means that 
-outputs for car and bus volume-counts will also be procuced.
+Note that we are assuming that all other option defaults are correct. ie:
+- --scale_factor = 0.1
+- --time_periods = 24
+- etc
 
 ## Configuration
 
@@ -152,11 +185,11 @@ detailed further below and examples are also included in the repo:
 
 ```
  [scenario]
-name = "test_town"
+name = "test_town" (This is used to prefix outputs)
 time_periods = 24
-scale_factor = 0.01
-crs = "EPSG:27700"
-verbose = INFO
+scale_factor = 0.01 (=1%)
+crs = "EPSG:27700" (UK GRID)
+verbose = INFO (or DEBUG for example)
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
@@ -305,6 +338,7 @@ Currently available benchmarks include:
 
 _newer formats (produced using `bench`):_
 
+* ``ireland_highways``
 * ``london_rods``
 * ``london_central_cordon``
 * ``london_inner_cordon``
@@ -313,9 +347,8 @@ _newer formats (produced using `bench`):_
 * ``test_pt_interaction_counter``
 * ``test_link_cordon``
 
-_older formats:_
+_older formats (no longer maintained):_
 
-* ``ireland_highways``
 * ``london_inner_cordon_car``
 * ``dublin_canal_cordon_car``
 * ``ireland_commuter_modeshare``
