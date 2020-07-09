@@ -1,4 +1,4 @@
- [scenario]
+[scenario]
 name = "test"
 time_periods = 24
 scale_factor = 0.0001
@@ -13,6 +13,10 @@ transit_vehicles = "./fixtures/fixtures_01perc/baseline/output_transitVehicles.x
 attributes = "./fixtures/fixtures_01perc/baseline/output_personAttributes.xml.gz"
 plans = "./fixtures/fixtures_01perc/baseline/output_plans.xml.gz"
 
+[outputs]
+path = "./outputs/testing_elara_outputs"
+contract = true
+
 [event_handlers]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
@@ -20,10 +24,6 @@ stop_interactions = ["bus", "train"]
 
 [plan_handlers]
 mode_share = ["all"]
-
-[outputs]
-path = "./outputs/testing_elara_outputs"
-contract = true
 
 [post_processors]
 vkt = ["car"]
