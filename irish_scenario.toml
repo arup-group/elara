@@ -13,6 +13,11 @@ transit_vehicles = "./fixtures/fixtures_ireland_test_100/output_transitVehicles.
 attributes = "./fixtures/fixtures_ireland_test_100/output_personAttributes.xml.gz"
 plans = "./fixtures/fixtures_ireland_test_100/output_plans.xml.gz"
 
+[outputs]
+path = "./outputs/ireland/test_100/"
+contract = true
+post_processing = []
+
 [event_handlers]
 volume_counts = ["car"]
 passenger_counts = ["bus", "train", "tram", "ferry"]
@@ -20,11 +25,6 @@ stop_interactions = ["bus", "train", "tram", "ferry"]
 
 [plan_handlers]
 mode_share = ["all"]
-
-[outputs]
-path = "./outputs/ireland/test_100/"
-contract = true
-post_processing = []
 
 [benchmarking]
 benchmarks = ["dublin_canal_cordon_car", "ireland_commuter_modeshare"]

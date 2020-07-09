@@ -97,7 +97,7 @@ Config files must be `.toml` format and be roughly formatted as follows. The var
 detailed further below and examples are also included in the repo:
 
 ```
- [scenario]
+[scenario]
 name = "test_town"
 time_periods = 24
 scale_factor = 0.01
