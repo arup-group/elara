@@ -174,6 +174,7 @@ class LinkCounter(BenchmarkTool):
 
                 if not sum(sim_result):
                     found = False
+                    continue # this will ignore failed joins and zero counters
                 else:
                     found = True
 
