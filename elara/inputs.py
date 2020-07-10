@@ -375,10 +375,10 @@ class TransitVehicles(InputTool):
         # Vehicle types to mode correspondence
         self.veh_type_mode_map = {
             "Rail": "train",
-            "Suburban Railway": "train",
-            "Underground Service": "train",
+            "Suburban Railway": "suburban rail",
+            "Underground Service": "metro",
             "Bus": "bus",
-            "Coach Service": "bus",
+            "Coach Service": "coach",
             "Tram": "tram",
             "Ferry": "ferry",
         }
