@@ -299,7 +299,7 @@ class IrelandHighwayCountersNew(LinkCounter):
 
     name = 'ireland_highways_counters_new'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'ireland_highways_counters_6july20.json')
+        os.path.join('ireland', 'highways', 'ireland_highways_counters_14july20.json')
     )
 
     requirements = ['volume_counts']
