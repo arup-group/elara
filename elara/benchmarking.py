@@ -313,7 +313,7 @@ class LondonCentralCordon(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'central_cordon.json')
+        os.path.join('london', 'london-GLA', 'central_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -327,7 +327,7 @@ class LondonInnerCordon(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'inner_cordon.json')
+        os.path.join('london', 'london-GLA', 'inner_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -341,7 +341,7 @@ class LondonOuterCordon(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'boundary_cordon.json')
+        os.path.join('london', 'london-GLA', 'boundary_cordon.json')
     )
 
     requirements = ['volume_counts']
@@ -355,7 +355,7 @@ class LondonThamesScreen(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'thames_screen.json')
+        os.path.join('london', 'london-GLA', 'thames_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -369,7 +369,7 @@ class LondonNorthScreen(LinkCounter):
 
     name = 'london_northern_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'northern_screen.json')
+        os.path.join('london', 'london-GLA', 'northern_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -383,7 +383,7 @@ class LondonPeriphScreen(LinkCounter):
 
     name = 'london_peripheral_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'peripheral_screen.json')
+        os.path.join('london', 'london-GLA', 'peripheral_screen.json')
     )
 
     requirements = ['volume_counts']
@@ -621,7 +621,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-1-4-puma-2016', 'board_alight.json')
+        os.path.join('london', 'london-GLA', 'board_alight.json')
     )
 
     requirements = ['stop_interactions']
