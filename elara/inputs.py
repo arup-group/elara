@@ -608,7 +608,7 @@ class ModeHierarchy(InputTool):
                 f"ModeHierarchy get method expects list of strings, received: {modes}, "
                 f"type: {type(modes[0])}")
         for mode in modes:
-            if mode not in self.hierarchy:
+            if str(mode).strip() not in self.hierarchy:
                 self.logger.warning(f" {mode} not found in hierarchy, returning {mode} as main mode")
                 return mode
         for h in self.hierarchy:
