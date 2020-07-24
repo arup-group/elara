@@ -484,7 +484,7 @@ class TransitInteraction(BenchmarkTool):
                     if stop_id not in model_results[direction].index:
                         failed_snaps += 1
                         self.logger.warning(
-                            f" Missing model link: {stop_id}, zero filling count for benchmark: "
+                            f" Missing model node: {stop_id}, zero filling count for benchmark: "
                             f"{counter_id}"
                         )
                     else:
