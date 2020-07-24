@@ -580,7 +580,7 @@ class ModeHierarchy(InputTool):
     hierarchy = [
         "ferry",
         "rail",
-        "light rail"
+        "light rail",
         "subway",
         "metro",
         "tram",
