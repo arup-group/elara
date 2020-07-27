@@ -376,11 +376,13 @@ class TransitVehicles(InputTool):
         self.veh_type_mode_map = {
             "Rail": "train",
             "Suburban Railway": "suburban rail",
-            "Underground Service": "metro",
+            "Underground Service": "subway",
+            "Metro Service": "subway",
             "Bus": "bus",
             "Coach Service": "coach",
             "Tram": "tram",
             "Ferry": "ferry",
+            "Gondola": "gondola"
         }
         self.logger.debug(f'veh type mode map = {self.veh_type_mode_map}')
 
@@ -581,6 +583,7 @@ class ModeHierarchy(InputTool):
         "ferry",
         "rail",
         "light rail",
+        "suburban rail",
         "subway",
         "metro",
         "tram",
