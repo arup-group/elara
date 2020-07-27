@@ -2,7 +2,7 @@
   "bus": {
     "test1": {
       "boardings": {
-        "nodes": [
+        "stop_ids": [
           "home_stop_out"
         ],
         "counts": {
@@ -34,7 +34,7 @@
       },
 
       "alightings": {
-        "nodes": [
+        "stop_ids": [
           "home_stop_in"
         ],
         "counts": {
@@ -67,7 +67,7 @@
     },
     "test2": {
       "boardings": {
-        "nodes": [
+        "stop_ids": [
           "work_stop_out"
         ],
         "counts": {
@@ -134,7 +134,7 @@
       },
 
       "alightings": {
-        "nodes": [
+        "stop_ids": [
           "home_stop_in"
         ],
         "counts": {
