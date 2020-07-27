@@ -453,7 +453,7 @@ class TransitInteraction(BenchmarkTool):
             results_df = pd.read_csv(results_path, index_col=0)
             results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
             results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
-            results_df.index.name = 'link_id'
+            results_df.index.name = 'stop_id'
             model_results[direction] = results_df
 
         # build benchmark results
@@ -467,7 +467,7 @@ class TransitInteraction(BenchmarkTool):
 
             for direction, counter in counter_location.items():
 
-                stops = counter['nodes']
+                stops = counter['stop_ids']
                 bm_hours = list(counter['counts'])
                 counts_array = np.array(list(counter['counts'].values()))
 
@@ -479,12 +479,12 @@ class TransitInteraction(BenchmarkTool):
                         f"Hours: {bm_hours} not available in "
                         f"results.columns: {model_results[direction].columns}")
 
-                # combine mode link counts
+                # combine mode stop counts
                 for stop_id in stops:
                     if stop_id not in model_results[direction].index:
                         failed_snaps += 1
                         self.logger.warning(
-                            f" Missing model node: {stop_id}, zero filling count for benchmark: "
+                            f" Missing model stop: {stop_id}, zero filling count for benchmark: "
                             f"{counter_id}"
                         )
                     else:
@@ -506,7 +506,7 @@ class TransitInteraction(BenchmarkTool):
                 else:
                     counter_score = 1
                     self.logger.warning(
-                        f"Zero size benchmark: {counter_id} link: {stop_id}, returning 1"
+                        f"Zero size benchmark: {counter_id} stop: {stop_id}, returning 1"
                     )
                 bm_scores.append(counter_score)
 
@@ -516,7 +516,7 @@ class TransitInteraction(BenchmarkTool):
                     'found': found,
                     'counter_id': counter_id,
                     'direction': direction,
-                    'links': ','.join(stops),
+                    'stops': ','.join(stops),
                     'score': counter_score,
 
                 }
@@ -577,7 +577,7 @@ class TransitInteraction(BenchmarkTool):
 
         if failed_snaps:
             report = 100 * failed_snaps / (snaps + failed_snaps)
-            self.logger.warning(f" {report}% of links not found for bm: {self.name}")
+            self.logger.warning(f" {report}% of stop_ids not found for bm: {self.name}")
 
         # build results df
         bm_results_df = pd.DataFrame(bm_results)
@@ -603,6 +603,7 @@ class TransitInteraction(BenchmarkTool):
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
+
 class TestPTInteraction(TransitInteraction):
 
     name = 'test_pt_interaction_counter'
@@ -621,7 +622,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'board_alight.json')
+        os.path.join('london', 'london-GLA', 'london-subway-board-alight-2017.json')
     )
 
     requirements = ['stop_interactions']
