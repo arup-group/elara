@@ -1384,13 +1384,12 @@ class BenchmarkWorkStation(WorkStation):
         # "london_northern_screen": LondonNorthScreen,
         # "london_peripheral_screen": LondonPeriphScreen,
 
+        # old style:
         "test_pt_interaction_counter": TestPTInteraction,
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        # "ireland_highways": IrelandHighwayCounters, # replaced with new
-        # "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_link_cordon": TestCordon,
@@ -1417,8 +1416,6 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": 1,
         "multimodal_town_modeshare": 1,
         "multimodal_town_cars_counts": 1,
-        # "ireland_highways": 1, # replaced with new
-        # "london_inner_cordon_car": 1,
         "dublin_canal_cordon_car": 1,
         "ireland_commuter_modeshare": 1,
         "test_town_cordon": 1,
