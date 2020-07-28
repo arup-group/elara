@@ -309,88 +309,144 @@ class IrelandHighwayCountersNew(LinkCounter):
     weight = 1
 
 
-class LondonCentralCordon(LinkCounter):
+class LondonCentralCordonCar(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'central_cordon.json')
+        os.path.join('london', 'london-GLA', 'central_london_car_2016.json')
     )
 
     requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    valid_options = ['car']
     options_enabled = True
 
     weight = 1
 
 
-class LondonInnerCordon(LinkCounter):
+class LondonCentralCordonBus(LinkCounter):
+
+    name = 'london_central_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-GLA', 'central_london_bus_2016.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonInnerCordonCar(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'inner_cordon.json')
+        os.path.join('london', 'london-GLA', 'inner_london_car_2016.json')
     )
 
     requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    valid_options = ['car']
     options_enabled = True
 
     weight = 1
 
 
-class LondonOuterCordon(LinkCounter):
+class LondonInnerCordonBus(LinkCounter):
+
+    name = 'london_inner_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-GLA', 'inner_london_bus_2016.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonBoundaryCordonCar(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'boundary_cordon.json')
+        os.path.join('london', 'london-GLA', 'boundary_london_car_2017.json')
     )
 
     requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    valid_options = ['car']
     options_enabled = True
 
     weight = 1
 
 
-class LondonThamesScreen(LinkCounter):
+class LondonBoundaryCordonBus(LinkCounter):
+
+    name = 'london_outer_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-GLA', 'boundary_london_bus_2017.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonThamesScreenCar(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'thames_screen.json')
+        os.path.join('london', 'london-GLA', 'london_thames_screen_car_2016.json')
     )
 
     requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    valid_options = ['car']
     options_enabled = True
 
     weight = 1
 
 
-class LondonNorthScreen(LinkCounter):
+class LondonThamesScreenBus(LinkCounter):
 
-    name = 'london_northern_screen'
+    name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'northern_screen.json')
+        os.path.join('london', 'london-GLA', 'london_thames_screen_bus_2016.json')
     )
 
     requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    valid_options = ['bus']
     options_enabled = True
 
     weight = 1
 
 
-class LondonPeriphScreen(LinkCounter):
+# class LondonNorthScreen(LinkCounter):
 
-    name = 'london_peripheral_screen'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'peripheral_screen.json')
-    )
+#     name = 'london_northern_screen'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA', 'northern_screen.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_options = ['car', 'bus']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
+
+
+# class LondonPeriphScreen(LinkCounter):
+
+#     name = 'london_peripheral_screen'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA', 'peripheral_screen.json')
+#     )
+
+#     requirements = ['volume_counts']
+#     valid_options = ['car', 'bus']
+#     options_enabled = True
+
+#     weight = 1
 
 
 
@@ -1316,13 +1372,17 @@ class BenchmarkWorkStation(WorkStation):
 
     tools = {
         "ireland_highways": IrelandHighwayCountersNew,
-        "london_board_alight": LondonRODS,
-        "london_boundary_cordon": LondonOuterCordon,
-        "london_central_cordon": LondonCentralCordon,
-        "london_inner_cordon": LondonInnerCordon,
-        "london_northern_screen": LondonNorthScreen,
-        "london_peripheral_screen": LondonPeriphScreen,
-        "london_thames_screen": LondonThamesScreen,
+        "london_board_alight_subway": LondonRODS,
+        "london_boundary_cordon_car": LondonBoundaryCordonCar,
+        "london_boundary_cordon_bus": LondonBoundaryCordonBus,
+        "london_central_cordon_car": LondonCentralCordonCar,
+        "london_central_cordon_bus": LondonCentralCordonBus,
+        "london_inner_cordon_car": LondonInnerCordonCar,
+        "london_inner_cordon_bus": LondonInnerCordonBus,
+        "london_thames_screen_car": LondonThamesScreenCar,
+        "london_thames_screen_bus": LondonThamesScreenBus,
+        # "london_northern_screen": LondonNorthScreen,
+        # "london_peripheral_screen": LondonPeriphScreen,
 
         "test_pt_interaction_counter": TestPTInteraction,
         "test_town_highways": TestHighwayCounters,
@@ -1341,13 +1401,17 @@ class BenchmarkWorkStation(WorkStation):
 
     BENCHMARK_WEIGHTS = {
         "test_pt_interaction_counter": 1,
-        "london_rods": 1,
         "test_link_cordon": 1,
         "ireland_highways": 1,
-        "london_central_cordon": 1,
-        "london_inner_cordon": 1,
-        "london_outer_cordon": 1,
-        "london_thames_screen": 1,
+        "london_board_alight_subway": 1,
+        "london_boundary_cordon_car": 1,
+        "london_boundary_cordon_bus": 1,
+        "london_central_cordon_car": 1,
+        "london_central_cordon_bus": 1,
+        "london_inner_cordon_car": 1,
+        "london_inner_cordon_bus": 1,
+        "london_thames_screen_car": 1,
+        "london_thames_screen_bus": 1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
