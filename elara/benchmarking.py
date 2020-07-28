@@ -1257,25 +1257,25 @@ class MultimodalTownCarCounters(PointsCounter):
 
 # Cordons
 
-class LondonInnerCordonCar(Cordon):
+# class LondonInnerCordonCar(Cordon):
 
-    requirements = ['volume_counts']
-    valid_options = ['car']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_options = ['car']
+#     options_enabled = True
 
-    weight = 1
-    cordon_counter = HourlyCordonDirectionCount
-    benchmark_path = get_benchmark_data(
-        os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv')
-    )
-    cordon_path = get_benchmark_data(
-        os.path.join('london', 'inner_cordon', 'cordon_links.csv')
-    )
+#     weight = 1
+#     cordon_counter = HourlyCordonDirectionCount
+#     benchmark_path = get_benchmark_data(
+#         os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv')
+#     )
+#     cordon_path = get_benchmark_data(
+#         os.path.join('london', 'inner_cordon', 'cordon_links.csv')
+#     )
 
-    directions = {'in': 1, 'out': 2}
-    year = 2016
-    hours = None
-    modes = ['car']
+#     directions = {'in': 1, 'out': 2}
+#     year = 2016
+#     hours = None
+#     modes = ['car']
 
 
 class DublinCanalCordonCar(Cordon):
@@ -1390,7 +1390,7 @@ class BenchmarkWorkStation(WorkStation):
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
         # "ireland_highways": IrelandHighwayCounters, # replaced with new
-        "london_inner_cordon_car": LondonInnerCordonCar,
+        # "london_inner_cordon_car": LondonInnerCordonCar,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_link_cordon": TestCordon,
@@ -1418,7 +1418,7 @@ class BenchmarkWorkStation(WorkStation):
         "multimodal_town_modeshare": 1,
         "multimodal_town_cars_counts": 1,
         # "ireland_highways": 1, # replaced with new
-        "london_inner_cordon_car": 1,
+        # "london_inner_cordon_car": 1,
         "dublin_canal_cordon_car": 1,
         "ireland_commuter_modeshare": 1,
         "test_town_cordon": 1,
