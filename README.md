@@ -24,11 +24,15 @@ A command line utility for processing (in big batches or bit by bit) MATSim outp
 
 * **Benchmarking and Scoring** of specific subselections of outputs:
   * ``ireland_highways``
-  * ``london_rods``
-  * ``london_central_cordon``
-  * ``london_inner_cordon``
-  * ``london_outer_cordon``
-  * ``london_thames_screen``
+  * ``london_board_alight_subway``
+  * ``london_central_cordon_car``
+  * ``london_central_cordon_bus``
+  * ``london_inner_cordon_car``
+  * ``london_inner_cordon_bus``
+  * ``london_boundary_cordon_car``
+  * ``london_boundary_cordon_bus``
+  * ``london_thames_screen_car``
+  * ``london_thames_screen_bus``
   * ``test_pt_interaction_counter``
   * ``test_link_cordon``
 
@@ -256,11 +260,15 @@ Currently available benchmarks include:
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
-* ``london_rods``
-* ``london_central_cordon``
-* ``london_inner_cordon``
-* ``london_outer_cordon``
-* ``london_thames_screen``
+* ``london_board_alight_subway``
+* ``london_central_cordon_car``
+* ``london_central_cordon_bus``
+* ``london_inner_cordon_car``
+* ``london_inner_cordon_bus``
+* ``london_boundary_cordon_car``
+* ``london_boundary_cordon_bus``
+* ``london_thames_screen_car``
+* ``london_thames_screen_bus``
 * ``test_pt_interaction_counter``
 * ``test_link_cordon``
 
@@ -280,6 +288,10 @@ should be processed using that handler. This allows certain handlers to be activ
 transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, subway...``
+
+However please note that benchmarks are often mode specific and should be configured as such, eg:
+
+* ``london_central_cordon_car = ["car"]``
 
 ## Command Line Reference
 
