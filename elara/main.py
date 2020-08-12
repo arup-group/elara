@@ -134,6 +134,7 @@ def route_passenger_counts(
 
 
 @event_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def stop_interactions(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
