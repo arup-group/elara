@@ -8,6 +8,7 @@ from io import BytesIO
 from math import floor
 from typing import Optional
 import logging
+from collections import defaultdict
 
 from elara.factory import WorkStation, Tool
 
@@ -269,22 +270,37 @@ class TransitSchedule(InputTool):
         self.logger.debug(f'Reprojecting stops')
         self.set_and_change_crs(self.stop_gdf, set_crs=crs)
 
-        # Generate routes to modes map
-        self.mode_map = dict(
-            [
-                self.get_route_mode(elem) for elem in get_elems(path, "transitRoute")
-            ]
-        )
+        # TODO the following is nested to try and recover some efficiency.
+        # However this "Schedule" class now has a lot of variables/mappings/etc.
+        # It would probably be sensible to refactor this class into two or more
+        # distinct classes such as "Schedules Routes" and "Schedules Stops" or similar.
 
-        # generate vehicles to routes map
-        self.route_map = {}
+        # Generate route -> mode, mode -> stops and vehicles -> routes maps
+        self.logger.debug(f'Generating mappings.')
+
+        self.route_to_mode_map = {}
+        self.mode_to_stops_map = defaultdict(set)
+        self.veh_to_route_map = {}
+
         for elem in get_elems(path, "transitRoute"):
+            # route -> mode map
+            route_id, mode = self.get_route_mode(elem)
+            self.route_to_mode_map[route_id] = mode
+
+            # mode -> stops map
+            stops = self.get_route_stops(elem)
+            self.mode_to_stops_map[mode].update(stops)
+
+            # vehicles -> routes map
             route_id, route_vehicles = self.get_route_vehicles(elem)
             for vehicle_id in route_vehicles:
-                self.route_map[vehicle_id] = route_id
+                self.veh_to_route_map[vehicle_id] = route_id
 
-        self.modes = list(set(self.mode_map.values()))
-        self.logger.debug(f'Transit Schedule nodes = {self.modes}')
+        self.modes = list(set(self.route_to_mode_map.values()))
+
+        self.logger.debug(f'Transit Schedule Route modes = {self.modes}')
+        self.logger.debug(f'Transit Schedule Stop modes = {list(self.mode_to_stops_map)}')
+
 
     @staticmethod
     def get_node_elem(elem):
@@ -301,7 +317,7 @@ class TransitSchedule(InputTool):
         return {
             "id": str(elem.get("id")),
             "link": str(elem.get("linkRefId")),
-            "stop_area": str(elem.get("stopAreaId")),
+            "name": str(elem.get("name")),
             "geometry": geometry,
         }
 
@@ -321,7 +337,7 @@ class TransitSchedule(InputTool):
         return {
             "id": str(elem.get("id")),
             "link": str(elem.get("linkRefId")),
-            "stop_area": str(elem.get("stopAreaId")),
+            "name": str(elem.get("name")),
             "geometry": geometry,
         }
 
@@ -337,6 +353,15 @@ class TransitSchedule(InputTool):
         mode = elem.xpath('transportMode')[0].text
 
         return route_id, mode
+
+    @staticmethod
+    def get_route_stops(elem):
+        """
+        Get stop id set for each transit route.
+        :param elem: TransitRoute XML element
+        :return: stop_ids set
+        """
+        return set(elem.xpath("routeProfile/stop/@refId"))
 
     @staticmethod
     def get_route_vehicles(elem):
