@@ -182,7 +182,6 @@ class AgentWaitingTimes(EventHandlerTool):
     requirements = [
         'events',
         'transit_schedule',
-        'transit_vehicles',
         'attributes',
     ]
 
@@ -323,7 +322,6 @@ class VolumeCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'transit_vehicles',
         'attributes',
     ]
 
@@ -457,7 +455,6 @@ class PassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'transit_vehicles',
         'attributes',
     ]
     invalid_options = ['car']
@@ -500,7 +497,7 @@ class PassengerCounts(EventHandlerTool):
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
-        
+
         links = resources['network'].mode_to_links_map.get(self.option)
         if links is None:
             self.logger.warning(
@@ -651,7 +648,6 @@ class RoutePassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'transit_vehicles',
         'attributes',
     ]
     invalid_options = ['car']
@@ -832,7 +828,6 @@ class StopInteractions(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'transit_vehicles',
         'attributes',
     ]
     invalid_options = ['car']
