@@ -126,6 +126,14 @@ def test_builds_route_to_mode_lookup_from_gzip_transit_schedule(test_gzip_config
     }
 
 
+def test_builds_mode_to_routes_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
+    transit_schedule = inputs.TransitSchedule(test_gzip_config)
+    transit_schedule.build(test_zip_paths.resources)
+    assert transit_schedule.mode_to_routes_map == {
+        'bus': {'work_bound', 'home_bound'}
+    }
+
+
 def test_builds_modes_to_stops_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
     transit_schedule = inputs.TransitSchedule(test_gzip_config)
     transit_schedule.build(test_zip_paths.resources)
@@ -142,6 +150,25 @@ def test_builds_vehicle_to_route_lookup_from_gzip_transit_schedule(test_gzip_con
         'bus2': 'work_bound',
         'bus3': 'home_bound',
         'bus4': 'home_bound'
+    }
+
+    
+def test_builds_mode_to_vehicle_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
+    transit_schedule = inputs.TransitSchedule(test_gzip_config)
+    transit_schedule.build(test_zip_paths.resources)
+    assert transit_schedule.mode_to_veh_map == {
+        'bus': {'bus1', 'bus2', 'bus3', 'bus4'}
+    }
+
+
+def test_builds_vehicle_to_mode_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
+    transit_schedule = inputs.TransitSchedule(test_gzip_config)
+    transit_schedule.build(test_zip_paths.resources)
+    assert transit_schedule.veh_to_mode_map == {
+        'bus1': 'bus',
+        'bus2': 'bus',
+        'bus3': 'bus',
+        'bus4': 'bus'
     }
 
 
@@ -226,6 +253,13 @@ def test_loading_gzip_network(test_gzip_config, test_zip_paths):
     network.build(test_zip_paths.resources)
     assert len(network.link_gdf) == 8
     assert len(network.node_gdf) == 5
+
+    
+def test_loading_gzip_network(test_gzip_config, test_zip_paths):
+    network = inputs.Network(test_gzip_config)
+    network.build(test_zip_paths.resources)
+    assert network.mode_to_links_map == {'bus': {'2-3', '1-2', '3-4', '2-1', '5-1', '3-2', '1-5', '4-3'}, 'car': {'2-3', '1-2', '3-4', '2-1', '5-1', '3-2', '1-5', '4-3'}}
+
 
 # OSMWay
 def test_loading_osm_highways_map_from_xml(test_xml_config, test_paths):

@@ -115,6 +115,12 @@ class Network(InputTool):
         link_df.sort_index(inplace=True)
         self.link_gdf = gdp.GeoDataFrame(link_df, geometry="geometry").sort_index()
 
+        self.logger.debug(f'Building mode to network links mapping')
+        self.mode_to_links_map = defaultdict(set)
+        for link_id, modes in zip(self.link_gdf.index, [ms.split(",") for ms in self.link_gdf.modes]):
+            for mode in modes:
+                self.mode_to_links_map[mode].add(link_id)
+
         # transform
         self.logger.debug(f'Re-projecting network nodes geodataframe')
         self.set_and_change_crs(self.node_gdf, set_crs=crs)
@@ -173,7 +179,8 @@ class Network(InputTool):
             "to": to_id,
             "length": float(elem.get("length")),
             "lanes": float(elem.get("permlanes")),
-            "capacity": float(elem.get("permlanes")) * float(elem.get("capacity")),
+            "capacity": float(elem.get("permlanes")) * float(elem.get("capacity")),  # TODO - is this correct?
+            "modes": elem.get("modes"),
             "geometry": geometry,
         }
 
@@ -281,6 +288,7 @@ class TransitSchedule(InputTool):
         self.route_to_mode_map = {}
         self.mode_to_stops_map = defaultdict(set)
         self.veh_to_route_map = {}
+        self.mode_to_veh_map = defaultdict(set)
 
         for elem in get_elems(path, "transitRoute"):
             # route -> mode map
@@ -291,10 +299,22 @@ class TransitSchedule(InputTool):
             stops = self.get_route_stops(elem)
             self.mode_to_stops_map[mode].update(stops)
 
-            # vehicles -> routes map
+            
             route_id, route_vehicles = self.get_route_vehicles(elem)
+            # mode -> vehs map
+            self.mode_to_veh_map[mode].update(route_vehicles)
+
             for vehicle_id in route_vehicles:
+                # vehicles -> routes map
                 self.veh_to_route_map[vehicle_id] = route_id
+        
+        # mode -> veh map
+        self.veh_to_mode_map = {v: mode for mode, vs in self.mode_to_veh_map.items() for v in vs}
+
+        # mode -> routes map
+        self.mode_to_routes_map = defaultdict(set)
+        for route, mode in self.route_to_mode_map.items():
+            self.mode_to_routes_map[mode].add(route) 
 
         self.modes = list(set(self.route_to_mode_map.values()))
 
@@ -368,7 +388,7 @@ class TransitSchedule(InputTool):
         """
         Get all vehicle IDs for a given transit route
         :param elem: TransitRoute XML element
-        :return: a list of vehicle IDs, empty if no departures were found on the route
+        :return: route id, a set of vehicle IDs, empty if no departures were found on the route
         """
         route_vehicles = []
 
@@ -376,7 +396,7 @@ class TransitSchedule(InputTool):
         for departure in elem.xpath('departures')[0]:
             route_vehicles.append(departure.get('vehicleRefId'))
 
-        return route_id, route_vehicles
+        return route_id, set(route_vehicles)
 
 
 class TransitVehicles(InputTool):

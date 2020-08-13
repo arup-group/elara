@@ -54,11 +54,8 @@ class EventHandlerTool(Tool):
         :param vehicle_id: Vehicle ID string
         :return: Vehicle mode type string
         """
-        if vehicle_id in self.resources['transit_vehicles'].veh_id_veh_type_map.keys():
-            return self.resources['transit_vehicles'].veh_type_mode_map.get(
-                self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id],
-                self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id]
-            )
+        if vehicle_id in self.resources['transit_schedule'].veh_to_mode_map.keys():
+            return self.resources['transit_schedule'].veh_to_mode_map[vehicle_id]
         else:
             return "car"
 
@@ -364,6 +361,20 @@ class VolumeCounts(EventHandlerTool):
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
+        
+        links = resources['network'].mode_to_links_map.get(self.option)
+        if links is None:
+            self.logger.warning(
+                f"""
+                No viable links found for mode:{self.option} in Network, 
+                this may be because the Network modes do not match the configured 
+                modes. Elara will continue with all links found in network.
+                """
+                )
+        else:
+            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[links, :]
+
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise volume count table
@@ -439,7 +450,7 @@ class VolumeCounts(EventHandlerTool):
 
 class PassengerCounts(EventHandlerTool):
     """
-    Build Passenger Counts for given mode in mode vehicles.
+    Build Passenger Counts on links for given mode in mode vehicles.
     """
 
     requirements = [
@@ -489,6 +500,20 @@ class PassengerCounts(EventHandlerTool):
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
+        
+        links = resources['network'].mode_to_links_map.get(self.option)
+        if links is None:
+            self.logger.warning(
+                f"""
+                No viable links found for mode:{self.option} in Network, 
+                this may be because the Network modes do not match the configured 
+                modes. Elara will continue with all links found in network.
+                """
+                )
+        else:
+            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[links, :]
+
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise passenger count table
@@ -663,9 +688,21 @@ class RoutePassengerCounts(EventHandlerTool):
         self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
 
-        # Initialise element attributes
-        all_routes = set(resources['transit_schedule'].veh_to_route_map.values())
-        self.elem_ids, self.elem_indices = self.generate_elem_ids(list(all_routes))
+        # # Initialise element attributes
+        # all_routes = set(resources['transit_schedule'].veh_to_route_map.values())
+        # get routes used by this mode
+        self.logger.debug(f'Selecting routes for mode:{self.option}.')
+        routes = resources['transit_schedule'].mode_to_routes_map.get(self.option)
+        if routes is None:
+            self.logger.warning(
+                f"""
+                No viable routes found for mode:{self.option} in TransitSchedule, 
+                this may be because the Schedule modes do not match the configured 
+                modes. Elara will continue with all routes found in schedule.
+                """
+                )            
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(list(routes))
 
         # Initialise passenger count table
         self.counts = np.zeros((len(self.elem_ids),
