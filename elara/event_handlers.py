@@ -68,8 +68,8 @@ class EventHandlerTool(Tool):
         :param vehicle_id: Vehicle ID string
         :return: ID of the parent route
         """
-        if vehicle_id in self.resources['transit_schedule'].route_map.keys():
-            return self.resources['transit_schedule'].route_map.get(vehicle_id)
+        if vehicle_id in self.resources['transit_schedule'].veh_to_route_map.keys():
+            return self.resources['transit_schedule'].veh_to_route_map.get(vehicle_id)
         else:
             return 'unknown_route'
 
@@ -664,7 +664,7 @@ class RoutePassengerCounts(EventHandlerTool):
         self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
-        all_routes = set(resources['transit_schedule'].route_map.values())
+        all_routes = set(resources['transit_schedule'].veh_to_route_map.values())
         self.elem_ids, self.elem_indices = self.generate_elem_ids(list(all_routes))
 
         # Initialise passenger count table
@@ -839,9 +839,23 @@ class StopInteractions(EventHandlerTool):
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
+        # get stops used by this mode
+        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.option)
+        if viable_stops is None:
+            self.logger.warning(
+                f"""
+                No viable stops found for mode:{self.option} in TransitSchedule, 
+                this may be because the Schedule modes do not match the configured 
+                modes. Elara will continue with all stops found in schedule.
+                """
+                )
+        else:
+            self.logger.debug(f'Filtering stops for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
-        # Initialise results tables
+        # Initialise results tablescd
         self.boardings = np.zeros((len(self.elem_indices),
                                    len(self.class_indices),
                                    self.config.time_periods))

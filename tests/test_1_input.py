@@ -117,10 +117,27 @@ def test_load_gzip_transit_schedule(test_gzip_config, test_zip_paths):
     assert len(transit_schedule.stop_gdf) == 4
 
 
+def test_builds_route_to_mode_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
+    transit_schedule = inputs.TransitSchedule(test_gzip_config)
+    transit_schedule.build(test_zip_paths.resources)
+    assert transit_schedule.route_to_mode_map == {
+        'work_bound': 'bus',
+        'home_bound': 'bus'
+    }
+
+
+def test_builds_modes_to_stops_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
+    transit_schedule = inputs.TransitSchedule(test_gzip_config)
+    transit_schedule.build(test_zip_paths.resources)
+    assert transit_schedule.mode_to_stops_map == {
+        'bus': {'work_stop_in', 'home_stop_in', 'work_stop_out', 'home_stop_out'}
+    }
+
+
 def test_builds_vehicle_to_route_lookup_from_gzip_transit_schedule(test_gzip_config, test_zip_paths):
     transit_schedule = inputs.TransitSchedule(test_gzip_config)
     transit_schedule.build(test_zip_paths.resources)
-    assert transit_schedule.route_map == {
+    assert transit_schedule.veh_to_route_map == {
         'bus1': 'work_bound',
         'bus2': 'work_bound',
         'bus3': 'home_bound',

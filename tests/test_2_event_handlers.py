@@ -397,7 +397,7 @@ def bus_route_passenger_count_handler(test_config, input_manager):
     assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(set(resources['transit_schedule'].route_map.values())), len(resources['attributes'].classes), periods)
+        len(set(resources['transit_schedule'].veh_to_route_map.values())), len(resources['attributes'].classes), periods)
     return handler
 
 
