@@ -179,7 +179,7 @@ class Network(InputTool):
             "to": to_id,
             "length": float(elem.get("length")),
             "lanes": float(elem.get("permlanes")),
-            "capacity": float(elem.get("permlanes")) * float(elem.get("capacity")),  # TODO - is this correct?
+            "capacity": float(elem.get("capacity")),
             "modes": elem.get("modes"),
             "geometry": geometry,
         }
