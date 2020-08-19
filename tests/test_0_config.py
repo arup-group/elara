@@ -12,6 +12,6 @@ def test_config_override_update_input_fields_and_output_path():
     assert config.settings['inputs']['events'] == override + "/" + events
     assert config.settings['inputs']['network'] == override + "/" + network
 
-    assert config.settings['outputs']['path'] == override
-    assert config.output_path == override
+    assert config.settings['outputs']['path'] == override + "/" + config.settings['outputs']['path'].split("/")[-1]
+    assert config.output_path == override + "/" + config.settings['outputs']['path'].split("/")[-1]
 
