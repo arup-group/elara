@@ -31,8 +31,8 @@ class Config:
             },
         "outputs":
             {
-                "path": './elara_outputs',
-                "contract": True,
+                "path": './elara',
+                "contract": False,
             },
     }
 
@@ -88,7 +88,7 @@ class Config:
     def load_required_settings(self):
 
         # Scenario settings
-        self.logger.debug(f'Loading and validating required settings from config')
+        self.logger.debug(f'Loading and validating required settings')
 
         self.name = self.settings["scenario"]["name"]
         self.time_periods = self.valid_time_periods(
@@ -102,14 +102,14 @@ class Config:
         )
 
         # Factory requirements
-        self.logger.debug(f'Loading factory build requirements from config')
+        self.logger.debug(f'Loading factory build requirements')
         self.event_handlers = self.settings.get("event_handlers", {})
         self.plan_handlers = self.settings.get("plan_handlers", {})
         self.post_processors = self.settings.get("post_processors", {})
         self.benchmarks = self.settings.get("benchmarks", {})
 
         # Output settings
-        self.logger.debug(f'Loading output settings from config')
+        self.logger.debug(f'Loading output settings')
         self.output_path = self.settings["outputs"]["path"]
         self.contract = self.settings["outputs"].get("contract", False)
 
@@ -254,15 +254,16 @@ class Config:
 
     def override(self, path_override):
         """
-        :param path_override: override the config input paths
+        :param path_override: override the config input and output paths
         """
         # Construct a dictionary from the path_overrides str
         for path in self.settings['inputs']:
             file_name = self.settings['inputs'][path].split('/')[-1]
             self.settings['inputs'][path] = "{}/{}".format(path_override, file_name)
 
-        self.settings['outputs']['path'] = path_override
-        self.output_path = path_override
+        output_dir = self.settings['outputs']['path'].split('/')[-1]
+        self.settings['outputs']['path'] = f"{path_override}/{output_dir}"
+        self.output_path = f"{path_override}/{output_dir}"
 
 
 class PathTool(Tool):
