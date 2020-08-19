@@ -98,7 +98,7 @@ Configuration is accessed via the CLI:
 `elara run <CONFIG PATH>` 
 
 Config files must be `.toml` format and be roughly formatted as follows. The various fields are 
-detailed further below and examples are also included in the repo:
+detailed further below and an [example config](https://github.com/arup-group/elara/blob/master/example_scenario.toml) is also included in the repo:
 
 ```
 [scenario]
@@ -143,6 +143,8 @@ test_pt_interaction_counter = ["bus"]
 test_link_cordon = ["car"]
 
 ```
+
+You can run this config on some toy data: `elara run example_config.toml` (from the project route).
 
 **#** scenario.**name** *string* *(required)*
 
