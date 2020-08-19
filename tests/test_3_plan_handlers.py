@@ -96,6 +96,29 @@ def test_day_wrapping(times, final_string):
     assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
 
 
+non_wrapping_test_matsim_time_data = [
+    (['06:00:00', '12:45:00', '18:30:00'], '1-18:30:00'),
+    (['06:00:00', '12:45:00', '24:00:00'], '2-00:00:00'),
+    (['06:00:00', '24:00:00', '08:30:00'], '1-08:30:00'),
+    (['06:00:00', '18:45:00', '12:30:00'], '1-12:30:00'),
+    (['00:00:00'], '1-00:00:00'),
+    (['24:00:00'], '2-00:00:00'),
+]
+
+@pytest.mark.parametrize("times,final_string", non_wrapping_test_matsim_time_data)
+def test_matsim_time_to_datetime(times, final_string):
+    current_dt = None
+    for new_time_str in times:
+        current_dt = plan_handlers.matsim_time_to_datetime(
+            current_dt,
+            new_time_str,
+            base_year=1900,
+            base_month=1,
+            )
+    assert isinstance(current_dt, datetime)
+    assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
+
+
 # Normal Case
 @pytest.fixture
 def agent_log_handler(test_config, input_manager):
@@ -188,8 +211,8 @@ def agent_log_handler_finalised_bad_plans(agent_log_handler_bad_plans):
     plans = handler.resources['plans']
     for plan in plans.persons:
         handler.process_plans(plan)
-    assert handler.activities_log.chunk[-1].get('end_day') == 3
-    assert handler.legs_log.chunk[-1].get('end_day') == 3
+    assert handler.activities_log.chunk[-1].get('end_day') == 1
+    assert handler.legs_log.chunk[-1].get('end_day') == 1
     handler.finalise()
     return handler
 
@@ -256,7 +279,7 @@ def agent_plans_handler_finalised_bad_plans(agent_plans_handler_bad_plans):
     plans = handler.resources['plans']
     for plan in plans.persons:
         handler.process_plans(plan)
-    assert handler.plans_log.chunk[-1].get('end_day') == 3
+    assert handler.plans_log.chunk[-1].get('end_day') == 1
     handler.finalise()
     return handler
 
