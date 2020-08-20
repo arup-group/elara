@@ -67,18 +67,16 @@ Also note that elara is often used within simulation pipelines
 [ie BitSim](https://github.com/arup-group/bitsim). In which case it is typically run using a config. 
 
 ## Installation
-Clone or download this repository. Once available locally, navigate to the folder and run:
+Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to install the libraries in. 
+```
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Then run the following to install elara and bring up the help menu.
 ```
 pip3 install -e .
 elara --help
-```
-
-The ``GeoPandas`` library requires ``pyproj`` as a dependency. This can be a bit of a pain to 
-install. For Mac OSX, activate the environment Elara lives in and run the following commands 
-before installing the tool:
-```
-pip3 install cython
-pip3 install git+https://github.com/jswhit/pyproj.git
 ```
 
 On Windows, pre-compiled wheels of ``pyproj`` can be found on
