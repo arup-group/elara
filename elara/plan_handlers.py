@@ -343,7 +343,7 @@ class AgentLogsHandler(PlanHandlerTool):
 
                             end_time_str = stage.get('end_time', '23:59:59')
 
-                            activity_end_dt = non_wrapping_datetime(
+                            activity_end_dt = matsim_time_to_datetime(
                                 arrival_dt, end_time_str, self.logger, idx=ident
                             )
 
@@ -541,7 +541,7 @@ class AgentPlansHandler(PlanHandlerTool):
 
                         end_time_str = stage.get('end_time', '23:59:59')
 
-                        activity_end_dt = non_wrapping_datetime(
+                        activity_end_dt = matsim_time_to_datetime(
                             arrival_dt, end_time_str, self.logger, idx=ident
                         )
 
@@ -987,12 +987,51 @@ def export_geojson(gdf, path):
         file.write(gdf.to_json())
 
 
+def matsim_time_to_datetime(
+        current_time: datetime,
+        new_time_str: str,
+        logger=None,
+        idx=None,
+        base_year=2020,
+        base_month=4,
+        base_day=1,
+    ) -> datetime:
+    """
+    Function to convert matsim time strings (hours,  minutes and seconds since start) 
+    to datetime objects (days, hours, minutes, seconds).
+    Raises a warning for backward time steps. To remmove backward time steps, consider 
+    using the 'non_wrapping_datetime' method which has the same arguments.
+    :param current_time: datetime from previous event
+    :param new_time_str: new time string
+    :param logger: optional logger
+    :param idx: optional idx
+    :param base_year: int default=2020,
+    :param base_month: int defaul=4,
+    :param base_day: int defaul=1,
+    :return: time string, day
+    """
+    start_of_day = datetime(year=base_year, month=base_month, day=base_day, hour=0)
+    if current_time is None:
+        current_time = start_of_day
+
+    h, m, s = (int(i) for i in new_time_str.split(":"))
+    new_time = start_of_day + timedelta(hours=h, minutes=m, seconds=s)
+
+    if logger is not None:
+        if h > 23:
+            logger.debug(f'Bad time str: {new_time_str}, outputting: {new_time}, idx: {idx}')
+        if new_time < current_time:
+            logger.warning(f'Time Wrapping (new time:{new_time} < previous time:{current_time}), idx: {idx}')
+
+    return new_time
+
+
 def non_wrapping_datetime(
         current_time: datetime,
         new_time_str: str,
         logger=None,
         idx=None,
-) -> datetime:
+    ) -> datetime:
     """
     Function to step time strings and day counter to avoid wrapping of times around the
     same day. Also converts "24:00:00" to "00:00:00" and adds a day.
