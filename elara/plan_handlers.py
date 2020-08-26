@@ -524,6 +524,9 @@ class AgentPlansHandler(PlanHandlerTool):
             trip_start_time = None
             prev_mode = "NA"
             prev_act = "NA"
+            leg_mode = None
+            prev_x = None
+            prev_y = None
 
             for stage in plan:
 
