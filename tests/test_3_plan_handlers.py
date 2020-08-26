@@ -3,7 +3,7 @@ import os
 import pytest
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 sys.path.append(os.path.abspath('../elara'))
@@ -87,13 +87,13 @@ test_matsim_time_data = [
 ]
 
 
-@pytest.mark.parametrize("times,final_string", test_matsim_time_data)
-def test_day_wrapping(times, final_string):
-    current_dt = None
-    for new_time_str in times:
-        current_dt = plan_handlers.non_wrapping_datetime(current_dt, new_time_str)
-    assert isinstance(current_dt, datetime)
-    assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
+# @pytest.mark.parametrize("times,final_string", test_matsim_time_data)
+# def test_day_wrapping(times, final_string):
+#     current_dt = None
+#     for new_time_str in times:
+#         current_dt = plan_handlers.non_wrapping_datetime(current_dt, new_time_str)
+#     assert isinstance(current_dt, datetime)
+#     assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
 
 
 non_wrapping_test_matsim_time_data = [
@@ -117,6 +117,47 @@ def test_matsim_time_to_datetime(times, final_string):
             )
     assert isinstance(current_dt, datetime)
     assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
+
+
+test_durations_data = [
+    (
+        None, datetime(year=2020, month=4, day=1, hour=0),
+        timedelta(hours=0), datetime(year=2020, month=4, day=1, hour=0)
+    ),
+    (
+        None, datetime(year=2020, month=4, day=1, hour=1),
+        timedelta(hours=1), datetime(year=2020, month=4, day=1, hour=0)
+    ),
+    (
+        datetime(year=2020, month=4, day=1, hour=1), datetime(year=2020, month=4, day=1, hour=1),
+        timedelta(hours=0), datetime(year=2020, month=4, day=1, hour=1)
+    ),
+    (
+        datetime(year=2020, month=4, day=1, hour=1), datetime(year=2020, month=4, day=1, hour=2),
+        timedelta(hours=1), datetime(year=2020, month=4, day=1, hour=1)
+    ),
+    (
+        datetime(year=2020, month=4, day=1, hour=2), datetime(year=2020, month=4, day=1, hour=1),
+        timedelta(hours=-1), datetime(year=2020, month=4, day=1, hour=2)
+    ),
+]
+@pytest.mark.parametrize("start,end,duration,start_time", test_durations_data)
+def test_safe_duration(start, end, duration, start_time):
+    d, st = plan_handlers.safe_duration(start, end)
+    assert d == duration
+    assert st == start_time
+
+
+test_distance_data = [
+    (0,0,0,0,0),
+    (1,1,1,1,0),
+    (0,0,3,4,5),
+    (3,4,0,0,5),
+    (3,0,0,-4,5)
+]
+@pytest.mark.parametrize("x1,y1,x2,y2,dist", test_distance_data)
+def test_distance(x1,y1,x2,y2,dist):
+    assert plan_handlers.distance(x1,y1,x2,y2) == dist
 
 
 # Normal Case
@@ -240,7 +281,7 @@ def test_agent_plans_handler(agent_plan_handler):
     for person in plans.persons:
         handler.process_plans(person)
 
-    assert len(handler.plans_log.chunk) == 36
+    assert len(handler.plans_log.chunk) == 8
 
 
 @pytest.fixture
@@ -273,20 +314,20 @@ def agent_plans_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager
     return handler
 
 
-@pytest.fixture
-def agent_plans_handler_finalised_bad_plans(agent_plans_handler_bad_plans):
-    handler = agent_plans_handler_bad_plans
-    plans = handler.resources['plans']
-    for plan in plans.persons:
-        handler.process_plans(plan)
-    assert handler.plans_log.chunk[-1].get('end_day') == 1
-    handler.finalise()
-    return handler
+# @pytest.fixture
+# def agent_plans_handler_finalised_bad_plans(agent_plans_handler_bad_plans):
+#     handler = agent_plans_handler_bad_plans
+#     plans = handler.resources['plans']
+#     for plan in plans.persons:
+#         handler.process_plans(plan)
+#     assert handler.plans_log.chunk[-1].get('end_day') == 1
+#     handler.finalise()
+#     return handler
 
 
-def test_finalised_plans_bad_plans(agent_plans_handler_finalised_bad_plans):
-    handler = agent_plans_handler_finalised_bad_plans
-    assert len(handler.results) == 0
+# def test_finalised_plans_bad_plans(agent_plans_handler_finalised_bad_plans):
+#     handler = agent_plans_handler_finalised_bad_plans
+#     assert len(handler.results) == 0
 
 
 ### Agent Highway Distance Handler ###
