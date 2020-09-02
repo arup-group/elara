@@ -569,7 +569,8 @@ class AgentPlansHandler(PlanHandlerTool):
                                 "origin_activity": prev_act,
                                 "destination_activity": act_type,
                                 "act_duration": duration.seconds,
-                                "selected": selected
+                                "selected": selected,
+                                "score": score
                                 }
                             )
                         
