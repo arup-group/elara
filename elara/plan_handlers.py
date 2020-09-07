@@ -506,8 +506,8 @@ class AgentPlansHandler(PlanHandlerTool):
         """
 
         ident = elem.get('id')
-        subpop= self.resources['attributes'].map.get(ident)
-        # license= self.resources['attributes'].license.get(ident)
+        subpop = self.resources['attributes'].map.get(ident)
+        # license = self.resources['attributes'].license.get(ident)
 
         if not self.option == "all" and not subpop == self.option:
             return None
@@ -569,7 +569,8 @@ class AgentPlansHandler(PlanHandlerTool):
                                 "origin_activity": prev_act,
                                 "destination_activity": act_type,
                                 "act_duration": duration.seconds,
-                                "selected": selected
+                                "selected": selected,
+                                "score": score
                                 }
                             )
                         
