@@ -324,15 +324,35 @@ def london_central_cordon(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     """
-    Create a london_central_cordon output for a given mode or modes. Example invocation for modes
-    "car" and "bus", name "test" and scale factor at 20% is:
+    Create a london_central_cordon output for cars. Example invocation for mode
+    "car", name "test" and scale factor at 20% is:
 
-    $ elara benchmarks london-central-cordon car bus -n test -s .2
+    $ elara benchmarks london-central-cordon car -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
     )
-    override["benchmarks"]["london_central_cordon"] = list(modes)
+    override["benchmarks"]["london_central_cordon_car"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def london_modeshares(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a london modeshares benchmark. Example invocation for
+    all modes, name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-modeshares all -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["london_modeshares"] = list(modes)
     config = Config(override=override)
     main(config)
 
