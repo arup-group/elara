@@ -1183,6 +1183,18 @@ class ModeStats(BenchmarkTool):
         return {'modeshare': score}
 
 
+class LondonModeShare(ModeStats):
+
+    requirements = ['mode_share']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 1
+    benchmark_path = get_benchmark_data(
+        os.path.join('london', 'travel-in-london-11', 'modestats.csv')
+    )
+
+
 # Highway Counters
 
 class TestHighwayCounters(PointsCounter):
@@ -1385,6 +1397,7 @@ class BenchmarkWorkStation(WorkStation):
         # "london_peripheral_screen": LondonPeriphScreen,
 
         # old style:
+        "london_modeshares": LondonModeShare,
         "test_pt_interaction_counter": TestPTInteraction,
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
@@ -1411,7 +1424,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_inner_cordon_bus": 1,
         "london_thames_screen_car": 1,
         "london_thames_screen_bus": 1,
-
+        "london_modeshares": 1,
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
         "multimodal_town_modeshare": 1,
