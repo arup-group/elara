@@ -421,6 +421,62 @@ class LondonThamesScreenBus(LinkCounter):
     weight = 1
 
 
+class LondonUKCentralCordonCar(LinkCounter):
+
+    name = 'london_uk_central_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-uk-GLA', 'uk_central_london_car_2017.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonUKCentralCordonBus(LinkCounter):
+
+    name = 'london_uk_central_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-uk-GLA', 'uk_central_london_bus_2017.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonUKInnerCordonCar(LinkCounter):
+
+    name = 'london_uk_inner_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-uk-GLA', 'uk_inner_london_car_2017.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonUKInnerCordonBus(LinkCounter):
+
+    name = 'london_uk_inner_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-uk-GLA', 'uk_inner_london_bus_2017.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['bus']
+    options_enabled = True
+
+    weight = 1
+
+
 # class LondonNorthScreen(LinkCounter):
 
 #     name = 'london_northern_screen'
@@ -1395,6 +1451,10 @@ class BenchmarkWorkStation(WorkStation):
         "london_thames_screen_bus": LondonThamesScreenBus,
         # "london_northern_screen": LondonNorthScreen,
         # "london_peripheral_screen": LondonPeriphScreen,
+        "london_uk_central_cordon_car": LondonUKCentralCordonCar,
+        "london_uk_central_cordon_bus": LondonUKCentralCordonBus,
+        "london_uk_inner_cordon_car": LondonUKInnerCordonCar,
+        "london_uk_inner_cordon_bus": LondonUKInnerCordonBus,
 
         # old style:
         "london_modeshares": LondonModeShare,
