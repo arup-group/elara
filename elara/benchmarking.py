@@ -313,7 +313,7 @@ class LondonCentralCordonCar(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'central_london_car_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_central_london_car_2017.json')
     )
 
     requirements = ['volume_counts']
@@ -327,7 +327,7 @@ class LondonCentralCordonBus(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'central_london_bus_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_central_london_bus_2017.json')
     )
 
     requirements = ['volume_counts']
@@ -341,7 +341,7 @@ class LondonInnerCordonCar(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'inner_london_car_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_inner_london_car_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -355,7 +355,7 @@ class LondonInnerCordonBus(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'inner_london_bus_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_inner_london_bus_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -369,7 +369,7 @@ class LondonBoundaryCordonCar(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'boundary_london_car_2017.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_boundary_london_car_2017.json')
     )
 
     requirements = ['volume_counts']
@@ -383,7 +383,7 @@ class LondonBoundaryCordonBus(LinkCounter):
 
     name = 'london_outer_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'boundary_london_bus_2017.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_boundary_london_bus_2017.json')
     )
 
     requirements = ['volume_counts']
@@ -397,7 +397,7 @@ class LondonThamesScreenCar(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'london_thames_screen_car_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_london_thames_screen_car_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -411,7 +411,7 @@ class LondonThamesScreenBus(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'london_thames_screen_bus_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_london_thames_screen_bus_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -678,7 +678,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'london-subway-board-alight-2017.json')
+        os.path.join('london', 'london-GLA-puma', 'puma-london-subway-board-alight-2017.json')
     )
 
     requirements = ['stop_interactions']
