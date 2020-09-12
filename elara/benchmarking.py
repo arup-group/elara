@@ -58,6 +58,9 @@ class LinkCounter(BenchmarkTool):
     benchmark_data_path = None
     requirements = ['volume_counts']
 
+    def __str__(self):
+        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+
     def __init__(self, config, option) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
@@ -67,39 +70,45 @@ class LinkCounter(BenchmarkTool):
         super().__init__(config, option)
 
         self.mode = option
+        
+        self.logger.info(
+            f"Initiating {self.__str__()}"
+            )
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
-        missing_bms = 0
-        total_bms = 0
+        missing_counters = 0
+        total_counters = 0
         
-        if self.mode not in self.counts.keys():
-            self.logger.warning(
-                f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
+        mode_counts = self.counts.get(self.mode)
+        if self.mode is None:
+            raise UserWarning(
+                f"Mode: {self.mode} not found in {self.__str__}"
             )
 
-        mode_counts = self.counts.get(self.mode)
-        
         for counter_id, counter_location in mode_counts.items():
-
             for direction, counter in counter_location.items():
-
-                total_bms = total_bms + 1
+                total_counters += 1
 
                 links = counter['links']
+                if not links:      
+                    missing_counters += 1
+                    self.logger.debug(
+                        f"Benchmark data has no links - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
+                        )
 
-                if not links:
-                    
-                    missing_bms = missing_bms + 1
-                    self.logger.warning(f"Benchmarks feature no snapped links - suggests error with Bench (i.e. MATSIM network has not matched to BM).")
-
-        # If more than 33% of BM's are missing, hard fails
-        self.logger.warning("{} percentage of BMs are missing snapped links.".format(missing_bms/total_bms*100.0))
-        
-        if missing_bms / total_bms > 0.66:
-
-            raise UserWarning(f"Exiting for your own good - too many BM's (over 33%) are missing matched links. This is an issue with Bench")
+        # Check for number of missing BM links. Note this is a fault with the BM (ie missing links)
+        missing = missing_counters / total_counters
+        self.logger.debug(f"{missing*100}% of BMs are missing snapped links.")
+        if total_counters == missing_counters:
+            raise UserWarning(
+                f"No links found for {self.__str__}"
+            )
+        if missing > 0.5:
+            self.logger.error(
+                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no links."
+                )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -256,7 +265,8 @@ class LinkCounter(BenchmarkTool):
 
         if failed_snaps:
             report = 100 * failed_snaps / (snaps + failed_snaps)
-            self.logger.warning(f" {report}% of links not found for bm: {self.name}")
+            self.logger.error(
+                f" {report}% of links not found in sim results for {self.mode}: {self.name}")
 
         # build results df
         bm_results_df = pd.DataFrame(bm_results)
@@ -456,6 +466,9 @@ class TransitInteraction(BenchmarkTool):
     benchmark_data_path = None
     requirements = ['stop_interactions']
 
+    def __str__(self):
+        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+
     def __init__(self, config, option) -> None:
         """
         PT Interaction (boardings and alightings) benchmarker for json formatted {mode: {id: {dir: {
@@ -467,13 +480,44 @@ class TransitInteraction(BenchmarkTool):
 
         self.mode = option
 
+        self.logger.info(
+            f"Initiating {self.__str__()}"
+            )
+
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
-        if self.mode not in self.counts.keys():
-            self.logger.warning(
-                f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
+        missing_counters = 0
+        total_counters = 0
+
+        mode_counts = self.counts.get(self.mode)
+        if self.mode is None:
+            raise UserWarning(
+                f"Mode: {self.mode} not found in {self.__str__}"
             )
+
+        for counter_id, counter_location in mode_counts.items():
+            for direction, counter in counter_location.items():
+                total_counters += 1
+
+                stops = counter['stop_ids']
+                if not stops:      
+                    missing_counters += 1
+                    self.logger.debug(
+                        f"Benchmark data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
+                        )
+
+        # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
+        missing = missing_counters / total_counters
+        self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
+        if total_counters == missing_counters:
+            raise UserWarning(
+                f"No stops found for {self.__str__}"
+            )
+        if missing > 0.5:
+            self.logger.error(
+                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
+                )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
