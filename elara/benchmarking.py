@@ -1225,7 +1225,7 @@ class ModeStats(BenchmarkTool):
         # get scores and write outputs
         score = sum(np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model)))
 
-        return {'modeshare': score}
+        return {'counters': score}
 
 
 class LondonModeShare(ModeStats):
@@ -1234,7 +1234,7 @@ class LondonModeShare(ModeStats):
     valid_options = ['all']
     options_enabled = True
 
-    weight = 1
+    weight = 2
     benchmark_path = get_benchmark_data(
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
