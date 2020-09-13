@@ -553,6 +553,7 @@ class TransitInteraction(BenchmarkTool):
             results_df = pd.read_csv(results_path, index_col=0)
             results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
             results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
+            results_df.index = results_df.index.map(str)  # indices converted to strings
             results_df.index.name = 'stop_id'
             model_results[direction] = results_df
 
@@ -581,7 +582,7 @@ class TransitInteraction(BenchmarkTool):
 
                 # combine mode stop counts
                 for stop_id in stops:
-                    if stop_id not in model_results[direction].index:
+                    if str(stop_id) not in model_results[direction].index:
                         failed_snaps += 1
                         self.logger.warning(
                             f" Missing model stop: {stop_id}, zero filling count for benchmark: "
@@ -589,7 +590,7 @@ class TransitInteraction(BenchmarkTool):
                         )
                     else:
                         snaps += 1
-                        sim_result += np.array(model_results[direction].loc[stop_id, bm_hours])
+                        sim_result += np.array(model_results[direction].loc[str(stop_id), bm_hours])
 
                 if not sum(sim_result):
                     found = False
