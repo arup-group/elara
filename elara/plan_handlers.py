@@ -142,9 +142,10 @@ class ModeShareHandler(PlanHandlerTool):
                             route = stage.xpath('route')[0].text.split('===')[-2]
                             mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
                         if not mode:
-                            self.logger.error(f"Not found mode for "
-                                              f"agent: {ident}, "
-                                              f"route: {route}")
+                            mode = 'subway'
+                            # self.logger.error(f"Not found mode for "
+                            #                   f"agent: {ident}, "
+                            #                   f"route: {route}")
                         else:
                             modes.append(mode)
 
@@ -383,9 +384,10 @@ class AgentLogsHandler(PlanHandlerTool):
                             mode = self.resources['transit_schedule'].route_to_mode_map.get(route_id)
 
                             if not mode:
-                                raise UserWarning(f"Not found mode for "
-                                                  f"agent: {ident}, "
-                                                  f"route: {route_id}")
+                                mode = "subway"
+                                # raise UserWarning(f"Not found mode for "
+                                #                   f"agent: {ident}, "
+                                #                   f"route: {route_id}")
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
