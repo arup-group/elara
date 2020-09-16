@@ -408,7 +408,7 @@ class LondonThamesScreenCar(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-puma', 'puma_london_thames_screen_car_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_thames_screen_car_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -422,7 +422,7 @@ class LondonThamesScreenBus(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-puma', 'puma_london_thames_screen_bus_2016.json')
+        os.path.join('london', 'london-GLA-puma', 'puma_thames_screen_bus_2016.json')
     )
 
     requirements = ['volume_counts']
