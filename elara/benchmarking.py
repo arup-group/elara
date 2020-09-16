@@ -189,7 +189,7 @@ class LinkCounter(BenchmarkTool):
                     found = True
 
                 # calc score
-                counter_diff = np.absolute(sim_result - counts_array)
+                counter_diff = (sim_result - counts_array) ** 2
 
                 if not sum(counter_diff):
                     counter_score = 0
@@ -599,7 +599,7 @@ class TransitInteraction(BenchmarkTool):
                     found = True
 
                 # calc score
-                counter_diff = np.absolute(sim_result - counts_array)
+                counter_diff = (sim_result - counts_array) ** 2
 
                 if not sum(counter_diff):
                     counter_score = 0
@@ -1224,7 +1224,7 @@ class ModeStats(BenchmarkTool):
         self.write_csv(summary_df, csv_path, write_path=write_path)
 
         # get scores and write outputs
-        score = sum(np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model)))
+        score = sum(((np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model))) * 100) ** 2)
 
         return {'counters': score}
 
