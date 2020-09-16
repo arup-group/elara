@@ -660,6 +660,153 @@ def test_stop_interaction_finalise_bus(
             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
+# Stop to stop volumes
+@pytest.fixture
+def test_bus_stop_to_stop_handler(test_config, input_manager):
+    handler = event_handlers.PassengerStopToStopCounts(test_config, 'bus')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert 'not_applicable' in handler.classes
+    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert list(handler.class_indices.keys()) == handler.classes
+    assert handler.counts.shape == (
+        len(resources['transit_schedule'].stop_gdf),
+        len(resources['transit_schedule'].stop_gdf),
+        len(resources['attributes'].classes),
+        periods
+    )
+    return handler
+
+
+@pytest.fixture
+def veh_arrives_facilty_event1():
+    time = 6.5 * 60 * 60
+    string = f"""
+        <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus1" facility="home_stop_out" delay="Infinity"/>
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def veh_arrives_facilty_event2():
+    time = 7.5 * 60 * 60
+    string = f"""
+        <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus1" facility="work_stop_in" delay="Infinity"/>
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def veh_arrives_facilty_event3():
+    time = 8.5 * 60 * 60
+    string = f"""
+        <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus1" facility="home_stop_out" delay="Infinity"/>
+        """
+    return etree.fromstring(string)
+
+
+def test_veh_tracker_events(
+    test_bus_stop_to_stop_handler,
+    veh_arrives_facilty_event1,
+    veh_arrives_facilty_event2
+    ):
+    handler = test_bus_stop_to_stop_handler
+    handler.process_event(veh_arrives_facilty_event1)
+    assert handler.veh_tracker == {"bus1":"home_stop_out"}
+    handler.process_event(veh_arrives_facilty_event2)
+    assert handler.veh_tracker == {"bus1":"work_stop_in"}
+
+def test_stop_to_stop_veh_interaction_process_single_event_driver(
+        test_bus_stop_to_stop_handler,
+        veh_arrives_facilty_event1,
+        driver_enters_veh_event,
+        ):
+    handler = test_bus_stop_to_stop_handler
+    handler.process_event(veh_arrives_facilty_event1)
+    handler.process_event(driver_enters_veh_event)
+    assert handler.veh_occupancy == {}
+    assert np.sum(handler.counts) == 0
+
+
+def test_stop_to_stop_process_events(
+        test_bus_stop_to_stop_handler,
+        veh_arrives_facilty_event1,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        veh_arrives_facilty_event2,
+        person_leaves_veh_event,
+        veh_arrives_facilty_event3
+        ):
+    handler = test_bus_stop_to_stop_handler
+    handler.process_event(veh_arrives_facilty_event1)
+    handler.process_event(person_enters_veh_event)
+    handler.process_event(person2_enters_veh_event)
+    handler.process_event(veh_arrives_facilty_event2)
+
+    assert handler.veh_occupancy == {'bus1': {'poor': 1, 'rich': 1}}
+    assert np.sum(handler.counts) == 2
+
+    handler.process_event(person_leaves_veh_event)
+    handler.process_event(veh_arrives_facilty_event3)
+
+    assert handler.veh_occupancy == {'bus1': {'poor': 0, 'rich': 1}}
+    assert np.sum(handler.counts) == 3
+
+
+# def test_stop_to_stop_interaction_process_events(
+#         test_bus_stop_to_stop_handler,
+#         veh_arrives_facilty_event1,
+#         person_enters_veh_event,
+#         person2_enters_veh_event,
+#         veh_arrives_facilty_event2,
+#         person_leaves_veh_event,
+#         veh_arrives_facilty_event3
+# ):
+#     handler = test_bus_stop_to_stop_handler
+#     handler.process_event(veh_arrives_facilty_event1)
+#     handler.process_event(person_enters_veh_event)
+#     handler.process_event(person2_enters_veh_event)
+#     handler.process_event(veh_arrives_facilty_event2)
+#     handler.process_event(person_leaves_veh_event)
+#     handler.process_event(veh_arrives_facilty_event3)
+
+#     link_index = handler.elem_indices['home_stop_out']
+#     class_index = handler.class_indices['rich']
+#     period = 6
+
+#     assert np.sum(handler.boardings[link_index, :, :]) == 2
+#     assert np.sum(handler.boardings[:, :, period]) == 2
+#     assert handler.boardings[link_index, class_index, period] == 1
+#     link_index = handler.elem_indices['work_stop_in']
+#     class_index = handler.class_indices['poor']
+#     period = 6
+#     assert np.sum(handler.alightings[link_index, :, :]) == 1
+#     assert np.sum(handler.alightings[:, :, period]) == 1
+#     assert handler.alightings[link_index, class_index, period] == 1
+
+
+# def test_stop_interaction_finalise_bus(
+#         test_bus_passenger_interaction_handler,
+#         events
+# ):
+#     handler = test_bus_passenger_interaction_handler
+#     for elem in events:
+#         handler.process_event(elem)
+#     handler.finalise()
+#     for name, gdf in handler.result_dfs.items():
+#         cols = list(range(handler.config.time_periods))
+#         for c in cols:
+#             assert c in gdf.columns
+#         df = gdf.loc[:, cols]
+#         assert np.sum(df.values) == 4 / handler.config.scale_factor
+#         if 'class' in gdf.columns:
+#             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+
+
 # Event Handler Manager
 def test_load_event_handler_manager(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)

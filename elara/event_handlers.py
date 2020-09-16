@@ -1162,60 +1162,21 @@ class PassengerStopToStopCounts(EventHandlerTool):
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+        names = ['origin', 'destination', 'class', 'hour']
+        indexes = [self.elem_ids, self.elem_ids, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index('elem')
+        counts_df = counts_df.reset_index().set_index(['origin', 'destination'])
 
         # Create volume counts output
-        key = "route_passenger_counts_{}".format(self.option)
+        key = "stop_to_stop_passenger_counts_{}".format(self.option)
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
-        total_counts = self.counts.sum(1)
-
-        totals_df = pd.DataFrame(
-            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
-        ).sort_index()
+        totals_df = counts_df.reset_index().groupby('origin', 'destination', 'class').sum().set_index(['origin', 'destination'])
         key = "route_passenger_counts_{}_total".format(self.option)
         self.result_dfs[key] = totals_df
-
-    def finalise(self):
-        """
-        Following event processing, the raw events table will contain passenger
-        counts by link by time slice. The only thing left to do is scale by the
-        sample size and create dataframes.
-        """
-
-        # Scale final counts
-        self.counts *= 1.0 / self.config.scale_factor
-
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index('elem')
-
-        # Create volume counts output
-        key = "passenger_counts_{}".format(self.option)
-        self.result_dfs[key] = self.elem_gdf.join(
-            counts_df, how="left"
-        )
-
-        # calc sum across all recorded attribute classes
-        total_counts = self.counts.sum(1)
-
-        totals_df = pd.DataFrame(
-            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
-        ).sort_index()
-
-        key = "passenger_counts_{}_total".format(self.option)
-        self.result_dfs[key] = self.elem_gdf.join(
-            totals_df, how="left"
-        )
 
 
 class EventHandlerWorkStation(WorkStation):
