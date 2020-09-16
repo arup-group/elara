@@ -141,13 +141,13 @@ class ModeShareHandler(PlanHandlerTool):
                         if mode == 'pt':
                             route = stage.xpath('route')[0].text.split('===')[-2]
                             mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
-                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
                         if not mode:
                             mode = 'subway'
                             # self.logger.error(f"Not found mode for "
                             #                   f"agent: {ident}, "
                             #                   f"route: {route}")
                         else:
+                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
                             modes.append(mode)
 
                     elif stage.tag == 'activity':
