@@ -993,6 +993,200 @@ class StopInteractions(EventHandlerTool):
             )
 
 
+class PassengerStopToStopCounts(EventHandlerTool):
+    """
+    Build Passenger Counts between stops for given mode in mode vehicles.
+    """
+
+    requirements = [
+        'events',
+        'network',
+        'transit_schedule',
+        'attributes',
+    ]
+    invalid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+        self.total_counts = None
+        self.veh_occupancy = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Check for car
+        if self.option == 'car':
+            raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
+
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
+
+        # Initialise element attributes
+        self.elem_gdf = resources['network'].link_gdf
+
+        links = resources['network'].mode_to_links_map.get(self.option)
+        if links is None:
+            self.logger.warning(
+                f"""
+                No viable links found for mode:{self.option} in Network, 
+                this may be because the Network modes do not match the configured 
+                modes. Elara will continue with all links found in network.
+                """
+                )
+        else:
+            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[links, :]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise passenger count table
+        self.counts = np.zeros((len(self.elem_ids),
+                                len(self.classes),
+                                self.config.time_periods))
+
+        # Initialise vehicle occupancy mapping
+        self.veh_occupancy = dict()  # vehicle_id : occupancy
+
+        self.total_counts = None
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
+        events to determine passenger volumes by link.
+        :param elem: Event XML element
+
+        The events of interest to this handler look like:
+
+          <event time="300.0"
+                 type="PersonEntersVehicle"
+                 person="pt_veh_41173_bus_Bus"
+                 vehicle="veh_41173_bus"/>
+          <event time="600.0"
+                 type="PersonLeavesVehicle"
+                 person="pt_veh_41173_bus_Bus"
+                 vehicle="veh_41173_bus"/>
+          <event time="25656.0"
+                 type="left link"
+                 vehicle="veh_41173_bus"
+                 link="2-3"  />
+          <event time="67360.0"
+                 type="vehicle leaves traffic"
+                 person="pt_bus4_Bus"
+                 link="2-1"
+                 vehicle="bus4"
+                 networkMode="car"
+                 relativePosition="1.0"  />
+        """
+        event_type = elem.get("type")
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.option:
+                attribute_class = self.resources['attributes'].map[agent_id]
+
+                if self.veh_occupancy.get(veh_id, None) is None:
+                    self.veh_occupancy[veh_id] = {attribute_class: 1}
+                elif not self.veh_occupancy[veh_id].get(attribute_class, None):
+                    self.veh_occupancy[veh_id][attribute_class] = 1
+                else:
+                    self.veh_occupancy[veh_id][attribute_class] += 1
+        elif event_type == "PersonLeavesVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.option:
+                attribute_class = self.resources['attributes'].map[agent_id]
+
+                if not self.veh_occupancy[veh_id][attribute_class]:
+                    pass
+                else:
+                    self.veh_occupancy[veh_id][attribute_class] -= 1
+                    if not self.veh_occupancy[veh_id]:
+                        self.veh_occupancy.pop(veh_id, None)
+
+        elif event_type == "left link" or event_type == "vehicle leaves traffic":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            if veh_mode == self.option:
+                # Increment link passenger volumes
+                time = float(elem.get("time"))
+                link = elem.get("link")
+                occupancy_dict = self.veh_occupancy.get(veh_id, {})
+
+                for attribute_class, occupancy in occupancy_dict.items():
+                    x, y, z = table_position(
+                        self.elem_indices,
+                        self.class_indices,
+                        self.config.time_periods,
+                        link,
+                        attribute_class,
+                        time
+                    )
+                    self.counts[x, y, z] += occupancy
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain passenger
+        counts by link by time slice. The only thing left to do is scale by the
+        sample size and create dataframes.
+        """
+
+        # Scale final counts
+        self.counts *= 1.0 / self.config.scale_factor
+
+        names = ['elem', 'class', 'hour']
+        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+        counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.reset_index().set_index('elem')
+
+        # Create volume counts output
+        key = "passenger_counts_{}".format(self.option)
+        self.result_dfs[key] = self.elem_gdf.join(
+            counts_df, how="left"
+        )
+
+        # calc sum across all recorded attribute classes
+        total_counts = self.counts.sum(1)
+
+        totals_df = pd.DataFrame(
+            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+        ).sort_index()
+
+        key = "passenger_counts_{}_total".format(self.option)
+        self.result_dfs[key] = self.elem_gdf.join(
+            totals_df, how="left"
+        )
+
+
 class EventHandlerWorkStation(WorkStation):
 
     """
