@@ -1191,7 +1191,27 @@ class PassengerStopToStopCounts(EventHandlerTool):
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
-        totals_df = counts_df.reset_index().groupby(['origin', 'destination']).sum().reset_index().set_index(['origin', 'destination'])
+        totals_df = counts_df.reset_index().groupby(
+            ['origin', 'destination']
+            ).sum().reset_index().set_index(['origin', 'destination'])
+
+        # Join stop data and build geometry
+        for n in ("origin", "destination"):
+            totals_df = totals_df.reset_index().set_index(n)
+            stop_info = self.elem_gdf.copy()
+            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+            totals_df = totals_df.join(
+                    stop_info, how="left"
+                )
+            totals_df.index.name = n
+
+        totals_df = totals_df.reset_index().set_index(['origin', 'destination'])
+
+        totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.origin_geometry, totals_df.destination_geometry)]
+        totals_df.drop('origin_geometry', axis=1, inplace=True)
+        totals_df.drop('destination_geometry', axis=1, inplace=True)
+        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
+
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
         key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
         self.result_dfs[key] = totals_df
