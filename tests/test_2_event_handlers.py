@@ -756,55 +756,62 @@ def test_stop_to_stop_process_events(
     assert handler.veh_occupancy == {'bus1': {'poor': 0, 'rich': 1}}
     assert np.sum(handler.counts) == 3
 
+    stop_index1 = handler.elem_indices['home_stop_out']
+    stop_index2 = handler.elem_indices['work_stop_in']
+    stop_index3 = handler.elem_indices['home_stop_in']
+    class_index = handler.class_indices['rich']
+    period = 7
 
-# def test_stop_to_stop_interaction_process_events(
-#         test_bus_stop_to_stop_handler,
-#         veh_arrives_facilty_event1,
-#         person_enters_veh_event,
-#         person2_enters_veh_event,
-#         veh_arrives_facilty_event2,
-#         person_leaves_veh_event,
-#         veh_arrives_facilty_event3
-# ):
-#     handler = test_bus_stop_to_stop_handler
-#     handler.process_event(veh_arrives_facilty_event1)
-#     handler.process_event(person_enters_veh_event)
-#     handler.process_event(person2_enters_veh_event)
-#     handler.process_event(veh_arrives_facilty_event2)
-#     handler.process_event(person_leaves_veh_event)
-#     handler.process_event(veh_arrives_facilty_event3)
+    assert np.sum(handler.counts[stop_index1, stop_index2, :, :]) == 2
+    assert np.sum(handler.counts[stop_index1, stop_index2, class_index, :]) == 1
+    assert np.sum(handler.counts[:, :, :, period]) == 2
 
-#     link_index = handler.elem_indices['home_stop_out']
-#     class_index = handler.class_indices['rich']
-#     period = 6
+    period = 8
 
-#     assert np.sum(handler.boardings[link_index, :, :]) == 2
-#     assert np.sum(handler.boardings[:, :, period]) == 2
-#     assert handler.boardings[link_index, class_index, period] == 1
-#     link_index = handler.elem_indices['work_stop_in']
-#     class_index = handler.class_indices['poor']
-#     period = 6
-#     assert np.sum(handler.alightings[link_index, :, :]) == 1
-#     assert np.sum(handler.alightings[:, :, period]) == 1
-#     assert handler.alightings[link_index, class_index, period] == 1
+    assert np.sum(handler.counts[stop_index2, stop_index1, :, :]) == 1
+    assert np.sum(handler.counts[:, :, class_index, :]) == 2
+    assert np.sum(handler.counts[:, :, :, period]) == 1
 
 
-# def test_stop_interaction_finalise_bus(
-#         test_bus_passenger_interaction_handler,
-#         events
-# ):
-#     handler = test_bus_passenger_interaction_handler
-#     for elem in events:
-#         handler.process_event(elem)
-#     handler.finalise()
-#     for name, gdf in handler.result_dfs.items():
-#         cols = list(range(handler.config.time_periods))
-#         for c in cols:
-#             assert c in gdf.columns
-#         df = gdf.loc[:, cols]
-#         assert np.sum(df.values) == 4 / handler.config.scale_factor
-#         if 'class' in gdf.columns:
-#             assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+def test_stop_to_stop_finalise_bus(
+        test_bus_stop_to_stop_handler,
+        veh_arrives_facilty_event1,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        veh_arrives_facilty_event2,
+        person_leaves_veh_event,
+        veh_arrives_facilty_event3
+):
+    handler = test_bus_stop_to_stop_handler
+    events = [
+        veh_arrives_facilty_event1,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        veh_arrives_facilty_event2,
+        person_leaves_veh_event,
+        veh_arrives_facilty_event3
+    ]
+    for elem in events:
+        handler.process_event(elem)
+    
+    handler.finalise()
+    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus"]
+    cols = list(range(handler.config.time_periods))
+    for c in cols:
+        assert c in gdf.columns
+    df = gdf.loc[:, cols]
+    assert np.sum(df.values) == 3 / handler.config.scale_factor
+    if 'class' in gdf.columns:
+        assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+
+    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_total"]
+    cols = list(range(handler.config.time_periods))
+    for c in cols:
+        assert c in gdf.columns
+    df = gdf.loc[:, cols]
+    assert np.sum(df.values) == 3 / handler.config.scale_factor
+    if 'class' in gdf.columns:
+        assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
 
 # Event Handler Manager

@@ -6,6 +6,7 @@ from typing import Union, Tuple, Optional
 import logging
 import os
 import networkx as nx
+from shapely.geometry import LineString
 
 
 from elara.factory import WorkStation, Tool
@@ -1167,15 +1168,31 @@ class PassengerStopToStopCounts(EventHandlerTool):
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index(['origin', 'destination'])
+
+        # Join stop data and build geometry
+        for n in ("origin", "destination"):
+            counts_df = counts_df.reset_index().set_index(n)
+            stop_info = self.elem_gdf.copy()
+            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+            counts_df = counts_df.join(
+                    stop_info, how="left"
+                )
+            counts_df.index.name = n
+
+        counts_df = counts_df.reset_index().set_index(['origin', 'destination', 'class'])
+
+        counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.origin_geometry, counts_df.destination_geometry)]
+        counts_df.drop('origin_geometry', axis=1, inplace=True)
+        counts_df.drop('destination_geometry', axis=1, inplace=True)
+        counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
         # Create volume counts output
         key = "stop_to_stop_passenger_counts_{}".format(self.option)
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
-        totals_df = counts_df.reset_index().groupby('origin', 'destination', 'class').sum().set_index(['origin', 'destination'])
-        key = "route_passenger_counts_{}_total".format(self.option)
+        totals_df = counts_df.reset_index().groupby(['origin', 'destination']).sum().reset_index().set_index(['origin', 'destination'])
+        key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
         self.result_dfs[key] = totals_df
 
 
@@ -1192,6 +1209,7 @@ class EventHandlerWorkStation(WorkStation):
         "stop_interactions": StopInteractions,
         "waiting_times": AgentWaitingTimes,
         "graph": AgentGraph,
+        "passenger_stop_to_stop_loading": PassengerStopToStopCounts
     }
 
     def __init__(self, config):
