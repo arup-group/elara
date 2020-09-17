@@ -1192,6 +1192,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
 
         # calc sum across all recorded attribute classes
         totals_df = counts_df.reset_index().groupby(['origin', 'destination']).sum().reset_index().set_index(['origin', 'destination'])
+        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
         key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
         self.result_dfs[key] = totals_df
 
