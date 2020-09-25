@@ -724,7 +724,7 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-puma', 'puma-london-subway-board-alight-2017.json')
+        os.path.join('london', 'london-uk-gla-v2', 'puma-london-subway-board-alight-2017.json')
     )
 
     requirements = ['stop_interactions']
