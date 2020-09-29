@@ -91,7 +91,7 @@ class LinkCounter(BenchmarkTool):
 
             if counter_id == "TOTAL":
                 continue
-            
+
             for direction, counter in counter_location.items():
                 total_counters += 1
 
@@ -587,6 +587,12 @@ class TransitInteraction(BenchmarkTool):
                 counts_array = np.array(list(counter['counts'].values()))
 
                 sim_result = np.array([0.0 for _ in range(len(bm_hours))])
+
+                # check if direction available
+                if not direction in model_results:
+                    raise UserWarning(
+                        f"Direction: {direction} not available in model results"
+                        )
 
                 # check if count times are available
                 if not set(bm_hours) <= set(model_results[direction].columns):
