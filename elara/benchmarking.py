@@ -88,6 +88,10 @@ class LinkCounter(BenchmarkTool):
             )
 
         for counter_id, counter_location in mode_counts.items():
+
+            if counter_id == "TOTAL":
+                continue
+            
             for direction, counter in counter_location.items():
                 total_counters += 1
 
@@ -463,7 +467,6 @@ class LondonThamesScreenBus(LinkCounter):
 #     weight = 1
 
 
-
 class TransitInteraction(BenchmarkTool):
 
     name = None
@@ -501,6 +504,10 @@ class TransitInteraction(BenchmarkTool):
             )
 
         for counter_id, counter_location in mode_counts.items():
+
+            if counter_id == "TOTAL":
+                continue
+
             for direction, counter in counter_location.items():
                 total_counters += 1
 
