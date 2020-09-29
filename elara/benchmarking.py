@@ -155,6 +155,9 @@ class LinkCounter(BenchmarkTool):
 
         for counter_id, counter_location in mode_counts.items():
 
+            if counter_id == "TOTAL":
+                continue
+
             for direction, counter in counter_location.items():
 
                 links = counter['links']
@@ -567,6 +570,9 @@ class TransitInteraction(BenchmarkTool):
 
         for counter_id, counter_location in mode_counts.items():
 
+            if counter_id == "TOTAL":
+                continue
+
             for direction, counter in counter_location.items():
 
                 stops = counter['stop_ids']
@@ -734,255 +740,255 @@ class LondonRODS(TransitInteraction):
     weight = 1
 
 
-class PassengerStopToStop(BenchmarkTool):
+# class PassengerStopToStop(BenchmarkTool):
 
-    name = None
-    benchmark_data_path = None
-    requirements = ['passenger_stop_to_stop_loading']
+#     name = None
+#     benchmark_data_path = None
+#     requirements = ['passenger_stop_to_stop_loading']
 
-    def __str__(self):
-        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+#     def __str__(self):
+#         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, option) -> None:
-        """
-        PT Volume count (between stops) benchmarker for json formatted {mode: {o: {d: {
-        o_stop_ids: [],
-        d_stop_ids: [],
-        counts: {},
-        line: str
-        }}}}.
-        :param config: Config object
-        :param option: str, mode
-        """
-        super().__init__(config, option)
+#     def __init__(self, config, option) -> None:
+#         """
+#         PT Volume count (between stops) benchmarker for json formatted {mode: {o: {d: {
+#         o_stop_ids: [],
+#         d_stop_ids: [],
+#         counts: {},
+#         line: str
+#         }}}}.
+#         :param config: Config object
+#         :param option: str, mode
+#         """
+#         super().__init__(config, option)
 
-        self.mode = option
+#         self.mode = option
 
-        self.logger.info(
-            f"Initiating {self.__str__()}"
-            )
+#         self.logger.info(
+#             f"Initiating {self.__str__()}"
+#             )
 
-        with open(self.benchmark_data_path) as json_file:
-            self.counts = json.load(json_file)
+#         with open(self.benchmark_data_path) as json_file:
+#             self.counts = json.load(json_file)
 
-        missing_counters = 0
-        total_counters = 0
+#         missing_counters = 0
+#         total_counters = 0
 
-        mode_counts = self.counts.get(self.mode)
-        if self.mode is None:
-            raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__}"
-            )
+#         mode_counts = self.counts.get(self.mode)
+#         if self.mode is None:
+#             raise UserWarning(
+#                 f"Mode: {self.mode} not found in {self.__str__}"
+#             )
 
-        for o, d_data in mode_counts.items():
-            for d, count_data in counter_location.items():
-                total_counters += 1
+#         for o, d_data in mode_counts.items():
+#             for d, count_data in counter_location.items():
+#                 total_counters += 1
 
-                o_stops = count_data['o_stop_ids']
-                d_stops = count_data['d_stop_ids']
-                if not o_stops or not d_stops:      
-                    missing_counters += 1
-                    self.logger.debug(
-                        f"Benchmark data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
-                        )
+#                 o_stops = count_data['o_stop_ids']
+#                 d_stops = count_data['d_stop_ids']
+#                 if not o_stops or not d_stops:      
+#                     missing_counters += 1
+#                     self.logger.debug(
+#                         f"Benchmark data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
+#                         )
 
-        # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
-        missing = missing_counters / total_counters
-        self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
-        if total_counters == missing_counters:
-            raise UserWarning(
-                f"No stops found for {self.__str__}"
-            )
-        if missing > 0.5:
-            self.logger.error(
-                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
-                )
+#         # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
+#         missing = missing_counters / total_counters
+#         self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
+#         if total_counters == missing_counters:
+#             raise UserWarning(
+#                 f"No stops found for {self.__str__}"
+#             )
+#         if missing > 0.5:
+#             self.logger.error(
+#                 f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
+#                 )
 
-    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
-        """
-        Builds paths for modal volume count outputs, loads and combines for scoring.
-        :return: Dictionary of scores {'name': float}
-        """
+#     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
+#         """
+#         Builds paths for modal volume count outputs, loads and combines for scoring.
+#         :return: Dictionary of scores {'name': float}
+#         """
 
-        logger.info(f'building {self.__str__()}')
+#         logger.info(f'building {self.__str__()}')
 
-        # extract benchmark mode count
-        mode_counts = self.counts.get(self.mode)
+#         # extract benchmark mode count
+#         mode_counts = self.counts.get(self.mode)
 
-        if not mode_counts:
-            self.logger.warning(
-                f"{self.mode} not available, returning score of one"
-            )
-            return {'counters': 1}
+#         if not mode_counts:
+#             self.logger.warning(
+#                 f"{self.mode} not available, returning score of one"
+#             )
+#             return {'counters': 1}
 
-        # extract counters
-        o_ids = mode_counts.keys()
-        if not len(o_ids):
-            self.logger.warning(
-                f"no benchmarks found for {self.mode}, returning score of one"
-            )
-            return {'counters': 1}
+#         # extract counters
+#         o_ids = mode_counts.keys()
+#         if not len(o_ids):
+#             self.logger.warning(
+#                 f"no benchmarks found for {self.mode}, returning score of one"
+#             )
+#             return {'counters': 1}
 
-        # Extract simulation results
-        # Build paths and load appropriate volume counts from previous workstation
-        results_name = f"{self.config.name}_stop_to_stop_passenger_counts_{self.mode}.csv"
-        results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=False)
-        results_df = results_df.set_index(["origin", "destination"])
-        results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
-        results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
-        # results_df.index = results_df.index.map(str)  # indices converted to strings
-        # results_df.index.name = 'stop_id'
+#         # Extract simulation results
+#         # Build paths and load appropriate volume counts from previous workstation
+#         results_name = f"{self.config.name}_stop_to_stop_passenger_counts_{self.mode}.csv"
+#         results_path = os.path.join(self.config.output_path, results_name)
+#         results_df = pd.read_csv(results_path, index_col=False)
+#         results_df = results_df.set_index(["origin", "destination"])
+#         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+#         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
+#         # results_df.index = results_df.index.map(str)  # indices converted to strings
+#         # results_df.index.name = 'stop_id'
 
-        # build benchmark results
-        snaps = 0
-        failed_snaps = 0
-        bm_results = []
-        bm_summary = []
-        bm_scores = []
+#         # build benchmark results
+#         snaps = 0
+#         failed_snaps = 0
+#         bm_results = []
+#         bm_summary = []
+#         bm_scores = []
 
-        for o_id, d_data in mode_counts.items():
-            for d_id, count_data in d_data.items():
-                o_stops = count_data['o_stop_ids']
-                d_stops = count_data['d_stop_ids']
-                bm_hours = list(count_data['counts'])
-                counts_array = np.array(list(count_data['counts'].values()))
-                line = count_data['line']
+#         for o_id, d_data in mode_counts.items():
+#             for d_id, count_data in d_data.items():
+#                 o_stops = count_data['o_stop_ids']
+#                 d_stops = count_data['d_stop_ids']
+#                 bm_hours = list(count_data['counts'])
+#                 counts_array = np.array(list(count_data['counts'].values()))
+#                 line = count_data['line']
 
-                sim_result = np.array([0.0 for _ in range(len(bm_hours))])
+#                 sim_result = np.array([0.0 for _ in range(len(bm_hours))])
 
-                # check if count times are available
-                if not set(bm_hours) <= set(results_df.columns):
-                    raise UserWarning(
-                        f"Hours: {bm_hours} not available in "
-                        f"results.columns: {results_df.columns}")
+#                 # check if count times are available
+#                 if not set(bm_hours) <= set(results_df.columns):
+#                     raise UserWarning(
+#                         f"Hours: {bm_hours} not available in "
+#                         f"results.columns: {results_df.columns}")
 
-                # combine mode stop counts
-                for stop_id in o_stops:
-                    if str(stop_id) not in results_df.index.origin:
-                        failed_snaps += 1
-                        self.logger.warning(
-                            f" Missing model stop: {stop_id}, "
-                            "zero filling count for benchmark: "
-                            f"{counter_id}"
-                        )
-                    else:
-                        snaps += 1
-                        sim_result += np.array(
-                            model_results[direction].loc[str(stop_id), bm_hours]
-                            )
+#                 # combine mode stop counts
+#                 for stop_id in o_stops:
+#                     if str(stop_id) not in results_df.index.origin:
+#                         failed_snaps += 1
+#                         self.logger.warning(
+#                             f" Missing model stop: {stop_id}, "
+#                             "zero filling count for benchmark: "
+#                             f"{counter_id}"
+#                         )
+#                     else:
+#                         snaps += 1
+#                         sim_result += np.array(
+#                             model_results[direction].loc[str(stop_id), bm_hours]
+#                             )
 
-                if not sum(sim_result):
-                    found = False
-                else:
-                    found = True
+#                 if not sum(sim_result):
+#                     found = False
+#                 else:
+#                     found = True
 
-                # calc score
-                counter_diff = np.absolute(sim_result - counts_array)
+#                 # calc score
+#                 counter_diff = np.absolute(sim_result - counts_array)
 
-                if not sum(counter_diff):
-                    counter_score = 0
-                elif sum(counts_array):
-                    counter_score = sum(counter_diff) / sum(counts_array)
-                else:
-                    counter_score = 1
-                    self.logger.warning(
-                        f"Zero size benchmark: {counter_id} stop: {stop_id}, returning 1"
-                    )
-                bm_scores.append(counter_score)
+#                 if not sum(counter_diff):
+#                     counter_score = 0
+#                 elif sum(counts_array):
+#                     counter_score = sum(counter_diff) / sum(counts_array)
+#                 else:
+#                     counter_score = 1
+#                     self.logger.warning(
+#                         f"Zero size benchmark: {counter_id} stop: {stop_id}, returning 1"
+#                     )
+#                 bm_scores.append(counter_score)
 
-                # build result lines for df
-                result_line = {
-                    'mode': self.mode,
-                    'found': found,
-                    'counter_id': counter_id,
-                    'direction': direction,
-                    'stops': ','.join(stops),
-                    'score': counter_score,
+#                 # build result lines for df
+#                 result_line = {
+#                     'mode': self.mode,
+#                     'found': found,
+#                     'counter_id': counter_id,
+#                     'direction': direction,
+#                     'stops': ','.join(stops),
+#                     'score': counter_score,
 
-                }
+#                 }
 
-                for i, time in enumerate(bm_hours):
-                    result_line[f"sim_{str(time)}"] = sim_result[i]
+#                 for i, time in enumerate(bm_hours):
+#                     result_line[f"sim_{str(time)}"] = sim_result[i]
 
-                for i, time in enumerate(bm_hours):
-                    result_line[f"bm_{str(time)}"] = counts_array[i]
+#                 for i, time in enumerate(bm_hours):
+#                     result_line[f"bm_{str(time)}"] = counts_array[i]
 
-                for i, time in enumerate(bm_hours):
-                    result_line[f"diff_{str(time)}"] = sim_result[i] - counts_array[i]
+#                 for i, time in enumerate(bm_hours):
+#                     result_line[f"diff_{str(time)}"] = sim_result[i] - counts_array[i]
 
-                bm_results.append(result_line)
+#                 bm_results.append(result_line)
 
-                # build summary for df
-                result_line = {
-                    'source': 'simulation',
-                    'mode': self.mode,
-                    'counter_id': counter_id,
-                    'direction': direction,
-                    'score': counter_score,
+#                 # build summary for df
+#                 result_line = {
+#                     'source': 'simulation',
+#                     'mode': self.mode,
+#                     'counter_id': counter_id,
+#                     'direction': direction,
+#                     'score': counter_score,
 
-                }
+#                 }
 
-                for i, time in enumerate(bm_hours):
-                    result_line[time] = sim_result[i]
+#                 for i, time in enumerate(bm_hours):
+#                     result_line[time] = sim_result[i]
 
-                bm_summary.append(result_line)
+#                 bm_summary.append(result_line)
 
-                result_line = {
-                    'source': 'benchmark',
-                    'mode': self.mode,
-                    'counter_id': counter_id,
-                    'direction': direction,
-                    'score': counter_score,
+#                 result_line = {
+#                     'source': 'benchmark',
+#                     'mode': self.mode,
+#                     'counter_id': counter_id,
+#                     'direction': direction,
+#                     'score': counter_score,
 
-                }
+#                 }
 
-                for i, time in enumerate(bm_hours):
-                    result_line[time] = counts_array[i]
+#                 for i, time in enumerate(bm_hours):
+#                     result_line[time] = counts_array[i]
 
-                bm_summary.append(result_line)
+#                 bm_summary.append(result_line)
 
-                result_line = {
-                    'source': 'difference',
-                    'mode': self.mode,
-                    'counter_id': counter_id,
-                    'direction': direction,
-                    'score': counter_score,
+#                 result_line = {
+#                     'source': 'difference',
+#                     'mode': self.mode,
+#                     'counter_id': counter_id,
+#                     'direction': direction,
+#                     'score': counter_score,
 
-                }
+#                 }
 
-                for i, time in enumerate(bm_hours):
-                    result_line[time] = sim_result[i] - counts_array[i]
+#                 for i, time in enumerate(bm_hours):
+#                     result_line[time] = sim_result[i] - counts_array[i]
 
-                bm_summary.append(result_line)
+#                 bm_summary.append(result_line)
 
-        if failed_snaps:
-            report = 100 * failed_snaps / (snaps + failed_snaps)
-            self.logger.warning(f" {report}% of stop_ids not found for bm: {self.name}")
+#         if failed_snaps:
+#             report = 100 * failed_snaps / (snaps + failed_snaps)
+#             self.logger.warning(f" {report}% of stop_ids not found for bm: {self.name}")
 
-        # build results df
-        bm_results_df = pd.DataFrame(bm_results)
-        bm_results_summary = pd.DataFrame(bm_summary).groupby('source').sum()
+#         # build results df
+#         bm_results_df = pd.DataFrame(bm_results)
+#         bm_results_summary = pd.DataFrame(bm_summary).groupby('source').sum()
 
-        # write results
-        csv_name = f'{self.name}_{self.mode}.csv'
-        csv_path = os.path.join('benchmarks', csv_name)
-        self.write_csv(bm_results_df, csv_path, write_path=write_path)
+#         # write results
+#         csv_name = f'{self.name}_{self.mode}.csv'
+#         csv_path = os.path.join('benchmarks', csv_name)
+#         self.write_csv(bm_results_df, csv_path, write_path=write_path)
 
-        # write results
-        csv_name = f'{self.name}_{self.mode}_summary.csv'
-        csv_path = os.path.join('benchmarks', csv_name)
-        self.write_csv(bm_results_summary, csv_path, write_path=write_path)
+#         # write results
+#         csv_name = f'{self.name}_{self.mode}_summary.csv'
+#         csv_path = os.path.join('benchmarks', csv_name)
+#         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
-        bm_results_summary_df = merge_summary_stats(bm_results_summary)
+#         bm_results_summary_df = merge_summary_stats(bm_results_summary)
 
-        bm_results_summary_plot = comparative_plots(bm_results_summary_df)
+#         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
 
-        plot_name = f'{self.name}_{self.mode}_summary.png'
+#         plot_name = f'{self.name}_{self.mode}_summary.png'
 
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+#         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
-        return {'counters': sum(bm_scores) / len(bm_scores)}
+#         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
 # ========================== Old style BMs below ==========================
