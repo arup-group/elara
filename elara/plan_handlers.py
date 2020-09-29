@@ -86,7 +86,7 @@ class ModeShareHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        modes = self.resources['output_config'].modes + self.resources['transit_schedule'].modes
+        modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
         if 'pt' in modes:
             modes.remove('pt')
         self.logger.debug(f'modes = {modes}')
