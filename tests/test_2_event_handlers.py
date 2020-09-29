@@ -662,14 +662,18 @@ def test_stop_interaction_finalise_bus(
 
 # Stop to stop volumes
 @pytest.fixture
-def test_bus_stop_to_stop_handler(test_config, input_manager):
+def bus_stop_to_stop_handler(test_config, input_manager):
     handler = event_handlers.PassengerStopToStopCounts(test_config, 'bus')
-
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
+    return handler
 
+
+@pytest.fixture
+def test_bus_stop_to_stop_handler(bus_stop_to_stop_handler, input_manager):
+    handler = bus_stop_to_stop_handler
+    resources = input_manager.resources
     periods = 24
-
     assert 'not_applicable' in handler.classes
     assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
@@ -710,22 +714,22 @@ def veh_arrives_facilty_event3():
 
 
 def test_veh_tracker_events(
-    test_bus_stop_to_stop_handler,
+    bus_stop_to_stop_handler,
     veh_arrives_facilty_event1,
     veh_arrives_facilty_event2
     ):
-    handler = test_bus_stop_to_stop_handler
+    handler = bus_stop_to_stop_handler
     handler.process_event(veh_arrives_facilty_event1)
     assert handler.veh_tracker == {"bus1":"home_stop_out"}
     handler.process_event(veh_arrives_facilty_event2)
     assert handler.veh_tracker == {"bus1":"work_stop_in"}
 
 def test_stop_to_stop_veh_interaction_process_single_event_driver(
-        test_bus_stop_to_stop_handler,
+        bus_stop_to_stop_handler,
         veh_arrives_facilty_event1,
         driver_enters_veh_event,
         ):
-    handler = test_bus_stop_to_stop_handler
+    handler = bus_stop_to_stop_handler
     handler.process_event(veh_arrives_facilty_event1)
     handler.process_event(driver_enters_veh_event)
     assert handler.veh_occupancy == {}
@@ -733,7 +737,7 @@ def test_stop_to_stop_veh_interaction_process_single_event_driver(
 
 
 def test_stop_to_stop_process_events(
-        test_bus_stop_to_stop_handler,
+        bus_stop_to_stop_handler,
         veh_arrives_facilty_event1,
         person_enters_veh_event,
         person2_enters_veh_event,
@@ -741,7 +745,7 @@ def test_stop_to_stop_process_events(
         person_leaves_veh_event,
         veh_arrives_facilty_event3
         ):
-    handler = test_bus_stop_to_stop_handler
+    handler = bus_stop_to_stop_handler
     handler.process_event(veh_arrives_facilty_event1)
     handler.process_event(person_enters_veh_event)
     handler.process_event(person2_enters_veh_event)
@@ -774,7 +778,7 @@ def test_stop_to_stop_process_events(
 
 
 def test_stop_to_stop_finalise_bus(
-        test_bus_stop_to_stop_handler,
+        bus_stop_to_stop_handler,
         veh_arrives_facilty_event1,
         person_enters_veh_event,
         person2_enters_veh_event,
@@ -782,7 +786,7 @@ def test_stop_to_stop_finalise_bus(
         person_leaves_veh_event,
         veh_arrives_facilty_event3
 ):
-    handler = test_bus_stop_to_stop_handler
+    handler = bus_stop_to_stop_handler
     events = [
         veh_arrives_facilty_event1,
         person_enters_veh_event,
