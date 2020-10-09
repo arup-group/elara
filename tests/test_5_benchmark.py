@@ -27,6 +27,16 @@ config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
 config = Config(config_path)
 
 
+def test_pt_volume_counter_bus():
+    benchmark = benchmarking.TestPTVolume
+    test_bm = benchmark(
+        config,
+        'bus',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['counters'] == 0
+    
+
 def test_pt_interactions_counter_bus():
     benchmark = benchmarking.TestPTInteraction
     test_bm = benchmark(
