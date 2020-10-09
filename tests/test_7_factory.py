@@ -5,7 +5,6 @@ import pandas as pd
 import geopandas as gp
 from shapely.geometry import Polygon
 import logging
-import json
 
 
 sys.path.append(os.path.abspath('../elara'))
@@ -380,6 +379,14 @@ def test_not_broken():
     assert not factory.is_broken(a)
 
 
+def test_convert_to_unique_keys():
+
+    keys = factory.convert_to_unique_keys(
+        {"req1":[1,2], "req2":[1], "req3":None}
+    )
+    assert keys == ['req1:1', 'req1:2', 'req2:1', 'req3']
+
+
 def test_write_geojson(tmpdir):
     df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
     poly = Polygon(((0,0), (1,0), (1,1), (0,1)))
@@ -394,6 +401,24 @@ def test_write_geojson(tmpdir):
     assert os.path.exists(path)
 
 
+def test_write_geojson_no_path(tmpdir):
+    df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
+    poly = Polygon(((0,0), (1,0), (1,1), (0,1)))
+    gdf = gp.GeoDataFrame(df, geometry=[poly]*3)
+    class DummyConfig:
+        output_path = tmpdir
+    config = DummyConfig()
+    workstation = factory.WorkStation(config=config)
+    workstation.config.output_path
+    workstation.write_geojson(
+        write_object=gdf,
+        name='test.geojson',
+        write_path=None
+    )
+    path = os.path.join(tmpdir, 'test.geojson')
+    assert os.path.exists(path)
+
+
 def test_write_json(tmpdir):
     data = {1:[1,2,3], 2: [4,5,6]}
     workstation = factory.WorkStation(config=None)
@@ -401,6 +426,21 @@ def test_write_json(tmpdir):
         write_object=data,
         name='test.json',
         write_path=tmpdir
+    )
+    path = os.path.join(tmpdir, 'test.json')
+    assert os.path.exists(path)
+
+
+def test_write_json_no_path(tmpdir):
+    data = {1:[1,2,3], 2: [4,5,6]}
+    class DummyConfig:
+        output_path = tmpdir
+    config = DummyConfig()
+    workstation = factory.WorkStation(config=config)
+    workstation.write_json(
+        write_object=data,
+        name='test.json',
+        write_path=None
     )
     path = os.path.join(tmpdir, 'test.json')
     assert os.path.exists(path)
@@ -421,6 +461,24 @@ def test_write_geojson_tool(tmpdir):
     assert os.path.exists(path)
 
 
+def test_write_geojson_tool_no_path(tmpdir):
+    df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
+    poly = Polygon(((0,0), (1,0), (1,1), (0,1)))
+    gdf = gp.GeoDataFrame(df, geometry=[poly]*3)
+    class DummyConfig:
+        output_path = tmpdir
+    config = DummyConfig()
+    tool = factory.Tool(config=config)
+    tool.logger = logging.getLogger(__name__)
+    tool.write_geojson(
+        write_object=gdf,
+        name='test2.geojson',
+        write_path=None
+    )
+    path = os.path.join(tmpdir, 'test2.geojson')
+    assert os.path.exists(path)
+
+
 def test_write_json_tool(tmpdir):
     data = {1:[1,2,3], 2: [4,5,6]}
     tool = factory.Tool(config=None)
@@ -432,7 +490,23 @@ def test_write_json_tool(tmpdir):
     )
     path = os.path.join(tmpdir, 'test2.json')
     assert os.path.exists(path)
-        
+
+
+def test_write_json_tool_no_path(tmpdir):
+    data = {1:[1,2,3], 2: [4,5,6]}
+    class DummyConfig:
+        output_path = tmpdir
+    config = DummyConfig()
+    tool = factory.Tool(config=config)
+    tool.logger = logging.getLogger(__name__)
+    tool.write_json(
+        write_object=data,
+        name='test2.json',
+        write_path=None
+    )
+    path = os.path.join(tmpdir, 'test2.json')
+    assert os.path.exists(path)
+
 
 def test_write_png_tool(tmpdir):
     df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
@@ -444,6 +518,24 @@ def test_write_png_tool(tmpdir):
         write_object=fig,
         name='test2.png',
         write_path=tmpdir
+    )
+    path = os.path.join(tmpdir, 'test2.png')
+    assert os.path.exists(path)
+
+
+def test_write_png_tool(tmpdir):
+    df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
+    ax = df.plot()
+    fig = ax.get_figure()
+    class DummyConfig:
+        output_path = tmpdir
+    config = DummyConfig()
+    tool = factory.Tool(config=config)
+    tool.logger = logging.getLogger(__name__)
+    tool.write_png(
+        write_object=fig,
+        name='test2.png',
+        write_path=None
     )
     path = os.path.join(tmpdir, 'test2.png')
     assert os.path.exists(path)
