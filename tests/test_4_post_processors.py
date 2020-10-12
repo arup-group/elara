@@ -66,11 +66,11 @@ def test_vkt_prerequisites(vkt_post_processor):
     assert vkt_post_processor.check_prerequisites()
 
 
-def test_vkt_build(vkt_post_processor, ):
+def test_vkt_build(vkt_post_processor):
     vkt_post_processor.build(None, write_path=test_outputs)
 
 
-def test_post_process_workstation(test_config, test_paths):
+def test_post_process_workstation_with_vkt_tool(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
@@ -105,3 +105,30 @@ def test_leg_summary_prerequisites(leg_summary_processor):
 
 def test_leg_summary_build(leg_summary_processor):
     leg_summary_processor.build(None, write_path=test_outputs)
+
+
+@pytest.fixture
+def agent_trips_log(test_config):
+    return postprocessing.AgentTripLogs(test_config, 'all')
+
+
+def test_agent_trips_log_prerequisites(agent_trips_log):
+    assert agent_trips_log.check_prerequisites()
+
+
+def test_post_process_workstation_with_trips_log_tool(test_config, test_paths):
+    input_workstation = InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    event_workstation = EventHandlerWorkStation(test_config)
+    event_workstation.connect(managers=None, suppliers=[input_workstation])
+    event_workstation.load_all_tools(option='bus')
+    event_workstation.build(write_path=test_outputs)
+
+    pp_workstation = postprocessing.PostProcessWorkStation(test_config)
+    pp_workstation.connect(managers=None, suppliers=[event_workstation, input_workstation])
+    tool = pp_workstation.tools['trip_logs']
+    pp_workstation.resources['trip_logs'] = tool(test_config, 'all')
+    pp_workstation.build(write_path=test_outputs)

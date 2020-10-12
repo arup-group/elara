@@ -45,3 +45,12 @@ def test_auto_write(test_data_streamer):
     writer.add(test_data_streamer)
     assert len(writer.chunk) == 0
 
+
+def test_auto_write_twice(test_data_streamer):
+    writer = ChunkWriter(os.path.join(test_outputs, "test_chunks.csv"), chunksize=15)
+    assert len(writer.chunk) == 0
+    writer.add(test_data_streamer)
+    writer.add(test_data_streamer)
+    writer.add(test_data_streamer)
+    writer.add(test_data_streamer)
+    assert len(writer.chunk) == 0
