@@ -397,6 +397,46 @@ def ireland_highways(
     main(config)
 
 
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def london_rods_stops(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a london rods stops (boardings/alightings) output for a given mode or modes. Example invocation for mode
+    "subway", name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-central-cordon subway -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["london_board_alight_subway"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def london_rods_volumes(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a london rods volumes (station to station) output for a given mode or modes. Example invocation for mode
+    "subway", name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-central-cordon subway -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["london_volume_subway"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
 @cli.command()
 @click.argument("config_path", type=click.Path(exists=True))
 @click.option("--path_override", '-o', default=None)
@@ -484,7 +524,7 @@ def main(config):
 
 
 def common_override(
-        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, contract
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     return {
         "scenario":
@@ -520,7 +560,7 @@ def common_override(
         "outputs":
             {
                 "path": outputs_path,
-                "contract": contract,
+                "contract": not full,
             },
     }
 
