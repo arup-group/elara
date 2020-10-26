@@ -848,6 +848,8 @@ class PassengerStopToStop(BenchmarkTool):
         results_name = f"{self.config.name}_stop_to_stop_passenger_counts_{self.mode}_total.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=False)
+        results_df.origin = results_df.origin.map(str)  # indices converted to strings
+        results_df.destination = results_df.destination.map(str)  # indices converted to strings
         results_df = results_df.set_index(["origin", "destination"])
         # results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         # results_df.index = results_df.index.map(str)  # indices converted to strings
