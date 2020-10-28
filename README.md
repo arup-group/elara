@@ -28,7 +28,8 @@ for each output are referred to as 'handlers'. There are four main types of outp
 These are processed by streaming (in order) through all output events from simulation. 
   * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
   * ``passenger_counts``: Produce vehicle occupancy by time slice.
-  * ``stop_interactions``: Boardings and Alightings by time slice.
+  * ``stop_interactions``: Stop Boardings and Alightings by time slice.
+  * ``vehicle_interactions``: Vehicle Boardings and Alightings by time slice.
   * ``waiting_times``: Agent waiting times for unique pt interaction events.
 
 * **Plan Based Handlers/Outputs**:
@@ -146,6 +147,7 @@ contract = true
 volume_counts = ["car"]
 passenger_counts = ["bus", "train"]
 stop_interactions = ["bus", "train"]
+vehicle_interactions = ["bus", "train"]
 waiting_times = ["all"]
 
 [plan_handlers]
@@ -220,7 +222,8 @@ include:
 
 * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
 * ``passenger_counts``: Produce vehicle occupancy by time slice.
-* ``stop_interactions``: Boardings and Alightings by time slice.
+* ``stop_interactions``: Stop Boardings and Alightings by time slice.
+* ``vehicle_interactions``: Vehicle Boardings and Alightings by time slice.
 * ``waiting_times``: Agent waiting times for unique pt interaction events.
 
 The associated list attached to each handler allows specification of which options (typically modes
