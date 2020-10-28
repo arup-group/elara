@@ -156,6 +156,26 @@ def stop_interactions(
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
+def vehicle_interactions(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a vehicle interactions output for a given mode or modes. Example invocation for "train" and
+    "bus" modes with name "test" and scale factor at 20% is:
+
+    $ elara event-handlers vehicle-interactions train bus -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["event_handlers"]["vehicle_interactions"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@event_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
 def stop_to_stop(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):

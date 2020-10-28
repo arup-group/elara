@@ -25,6 +25,9 @@ class EventHandlerTool(Tool):
         self.logger = logging.getLogger(__name__)
         super().__init__(config, option)
 
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
     def build(
             self,
             resources: dict,
@@ -199,9 +202,6 @@ class AgentWaitingTimes(EventHandlerTool):
 
         self.waiting_time_log = None
 
-        # Initialise results storage
-        self.results = dict()
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
@@ -341,9 +341,6 @@ class VolumeCounts(EventHandlerTool):
         self.elem_indices = None
         self.counts = None
 
-        # Initialise results storage
-        self.result_dfs = dict()  # Result geodataframes ready to export
-
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
         Build handler from resources.
@@ -429,7 +426,7 @@ class VolumeCounts(EventHandlerTool):
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
         # Create volume counts output
-        key = "volume_counts_{}".format(self.option)
+        key = "volume_counts_{}_classes".format(self.option)
         self.result_dfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -441,7 +438,7 @@ class VolumeCounts(EventHandlerTool):
             data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
 
-        key = "volume_counts_{}_total".format(self.option)
+        key = "volume_counts_{}".format(self.option)
         self.result_dfs[key] = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -475,9 +472,6 @@ class PassengerCounts(EventHandlerTool):
         self.counts = None
         self.total_counts = None
         self.veh_occupancy = None
-
-        # Initialise results storage
-        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -623,7 +617,7 @@ class PassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "passenger_counts_{}".format(self.option)
+        key = "passenger_counts_{}_classes".format(self.option)
         self.result_dfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -635,7 +629,7 @@ class PassengerCounts(EventHandlerTool):
             data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
 
-        key = "passenger_counts_{}_total".format(self.option)
+        key = "passenger_counts_{}".format(self.option)
         self.result_dfs[key] = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -668,9 +662,6 @@ class RoutePassengerCounts(EventHandlerTool):
         self.counts = None
         self.total_counts = None
         self.route_occupancy = None
-
-        # Initialise results storage
-        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -807,7 +798,7 @@ class RoutePassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "route_passenger_counts_{}".format(self.option)
+        key = "route_passenger_counts_{}_classes".format(self.option)
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -816,7 +807,7 @@ class RoutePassengerCounts(EventHandlerTool):
         totals_df = pd.DataFrame(
             data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
-        key = "route_passenger_counts_{}_total".format(self.option)
+        key = "route_passenger_counts_{}".format(self.option)
         self.result_dfs[key] = totals_df
 
 
@@ -827,7 +818,6 @@ class StopInteractions(EventHandlerTool):
 
     requirements = [
         'events',
-        'network',
         'transit_schedule',
         'attributes',
     ]
@@ -849,9 +839,6 @@ class StopInteractions(EventHandlerTool):
         self.alightings = None
         self.agent_status = None
         self.total_counts = None
-
-        # Initialise results storage
-        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -976,7 +963,7 @@ class StopInteractions(EventHandlerTool):
             counts_df = counts_df.reset_index().set_index('elem')
 
             # Create volume counts output
-            key = "{}_{}".format(name, self.option)
+            key = "{}_{}_classes".format(name, self.option)
             self.result_dfs[key] = self.elem_gdf.join(
                 counts_df, how="left"
             )
@@ -988,8 +975,181 @@ class StopInteractions(EventHandlerTool):
                 data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
 
-            key = "{}_{}_total".format(name, self.option)
+            key = "{}_{}".format(name, self.option)
             self.result_dfs[key] = self.elem_gdf.join(
+                totals_df, how="left"
+            )
+
+
+class VehicleInteractions(EventHandlerTool):
+    """
+    Vehicle Alightings and Boardings handler for given mode.
+
+    Using events:
+
+    <event time="300.0"
+        type="PersonEntersVehicle"
+        person="pt_veh_41173_bus_Bus"
+        vehicle="veh_41173_bus"/>
+    <event time="600.0"
+        type="PersonLeavesVehicle"
+        person="pt_veh_41173_bus_Bus"
+        vehicle="veh_41173_bus"/>
+    """
+
+    requirements = [
+        'events',
+        'transit_schedule',
+        'attributes',
+    ]
+    invalid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+        self.classes = None
+        self.class_indices = None
+        self.elem_df = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.boardings = None
+        self.alightings = None
+        self.total_counts = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Check for car
+        if self.option == 'car':
+            raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
+
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
+
+        # Initialise element attributes
+        self.elem_df = resources['transit_schedule'].vehicles_df
+        # get stops used by this mode
+        viable_vehicles = resources['transit_schedule'].mode_to_veh_map.get(self.option)
+        if viable_vehicles is None:
+            self.logger.warning(
+                f"""
+                No viable vehciles found for mode:{self.option} in TransitSchedule, 
+                this may be because the Schedule modes do not match the configured 
+                modes. Elara will continue with all vehicles found in schedule.
+                """
+                )
+        else:
+            self.logger.debug(f'Filtering vehicles for mode:{self.option}.')
+            self.elem_df = self.elem_df.loc[viable_vehicles,:]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_df)
+
+        # Initialise results tables
+        self.boardings = np.zeros((len(self.elem_indices),
+                                   len(self.class_indices),
+                                   self.config.time_periods))
+        self.alightings = np.zeros((len(self.elem_indices),
+                                    len(self.class_indices),
+                                    self.config.time_periods))
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'waitingForPt', 'PersonEntersVehicle' and
+        'PersonLeavesVehicle' events to determine vehicle boardings and alightings.
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+
+        if event_type == "PersonEntersVehicle":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            if veh_mode == self.option:
+                agent_id = elem.get("person")
+
+                if agent_id[:2] != "pt": # check for pt driver
+                    time = float(elem.get("time"))
+                    attribute_class = self.resources['attributes'].map[agent_id]
+                    x, y, z = table_position(
+                        self.elem_indices,
+                        self.class_indices,
+                        self.config.time_periods,
+                        veh_id,
+                        attribute_class,
+                        time
+                    )
+                    self.boardings[x, y, z] += 1
+
+        elif event_type == "PersonLeavesVehicle":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            if veh_mode == self.option:
+                agent_id = elem.get("person")
+
+                if agent_id[:2] != "pt": # check for pt driver
+                    time = float(elem.get("time"))
+                    attribute_class = self.resources['attributes'].map[agent_id]
+                    x, y, z = table_position(
+                        self.elem_indices,
+                        self.class_indices,
+                        self.config.time_periods,
+                        veh_id,
+                        attribute_class,
+                        time
+                    )
+                    self.alightings[x, y, z] += 1
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain boardings
+        and alightings by link by time slice. The only thing left to do is scale
+        by the sample size and create dataframes.
+        """
+
+        # Scale final counts
+        self.boardings *= 1.0 / self.config.scale_factor
+        self.alightings *= 1.0 / self.config.scale_factor
+
+        # Create counts output
+        for data, name in zip([self.boardings, self.alightings], ['veh_boardings', 'veh_alightings']):
+
+            names = ['veh_id', 'class', 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            counts_df = pd.DataFrame(data.flatten(), index=index)[0]
+            counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index('veh_id')
+
+            # Create output
+            key = "{}_{}_classes".format(name, self.option)
+            counts_df = self.elem_df.join(
+                counts_df, how="left"
+            )
+            self.result_dfs[key] = counts_df
+
+            # calc sum across classes
+            total_counts = data.sum(1)
+            totals_df = pd.DataFrame(
+                data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
+
+            key = "{}_{}".format(name, self.option)
+            self.result_dfs[key] = self.elem_df.join(
                 totals_df, how="left"
             )
 
@@ -1022,9 +1182,6 @@ class PassengerStopToStopCounts(EventHandlerTool):
         self.counts = None
         self.total_counts = None
         self.veh_occupancy = None
-
-        # Initialise results storage
-        self.result_dfs = dict()  # Result geodataframes ready to export
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -1187,7 +1344,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
         # Create volume counts output
-        key = "stop_to_stop_passenger_counts_{}".format(self.option)
+        key = "stop_to_stop_passenger_counts_{}_classes".format(self.option)
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -1213,7 +1370,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
-        key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
+        key = "stop_to_stop_passenger_counts_{}".format(self.option)
         self.result_dfs[key] = totals_df
 
 
@@ -1228,6 +1385,7 @@ class EventHandlerWorkStation(WorkStation):
         "passenger_counts": PassengerCounts,
         "route_passenger_counts": RoutePassengerCounts,
         "stop_interactions": StopInteractions,
+        "vehicle_interactions": VehicleInteractions,
         "waiting_times": AgentWaitingTimes,
         "graph": AgentGraph,
         "passenger_stop_to_stop_loading": PassengerStopToStopCounts
@@ -1285,8 +1443,8 @@ class EventHandlerWorkStation(WorkStation):
                 self.logger.info(f'Writing results for {handler.__str__()}')
 
                 for name, df in handler.result_dfs.items():
-                    csv_name = "{}_{}.csv".format(self.config.name, name)
-                    geojson_name = "{}_{}.geojson".format(self.config.name, name)
+                    csv_name = f"{name}.csv"
+                    geojson_name = f"{name}.geojson"
 
                     self.write_csv(df, csv_name, write_path=write_path)
                     if isinstance(df, gpd.GeoDataFrame):

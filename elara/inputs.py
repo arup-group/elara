@@ -277,7 +277,7 @@ class TransitSchedule(InputTool):
         self.logger.debug(f'Reprojecting stops')
         self.set_and_change_crs(self.stop_gdf, set_crs=crs)
 
-        # TODO the following is nested to try and recover some efficiency.
+        # TODO the following could be nested to try and recover some efficiency.
         # However this "Schedule" class now has a lot of variables/mappings/etc.
         # It would probably be sensible to refactor this class into two or more
         # distinct classes such as "Schedules Routes" and "Schedules Stops" or similar.
@@ -285,28 +285,44 @@ class TransitSchedule(InputTool):
         # Generate route -> mode, mode -> stops and vehicles -> routes maps
         self.logger.debug(f'Generating mappings.')
 
+        self.line_to_route_map = {}
         self.route_to_mode_map = {}
         self.mode_to_stops_map = defaultdict(set)
         self.veh_to_route_map = {}
         self.mode_to_veh_map = defaultdict(set)
+        vehicles = []
 
-        for elem in get_elems(path, "transitRoute"):
-            # route -> mode map
-            route_id, mode = self.get_route_mode(elem)
-            self.route_to_mode_map[route_id] = mode
+        for line_elem in get_elems(path, "transitLine"):
+            # line -> route map
+            line_id, route_ids = self.get_line_routes(line_elem)
+            self.line_to_route_map[line_id] = route_ids
 
-            # mode -> stops map
-            stops = self.get_route_stops(elem)
-            self.mode_to_stops_map[mode].update(stops)
+            for route_elem in line_elem.xpath("transitRoute"):
+                # route -> mode map
+                route_id, mode = self.get_route_mode(route_elem)
+                self.route_to_mode_map[route_id] = mode
 
-            
-            route_id, route_vehicles = self.get_route_vehicles(elem)
-            # mode -> vehs map
-            self.mode_to_veh_map[mode].update(route_vehicles)
+                # mode -> stops map
+                stops = self.get_route_stops(route_elem)
+                self.mode_to_stops_map[mode].update(stops)
 
-            for vehicle_id in route_vehicles:
-                # vehicles -> routes map
-                self.veh_to_route_map[vehicle_id] = route_id
+                route_id, route_vehicles = self.get_route_vehicles(route_elem)
+                # mode -> vehs map
+                self.mode_to_veh_map[mode].update(route_vehicles)
+
+                for vehicle_id in route_vehicles:
+                    # vehicles -> routes map
+                    self.veh_to_route_map[vehicle_id] = route_id
+                    vehicles.append(
+                        {
+                            "veh_id": vehicle_id,
+                            "mode": mode,
+                            "route_id": route_id,
+                            "line_id": line_id
+                        }
+                    )
+
+        self.vehicles_df = pd.DataFrame(vehicles).set_index("veh_id")
         
         # mode -> veh map
         self.veh_to_mode_map = {v: mode for mode, vs in self.mode_to_veh_map.items() for v in vs}
@@ -320,6 +336,16 @@ class TransitSchedule(InputTool):
 
         self.logger.debug(f'Transit Schedule Route modes = {self.modes}')
         self.logger.debug(f'Transit Schedule Stop modes = {list(self.mode_to_stops_map)}')
+
+
+    @staticmethod
+    def get_line_routes(elem):
+        """
+        Get all route IDs for a given transit line
+        :param elem: TransitLine XML element
+        :return: (line id, set of route IDs)
+        """
+        return elem.get('id'), set(elem.xpath("transitRoute/@id"))
 
 
     @staticmethod

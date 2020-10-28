@@ -2,6 +2,7 @@ import sys
 import os
 import pytest
 from shapely.geometry import Point
+import pandas as pd
 import geopandas as gpd
 
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
@@ -192,6 +193,21 @@ def test_load_gzip_transit_vehicles(test_gzip_config, test_zip_paths):
     ) == sum(
         transit_vehicles.transit_vehicle_counts.values()
     )
+
+
+def test_schedule_line_route_mapping(test_xml_config, test_paths):
+    transit_schedule = inputs.TransitSchedule(test_xml_config)
+    transit_schedule.build(test_paths.resources)
+    assert len(transit_schedule.line_to_route_map) == 1
+    assert transit_schedule.line_to_route_map["city_line"] == set(["work_bound", "home_bound"])
+
+
+def test_vehicles_df(test_xml_config, test_paths):
+    transit_schedule = inputs.TransitSchedule(test_xml_config)
+    transit_schedule.build(test_paths.resources)
+    assert isinstance(transit_schedule.vehicles_df, pd.DataFrame)
+    assert len(transit_schedule.vehicles_df) == 4
+    assert set(transit_schedule.vehicles_df.index) == set([f"bus{n}" for n in range(1,5)])
 
 
 # Plans

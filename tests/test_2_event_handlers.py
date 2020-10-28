@@ -808,7 +808,7 @@ def test_stop_to_stop_finalise_bus(
     if 'class' in gdf.columns:
         assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
 
-    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_total"]
+    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus"]
     cols = list(range(handler.config.time_periods))
     for c in cols:
         assert c in gdf.columns
@@ -838,3 +838,81 @@ def test_load_event_handler_manager(test_config, test_paths):
             df = gdf.loc[:, cols]
             assert np.sum(df.values)
 
+
+# Vehicle Interactions
+@pytest.fixture
+def test_bus_veh_interaction_handler(test_config, input_manager):
+    handler = event_handlers.VehicleInteractions(test_config, 'bus')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert 'not_applicable' in handler.classes
+    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert list(handler.class_indices.keys()) == handler.classes
+    assert handler.boardings.shape == (
+        len(resources['transit_schedule'].vehicles_df),
+        len(resources['attributes'].classes),
+        periods
+    )
+    return handler
+
+
+def test_veh_interaction_process_single_event_driver(
+        test_bus_veh_interaction_handler,
+        driver_enters_veh_event):
+    handler = test_bus_veh_interaction_handler
+    elem = driver_enters_veh_event
+    handler.process_event(elem)
+    assert np.sum(handler.boardings) == 0
+    assert np.sum(handler.alightings) == 0
+
+
+def test_veh_interaction_process_single_event_passenger(
+        test_bus_veh_interaction_handler,
+        person_enters_veh_event):
+    handler = test_bus_veh_interaction_handler
+    elem = person_enters_veh_event
+    handler.process_event(elem)
+    assert np.sum(handler.boardings) == 1
+    assert np.sum(handler.alightings) == 0
+
+
+def test_veh_interaction_process_events(
+        test_bus_veh_interaction_handler,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        person_leaves_veh_event,
+):
+    handler = test_bus_veh_interaction_handler
+
+    handler.process_event(person_enters_veh_event)
+    handler.process_event(person2_enters_veh_event)
+    handler.process_event(person_leaves_veh_event)
+
+    link_index = handler.elem_indices['bus1']
+    class_index = handler.class_indices['rich']
+    period = 6
+    assert np.sum(handler.boardings[link_index, :, :]) == 2
+    assert np.sum(handler.boardings[:, :, period]) == 2
+    assert handler.boardings[link_index, class_index, period] == 1
+
+
+def test_veh_interaction_finalise_bus(
+        test_bus_veh_interaction_handler,
+        events
+):
+    handler = test_bus_veh_interaction_handler
+    for elem in events:
+        handler.process_event(elem)
+    handler.finalise()
+    for name, df in handler.result_dfs.items():
+        cols = list(range(handler.config.time_periods))
+        for c in cols:
+            assert c in df.columns
+        df = df.loc[:, cols]
+        assert np.sum(df.values) == 4 / handler.config.scale_factor
+        if 'class' in df.columns:
+            assert set(df.loc[:, 'class']) == set(handler.resources['attributes'].classes)
