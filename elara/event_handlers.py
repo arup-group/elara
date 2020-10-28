@@ -953,7 +953,7 @@ class StopInteractions(EventHandlerTool):
         self.alightings *= 1.0 / self.config.scale_factor
 
         # Create passenger counts output
-        for data, name in zip([self.boardings, self.alightings], ['boardings', 'alightings']):
+        for data, name in zip([self.boardings, self.alightings], ['stop_boardings', 'stop_alightings']):
 
             names = ['elem', 'class', 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
