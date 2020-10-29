@@ -383,7 +383,7 @@ def test_finalised_agent_distances_car(agent_distances_handler_finalised_car):
 
     for name, result in handler.results.items():
         cols = handler.ways
-        if 'total' in name:
+        if not 'classes' in name:
             for c in cols:
                 assert c in result.index
             assert 'total' in result.index

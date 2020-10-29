@@ -1,5 +1,5 @@
-,agent_id,departure,duration,mode,prev_mode,stop,subpop,x,y
-0,gerry,27300,2022,bus,,home_stop_out,poor,-7.556468775892206,49.766840480865724
-1,fred,30900,2022,bus,,home_stop_out,poor,-7.556468775892206,49.766840480865724
-2,gerry,63303,3825,bus,,work_stop_out,poor,-7.418236964472031,49.77340708836448
-3,fred,63303,225,bus,,work_stop_out,poor,-7.418236964472031,49.77340708836448
+,agent_id,prev_mode,mode,stop,x,y,duration,departure,subpop
+0,gerry,,bus,home_stop_out,-7.556468775892206,49.76684048086573,2022,27300,poor
+1,fred,,bus,home_stop_out,-7.556468775892206,49.76684048086573,2022,30900,poor
+2,gerry,,bus,work_stop_out,-7.418236964472031,49.77340708836448,3825,63303,poor
+3,fred,,bus,work_stop_out,-7.418236964472031,49.77340708836448,225,63303,poor

@@ -193,23 +193,23 @@ class ModeShareHandler(PlanHandlerTool):
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        key = "mode_counts_{}_breakdown".format(self.option)
+        key = "mode_counts_{}_classes".format(self.option)
         self.results[key] = counts_df
 
         # mode counts totals output
         total_counts_df = counts_df.sum(0)
-        key = "mode_counts_{}_total".format(self.option)
+        key = "mode_counts_{}".format(self.option)
         self.results[key] = total_counts_df
 
         # convert to mode shares
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        key = "mode_shares_{}_breakdown".format(self.option)
+        key = "mode_shares_{}_classes".format(self.option)
         self.results[key] = counts_df / total
 
         # mode shares totals output
-        key = "mode_shares_{}_total".format(self.option)
+        key = "mode_shares_{}".format(self.option)
         self.results[key] = total_counts_df / total
 
     @staticmethod
@@ -292,8 +292,8 @@ class AgentLogsHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        activity_csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
-        legs_csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        activity_csv_name = f"activity_log_{self.option}.csv"
+        legs_csv_name = f"leg_log_{self.option}.csv"
 
         self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
         self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path)
@@ -495,7 +495,7 @@ class AgentPlansHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        csv_name = "{}_scores_log_{}.csv".format(self.config.name, self.option)
+        csv_name = f"scores_log_{self.option}.csv"
         self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_plans(self, elem):
@@ -741,11 +741,11 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
 
         # calculate summary
         total_df = distance_df.sum(0)
-        key = "agent_distance_{}_total".format(self.option)
+        key = "agent_distance_{}".format(self.option)
         self.results[key] = total_df
 
         # join with agent attributes
-        key = "agent_distances_{}_breakdown".format(self.option)
+        key = "agent_distances_{}_classes".format(self.option)
         self.results[key] = distance_df.join(
             self.agents.attributes_df, how="left"
         )
@@ -811,7 +811,7 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
         self.ways = self.osm_ways.classes
 
         # Initialise results writer
-        csv_name = "{}_trip_distances_{}.csv".format(self.config.name, self.option)
+        csv_name = f"trip_distances_{self.option}.csv"
         self.distances_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_plans(self, elem):
@@ -932,7 +932,7 @@ class PlanHandlerWorkStation(WorkStation):
                 self.logger.info(f'Writing results from {handler.__str__()}')
 
                 for name, result in handler.results.items():
-                    csv_name = "{}_{}.csv".format(self.config.name, name)
+                    csv_name = f"{name}.csv"
                     self.write_csv(result, csv_name, write_path=write_path)
 
 

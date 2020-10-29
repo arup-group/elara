@@ -41,11 +41,11 @@ class PlanTimeSummary(PostProcessor):
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        file_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        file_name = f"leg_log_{self.option}.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         legs_df = pd.read_csv(file_path, index_col=0)
 
-        file_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
+        file_name = f"activity_log_{self.option}.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         activity_df = pd.read_csv(file_path, index_col=0)
 
@@ -58,14 +58,14 @@ class PlanTimeSummary(PostProcessor):
         act_summary_df = activity_df.describe()
 
         # # Export results
-        fig_name = "{}_leg_summary_{}.png".format(self.config.name, self.option)
+        fig_name = f"leg_summary_{self.option}.png"
         self.write_png(leg_figure, fig_name, write_path=write_path)
-        csv_name = "{}_leg_summary_{}.csv".format(self.config.name, self.option)
+        csv_name = f"leg_summary_{self.option}.csv"
         self.write_csv(leg_summary_df, csv_name, write_path=write_path)
 
-        fig_name = "{}_activity_summary_{}.png".format(self.config.name, self.option)
+        fig_name = f"activity_summary_{self.option}.png"
         self.write_png(act_figure, fig_name, write_path=write_path)
-        csv_name = "{}_activity_summary_{}.csv".format(self.config.name, self.option)
+        csv_name = f"activity_summary_{self.option}.csv"
         self.write_csv(act_summary_df, csv_name, write_path=write_path)
 
     def time_binner(self, data):
@@ -127,7 +127,7 @@ class AgentTripLogs(PostProcessor):
 
         mode = self.option
 
-        file_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        file_name = f"leg_log_{self.option}.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         legs_df = pd.read_csv(file_path)
 
@@ -165,7 +165,7 @@ class AgentTripLogs(PostProcessor):
         trips_df.reset_index(inplace=True)
 
         # Export results
-        csv_name = "{}_trip_logs_{}.csv".format(self.config.name, mode)
+        csv_name = f"trip_logs_{mode}.csv"
         self.write_csv(trips_df, csv_name, write_path=write_path)
 
 
@@ -181,7 +181,7 @@ class VKT(PostProcessor):
 
         mode = self.option
 
-        file_name = "{}_volume_counts_{}_total.geojson".format(self.config.name, mode)
+        file_name = f"volume_counts_{mode}.geojson"
         file_path = os.path.join(self.config.output_path, file_name)
         volumes_gdf = geopandas.read_file(file_path)
 
@@ -192,8 +192,8 @@ class VKT(PostProcessor):
         vkt = volumes.multiply(link_lengths, axis=0)
         vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
 
-        csv_name = "{}_vkt_{}.csv".format(self.config.name, mode)
-        geojson_name = "{}_vkt_{}.geojson".format(self.config.name, mode)
+        csv_name = f"vkt_{mode}.csv"
+        geojson_name = f"vkt_{mode}.geojson"
 
         self.write_csv(vkt_gdf, csv_name, write_path=write_path)
         self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)

@@ -291,20 +291,33 @@ class TransitSchedule(InputTool):
         self.veh_to_route_map = {}
         self.mode_to_veh_map = defaultdict(set)
         vehicles = []
+        stop_details = []
 
         for line_elem in get_elems(path, "transitLine"):
             # line -> route map
-            line_id, route_ids = self.get_line_routes(line_elem)
+            line_id, line_name, route_ids = self.get_line_routes(line_elem)
             self.line_to_route_map[line_id] = route_ids
 
             for route_elem in line_elem.xpath("transitRoute"):
                 # route -> mode map
-                route_id, mode = self.get_route_mode(route_elem)
+                route_id, route_name, mode = self.get_route_mode(route_elem)
                 self.route_to_mode_map[route_id] = mode
 
                 # mode -> stops map
                 stops = self.get_route_stops(route_elem)
                 self.mode_to_stops_map[mode].update(stops)
+
+                for stop in stops:
+                    stop_details.append(
+                        {
+                            "id": stop,
+                            "mode": mode,
+                            "route_id": route_id,
+                            "route_name": route_name,
+                            "line_id": line_id,
+                            "line_name": line_name,
+                        }
+                    )
 
                 route_id, route_vehicles = self.get_route_vehicles(route_elem)
                 # mode -> vehs map
@@ -318,9 +331,13 @@ class TransitSchedule(InputTool):
                             "veh_id": vehicle_id,
                             "mode": mode,
                             "route_id": route_id,
-                            "line_id": line_id
+                            "route_name": route_name,
+                            "line_id": line_id,
+                            "line_name": line_name,
                         }
                     )
+        stop_details = pd.DataFrame(stop_details).set_index("id")
+        self.stop_gdf = self.stop_gdf.join(stop_details, how='right')
 
         self.vehicles_df = pd.DataFrame(vehicles).set_index("veh_id")
         
@@ -345,7 +362,7 @@ class TransitSchedule(InputTool):
         :param elem: TransitLine XML element
         :return: (line id, set of route IDs)
         """
-        return elem.get('id'), set(elem.xpath("transitRoute/@id"))
+        return elem.get('id'), elem.get('name'), set(elem.xpath("transitRoute/@id"))
 
 
     @staticmethod
@@ -394,11 +411,7 @@ class TransitSchedule(InputTool):
         :param elem: TransitRoute XML element
         :return: (route id, mode) tuple
         """
-
-        route_id = elem.get('id')
-        mode = elem.xpath('transportMode')[0].text
-
-        return route_id, mode
+        return elem.get('id'), elem.get('name'), elem.xpath('transportMode')[0].text
 
     @staticmethod
     def get_route_stops(elem):

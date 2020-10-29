@@ -426,7 +426,7 @@ class VolumeCounts(EventHandlerTool):
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
         # Create volume counts output
-        key = "volume_counts_{}_classes".format(self.option)
+        key = f"volume_counts_{self.option}_classes"
         self.result_dfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -438,7 +438,7 @@ class VolumeCounts(EventHandlerTool):
             data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
 
-        key = "volume_counts_{}".format(self.option)
+        key = f"volume_counts_{self.option}"
         self.result_dfs[key] = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -617,7 +617,7 @@ class PassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "passenger_counts_{}_classes".format(self.option)
+        key = f"passenger_counts_{self.option}_classes"
         self.result_dfs[key] = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -629,7 +629,7 @@ class PassengerCounts(EventHandlerTool):
             data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
 
-        key = "passenger_counts_{}".format(self.option)
+        key = f"passenger_counts_{self.option}"
         self.result_dfs[key] = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -859,19 +859,18 @@ class StopInteractions(EventHandlerTool):
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
-        # get stops used by this mode
-        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.option)
-        if viable_stops is None:
+        self.logger.debug(f'Filtering stops for mode:{self.option}.')
+        elem_gdf = self.elem_gdf.loc[self.elem_gdf.loc[:, "mode"] == self.option]
+        if len(elem_gdf) == 0:
             self.logger.warning(
                 f"""
                 No viable stops found for mode:{self.option} in TransitSchedule, 
                 this may be because the Schedule modes do not match the configured 
-                modes. Elara will continue with all stops found in schedule.
+                modes. Continuing with all stops.
                 """
                 )
         else:
-            self.logger.debug(f'Filtering stops for mode:{self.option}.')
-            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+            self.elem_gdf = elem_gdf
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
@@ -1042,19 +1041,18 @@ class VehicleInteractions(EventHandlerTool):
 
         # Initialise element attributes
         self.elem_df = resources['transit_schedule'].vehicles_df
-        # get stops used by this mode
-        viable_vehicles = resources['transit_schedule'].mode_to_veh_map.get(self.option)
-        if viable_vehicles is None:
+        self.logger.debug(f'Filtering vehicles for mode:{self.option}.')
+        elem_df = self.elem_df.loc[self.elem_df.loc[:, "mode"] == self.option]
+        if len(elem_df) == 0:
             self.logger.warning(
                 f"""
-                No viable vehciles found for mode:{self.option} in TransitSchedule, 
+                No viable stops found for mode:{self.option} in TransitSchedule, 
                 this may be because the Schedule modes do not match the configured 
-                modes. Elara will continue with all vehicles found in schedule.
+                modes. Continuing with all stops.
                 """
                 )
         else:
-            self.logger.debug(f'Filtering vehicles for mode:{self.option}.')
-            self.elem_df = self.elem_df.loc[viable_vehicles,:]
+            self.elem_df = elem_df
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_df)
 
@@ -1136,7 +1134,7 @@ class VehicleInteractions(EventHandlerTool):
             counts_df = counts_df.reset_index().set_index('veh_id')
 
             # Create output
-            key = "{}_{}_classes".format(name, self.option)
+            key = f"{name}_{self.option}_classes"
             counts_df = self.elem_df.join(
                 counts_df, how="left"
             )
@@ -1148,7 +1146,7 @@ class VehicleInteractions(EventHandlerTool):
                 data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
 
-            key = "{}_{}".format(name, self.option)
+            key = f"{name}_{self.option}"
             self.result_dfs[key] = self.elem_df.join(
                 totals_df, how="left"
             )
@@ -1202,19 +1200,18 @@ class PassengerStopToStopCounts(EventHandlerTool):
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
-        # get stops used by this mode
-        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.option)
-        if viable_stops is None:
+        self.logger.debug(f'Filtering stops for mode:{self.option}.')
+        elem_gdf = self.elem_gdf.loc[self.elem_gdf.loc[:, "mode"] == self.option]
+        if len(elem_gdf) == 0:
             self.logger.warning(
                 f"""
                 No viable stops found for mode:{self.option} in TransitSchedule, 
                 this may be because the Schedule modes do not match the configured 
-                modes. Elara will continue with all stops found in schedule.
+                modes. Continuing with all stops.
                 """
                 )
         else:
-            self.logger.debug(f'Filtering stops for mode:{self.option}.')
-            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+            self.elem_gdf = elem_gdf
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
@@ -1344,7 +1341,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
         # Create volume counts output
-        key = "stop_to_stop_passenger_counts_{}_classes".format(self.option)
+        key = f"stop_to_stop_passenger_counts_{self.option}_classes"
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -1370,7 +1367,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
-        key = "stop_to_stop_passenger_counts_{}".format(self.option)
+        key = f"stop_to_stop_passenger_counts_{self.option}"
         self.result_dfs[key] = totals_df
 
 
