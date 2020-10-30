@@ -351,9 +351,9 @@ class TransitSchedule(InputTool):
     @staticmethod
     def get_line_routes(elem):
         """
-        Get all route IDs for a given transit line
+        Get attributes from a given transit line
         :param elem: TransitLine XML element
-        :return: (line id, set of route IDs)
+        :return: (line id, line name, set of route IDs)
         """
         return elem.get('id'), elem.get('name'), set(elem.xpath("transitRoute/@id"))
 
@@ -400,9 +400,9 @@ class TransitSchedule(InputTool):
     @staticmethod
     def get_route_mode(elem):
         """
-        Get mode for each transit route
+        Get details from transit route
         :param elem: TransitRoute XML element
-        :return: (route id, mode) tuple
+        :return: (route id, route name mode)
         """
         return elem.get('id'), elem.get('name'), elem.xpath('transportMode')[0].text
 
@@ -865,7 +865,7 @@ def count_values(dictionary):
 
 
 def get_link_osm_tag(elem):
-    """
+    """ 
     Attempt to extract link info from link element.
     :param elem: Link XML element
     :return: str
