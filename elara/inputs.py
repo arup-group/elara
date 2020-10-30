@@ -180,6 +180,7 @@ class Network(InputTool):
             "length": float(elem.get("length")),
             "lanes": float(elem.get("permlanes")),
             "capacity": float(elem.get("capacity")),
+            "tag": get_link_osm_tag(elem),
             "modes": elem.get("modes"),
             "geometry": geometry,
         }
@@ -223,18 +224,10 @@ class OSMWays(InputTool):
         :param elem: Link XML element
         :return: tuple of ident and attribute
         """
-
-        # for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
-        for name in ['osm:highway', 'osm:railway', 'osm:network']:
-            attribute = elem.find('.//attribute[@name="{}"]'.format(name))
-            if attribute is not None:
-                attribute = attribute.text
-                break
-
         return {
             'id': str(elem.get("id")),
             "length": float(elem.get("length")),
-            "way": str(attribute)
+            "way": get_link_osm_tag(elem)
         }
 
 
@@ -869,3 +862,17 @@ def count_values(dictionary):
         else:
             counter[value] = 1
     return list(counter.keys()), counter
+
+
+def get_link_osm_tag(elem):
+    """
+    Attempt to extract link info from link element.
+    :param elem: Link XML element
+    :return: str
+    """
+    # for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
+    for name in ['osm:highway', 'osm:railway', 'osm:network']:
+        attribute = elem.find(f'.//attribute[@name="{name}"]')
+        if attribute is not None:
+            return attribute.text
+    return "None"
