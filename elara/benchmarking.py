@@ -382,6 +382,19 @@ class LondonInnerCordonBus(LinkCounter):
 
     weight = 1
 
+class NewZealandCounters(LinkCounter):
+
+    name = 'new_zealand_counters'
+    benchmark_data_path = get_benchmark_data(
+    os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
+
 
 # class LondonBoundaryCordonCar(LinkCounter):
 
@@ -1756,6 +1769,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": LondonRODS,
         "london_volume_subway": LondonRODSVolume,
         "london_modeshares": LondonModeShare,
+        "new_zealand_counters" : NewZealandCounters,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
