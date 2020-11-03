@@ -528,6 +528,19 @@ class NewZealandCounters(LinkCounter):
 
     weight = 1
 
+class NewZealandCounters(LinkCounter):
+
+    name = 'new_zealand_counters'
+    benchmark_data_path = get_benchmark_data(
+    os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
+
 
 class AucklandCounters(LinkCounter):
     def __init__(self, config, mode, benchmark_data_path=None):
@@ -1942,7 +1955,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": LondonRODS,
         "london_volume_subway": LondonRODSVolume,
         "london_modeshares": LondonModeShare,
-        "ROI_modeshares": ROIModeShare,
+        # "ROI_modeshares": ROIModeShare,
         "new_zealand_counters" : NewZealandCounters,
         "nz_modeshares": NZModeShare,
 
