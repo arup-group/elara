@@ -1,0 +1,10 @@
+﻿bike,0.023
+bus,0.048
+car,0.845
+ferry,0.002
+gondola,0
+rail,0.023
+subway,0
+tram,0
+transit_walk,0
+walk,0.059
