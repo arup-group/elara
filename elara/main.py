@@ -389,6 +389,24 @@ def london_modeshares(
     config = Config(override=override)
     main(config)
 
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def nz_modeshares(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a NZ modeshares benchmark. Example invocation for
+    all modes, name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-modeshares all -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["nz_modeshares"] = list(modes)
+    config = Config(override=override)
+    main(config)
 
 @benchmarks.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
