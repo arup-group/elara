@@ -1696,7 +1696,20 @@ class LondonModeShare(ModeStats):
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
 
+<<<<<<< HEAD
 class ROIModeShare(ModeStats):
+=======
+class NZModeShare(ModeStats):
+    
+    requirements = ['mode_share']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 2
+    benchmark_path = get_benchmark_data(
+        os.path.join('new_zealand', 'modeshare','nz_modestats.csv')
+    )
+>>>>>>> ABMNZ-390 added modeshare benchmark and the relevant data
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1909,6 +1922,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_modeshares": LondonModeShare,
         "ROI_modeshares": ROIModeShare,
         "new_zealand_counters" : NewZealandCounters,
+        "nz_modeshares": NZModeShare,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
@@ -1940,6 +1954,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": 1,
         "london_volume_subway": 1,
         "london_modeshares": 1,
+        "nz_modeshares":1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
