@@ -1990,8 +1990,11 @@ class BenchmarkWorkStation(WorkStation):
         "london_volume_subway": 1,
         "london_modeshares": 1,
         "nz_modeshares":1,
+<<<<<<< HEAD
         "auckland_counters":1,
         "wellington_counters":1,
+=======
+>>>>>>> ABMNZ-390 added modeshare benchmark and the relevant data
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
