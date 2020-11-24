@@ -446,6 +446,83 @@ class AgentLogsHandler(PlanHandlerTool):
         s = dt.second
         return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
 
+class UtilityHandler(PlanHandlerTool):
+
+    requirements = ['plans']
+    valid_options = ['all']
+
+    # todo make it so that 'all' option not required (maybe for all plan handlers)
+
+
+    def __init__(self, config, option=None):
+        """
+        Initiate handler.
+        :param config: config
+        :param option: str, mode option
+        """
+
+        super().__init__(config, option)
+
+        self.option = option
+
+        self.activities_log = None
+        self.legs_log = None
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+
+    def __str__(self):
+        return f'LogHandler'
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        """
+        super().build(resources, write_path=write_path)
+
+        utility_csv_name = "{}_utilityscores_{}.csv".format(self.config.name, self.option)
+
+        self.utility_log = self.start_chunk_writer(utility_csv_name, write_path=write_path)
+
+    def process_plans(self, elem):
+
+        """
+        Build list of the utility of the selected plan for each agent.
+
+        :return: Tuple[List[dict]]
+        """
+        for plan in elem:
+
+            if plan.get('selected') == 'yes':
+                
+                # check that plan starts with an activity
+                if not plan[0].tag == 'activity':
+                    raise UserWarning('Plan does not start with activity.')
+                if plan[0].get('type') == 'pt interaction':
+                    raise UserWarning('Plan cannot start with activity type "pt interaction".')
+
+                utilities = []
+
+                ident = plan.getparent().get('id')
+                score=plan.get('score')
+
+                utilities.append(
+                            {
+                                'agent': ident,
+                                'score': score
+                            }
+                        )
+
+                self.utility_log.add(utilities)
+                
+
+    def finalise(self):
+        """
+        Finalise aggregates and joins these results as required and creates a dataframe.
+        """
+        self.utility_log.finish()
 
 class AgentPlansHandler(PlanHandlerTool):
     """
@@ -909,6 +986,7 @@ class PlanHandlerWorkStation(WorkStation):
         "mode_share": ModeShareHandler,
         "agent_logs": AgentLogsHandler,
         "agent_plans": AgentPlansHandler,
+        "agent_utility": UtilityHandler,
         "agent_highway_distances": AgentHighwayDistanceHandler,
         "trip_highway_distances": TripHighwayDistanceHandler,
     }
