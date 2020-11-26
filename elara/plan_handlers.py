@@ -465,14 +465,13 @@ class UtilityHandler(PlanHandlerTool):
 
         self.option = option
 
-        self.activities_log = None
-        self.legs_log = None
+        self.utility_log = None
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
     def __str__(self):
-        return f'LogHandler'
+        return 'UtilityHandler'
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -493,30 +492,22 @@ class UtilityHandler(PlanHandlerTool):
 
         :return: Tuple[List[dict]]
         """
+
+        ident = elem.get('id')
+
         for plan in elem:
 
             if plan.get('selected') == 'yes':
-                
-                # check that plan starts with an activity
-                if not plan[0].tag == 'activity':
-                    raise UserWarning('Plan does not start with activity.')
-                if plan[0].get('type') == 'pt interaction':
-                    raise UserWarning('Plan cannot start with activity type "pt interaction".')
 
                 utilities = []
 
-                ident = plan.getparent().get('id')
-                score=plan.get('score')
+                score = plan.get('score')
 
-                utilities.append(
-                            {
-                                'agent': ident,
-                                'score': score
-                            }
-                        )
-
+                utilities = [{'agent': ident,'score': score}]
+                        
                 self.utility_log.add(utilities)
                 
+                return None
 
     def finalise(self):
         """
