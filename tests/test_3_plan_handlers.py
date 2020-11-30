@@ -3,6 +3,7 @@ import os
 import pytest
 import pandas as pd
 import numpy as np
+import lxml.etree as etree
 from datetime import datetime
 
 
@@ -71,6 +72,65 @@ def base_handler(test_config, input_manager):
     assert base_handler.option == 'all'
     base_handler.build(input_manager.resources, write_path=test_outputs)
     return base_handler
+
+
+### Utility Handler ###
+
+@pytest.fixture
+def person_single_plan_elem():
+    string = """
+        <person id="test1">
+		<plan score="10" selected="yes">
+		</plan>
+	</person>
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def person_plans_elem():
+    string = """
+        <person id="test2">
+		<plan score="10" selected="yes">
+		</plan>
+        <plan score="8" selected="no">
+		</plan>
+	</person>
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def utility_handler(test_config, input_manager):
+    handler = plan_handlers.UtilityHandler(test_config, 'all')
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    assert len(handler.utility_log.chunk) == 0
+
+    return handler
+
+
+def test_utility_handler_process_single_plan(utility_handler, person_single_plan_elem):
+    assert len(utility_handler.utility_log) == 0
+    utility_handler.process_plans(person_single_plan_elem)
+    assert len(utility_handler.utility_log) == 1
+    assert utility_handler.utility_log.chunk == [{'agent': 'test1','score': '10'}]
+
+
+def test_utility_handler_process_multi_plan(utility_handler, person_plans_elem):
+    assert len(utility_handler.utility_log) == 0
+    utility_handler.process_plans(person_plans_elem)
+    assert len(utility_handler.utility_log) == 1
+    assert utility_handler.utility_log.chunk == [{'agent': 'test2','score': '10'}]
+
+
+def test_utility_handler_process_plans(utility_handler, person_single_plan_elem, person_plans_elem):
+    assert len(utility_handler.utility_log) == 0
+    utility_handler.process_plans(person_single_plan_elem)
+    utility_handler.process_plans(person_plans_elem)
+    assert len(utility_handler.utility_log) == 2
+    assert utility_handler.utility_log.chunk == [{'agent': 'test1','score': '10'}, {'agent': 'test2','score': '10'}]
+
 
 ### Log Handler ###
 # Wrapping
