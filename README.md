@@ -1,14 +1,40 @@
 # Elara
 
-A command line utility for processing (in big batches or bit by bit) MATSim outputs:
+A command line utility for processing (in big batches or bit by bit) MATSim outputs.
 
-* **Event Based Outputs**:
+MATSim model runs output a variety of `xml` and `xml.gz` formatted data. Some of this data is unchanged from what was input to MATSim (for example in the case of `output_network.xml.gz`). But two outputs are new or changed: `output_plans.xml.gz` and `output_events.xml.gz`. Together these outputs contain the information available about what happened within model simulation iterations.
+
+Elara allows processing of these outputs into more easilly useable forms and formats. For example extracting hourly flows of vehicles for all links in a network (`volume_counts`). Elara outputs are typically some form of aggregation of simulation outputs. Elara outputs are typically made available in tabular (`csv`) and spatial (`geojson`) formats. Spatial representations are converted to EPSG:4326, which works in kepler.
+
+### Required Inputs
+
+Inputs to Elara are MATSim format output files, eg:
+
+* **events** = "./tests/test_fixtures/output_events.xml"
+* **network** = "./tests/test_fixtures/output_network.xml"
+* **transit_schedule** = "./tests/test_fixtures/output_transitSchedule.xml"
+* **transit_vehicles** = "./tests/test_fixtures/output_transitVehicles.xml"
+* **attributes** = "./tests/test_fixtures/output_personAttributes.xml"
+* **plans** = "./tests/test_fixtures/output_plans.xml"
+* **output_config_path** = "./tests/test_fixtures/output_config.xml"
+
+In most cases these Elara inputs may be zipped (`xml.gz`).
+
+### Outputs
+Elara supports and can be selectively configured to output a growing number of outputs. The units responsible
+for each output are referred to as 'handlers'. There are four main types of output/handler:
+
+* **Event Based Handlers/Outputs**:
+These are processed by streaming (in order) through all output events from simulation. 
   * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
   * ``passenger_counts``: Produce vehicle occupancy by time slice.
   * ``stop_interactions``: Boardings and Alightings by time slice.
   * ``waiting_times``: Agent waiting times for unique pt interaction events.
 
-* **Plan Based Outputs**:
+* **Plan Based Handlers/Outputs**:
+These are processed by streaming through all output plans from simulation. Compared to the event based outputs
+these are typically more aggregate but can be computationally faster and can be used to expose agent plan
+'memories' and plan scoring.
   * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
   * ``agent_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``agent_plans``: Produce agent plans including unselected plans and scores.
@@ -16,13 +42,18 @@ A command line utility for processing (in big batches or bit by bit) MATSim outp
   types. Requires network to have `osm:way:highways` attribute.
   * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 
-* **Post Processing** of outputs:
+* **Post Processing Handlers**:
+These are outputs produced through additional post-processing of the above outputs.
   * ``vkt``: Produce link volume vehicle kms by time slice.
   * ``plan_summary``: Produce leg and activity time and duration summaries.
   * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
   with multiple leg modes.
 
-* **Benchmarking and Scoring** of specific subselections of outputs:
+* **Benchmarking Handlers**:
+Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
+ Elara will compare and present simulation results from the above outputs to the available benchmarks, it will aditionally output a
+ distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
+ again that benchmarks are project specific**.
   * ``ireland_highways``
   * ``london_board_alight_subway``
   * ``london_central_cordon_car``
@@ -35,10 +66,6 @@ A command line utility for processing (in big batches or bit by bit) MATSim outp
   * ``london_thames_screen_bus``
   * ``test_pt_interaction_counter``
   * ``test_link_cordon``
-
-The outputs from elara can be used for further analysis, visualisation or calibration. Outputs 
-are typically available as csv and/or geojson. Spatial representations are converted to 
-EPSG:4326, which works in kepler.
 
 ## Contents
 * [Introduction](https://github.com/arup-group/elara#introduction)
@@ -69,27 +96,24 @@ Also note that elara is often used within simulation pipelines
 ## Installation
 Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to install the libraries in. 
 ```
-python3 -m venv venv
-source venv/bin/activate
-```
 
-Then run the following to install elara and bring up the help menu.
-```
+brew install python3.7
+brew install virtualenv (or equivalent in conda for example)
+virtualenv -p python3.7 venv (or equivalent in conda for example)
+source venv/bin/activate (or equivalent in conda for example)
 pip3 install -e .
 elara --help
 ```
 
-On Windows, pre-compiled wheels of ``pyproj`` can be found on
-[this page](https://www.lfd.uci.edu/~gohlke/pythonlibs/). Manually install the correct ``pyproj``
- wheel within your environment using pip.  
+We strongly recommend using a virtual environment.
 
-We require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
+Note that we require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
 between coordinate reference systems.
 
 ## Configuration
 
 For reproducibility or to process a range of outputs, configuration is the most sensible and 
-processing efficient way to proceed.
+processing efficient way to use Elara.
 
 Configuration is accessed via the CLI:
 

@@ -153,6 +153,26 @@ def stop_interactions(
     main(config)
 
 
+@event_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def stop_to_stop(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create stop to stop passenger counts output for a given mode or modes. Example invocation for "train" and
+    "bus" modes with name "test" and scale factor at 20% is:
+
+    $ elara event-handlers stop_to_stop train bus -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["event_handlers"]["passenger_stop_to_stop_loading"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
 @cli.group(name="plan-handlers", cls=NaturalOrderGroup)
 def plan_handlers():
     """
@@ -324,15 +344,35 @@ def london_central_cordon(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     """
-    Create a london_central_cordon output for a given mode or modes. Example invocation for modes
-    "car" and "bus", name "test" and scale factor at 20% is:
+    Create a london_central_cordon output for cars. Example invocation for mode
+    "car", name "test" and scale factor at 20% is:
 
-    $ elara benchmarks london-central-cordon car bus -n test -s .2
+    $ elara benchmarks london-central-cordon car -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
     )
-    override["benchmarks"]["london_central_cordon"] = list(modes)
+    override["benchmarks"]["london_central_cordon_car"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def london_modeshares(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a london modeshares benchmark. Example invocation for
+    all modes, name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-modeshares all -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["london_modeshares"] = list(modes)
     config = Config(override=override)
     main(config)
 
@@ -353,6 +393,46 @@ def ireland_highways(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
     )
     override["benchmarks"]["ireland_highways"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def london_rods_stops(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a london rods stops (boardings/alightings) output for a given mode or modes. Example invocation for mode
+    "subway", name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-central-cordon subway -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["london_board_alight_subway"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def london_rods_volumes(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a london rods volumes (station to station) output for a given mode or modes. Example invocation for mode
+    "subway", name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-central-cordon subway -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["london_volume_subway"] = list(modes)
     config = Config(override=override)
     main(config)
 
@@ -444,7 +524,7 @@ def main(config):
 
 
 def common_override(
-        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, contract
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     return {
         "scenario":
@@ -480,7 +560,7 @@ def common_override(
         "outputs":
             {
                 "path": outputs_path,
-                "contract": contract,
+                "contract": not full,
             },
     }
 

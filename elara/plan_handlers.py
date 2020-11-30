@@ -86,7 +86,7 @@ class ModeShareHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        modes = self.resources['output_config'].modes + self.resources['transit_schedule'].modes
+        modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
         if 'pt' in modes:
             modes.remove('pt')
         self.logger.debug(f'modes = {modes}')
@@ -142,10 +142,12 @@ class ModeShareHandler(PlanHandlerTool):
                             route = stage.xpath('route')[0].text.split('===')[-2]
                             mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
                         if not mode:
-                            self.logger.error(f"Not found mode for "
-                                              f"agent: {ident}, "
-                                              f"route: {route}")
+                            mode = 'subway'
+                            # self.logger.error(f"Not found mode for "
+                            #                   f"agent: {ident}, "
+                            #                   f"route: {route}")
                         else:
+                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
                             modes.append(mode)
 
                     elif stage.tag == 'activity':
@@ -381,11 +383,13 @@ class AgentLogsHandler(PlanHandlerTool):
                         if mode == 'pt':
                             route_id = route.text.split('===')[-2]
                             mode = self.resources['transit_schedule'].route_to_mode_map.get(route_id)
+                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
 
                             if not mode:
-                                raise UserWarning(f"Not found mode for "
-                                                  f"agent: {ident}, "
-                                                  f"route: {route_id}")
+                                mode = "subway"
+                                # raise UserWarning(f"Not found mode for "
+                                #                   f"agent: {ident}, "
+                                #                   f"route: {route_id}")
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
@@ -529,7 +533,7 @@ class AgentPlansHandler(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    requirements = ['plans', 'transit_schedule', 'attributes']
+    requirements = ['plans', 'attributes']
 
     def __init__(self, config, option=None):
         """
@@ -574,38 +578,34 @@ class AgentPlansHandler(PlanHandlerTool):
         """
 
         ident = elem.get('id')
-        # get subpop
         subpop = self.resources['attributes'].map.get(ident)
+        # license = self.resources['attributes'].license.get(ident)
 
-        if not subpop == self.option:
+        if not self.option == "all" and not subpop == self.option:
             return None
 
         for pidx, plan in enumerate(elem):
 
             selected = str(plan.get('selected'))
-            score = float(plan.get('score'))
+            score = float(plan.get('score', 0))
 
-            activities = []
-            legs = []
-            leg_seq_idx = 0
-            # trip_seq_idx = 0
-            act_seq_idx = 0
-
-            activity_end_dt = None
-            arrival_dt = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
-            y = None
-            x = None
+            trip_records = []
+            trip_seq = 0
+            arrival_dt = None
+            in_transit = False
+            trip_start_time = None
+            prev_mode = "NA"
+            prev_act = "NA"
+            leg_mode = None
+            prev_x = None
+            prev_y = None
 
             for stage in plan:
 
                 if stage.tag == 'activity':
-                    act_seq_idx += 1
-
                     act_type = stage.get('type')
 
                     if not act_type == 'pt interaction':
-
-                        # trip_seq_idx += 1  # increment for a new trip idx
 
                         end_time_str = stage.get('end_time', '23:59:59')
 
@@ -613,99 +613,71 @@ class AgentPlansHandler(PlanHandlerTool):
                             arrival_dt, end_time_str, self.logger, idx=ident
                         )
 
-                        duration = activity_end_dt - arrival_dt
+                        duration, arrival_dt = safe_duration(arrival_dt, activity_end_dt)
+                        x = float(stage.get('x'))
+                        y = float(stage.get('y'))
 
-                    else:
-                        activity_end_dt = arrival_dt  # zero duration
-                        duration = arrival_dt - arrival_dt
+                        if trip_start_time is not None:  # ignores first activity
 
-                    x = stage.get('x')
-                    y = stage.get('y')
+                            trip_seq += 1
 
-                    activities.append(
-                        {
-                            'agent': ident,
-                            'pidx': pidx,
-                            'score': score,
-                            'selected': selected,
-                            'stage_type': 'act',
-                            # 'seq': act_seq_idx,
-                            'type': act_type,
-                            'ox': x,
-                            'oy': y,
-                            'dx': x,
-                            'dy': y,
-                            'start': arrival_dt.time(),
-                            'end': activity_end_dt.time(),
-                            'end_day': activity_end_dt.day,
-                            # 'duration': duration,
-                            'start_s': self.get_seconds(arrival_dt),
-                            'end_s': self.get_seconds(activity_end_dt),
-                            'duration_s': duration.total_seconds(),
-                        }
-                    )
+                            if in_transit:
+                                trip_mode = "pt"
+                            else:
+                                trip_mode = leg_mode
 
+                            # record previous trip
+                            trip_records.append(
+                                {
+                                "pid": ident,
+                                "subpop": subpop,
+                                # "license": license,
+                                "plan": pidx,
+                                "seq": trip_seq,
+                                "start": self.get_seconds(trip_start_time),
+                                "distance": distance(x, y, prev_x, prev_y),
+                                "mode": trip_mode,
+                                "prev_mode": prev_mode,
+                                "origin_activity": prev_act,
+                                "destination_activity": act_type,
+                                "act_duration": duration.seconds,
+                                "selected": selected,
+                                "score": score
+                                }
+                            )
+                        
+                            prev_mode = trip_mode
+
+                        prev_act = act_type
+                        in_transit = False    
+                        prev_x = x
+                        prev_y = y
+                        
                 elif stage.tag == 'leg':
-                    leg_seq_idx += 1
 
-                    mode = stage.get('mode')
-                    route = stage.xpath('route')[0]
-                    if mode == 'pt':
-                        route_id = route.text.split('===')[-2]
-                        mode = self.resources['transit_schedule'].route_to_mode_map.get(route_id)
+                    leg_start_time = activity_end_dt
+                    if not in_transit:
+                        trip_start_time = leg_start_time
 
-                        if not mode:
-                            raise UserWarning(f"Not found mode for "
-                                              f"agent: {ident}, "
-                                              f"route: {route_id}")
+                    leg_mode = stage.get('mode')
+                    if leg_mode == "pt":
+                        in_transit = True
 
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")
                     td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-
                     arrival_dt = activity_end_dt + td
 
-                    legs.append(
-                        {
-                            'agent': ident,
-                            'pidx': pidx,
-                            'score': score,
-                            'selected': selected,
-                            'stage_type': 'leg',
-                            # 'seq': leg_seq_idx,
-                            # 'trip': trip_seq_idx,
-                            'type': mode,
-                            'ox': x,
-                            'oy': y,
-                            'dx': None,
-                            'dy': None,
-                            'start': activity_end_dt.time(),
-                            'end': arrival_dt.time(),
-                            'end_day': arrival_dt.day,
-                            # 'duration': td,
-                            'start_s': self.get_seconds(activity_end_dt),
-                            'end_s': self.get_seconds(arrival_dt),
-                            'duration_s': td.total_seconds(),
-                            'distance': route.get('distance'),
-                        }
-                    )
+            total_trips = len(trip_records)
+            total_duration = sum([trip['act_duration'] for trip in trip_records])
+            total_distance = sum([trip['distance'] for trip in trip_records])
 
-            # back-fill leg destinations
-            for idx, leg in enumerate(legs):
-                leg['dx'] = activities[idx + 1]['ox']
-                leg['dy'] = activities[idx + 1]['oy']
+            for trip in trip_records:
+                trip["total_trips"] = total_trips
+                trip["total_duration"] = total_duration
+                trip["total_distance"] = total_distance
 
-            # combine into plan
-            # todo make this better.
-            assert len(activities) - len(legs) == 1
-
-            plans_log = []
-            for i in range(len(legs)):
-                plans_log.append(activities[i])
-                plans_log.append(legs[i])
-            plans_log.append(activities[-1])
-
-            self.plans_log.add(plans_log)
+            self.plans_log.add(trip_records)
 
     def finalise(self):
         """
@@ -1095,41 +1067,24 @@ def matsim_time_to_datetime(
     return new_time
 
 
-def non_wrapping_datetime(
-        current_time: datetime,
-        new_time_str: str,
-        logger=None,
-        idx=None,
-    ) -> datetime:
+def safe_duration(start_time, end_time):
     """
-    Function to step time strings and day counter to avoid wrapping of times around the
-    same day. Also converts "24:00:00" to "00:00:00" and adds a day.
-    :param current_time: datetime from previous event
-    :param new_time_str: new time string
-    :param logger: optional logger
-    :param idx: optional idx
-    :return: time string, day
+    Duration calculation that can cope with None as starting time. In which case assumes start time at start 
+    of day (00:00:00).
+    Returns tuple(datetime.timedelta, datetime.datetime)
     """
+    if start_time is None:
+        start_time = datetime(
+            year=end_time.year,
+            month=end_time.month,
+            day=end_time.day,
+            hour=0
+            )
+        return timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second), start_time
+    return end_time - start_time, start_time
 
-    if current_time is None:
-        current_time = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
 
-    current_day = current_time.day
-    current_time_str = current_time.strftime('%H:%M:%S')
-
-    hour = int(new_time_str[-8:-6])
-    if hour > 23:
-        temp = datetime.strptime(f"{current_day + 1}-{hour-24}:{new_time_str[-5:]}", '%d-%H:%M:%S')
-        # if logger:
-        #     logger.warning(f'Bad time str: {new_time_str}, converting: {temp}, idx: {idx}')
-        return temp
-
-    if new_time_str < current_time_str:  # infer that single day has passed
-        temp = datetime.strptime(f"{current_day + 1}-{new_time_str}", '%d-%H:%M:%S')
-        # if logger:
-        #     logger.warning(f'Time Wrapping ({new_time_str} < {current_time_str}) '
-        #                    f'prevented by adding day to time: {new_time_str} -> {temp}, '
-        #                    f'idx: {idx}')
-        return temp
-
-    return datetime.strptime(f"{current_day}-{new_time_str}", '%d-%H:%M:%S')
+def distance(x, y, prev_x, prev_y):
+    dx = x - prev_x
+    dy = y - prev_y
+    return np.sqrt(dx*dx + dy*dy)
