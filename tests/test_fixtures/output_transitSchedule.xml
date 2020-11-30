@@ -42,5 +42,21 @@
 				<departure id="late_home_bound" departureTime="18:30:00" vehicleRefId="bus4"/>
 			</departures>
 		</transitRoute>
+		<transitRoute id="home_bound_duplicate">
+			<transportMode>bus</transportMode>
+			<routeProfile>
+				<stop refId="work_stop_out" departureOffset="00:05:00" awaitDeparture="true"/>
+				<stop refId="home_stop_in" arrivalOffset="00:15:00" awaitDeparture="true"/>
+			</routeProfile>
+			<route>
+				<link refId="4-3"/>
+				<link refId="3-2"/>
+				<link refId="2-1"/>
+			</route>
+			<departures>
+				<departure id="early_home_bound" departureTime="17:30:00" vehicleRefId="bus3"/>
+				<departure id="late_home_bound" departureTime="18:30:00" vehicleRefId="bus4"/>
+			</departures>
+		</transitRoute>
 	</transitLine>
 </transitSchedule>
