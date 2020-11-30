@@ -6,6 +6,7 @@ from typing import Union, Tuple, Optional
 import logging
 import os
 import networkx as nx
+from shapely.geometry import LineString
 
 
 from elara.factory import WorkStation, Tool
@@ -887,7 +888,7 @@ class StopInteractions(EventHandlerTool):
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
-        # Initialise results tablescd
+        # Initialise results tables
         self.boardings = np.zeros((len(self.elem_indices),
                                    len(self.class_indices),
                                    self.config.time_periods))
@@ -993,6 +994,229 @@ class StopInteractions(EventHandlerTool):
             )
 
 
+class PassengerStopToStopCounts(EventHandlerTool):
+    """
+    Build Passenger Counts between stops for given mode in mode vehicles.
+    """
+
+    requirements = [
+        'events',
+        'network',
+        'transit_schedule',
+        'attributes',
+    ]
+    invalid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+        self.total_counts = None
+        self.veh_occupancy = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Check for car
+        if self.option in ['car','walk','bike']:
+            raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.option}")
+
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
+
+        # Initialise element attributes
+        self.elem_gdf = resources['transit_schedule'].stop_gdf
+        # get stops used by this mode
+        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.option)
+        if viable_stops is None:
+            self.logger.warning(
+                f"""
+                No viable stops found for mode:{self.option} in TransitSchedule, 
+                this may be because the Schedule modes do not match the configured 
+                modes. Elara will continue with all stops found in schedule.
+                """
+                )
+        else:
+            self.logger.debug(f'Filtering stops for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise results tablescd
+        self.counts = np.zeros((
+            len(self.elem_indices),
+            len(self.elem_indices),
+            len(self.class_indices),
+            self.config.time_periods
+            ))
+
+        # Initialise agent status mapping
+        self.veh_occupancy = dict()  # {veh_id : {attribute_class: COUNT}}
+        self.veh_tracker = dict()  # {veh_id: last_stop}
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
+        events to determine passenger volumes by stop interactions.
+        :param elem: Event XML element
+
+        The events of interest to this handler look like:
+
+            <event time="300.0"
+                type="PersonEntersVehicle"
+                person="pt_veh_41173_bus_Bus"
+                vehicle="veh_41173_bus"/>
+            <event time="600.0"
+                type="PersonLeavesVehicle"
+                person="pt_veh_41173_bus_Bus"
+                vehicle="veh_41173_bus"/>
+            <event time="27000.0"
+                type="VehicleArrivesAtFacility"
+                vehicle="bus1"
+                facility="home_stop_out"
+                delay="Infinity"/>
+        """
+        event_type = elem.get("type")
+
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.option:
+                attribute_class = self.resources['attributes'].map[agent_id]
+
+                if self.veh_occupancy.get(veh_id, None) is None:
+                    self.veh_occupancy[veh_id] = {attribute_class: 1}
+                elif not self.veh_occupancy[veh_id].get(attribute_class, None):
+                    self.veh_occupancy[veh_id][attribute_class] = 1
+                else:
+                    self.veh_occupancy[veh_id][attribute_class] += 1
+
+        elif event_type == "PersonLeavesVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.option:
+                attribute_class = self.resources['attributes'].map[agent_id]
+
+                if self.veh_occupancy[veh_id][attribute_class]:
+                    self.veh_occupancy[veh_id][attribute_class] -= 1
+                    if not self.veh_occupancy[veh_id]:
+                        self.veh_occupancy.pop(veh_id, None)
+
+        elif event_type == "VehicleArrivesAtFacility":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            if veh_mode == self.option:
+                stop_id = elem.get('facility')
+                prev_stop_id = self.veh_tracker.get(veh_id, None)
+                self.veh_tracker[veh_id] = stop_id
+
+                if prev_stop_id is not None:
+                    time = float(elem.get("time"))
+                    occupancy_dict = self.veh_occupancy.get(veh_id, {})
+
+                    for attribute_class, occupancy in occupancy_dict.items():
+                        o, d, y, z = table_position_4d(
+                            self.elem_indices,
+                            self.elem_indices,
+                            self.class_indices,
+                            self.config.time_periods,
+                            prev_stop_id,
+                            stop_id,
+                            attribute_class,
+                            time
+                        )
+                        self.counts[o, d, y, z] += occupancy
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain passenger
+        counts by od pair, attribute class and time slice. The only thing left to do is scale by the
+        sample size and create dataframes.
+        """
+
+        # Scale final counts
+        self.counts *= 1.0 / self.config.scale_factor
+
+        names = ['origin', 'destination', 'class', 'hour']
+        indexes = [self.elem_ids, self.elem_ids, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+        counts_df = counts_df.unstack(level='hour').sort_index()
+
+        # Join stop data and build geometry
+        for n in ("origin", "destination"):
+            counts_df = counts_df.reset_index().set_index(n)
+            stop_info = self.elem_gdf.copy()
+            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+            counts_df = counts_df.join(
+                    stop_info, how="left"
+                )
+            counts_df.index.name = n
+
+        counts_df = counts_df.reset_index().set_index(['origin', 'destination', 'class'])
+
+        counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.origin_geometry, counts_df.destination_geometry)]
+        counts_df.drop('origin_geometry', axis=1, inplace=True)
+        counts_df.drop('destination_geometry', axis=1, inplace=True)
+        counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
+
+        # Create volume counts output
+        key = "stop_to_stop_passenger_counts_{}".format(self.option)
+        self.result_dfs[key] = counts_df
+
+        # calc sum across all recorded attribute classes
+        totals_df = counts_df.reset_index().groupby(
+            ['origin', 'destination']
+            ).sum().reset_index().set_index(['origin', 'destination'])
+
+        # Join stop data and build geometry
+        for n in ("origin", "destination"):
+            totals_df = totals_df.reset_index().set_index(n)
+            stop_info = self.elem_gdf.copy()
+            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+            totals_df = totals_df.join(
+                    stop_info, how="left"
+                )
+            totals_df.index.name = n
+
+        totals_df = totals_df.reset_index().set_index(['origin', 'destination'])
+
+        totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.origin_geometry, totals_df.destination_geometry)]
+        totals_df.drop('origin_geometry', axis=1, inplace=True)
+        totals_df.drop('destination_geometry', axis=1, inplace=True)
+        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
+
+        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
+        key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
+        self.result_dfs[key] = totals_df
+
+
 class EventHandlerWorkStation(WorkStation):
 
     """
@@ -1006,6 +1230,7 @@ class EventHandlerWorkStation(WorkStation):
         "stop_interactions": StopInteractions,
         "waiting_times": AgentWaitingTimes,
         "graph": AgentGraph,
+        "passenger_stop_to_stop_loading": PassengerStopToStopCounts
     }
 
     def __init__(self, config):
@@ -1070,7 +1295,7 @@ class EventHandlerWorkStation(WorkStation):
 
 def table_position(elem_indices, class_indices, periods, elem_id, attribute_class, time):
     """
-    Calculate the result table coordinates from a given a element ID and timestamp.
+    Calculate the result table coordinates from a given a element ID, attribute class and timestamp.
     :param elem_indices: Element index list
     :param class_indices: attribute index list
     :param periods: Number of time periods across the day
@@ -1083,6 +1308,26 @@ def table_position(elem_indices, class_indices, periods, elem_id, attribute_clas
     y = class_indices[attribute_class]
     z = floor(time / (86400.0 / periods)) % periods
     return x, y, z
+
+
+def table_position_4d(origin_elem_indices, destination_elem_indices, class_indices, periods, o_id, d_id, attribute_class, time):
+    """
+    Calculate the result table coordinates from a given a origin element ID, destination elmement ID, attribute class and timestamp.
+    :param origin_elem_indices: Element index list
+    :param destination_elem_indices: Element index list
+    :param class_indices: attribute index list
+    :param periods: Number of time periods across the day
+    :param o_id: Element ID string
+    :param d_id: Element ID string
+    :param attribute_class: Class ID string
+    :param time: Timestamp of event
+    :return: (0, d, y, z) tuple to index results table
+    """
+    o = origin_elem_indices[o_id]
+    d = destination_elem_indices[d_id]
+    y = class_indices[attribute_class]
+    z = floor(time / (86400.0 / periods)) % periods
+    return o, d, y, z
 
 
 def export_geojson(gdf, path):

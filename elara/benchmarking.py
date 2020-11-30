@@ -58,6 +58,9 @@ class LinkCounter(BenchmarkTool):
     benchmark_data_path = None
     requirements = ['volume_counts']
 
+    def __str__(self):
+        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+
     def __init__(self, config, option) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
@@ -67,39 +70,49 @@ class LinkCounter(BenchmarkTool):
         super().__init__(config, option)
 
         self.mode = option
+        
+        self.logger.info(
+            f"Initiating {self.__str__()}"
+            )
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
-        missing_bms = 0
-        total_bms = 0
+        missing_counters = 0
+        total_counters = 0
         
-        if self.mode not in self.counts.keys():
-            self.logger.warning(
-                f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
+        mode_counts = self.counts.get(self.mode)
+        if self.mode is None:
+            raise UserWarning(
+                f"Mode: {self.mode} not found in {self.__str__}"
             )
 
-        mode_counts = self.counts.get(self.mode)
-        
         for counter_id, counter_location in mode_counts.items():
 
-            for direction, counter in counter_location.items():
+            if counter_id == "TOTAL":
+                continue
 
-                total_bms = total_bms + 1
+            for direction, counter in counter_location.items():
+                total_counters += 1
 
                 links = counter['links']
+                if not links:      
+                    missing_counters += 1
+                    self.logger.debug(
+                        f"Benchmark data has no links - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
+                        )
 
-                if not links:
-                    
-                    missing_bms = missing_bms + 1
-                    self.logger.warning(f"Benchmarks feature no snapped links - suggests error with Bench (i.e. MATSIM network has not matched to BM).")
-
-        # If more than 33% of BM's are missing, hard fails
-        self.logger.warning("{} percentage of BMs are missing snapped links.".format(missing_bms/total_bms*100.0))
-        
-        if missing_bms / total_bms > 0.66:
-
-            raise UserWarning(f"Exiting for your own good - too many BM's (over 33%) are missing matched links. This is an issue with Bench")
+        # Check for number of missing BM links. Note this is a fault with the BM (ie missing links)
+        missing = missing_counters / total_counters
+        self.logger.debug(f"{missing*100}% of BMs are missing snapped links.")
+        if total_counters == missing_counters:
+            raise UserWarning(
+                f"No links found for {self.__str__}"
+            )
+        if missing > 0.5:
+            self.logger.error(
+                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no links."
+                )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -133,6 +146,7 @@ class LinkCounter(BenchmarkTool):
         results_df = pd.read_csv(results_path, index_col=0)
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
+        results_df.index = results_df.index.map(str)  # indices converted to strings
         results_df.index.name = 'link_id'
         results_df.index = results_df.index.map(str)
 
@@ -144,6 +158,9 @@ class LinkCounter(BenchmarkTool):
         bm_scores = []
 
         for counter_id, counter_location in mode_counts.items():
+
+            if counter_id == "TOTAL":
+                continue
 
             for direction, counter in counter_location.items():
 
@@ -162,7 +179,7 @@ class LinkCounter(BenchmarkTool):
 
                 # combine mode link counts
                 for link_id in links:
-                    if link_id not in results_df.index:
+                    if str(link_id) not in results_df.index:
                         failed_snaps += 1
                         self.logger.warning(
                             f" Missing model link: {link_id}, zero filling count for benchmark: "
@@ -170,7 +187,7 @@ class LinkCounter(BenchmarkTool):
                         )
                     else:
                         snaps += 1
-                        sim_result += np.array(results_df.loc[link_id, bm_hours])
+                        sim_result += np.array(results_df.loc[str(link_id), bm_hours])
 
                 if not sum(sim_result):
                     found = False
@@ -179,7 +196,7 @@ class LinkCounter(BenchmarkTool):
                     found = True
 
                 # calc score
-                counter_diff = np.absolute(sim_result - counts_array)
+                counter_diff = (sim_result - counts_array) ** 2
 
                 if not sum(counter_diff):
                     counter_score = 0
@@ -256,7 +273,8 @@ class LinkCounter(BenchmarkTool):
 
         if failed_snaps:
             report = 100 * failed_snaps / (snaps + failed_snaps)
-            self.logger.warning(f" {report}% of links not found for bm: {self.name}")
+            self.logger.error(
+                f" {report}% of links not found in sim results for {self.mode}: {self.name}")
 
         # build results df
         bm_results_df = pd.DataFrame(bm_results)
@@ -313,7 +331,7 @@ class LondonCentralCordonCar(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'central_london_car_2016.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_car_2017.json')
     )
 
     requirements = ['volume_counts']
@@ -327,7 +345,7 @@ class LondonCentralCordonBus(LinkCounter):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'central_london_bus_2016.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_bus_2017.json')
     )
 
     requirements = ['volume_counts']
@@ -341,7 +359,7 @@ class LondonInnerCordonCar(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'inner_london_car_2016.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_car_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -355,7 +373,7 @@ class LondonInnerCordonBus(LinkCounter):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'inner_london_bus_2016.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_bus_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -365,39 +383,39 @@ class LondonInnerCordonBus(LinkCounter):
     weight = 1
 
 
-class LondonBoundaryCordonCar(LinkCounter):
+# class LondonBoundaryCordonCar(LinkCounter):
 
-    name = 'london_outer_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'boundary_london_car_2017.json')
-    )
+#     name = 'london_outer_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_options = ['car']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_options = ['car']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
-class LondonBoundaryCordonBus(LinkCounter):
+# class LondonBoundaryCordonBus(LinkCounter):
 
-    name = 'london_outer_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'boundary_london_bus_2017.json')
-    )
+#     name = 'london_outer_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_options = ['bus']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_options = ['bus']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
 class LondonThamesScreenCar(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'london_thames_screen_car_2016.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_car_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -411,7 +429,7 @@ class LondonThamesScreenBus(LinkCounter):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'london_thames_screen_bus_2016.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_bus_2016.json')
     )
 
     requirements = ['volume_counts']
@@ -449,12 +467,14 @@ class LondonThamesScreenBus(LinkCounter):
 #     weight = 1
 
 
-
 class TransitInteraction(BenchmarkTool):
 
     name = None
     benchmark_data_path = None
     requirements = ['stop_interactions']
+
+    def __str__(self):
+        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
     def __init__(self, config, option) -> None:
         """
@@ -467,13 +487,48 @@ class TransitInteraction(BenchmarkTool):
 
         self.mode = option
 
+        self.logger.info(
+            f"Initiating {self.__str__()}"
+            )
+
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
 
-        if self.mode not in self.counts.keys():
-            self.logger.warning(
-                f"{self.mode} not available in benchmark data: {self.benchmark_data_path}"
+        missing_counters = 0
+        total_counters = 0
+
+        mode_counts = self.counts.get(self.mode)
+        if self.mode is None:
+            raise UserWarning(
+                f"Mode: {self.mode} not found in {self.__str__}"
             )
+
+        for counter_id, counter_location in mode_counts.items():
+
+            if counter_id == "TOTAL":
+                continue
+
+            for direction, counter in counter_location.items():
+                total_counters += 1
+
+                stops = counter['stop_ids']
+                if not stops:      
+                    missing_counters += 1
+                    self.logger.debug(
+                        f"Benchmark data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
+                        )
+
+        # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
+        missing = missing_counters / total_counters
+        self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
+        if total_counters == missing_counters:
+            raise UserWarning(
+                f"No stops found for {self.__str__}"
+            )
+        if missing > 0.5:
+            self.logger.error(
+                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
+                )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -509,6 +564,7 @@ class TransitInteraction(BenchmarkTool):
             results_df = pd.read_csv(results_path, index_col=0)
             results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
             results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
+            results_df.index = results_df.index.map(str)  # indices converted to strings
             results_df.index.name = 'stop_id'
             model_results[direction] = results_df
 
@@ -521,6 +577,9 @@ class TransitInteraction(BenchmarkTool):
 
         for counter_id, counter_location in mode_counts.items():
 
+            if counter_id == "TOTAL":
+                continue
+
             for direction, counter in counter_location.items():
 
                 stops = counter['stop_ids']
@@ -528,6 +587,12 @@ class TransitInteraction(BenchmarkTool):
                 counts_array = np.array(list(counter['counts'].values()))
 
                 sim_result = np.array([0.0 for _ in range(len(bm_hours))])
+
+                # check if direction available
+                if not direction in model_results:
+                    raise UserWarning(
+                        f"Direction: {direction} not available in model results"
+                        )
 
                 # check if count times are available
                 if not set(bm_hours) <= set(model_results[direction].columns):
@@ -537,7 +602,7 @@ class TransitInteraction(BenchmarkTool):
 
                 # combine mode stop counts
                 for stop_id in stops:
-                    if stop_id not in model_results[direction].index:
+                    if str(stop_id) not in model_results[direction].index:
                         failed_snaps += 1
                         self.logger.warning(
                             f" Missing model stop: {stop_id}, zero filling count for benchmark: "
@@ -545,7 +610,7 @@ class TransitInteraction(BenchmarkTool):
                         )
                     else:
                         snaps += 1
-                        sim_result += np.array(model_results[direction].loc[stop_id, bm_hours])
+                        sim_result += np.array(model_results[direction].loc[str(stop_id), bm_hours])
 
                 if not sum(sim_result):
                     found = False
@@ -553,7 +618,7 @@ class TransitInteraction(BenchmarkTool):
                     found = True
 
                 # calc score
-                counter_diff = np.absolute(sim_result - counts_array)
+                counter_diff = (sim_result - counts_array) ** 2
 
                 if not sum(counter_diff):
                     counter_score = 0
@@ -678,10 +743,297 @@ class LondonRODS(TransitInteraction):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA', 'london-subway-board-alight-2017.json')
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_board_alight_subway_2017.json')
     )
 
     requirements = ['stop_interactions']
+    valid_options = ['subway']
+    options_enabled = True
+
+    weight = 1
+
+
+class PassengerStopToStop(BenchmarkTool):
+
+    name = None
+    benchmark_data_path = None
+    requirements = ['passenger_stop_to_stop_loading']
+
+    def __str__(self):
+        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+
+    def __init__(self, config, option) -> None:
+        """
+        PT Volume count (between stops) benchmarker for json formatted
+        {mode: {o: {d: {
+        o_stop_ids: [],
+        d_stop_ids: [],
+        counts: {},
+        line: str
+        }}}}.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        self.mode = option
+
+        self.logger.info(
+            f"Initiating {self.__str__()}"
+            )
+
+        with open(self.benchmark_data_path) as json_file:
+            self.counts = json.load(json_file)
+
+        missing_counters = 0
+        total_counters = 0
+
+        mode_counts = self.counts.get(self.mode)
+        if self.mode is None:
+            raise UserWarning(
+                f"Mode: {self.mode} not found in {self.__str__}"
+            )
+
+        for od, data in mode_counts.items():
+            for _, count_data in data.items():
+                total_counters += 1
+
+                o_stops = count_data['o_stop_ids']
+                d_stops = count_data['d_stop_ids']
+                if not o_stops or not d_stops:
+                    missing_counters += 1
+                    self.logger.debug(
+                        f"Benchmark {od} data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
+                        )
+
+        # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
+        missing = missing_counters / total_counters
+        self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
+        if total_counters == missing_counters:
+            raise UserWarning(
+                f"No stops found for {self.__str__}"
+            )
+        if missing > 0.5:
+            self.logger.error(
+                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
+                )
+
+    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
+        """
+        Builds paths for modal volume count outputs, loads and combines for scoring.
+        :return: Dictionary of scores {'name': float}
+        """
+
+        logger.info(f'building {self.__str__()}')
+
+        # extract benchmark mode count
+        mode_counts = self.counts.get(self.mode)
+
+        if not mode_counts:
+            self.logger.warning(
+                f"{self.mode} not available, returning distance of one"
+            )
+            return {'counters': 1}
+
+        # extract counters
+        ods = mode_counts.keys()
+        if not len(ods):
+            self.logger.warning(
+                f"no benchmarks found for {self.mode}, returning distance of one"
+            )
+            return {'counters': 1}
+
+        # Extract simulation results
+        # Build paths and load appropriate volume counts from previous workstation
+        results_name = f"{self.config.name}_stop_to_stop_passenger_counts_{self.mode}_total.csv"
+        results_path = os.path.join(self.config.output_path, results_name)
+        results_df = pd.read_csv(results_path, index_col=False)
+        results_df.origin = results_df.origin.map(str)  # indices converted to strings
+        results_df.destination = results_df.destination.map(str)  # indices converted to strings
+        results_df = results_df.set_index(["origin", "destination"])
+        # results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
+        # results_df.index = results_df.index.map(str)  # indices converted to strings
+        # results_df.index.name = 'stop_id'
+
+        # build benchmark results
+        snaps = 0
+        failed_snaps = 0
+        bm_results = []
+        bm_summary = []
+        bm_scores = []
+
+        for od, data in mode_counts.items():
+            if od == "TOTAL":
+                continue
+            for _, count_data in data.items():
+                o_stops = count_data['o_stop_ids']
+                d_stops = count_data['d_stop_ids']
+                bm_hours = list(count_data['counts'])
+                counts_array = np.array(list(count_data['counts'].values()))
+                line = count_data['line']
+
+                sim_result = np.array([0.0 for _ in range(len(bm_hours))])
+
+                # check if count times are available
+                if not set(bm_hours) <= set(results_df.columns):
+                    raise UserWarning(
+                        f"Hours: {bm_hours} not available in "
+                        f"results.columns: {results_df.columns}")
+
+                # combine mode stop counts
+                for o_id in o_stops:
+                    for d_id in d_stops:
+                        if not results_df.index.isin([(o_id, d_id)]).any():
+                            failed_snaps += 1
+                            self.logger.warning(
+                                f" Missing link: {o_id}->{d_id}, "
+                                "zero filling count for benchmark: "
+                                f"{od}"
+                            )
+                        else:
+                            snaps += 1
+                            sim_result = sim_result + np.array(
+                                results_df.loc[(o_id, d_id), bm_hours]
+                            )
+
+                if not sum(sim_result):
+                    found = False
+                else:
+                    found = True
+
+                # calc score
+                counter_diff = np.absolute(sim_result - counts_array)
+
+                if not sum(counter_diff):
+                    counter_score = 0
+                elif sum(counts_array):
+                    counter_score = sum(counter_diff) / sum(counts_array)
+                else:
+                    counter_score = 1
+                    self.logger.warning(
+                        f"Zero size benchmark: {counter_id} stop: {stop_id}, returning 1"
+                    )
+                bm_scores.append(counter_score)
+
+                # build result lines for df
+                result_line = {
+                    'mode': self.mode,
+                    'found': found,
+                    'counter_id': od,
+                    'line': line,
+                    'o': ','.join(o_stops),
+                    'd': ','.join(d_stops),
+                    'score': counter_score,
+                }
+
+                for i, time in enumerate(bm_hours):
+                    result_line[f"sim_{str(time)}"] = sim_result[i]
+
+                for i, time in enumerate(bm_hours):
+                    result_line[f"bm_{str(time)}"] = counts_array[i]
+
+                for i, time in enumerate(bm_hours):
+                    result_line[f"diff_{str(time)}"] = sim_result[i] - counts_array[i]
+
+                bm_results.append(result_line)
+
+                # build summary for df
+                result_line = {
+                    'source': 'simulation',
+                    'mode': self.mode,
+                    'counter_id': od,
+                    'line': line,
+                    'o': ','.join(o_stops),
+                    'd': ','.join(d_stops),
+                    'score': counter_score,
+                }
+
+                for i, time in enumerate(bm_hours):
+                    result_line[time] = sim_result[i]
+
+                bm_summary.append(result_line)
+
+                result_line = {
+                    'source': 'benchmark',
+                    'mode': self.mode,
+                    'counter_id': od,
+                    'line': line,
+                    'o': ','.join(o_stops),
+                    'd': ','.join(d_stops),
+                    'score': counter_score,
+                }
+
+                for i, time in enumerate(bm_hours):
+                    result_line[time] = counts_array[i]
+
+                bm_summary.append(result_line)
+
+                result_line = {
+                    'source': 'difference',
+                    'mode': self.mode,
+                    'counter_id': od,
+                    'line': line,
+                    'o': ','.join(o_stops),
+                    'd': ','.join(d_stops),
+                    'score': counter_score,
+                }
+
+                for i, time in enumerate(bm_hours):
+                    result_line[time] = sim_result[i] - counts_array[i]
+
+                bm_summary.append(result_line)
+
+        if failed_snaps:
+            report = 100 * failed_snaps / (snaps + failed_snaps)
+            self.logger.warning(f" {report}% of stop_ids not found for bm: {self.name}")
+
+        # build results df
+        bm_results_df = pd.DataFrame(bm_results)
+        bm_results_summary = pd.DataFrame(bm_summary).groupby('source').sum()
+
+        # write results
+        csv_name = f'{self.name}_{self.mode}.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(bm_results_df, csv_path, write_path=write_path)
+
+        # write results
+        csv_name = f'{self.name}_{self.mode}_summary.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(bm_results_summary, csv_path, write_path=write_path)
+
+        bm_results_summary_df = merge_summary_stats(bm_results_summary)
+
+        bm_results_summary_plot = comparative_plots(bm_results_summary_df)
+
+        plot_name = f'{self.name}_{self.mode}_summary.png'
+
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+
+        return {'counters': sum(bm_scores) / len(bm_scores)}
+
+
+class TestPTVolume(PassengerStopToStop):
+
+    name = 'test_pt_interaction_counter'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_town', 'pt_stop_to_stop_volumes', 'test_pt_volumes_bus.json')
+    )
+
+    requirements = ['passenger_stop_to_stop_loading']
+    valid_options = ['bus']
+    options_enabled = True
+
+    weight = 1
+
+
+class LondonRODSVolume(PassengerStopToStop):
+
+    name = 'london_rods_volume'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_volumes_subway_2017.json')
+    )
+
+    requirements = ['passenger_stop_to_stop_loading']
     valid_options = ['subway']
     options_enabled = True
 
@@ -1178,9 +1530,21 @@ class ModeStats(BenchmarkTool):
         self.write_csv(summary_df, csv_path, write_path=write_path)
 
         # get scores and write outputs
-        score = sum(np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model)))
+        score = sum(((np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model))) * 100) ** 2)
 
-        return {'modeshare': score}
+        return {'counters': score}
+
+
+class LondonModeShare(ModeStats):
+
+    requirements = ['mode_share']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 2
+    benchmark_path = get_benchmark_data(
+        os.path.join('london', 'travel-in-london-11', 'modestats.csv')
+    )
 
 
 # Highway Counters
@@ -1371,10 +1735,16 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
+        # tests
+        "test_link_cordon": TestCordon,
+        "test_pt_interaction_counter": TestPTInteraction,
+        "test_pt_volumes": TestPTVolume,
+        "test_town_modeshare": TestTownCommuterStats,
+
+        # latest
         "ireland_highways": IrelandHighwayCountersNew,
-        "london_board_alight_subway": LondonRODS,
-        "london_boundary_cordon_car": LondonBoundaryCordonCar,
-        "london_boundary_cordon_bus": LondonBoundaryCordonBus,
+        # "london_boundary_cordon_car": LondonBoundaryCordonCar,
+        # "london_boundary_cordon_bus": LondonBoundaryCordonBus,
         "london_central_cordon_car": LondonCentralCordonCar,
         "london_central_cordon_bus": LondonCentralCordonBus,
         "london_inner_cordon_car": LondonInnerCordonCar,
@@ -1383,26 +1753,28 @@ class BenchmarkWorkStation(WorkStation):
         "london_thames_screen_bus": LondonThamesScreenBus,
         # "london_northern_screen": LondonNorthScreen,
         # "london_peripheral_screen": LondonPeriphScreen,
+        "london_board_alight_subway": LondonRODS,
+        "london_volume_subway": LondonRODSVolume,
+        "london_modeshares": LondonModeShare,
 
         # old style:
-        "test_pt_interaction_counter": TestPTInteraction,
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
         "dublin_canal_cordon_car": DublinCanalCordonCar,
         "ireland_commuter_modeshare": IrelandCommuterStats,
-        "test_link_cordon": TestCordon,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
-        "test_town_modeshare": TestTownCommuterStats,
     }
 
     BENCHMARK_WEIGHTS = {
-        "test_pt_interaction_counter": 1,
         "test_link_cordon": 1,
+        "test_pt_interaction_counter": 1,
+        "test_pt_volumes": 1,
+        "test_town_modeshare": 1,
+        
         "ireland_highways": 1,
-        "london_board_alight_subway": 1,
         "london_boundary_cordon_car": 1,
         "london_boundary_cordon_bus": 1,
         "london_central_cordon_car": 1,
@@ -1411,6 +1783,9 @@ class BenchmarkWorkStation(WorkStation):
         "london_inner_cordon_bus": 1,
         "london_thames_screen_car": 1,
         "london_thames_screen_bus": 1,
+        "london_board_alight_subway": 1,
+        "london_volume_subway": 1,
+        "london_modeshares": 1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
@@ -1420,7 +1795,6 @@ class BenchmarkWorkStation(WorkStation):
         "ireland_commuter_modeshare": 1,
         "test_town_cordon": 1,
         "test_town_peak_cordon": 1,
-        "test_town_modeshare": 1
     }
 
     benchmarks = {}
