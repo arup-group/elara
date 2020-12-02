@@ -520,6 +520,9 @@ class ChunkWriter:
         self.write()
         self.logger.info(f'Chunkwriter finished for {self.path}')
 
+    def __len__(self):
+        return self.idx + len(self.chunk)
+
 
 def build(start_node: WorkStation, write_path=None) -> list:
     """
