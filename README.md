@@ -94,8 +94,9 @@ Also note that elara is often used within simulation pipelines
 [ie BitSim](https://github.com/arup-group/bitsim). In which case it is typically run using a config. 
 
 ## Installation
-Clone or download this repository. Once available locally, navigate to the folder and run:
+Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to install the libraries in. 
 ```
+
 brew install python3.7
 brew install virtualenv (or equivalent in conda for example)
 virtualenv -p python3.7 venv (or equivalent in conda for example)
@@ -104,7 +105,7 @@ pip3 install -e .
 elara --help
 ```
 
-We striongly recommend using a virtual environment.
+We strongly recommend using a virtual environment.
 
 Note that we require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
 between coordinate reference systems.
