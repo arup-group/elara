@@ -1003,6 +1003,7 @@ class PlanHandlerWorkStation(WorkStation):
                 for name, result in handler.results.items():
                     csv_name = "{}_{}.csv".format(self.config.name, name)
                     self.write_csv(result, csv_name, write_path=write_path)
+                    del result
 
 
 def convert_time_to_seconds(t: str) -> Optional[int]:
