@@ -170,9 +170,11 @@ class AgentGraph(EventHandlerTool):
             return None
 
     def finalise(self):
+        del self.veh_occupancy
         name = "graph.pkl".format(self.option)
         path = os.path.join(self.config.output_path, name)
         nx.write_gpickle(self.graph, path)
+        del self.graph
 
 
 class AgentWaitingTimes(EventHandlerTool):
@@ -311,6 +313,8 @@ class AgentWaitingTimes(EventHandlerTool):
             self.agent_status.pop(agent_id, None)  # agent has finished transit - remove record
 
     def finalise(self):
+        del self.agent_status
+        del self.veh_waiting_occupancy
         self.waiting_time_log.finish()
 
 
@@ -430,21 +434,25 @@ class VolumeCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
         # Create volume counts output
         key = "volume_counts_{}".format(self.option)
-        self.result_dfs[key] = self.elem_gdf.join(
+        counts_df = self.elem_gdf.join(
             counts_df, how="left"
         )
+        self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
-        total_counts = self.counts.sum(1)
+        self.counts = self.counts.sum(1)
 
         totals_df = pd.DataFrame(
-            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
 
+        del self.counts
+
         key = "volume_counts_{}_total".format(self.option)
-        self.result_dfs[key] = self.elem_gdf.join(
+        totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
+        self.result_dfs[key] = totals_df
 
 
 class PassengerCounts(EventHandlerTool):
@@ -624,21 +632,26 @@ class PassengerCounts(EventHandlerTool):
 
         # Create volume counts output
         key = "passenger_counts_{}".format(self.option)
-        self.result_dfs[key] = self.elem_gdf.join(
+        counts_df = self.elem_gdf.join(
             counts_df, how="left"
         )
+        self.result_dfs[key] = counts_df
+        
 
         # calc sum across all recorded attribute classes
-        total_counts = self.counts.sum(1)
+        self.counts = self.counts.sum(1)
 
         totals_df = pd.DataFrame(
-            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
 
+        del self.counts
+
         key = "passenger_counts_{}_total".format(self.option)
-        self.result_dfs[key] = self.elem_gdf.join(
+        totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
+        self.result_dfs[key] = totals_df
 
 
 class RoutePassengerCounts(EventHandlerTool):
@@ -707,8 +720,6 @@ class RoutePassengerCounts(EventHandlerTool):
                                 self.config.time_periods))
 
         self.route_occupancy = dict()
-
-        self.total_counts = None
 
     def process_event(self, elem):
         """
@@ -796,6 +807,8 @@ class RoutePassengerCounts(EventHandlerTool):
         sample size and create dataframes.
         """
 
+        del self.route_occupancy
+
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
@@ -811,11 +824,14 @@ class RoutePassengerCounts(EventHandlerTool):
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
-        total_counts = self.counts.sum(1)
+        self.counts = self.counts.sum(1)
 
         totals_df = pd.DataFrame(
-            data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
+
+        del self.counts
+
         key = "route_passenger_counts_{}_total".format(self.option)
         self.result_dfs[key] = totals_df
 
@@ -848,7 +864,6 @@ class StopInteractions(EventHandlerTool):
         self.boardings = None
         self.alightings = None
         self.agent_status = None
-        self.total_counts = None
 
         # Initialise results storage
         self.result_dfs = dict()  # Result geodataframes ready to export
@@ -960,6 +975,7 @@ class StopInteractions(EventHandlerTool):
         and alightings by link by time slice. The only thing left to do is scale
         by the sample size and create dataframes.
         """
+        del self.agent_status
 
         # Scale final counts
         self.boardings *= 1.0 / self.config.scale_factor
@@ -977,21 +993,25 @@ class StopInteractions(EventHandlerTool):
 
             # Create volume counts output
             key = "{}_{}".format(name, self.option)
-            self.result_dfs[key] = self.elem_gdf.join(
+            counts_df = self.elem_gdf.join(
                 counts_df, how="left"
             )
+            self.result_dfs[key] = counts_df
 
             # calc sum across all recorded attribute classes
-            total_counts = data.sum(1)
+            data = data.sum(1)
 
             totals_df = pd.DataFrame(
-                data=total_counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+                data=data, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
 
+            del data
+
             key = "{}_{}_total".format(name, self.option)
-            self.result_dfs[key] = self.elem_gdf.join(
+            totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
+            self.result_dfs[key] = totals_df
 
 
 class PassengerStopToStopCounts(EventHandlerTool):
@@ -1020,7 +1040,6 @@ class PassengerStopToStopCounts(EventHandlerTool):
         self.elem_ids = None
         self.elem_indices = None
         self.counts = None
-        self.total_counts = None
         self.veh_occupancy = None
 
         # Initialise results storage
@@ -1159,6 +1178,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         counts by od pair, attribute class and time slice. The only thing left to do is scale by the
         sample size and create dataframes.
         """
+        del self.veh_occupancy
 
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
@@ -1167,6 +1187,9 @@ class PassengerStopToStopCounts(EventHandlerTool):
         indexes = [self.elem_ids, self.elem_ids, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+
+        del self.counts
+
         counts_df = counts_df.unstack(level='hour').sort_index()
 
         # Join stop data and build geometry
@@ -1291,6 +1314,8 @@ class EventHandlerWorkStation(WorkStation):
                     self.write_csv(df, csv_name, write_path=write_path)
                     if isinstance(df, gpd.GeoDataFrame):
                         self.write_geojson(df, geojson_name, write_path=write_path)
+
+                    del df
 
 
 def table_position(elem_indices, class_indices, periods, elem_id, attribute_class, time):
