@@ -400,6 +400,7 @@ class TransitSchedule(InputTool):
 
 
 class TransitVehicles(InputTool):
+
     requirements = ['transit_vehicles_path']
     veh_type_mode_map = None
     veh_type_capacity_map = None
@@ -464,6 +465,7 @@ class TransitVehicles(InputTool):
 
 
 class Agents(InputTool):
+
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
@@ -515,6 +517,7 @@ class Agents(InputTool):
 
 
 class Attributes(InputTool):
+    
     requirements = ['attributes_path']
     final_attribute_map = None
     map = None
