@@ -49,7 +49,7 @@ class ModeShareHandler(PlanHandlerTool):
         'transit_schedule',
         'output_config',
         'mode_map',
-        'mode_hierarchy'
+        # 'mode_hierarchy'
     ]
     valid_options = ['all']
 
@@ -132,23 +132,21 @@ class ModeShareHandler(PlanHandlerTool):
                 attribute_class = self.resources['attributes'].map.get(ident, 'not found')
 
                 end_time = None
-                modes = []
+                modes = {}
 
                 for stage in plan:
 
                     if stage.tag == 'leg':
                         mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        distance = float(route_elem.get("distance", 0))
                         if mode == 'pt':
-                            route = stage.xpath('route')[0].text.split('===')[-2]
+                            route = route_elem.text.split('===')[-2]
                             mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
-                        if not mode:
-                            mode = 'subway'
-                            # self.logger.error(f"Not found mode for "
-                            #                   f"agent: {ident}, "
-                            #                   f"route: {route}")
-                        else:
-                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
-                            modes.append(mode)
+                            if not mode:
+                                raise UserWarning(f"No schedule mode found for route {route} by agent id {ident}")
+                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        modes[mode] = modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
                         activity = stage.get('type')
@@ -159,7 +157,7 @@ class ModeShareHandler(PlanHandlerTool):
                         # only add activity modes when there has been previous activity
                         # (ie trip start time)
                         if end_time:
-                            mode = self.resources['mode_hierarchy'].get(modes)
+                            mode = max(modes, key=modes.get)
                             x, y, z, w = self.table_position(
                                 mode,
                                 attribute_class,
@@ -173,7 +171,7 @@ class ModeShareHandler(PlanHandlerTool):
                         end_time = convert_time_to_seconds(stage.get('end_time'))
 
                         # reset modes
-                        modes = []
+                        modes = {}
 
     def finalise(self):
         """
