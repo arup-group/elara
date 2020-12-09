@@ -132,7 +132,7 @@ def test_utility_handler_process_plans(utility_handler, person_single_plan_elem,
     assert utility_handler.utility_log.chunk == [{'agent': 'test1','score': '10'}, {'agent': 'test2','score': '10'}]
 
 
-### Log Handler ###
+### Leg Log Handler ###
 # Wrapping
 test_matsim_time_data = [
     (['06:00:00', '12:45:00', '18:30:00'], '1-18:30:00'),
@@ -223,7 +223,7 @@ def test_distance(x1,y1,x2,y2,dist):
 # Normal Case
 @pytest.fixture
 def agent_log_handler(test_config, input_manager):
-    handler = plan_handlers.AgentLogsHandler(test_config, 'all')
+    handler = plan_handlers.AgentLegLogsHandler(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -295,7 +295,7 @@ def input_bad_plans_manager(test_bad_plans_config, test_bad_plans_paths):
 
 @pytest.fixture
 def agent_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
-    handler = plan_handlers.AgentLogsHandler(test_bad_plans_config, 'all')
+    handler = plan_handlers.AgentLegLogsHandler(test_bad_plans_config, 'all')
 
     resources = input_bad_plans_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -321,6 +321,87 @@ def agent_log_handler_finalised_bad_plans(agent_log_handler_bad_plans):
 def test_finalised_logs_bad_plans(agent_log_handler_finalised_bad_plans):
     handler = agent_log_handler_finalised_bad_plans
     assert len(handler.results) == 0
+
+
+### Trip Log Handler ###
+
+# Normal Case
+@pytest.fixture
+def agent_trip_handler(test_config, input_manager):
+    handler = plan_handlers.AgentTripLogsHandler(test_config, 'all')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.activities_log.chunk) == 0
+    assert len(handler.trips_log.chunk) == 0
+
+    return handler
+
+
+def test_agent_trip_log_handler(agent_trip_handler):
+    handler = agent_trip_handler
+
+    plans = handler.resources['plans']
+    for person in plans.persons:
+        handler.process_plans(person)
+
+    assert len(handler.activities_log.chunk) == 15
+    assert len(handler.trips_log.chunk) == 10
+
+
+@pytest.fixture
+def agent_trip_log_handler_finalised(agent_trip_handler):
+    handler = agent_trip_handler
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    handler.finalise()
+    return handler
+
+
+def test_finalised_logs(agent_trip_log_handler_finalised):
+    handler = agent_trip_log_handler_finalised
+
+    assert len(handler.results) == 0
+
+
+# Plans Wrapping case
+
+@pytest.fixture
+def agent_trip_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
+    handler = plan_handlers.AgentTripLogsHandler(test_bad_plans_config, 'all')
+
+    resources = input_bad_plans_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.activities_log.chunk) == 0
+    assert len(handler.trips_log.chunk) == 0
+
+    return handler
+
+
+@pytest.fixture
+def agent_trips_log_handler_finalised_bad_plans(agent_trip_log_handler_bad_plans):
+    handler = agent_trip_log_handler_bad_plans
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    assert handler.activities_log.chunk[-1].get('end_day') == 1
+    assert handler.trips_log.chunk[-1].get('end_day') == 1
+    handler.finalise()
+    return handler
+
+
+def test_finalised_trips_logs_bad_plans(agent_trips_log_handler_finalised_bad_plans):
+    handler = agent_trips_log_handler_finalised_bad_plans
+    assert len(handler.results) == 0
+
+
+
+
+
+
 
 
 # Plan Handler ###
