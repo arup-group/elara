@@ -38,6 +38,8 @@ class PlanHandlerTool(Tool):
         """
         Return key with greatest value. Note that in the case of join max, the first is returned only.
         """
+        if len(modes) > 2 and 'transit_walk' in modes:
+            del modes['transit_walk']
         return max(modes, key=modes.get)
 
     @staticmethod
