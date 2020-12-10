@@ -135,8 +135,6 @@ class AgentGraph(EventHandlerTool):
 
     def process_event(self, elem) -> None:
         """
-        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
-        events to determine link volume counts.
         :param elem: Event XML element
         """
         event_type = elem.get("type")
@@ -219,8 +217,6 @@ class AgentWaitingTimes(EventHandlerTool):
 
     def process_event(self, elem) -> None:
         """
-        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
-        events to determine link volume counts.
         :param elem: Event XML element
         """
         event_type = elem.get("type")

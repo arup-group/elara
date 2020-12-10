@@ -151,7 +151,7 @@ waiting_times = ["all"]
 
 [plan_handlers]
 mode_share = ["all"]
-agent_logs = ["all"]
+trip_logs = ["all"]
 agent_highway_distances = ["car"]
 trip_highway_distances = ["car"]
 
@@ -237,8 +237,11 @@ Specification of the plan handlers to be run during processing. Currently availa
 include:
 
 * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-* ``agent_logs``: Produce flat output of agent activity logs and leg logs, including times, 
+* ``trip_logs``: Produce flat output of agent activity logs and trip logs, including times, 
 sequences, durations and categories.
+* ``leg_logs``: Produce flat output of agent activity logs and leg logs, including times, 
+sequences, durations and categories. Leg logs include public transport interaction activities.
+* ``agent_utility``: Produce flat output of selected agent plans and utility scores.
 * ``agent_plans``: Produce flat output of agent plans (logs and activities) including unselected 
 plans and scores, 
 including times, 
@@ -261,7 +264,7 @@ Specification of the event handlers to be run post processing. Currently availab
 * ``vkt``: Produce link volume vehicle kms by time slice.
 * ``plan_summary``: Produce leg and activity time and duration summaries.
 * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-with multiple leg modes.
+with multiple leg modes. Suggest not using this in favour of the newer plan handler `trip_logs`.
 
 The associated list attached to each handler allows specification of which modes of transport 
 should be processed using that handler. This allows certain handlers to be activated for public 
