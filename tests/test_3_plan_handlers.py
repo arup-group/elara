@@ -74,6 +74,20 @@ def base_handler(test_config, input_manager):
     return base_handler
 
 
+mode_distances = [
+    ({'a':2, 'b':0.5}, 'a'),
+    ({'a':2, 'b':2}, 'a'),
+    ({'a':2}, 'a'),
+    ({'a':2, 'b':-1}, 'a'),
+    ({None: 1}, None),
+]
+
+
+@pytest.mark.parametrize("modes,mode", mode_distances)
+def get_furthest_mode(modes, mode):
+    assert plan_handlers.PlanHandlerTool.get_furthest_mode(modes) == mode
+
+
 ### Utility Handler ###
 
 @pytest.fixture
@@ -145,16 +159,6 @@ test_matsim_time_data = [
     (['00:00:00'], '1-00:00:00'),
     (['24:00:00'], '2-00:00:00'),
 ]
-
-
-# @pytest.mark.parametrize("times,final_string", test_matsim_time_data)
-# def test_day_wrapping(times, final_string):
-#     current_dt = None
-#     for new_time_str in times:
-#         current_dt = plan_handlers.non_wrapping_datetime(current_dt, new_time_str)
-#     assert isinstance(current_dt, datetime)
-#     assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
-
 
 non_wrapping_test_matsim_time_data = [
     (['06:00:00', '12:45:00', '18:30:00'], '1-18:30:00'),
