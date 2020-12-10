@@ -474,6 +474,7 @@ class AgentTripLogsHandler(PlanHandlerTool):
         super().__init__(config, option)
 
         self.option = option
+        self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
         self.trips_log = None
@@ -525,8 +526,10 @@ class AgentTripLogsHandler(PlanHandlerTool):
                 trips = []
                 trip_seq_idx = 0
 
-                activity_start_dt = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
-                activity_end_dt = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
+                activity_start_dt = self.start_datetime
+                activity_end_dt = self.start_datetime
+                # todo replace this start datetime with a real start datetime using config
+
                 x = None
                 y = None
                 modes = {}
@@ -548,7 +551,7 @@ class AgentTripLogsHandler(PlanHandlerTool):
                                 activity_start_dt, end_time_str, self.logger, idx=ident
                             )
 
-                            duration = activity_end_dt - activity_start_dt
+                            activity_duration = activity_end_dt - activity_start_dt
 
                             x = stage.get('x')
                             y = stage.get('y')
@@ -573,13 +576,14 @@ class AgentTripLogsHandler(PlanHandlerTool):
                                         'end_day': activity_start_dt.day,
                                         'start_s': activities[-1]['end_s'],
                                         'end_s': self.get_seconds(activity_start_dt),
+                                        'duration': trip_duration,
                                         'duration_s': trip_duration.total_seconds(),
                                         'distance': trip_distance,
                                     }
                                 )
 
                                 modes = {}
-                                distance = 0
+                                trip_distance = 0
 
                             activities.append(
                                 {
@@ -595,7 +599,8 @@ class AgentTripLogsHandler(PlanHandlerTool):
                                     'end_day': activity_end_dt.day,
                                     'start_s': self.get_seconds(activity_start_dt),
                                     'end_s': self.get_seconds(activity_end_dt),
-                                    'duration_s': duration.total_seconds()
+                                    'duration': activity_duration,
+                                    'duration_s': activity_duration.total_seconds()
                                 }
                             )
 
@@ -612,7 +617,7 @@ class AgentTripLogsHandler(PlanHandlerTool):
                             if not mode:
                                 raise UserWarning(f"No schedule mode found for route {route} by agent id {ident}")
 
-                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
                         modes[mode] = modes.get(mode, 0) + distance
                         trip_distance += distance
 
