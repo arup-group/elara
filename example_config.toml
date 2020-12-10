@@ -26,7 +26,7 @@ waiting_times = ["all"]
 
 [plan_handlers]
 mode_share = ["all"]
-agent_logs = ["all"]
+trip_logs = ["all"]
 agent_highway_distances = ["car"]
 trip_highway_distances = ["car"]
 

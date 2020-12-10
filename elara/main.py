@@ -188,10 +188,10 @@ def mode_share(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     """
-    Create a mode share output for a given option. Example invocation for option "all" name
-    "test" and scale factor at 20% is:
+    Create a mode share output for a given option. Example invocation for option "all" and
+     scale factor at 20% is:
 
-    $ elara plan-handlers mode-share all -n test -s .2
+    $ elara plan-handlers mode-share all -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
@@ -204,19 +204,56 @@ def mode_share(
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def agent_logs(
+def leg_logs(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
 ):
     """
-    Create an agent logs output for a given option. Example invocation for option "all" name
-    "test" and scale factor at 20% is:
+    Create an agent leg logs output. Example invocation for option "all" is:
 
-    $ elara plan-handlers agent-logs all -n test -s .2
+    $ elara plan-handlers leg-logs all
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
     )
-    override["plan_handlers"]["agent_logs"] = list(options)
+    override["plan_handlers"]["leg_logs"] = list(options)
+    config = Config(override=override)
+    main(config)
+
+
+@plan_handlers.command()
+@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@common_options
+def trip_logs(
+        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create an agent trip logs output. Example invocation for option "all" is:
+
+    $ elara plan-handlers trip-logs all
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["plan_handlers"]["trip_logs"] = list(options)
+    config = Config(override=override)
+    main(config)
+
+
+@plan_handlers.command()
+@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@common_options
+def agent_utility(
+        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create an agent plan utility output. Example invocation for option "all" is:
+
+    $ elara plan-handlers agent-utility all
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["plan_handlers"]["agent_utility"] = list(options)
     config = Config(override=override)
     main(config)
 

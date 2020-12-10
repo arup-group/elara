@@ -74,6 +74,20 @@ def base_handler(test_config, input_manager):
     return base_handler
 
 
+mode_distances = [
+    ({'a':2, 'b':0.5}, 'a'),
+    ({'a':2, 'b':2}, 'a'),
+    ({'a':2}, 'a'),
+    ({'a':2, 'b':-1}, 'a'),
+    ({None: 1}, None),
+]
+
+
+@pytest.mark.parametrize("modes,mode", mode_distances)
+def get_furthest_mode(modes, mode):
+    assert plan_handlers.PlanHandlerTool.get_furthest_mode(modes) == mode
+
+
 ### Utility Handler ###
 
 @pytest.fixture
@@ -132,7 +146,7 @@ def test_utility_handler_process_plans(utility_handler, person_single_plan_elem,
     assert utility_handler.utility_log.chunk == [{'agent': 'test1','score': '10'}, {'agent': 'test2','score': '10'}]
 
 
-### Log Handler ###
+### Leg Log Handler ###
 # Wrapping
 test_matsim_time_data = [
     (['06:00:00', '12:45:00', '18:30:00'], '1-18:30:00'),
@@ -145,16 +159,6 @@ test_matsim_time_data = [
     (['00:00:00'], '1-00:00:00'),
     (['24:00:00'], '2-00:00:00'),
 ]
-
-
-# @pytest.mark.parametrize("times,final_string", test_matsim_time_data)
-# def test_day_wrapping(times, final_string):
-#     current_dt = None
-#     for new_time_str in times:
-#         current_dt = plan_handlers.non_wrapping_datetime(current_dt, new_time_str)
-#     assert isinstance(current_dt, datetime)
-#     assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
-
 
 non_wrapping_test_matsim_time_data = [
     (['06:00:00', '12:45:00', '18:30:00'], '1-18:30:00'),
@@ -222,8 +226,8 @@ def test_distance(x1,y1,x2,y2,dist):
 
 # Normal Case
 @pytest.fixture
-def agent_log_handler(test_config, input_manager):
-    handler = plan_handlers.AgentLogsHandler(test_config, 'all')
+def agent_leg_log_handler(test_config, input_manager):
+    handler = plan_handlers.AgentLegLogsHandler(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -234,8 +238,8 @@ def agent_log_handler(test_config, input_manager):
     return handler
 
 
-def test_agent_log_handler(agent_log_handler):
-    handler = agent_log_handler
+def test_agent_log_handler(agent_leg_log_handler):
+    handler = agent_leg_log_handler
 
     plans = handler.resources['plans']
     for person in plans.persons:
@@ -246,8 +250,8 @@ def test_agent_log_handler(agent_log_handler):
 
 
 @pytest.fixture
-def agent_log_handler_finalised(agent_log_handler):
-    handler = agent_log_handler
+def agent_leg_log_handler_finalised(agent_leg_log_handler):
+    handler = agent_leg_log_handler
     plans = handler.resources['plans']
     for plan in plans.persons:
         handler.process_plans(plan)
@@ -255,8 +259,8 @@ def agent_log_handler_finalised(agent_log_handler):
     return handler
 
 
-def test_finalised_logs(agent_log_handler_finalised):
-    handler = agent_log_handler_finalised
+def test_finalised_logs(agent_leg_log_handler_finalised):
+    handler = agent_leg_log_handler_finalised
 
     assert len(handler.results) == 0
 
@@ -294,8 +298,8 @@ def input_bad_plans_manager(test_bad_plans_config, test_bad_plans_paths):
 
 
 @pytest.fixture
-def agent_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
-    handler = plan_handlers.AgentLogsHandler(test_bad_plans_config, 'all')
+def agent_leg_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
+    handler = plan_handlers.AgentLegLogsHandler(test_bad_plans_config, 'all')
 
     resources = input_bad_plans_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -307,8 +311,8 @@ def agent_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
 
 
 @pytest.fixture
-def agent_log_handler_finalised_bad_plans(agent_log_handler_bad_plans):
-    handler = agent_log_handler_bad_plans
+def agent_leg_log_handler_finalised_bad_plans(agent_leg_log_handler_bad_plans):
+    handler = agent_leg_log_handler_bad_plans
     plans = handler.resources['plans']
     for plan in plans.persons:
         handler.process_plans(plan)
@@ -318,8 +322,220 @@ def agent_log_handler_finalised_bad_plans(agent_log_handler_bad_plans):
     return handler
 
 
-def test_finalised_logs_bad_plans(agent_log_handler_finalised_bad_plans):
-    handler = agent_log_handler_finalised_bad_plans
+def test_finalised_logs_bad_plans(agent_leg_log_handler_finalised_bad_plans):
+    handler = agent_leg_log_handler_finalised_bad_plans
+    assert len(handler.results) == 0
+
+
+### Trip Log Handler ###
+
+# Normal Case
+@pytest.fixture
+def agent_trip_handler(test_config, input_manager):
+    handler = plan_handlers.AgentTripLogsHandler(test_config, 'all')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.activities_log.chunk) == 0
+    assert len(handler.trips_log.chunk) == 0
+
+    return handler
+
+
+def test_agent_trip_log_process_person(agent_trip_handler):
+    handler = agent_trip_handler
+
+    person = """
+    <person id="nick">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+
+    assert handler.activities_log.chunk[0]["start_s"] == 0
+    assert handler.activities_log.chunk[0]["duration_s"] == 8*60*60
+    assert handler.activities_log.chunk[0]["end_s"] == 8*60*60
+    assert handler.activities_log.chunk[0]["act"] == "home"
+
+    assert handler.trips_log.chunk[0]["start_s"] == 8*60*60
+    assert handler.trips_log.chunk[0]["duration_s"] == 4
+    assert handler.trips_log.chunk[0]["end_s"] == 8*60*60 + 4
+    assert handler.trips_log.chunk[0]["mode"] == "car"
+
+    assert handler.activities_log.chunk[1]["start_s"] == 8*60*60 + 4
+    assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 4)
+    assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
+    assert handler.activities_log.chunk[1]["act"] == "work"
+
+
+def test_agent_trip_log_process_pt_bus_person(agent_trip_handler):
+    handler = agent_trip_handler
+    handler.resources['transit_schedule'].route_to_mode_map["rail_dummy"] = "rail"
+
+    person = """
+    <person id="nick">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+			</leg>
+			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+			<leg mode="pt" trav_time="00:43:42">
+				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+			</leg>
+			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+            <leg mode="pt" trav_time="00:43:42">
+				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="1010.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
+			</leg>
+			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+			<leg mode="transit_walk" trav_time="00:01:18">
+				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+			</leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+
+    assert handler.activities_log.chunk[0]["start_s"] == 0
+    assert handler.activities_log.chunk[0]["duration_s"] == 8*60*60
+    assert handler.activities_log.chunk[0]["end_s"] == 8*60*60
+    assert handler.activities_log.chunk[0]["act"] == "home"
+
+    assert handler.trips_log.chunk[0]["start_s"] == 8*60*60
+    assert handler.trips_log.chunk[0]["duration_s"] == 1.5*60*60
+    assert handler.trips_log.chunk[0]["end_s"] == 8*60*60 + 1.5*60*60
+    assert handler.trips_log.chunk[0]["mode"] == "bus"
+
+    assert handler.activities_log.chunk[1]["start_s"] == 8*60*60 + 1.5*60*60
+    assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 1.5*60*60)
+    assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
+    assert handler.activities_log.chunk[1]["act"] == "work"
+
+
+def test_agent_trip_log_process_pt_rail_person(agent_trip_handler):
+    handler = agent_trip_handler
+    handler.resources['transit_schedule'].route_to_mode_map["rail_dummy"] = "rail"
+
+    person = """
+    <person id="nick">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+			</leg>
+			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+			<leg mode="pt" trav_time="00:43:42">
+				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+			</leg>
+			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+            <leg mode="pt" trav_time="00:43:42">
+				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
+			</leg>
+			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+			<leg mode="transit_walk" trav_time="00:01:18">
+				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+			</leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+
+    assert handler.activities_log.chunk[0]["start_s"] == 0
+    assert handler.activities_log.chunk[0]["duration_s"] == 8*60*60
+    assert handler.activities_log.chunk[0]["end_s"] == 8*60*60
+    assert handler.activities_log.chunk[0]["act"] == "home"
+
+    assert handler.trips_log.chunk[0]["start_s"] == 8*60*60
+    assert handler.trips_log.chunk[0]["duration_s"] == 1.5*60*60
+    assert handler.trips_log.chunk[0]["end_s"] == 8*60*60 + 1.5*60*60
+    assert handler.trips_log.chunk[0]["mode"] == "rail"
+
+    assert handler.activities_log.chunk[1]["start_s"] == 8*60*60 + 1.5*60*60
+    assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 1.5*60*60)
+    assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
+    assert handler.activities_log.chunk[1]["act"] == "work"
+
+
+def test_agent_trip_log_handler(agent_trip_handler):
+    handler = agent_trip_handler
+
+    plans = handler.resources['plans']
+    for person in plans.persons:
+        handler.process_plans(person)
+
+    assert len(handler.activities_log.chunk) == 15
+    assert len(handler.trips_log.chunk) == 10
+
+
+@pytest.fixture
+def agent_trip_log_handler_finalised(agent_trip_handler):
+    handler = agent_trip_handler
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    handler.finalise()
+    return handler
+
+
+def test_finalised_logs(agent_trip_log_handler_finalised):
+    handler = agent_trip_log_handler_finalised
+
+    assert len(handler.results) == 0
+
+
+# Plans Wrapping case
+
+@pytest.fixture
+def agent_trip_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
+    handler = plan_handlers.AgentTripLogsHandler(test_bad_plans_config, 'all')
+
+    resources = input_bad_plans_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    assert len(handler.activities_log.chunk) == 0
+    assert len(handler.trips_log.chunk) == 0
+
+    return handler
+
+
+@pytest.fixture
+def agent_trips_log_handler_finalised_bad_plans(agent_trip_log_handler_bad_plans):
+    handler = agent_trip_log_handler_bad_plans
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    assert handler.activities_log.chunk[-1].get('end_day') == 1
+    assert handler.trips_log.chunk[-1].get('end_day') == 1
+    handler.finalise()
+    return handler
+
+
+def test_finalised_trips_logs_bad_plans(agent_trips_log_handler_finalised_bad_plans):
+    handler = agent_trips_log_handler_finalised_bad_plans
     assert len(handler.results) == 0
 
 

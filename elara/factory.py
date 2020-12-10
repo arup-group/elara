@@ -344,7 +344,7 @@ class WorkStation:
         missing = set(self.requirements) - set(supplier_tools)
         if missing:
             raise ValueError(
-                f'Missing requirements: {missing} from suppliers: {self.suppliers}.'
+                f'{self} missing requirements: {missing} from suppliers: {self.suppliers}.'
             )
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:

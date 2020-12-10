@@ -25,6 +25,21 @@ class PlanHandlerTool(Tool):
 
         super().build(resources, write_path)
 
+    def extract_mode_from_route_elem(self, route_elem):
+        """
+        Extract mode and route identifieers from a route xml element.
+        """
+        route = route_elem.text.split('===')[-2]
+        mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
+        return mode, route
+
+    @staticmethod
+    def get_furthest_mode(modes):
+        """
+        Return key with greatest value. Note that in the case of join max, the first is returned only.
+        """
+        return max(modes, key=modes.get)
+
     @staticmethod
     def generate_indices_map(list_in):
         """
@@ -157,7 +172,7 @@ class ModeShareHandler(PlanHandlerTool):
                         # only add activity modes when there has been previous activity
                         # (ie trip start time)
                         if end_time:
-                            mode = max(modes, key=modes.get)
+                            mode = self.get_furthest_mode(modes)
                             x, y, z, w = self.table_position(
                                 mode,
                                 attribute_class,
@@ -247,7 +262,7 @@ class ModeShareHandler(PlanHandlerTool):
         return x, y, z, w
 
 
-class AgentLogsHandler(PlanHandlerTool):
+class AgentLegLogsHandler(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule']
     valid_options = ['all']
@@ -272,6 +287,7 @@ class AgentLogsHandler(PlanHandlerTool):
         super().__init__(config, option)
 
         self.option = option
+        self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
         self.legs_log = None
@@ -290,8 +306,8 @@ class AgentLogsHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        activity_csv_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
-        legs_csv_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        activity_csv_name = f"leg_activity_log_{self.option}.csv"
+        legs_csv_name = f"leg_log_{self.option}.csv"
 
         self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
         self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path)
@@ -325,7 +341,7 @@ class AgentLogsHandler(PlanHandlerTool):
                 trip_seq_idx = 0
                 act_seq_idx = 0
 
-                arrival_dt = datetime.strptime("1-00:00:00", '%d-%H:%M:%S')
+                arrival_dt = self.start_datetime
                 activity_end_dt = None
                 x = None
                 y = None
@@ -379,15 +395,10 @@ class AgentLogsHandler(PlanHandlerTool):
                         mode = stage.get('mode')
                         route = stage.xpath('route')[0]
                         if mode == 'pt':
-                            route_id = route.text.split('===')[-2]
-                            mode = self.resources['transit_schedule'].route_to_mode_map.get(route_id)
-                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
-
+                            mode, route_id = self.extract_mode_from_route_elem(route)
                             if not mode:
-                                mode = "subway"
-                                # raise UserWarning(f"Not found mode for "
-                                #                   f"agent: {ident}, "
-                                #                   f"route: {route_id}")
+                                raise UserWarning(f"No schedule mode found for route {route_id} by agent id {ident}")
+                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
@@ -447,6 +458,208 @@ class AgentLogsHandler(PlanHandlerTool):
         m = dt.minute
         s = dt.second
         return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
+
+
+class AgentTripLogsHandler(PlanHandlerTool):
+
+    requirements = ['plans', 'transit_schedule', 'attributes']
+    valid_options = ['all']
+
+    # todo make it so that 'all' option not required (maybe for all plan handlers)
+
+    """
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
+    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
+    to calculate the start of the next activity. This results in time waiting to enter 
+    first link as being activity time. Therefore activity durations are slightly over reported 
+    and leg duration under reported.
+    """
+
+    def __init__(self, config, option=None):
+        """
+        Initiate handler.
+        :param config: config
+        :param option: str, mode option
+        """
+
+        super().__init__(config, option)
+
+        self.option = option
+        self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
+
+        self.activities_log = None
+        self.trips_log = None
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+
+    def __str__(self):
+        return f'LogHandler'
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        """
+        super().build(resources, write_path=write_path)
+
+        activity_csv_name = f"trip_activity_log_{self.option}.csv"
+        trips_csv_name = f"trip_log_{self.option}.csv"
+
+        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
+        self.trips_log = self.start_chunk_writer(trips_csv_name, write_path=write_path)
+
+    def process_plans(self, elem):
+
+        """
+        Build list of trip and activity logs (dicts) for each selected plan.
+
+        Note that this assumes that first stage of a plan is ALWAYS an activity.
+        Note that activity wrapping is not dealt with here.
+
+        :return: Tuple[List[dict]]
+        """
+        for plan in elem:
+
+            ident = elem.get('id')
+            attribute_class = self.resources['attributes'].map.get(ident, 'not found')
+
+            if plan.get('selected') == 'yes':
+
+                # check that plan starts with an activity
+                if not plan[0].tag == 'activity':
+                    raise UserWarning('Plan does not start with activity.')
+                if plan[0].get('type') == 'pt interaction':
+                    raise UserWarning('Plan cannot start with activity type "pt interaction".')
+
+                activities = []
+                trips = []
+                act_seq_idx = 0
+
+                activity_start_dt = self.start_datetime
+                activity_end_dt = self.start_datetime
+                # todo replace this start datetime with a real start datetime using config
+
+                x = None
+                y = None
+                modes = {}
+                trip_distance = 0
+
+                for stage in plan:
+
+                    if stage.tag == 'activity':
+                        act_type = stage.get('type')
+
+                        if not act_type == 'pt interaction':
+
+                            act_seq_idx += 1  # increment for a new trip idx
+                            trip_duration = activity_start_dt - activity_end_dt
+
+                            end_time_str = stage.get('end_time', '23:59:59')
+
+                            activity_end_dt = matsim_time_to_datetime(
+                                activity_start_dt, end_time_str, self.logger, idx=ident
+                            )
+
+                            activity_duration = activity_end_dt - activity_start_dt
+
+                            x = stage.get('x')
+                            y = stage.get('y')
+
+                            if modes:  # add to trips log
+
+                                trips.append(
+                                    {
+                                        'agent': ident,
+                                        'attribute': attribute_class,
+                                        'seq': act_seq_idx-1,
+                                        'mode': self.get_furthest_mode(modes),
+                                        'ox': activities[-1]['x'],
+                                        'oy': activities[-1]['y'],
+                                        'dx': x,
+                                        'dy': y,
+                                        'o_act': activities[-1]['act'],
+                                        'd_act': act_type,
+                                        'start': activities[-1]['end'],
+                                        'start_day': activities[-1]['end_day'],
+                                        'end': activity_start_dt.time(),
+                                        'end_day': activity_start_dt.day,
+                                        'start_s': activities[-1]['end_s'],
+                                        'end_s': self.get_seconds(activity_start_dt),
+                                        'duration': trip_duration,
+                                        'duration_s': trip_duration.total_seconds(),
+                                        'distance': trip_distance,
+                                    }
+                                )
+
+                                modes = {}  # reset for next trip
+                                trip_distance = 0  # reset for next trip
+
+                            activities.append(
+                                {
+                                    'agent': ident,
+                                    'attribute': attribute_class,
+                                    'seq': act_seq_idx,
+                                    'act': act_type,
+                                    'x': x,
+                                    'y': y,
+                                    'start': activity_start_dt.time(),
+                                    'start_day': activity_start_dt.day,
+                                    'end': activity_end_dt.time(),
+                                    'end_day': activity_end_dt.day,
+                                    'start_s': self.get_seconds(activity_start_dt),
+                                    'end_s': self.get_seconds(activity_end_dt),
+                                    'duration': activity_duration,
+                                    'duration_s': activity_duration.total_seconds()
+                                }
+                            )
+
+                            activity_start_dt = activity_end_dt
+
+                    elif stage.tag == 'leg':
+
+                        mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        distance = float(route_elem.get("distance", 0))
+
+                        if mode == 'pt':
+                            mode, route_id = self.extract_mode_from_route_elem(route_elem)
+                            if not mode:
+                                raise UserWarning(f"No schedule mode found for route {route_id} by agent id {ident}")
+
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
+                        modes[mode] = modes.get(mode, 0) + distance
+                        trip_distance += distance
+
+                        trav_time = stage.get('trav_time')
+                        h, m, s = trav_time.split(":")
+                        td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                        activity_start_dt += td
+
+                self.activities_log.add(activities)
+                self.trips_log.add(trips)
+
+    def finalise(self):
+        """
+        Finalise aggregates and joins these results as required and creates a dataframe.
+        """
+        self.activities_log.finish()
+        self.trips_log.finish()
+
+    @staticmethod
+    def get_seconds(dt: datetime) -> int:
+        """
+        Extract time of day in seconds from datetime.
+        :param dt: datetime
+        :return: int, seconds
+        """
+        d = dt.day
+        h = dt.hour
+        m = dt.minute
+        s = dt.second
+        return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
+
 
 class UtilityHandler(PlanHandlerTool):
 
@@ -945,7 +1158,8 @@ class PlanHandlerWorkStation(WorkStation):
 
     tools = {
         "mode_share": ModeShareHandler,
-        "agent_logs": AgentLogsHandler,
+        "leg_logs": AgentLegLogsHandler,
+        "trip_logs": AgentTripLogsHandler,
         "agent_plans": AgentPlansHandler,
         "agent_utility": UtilityHandler,
         "agent_highway_distances": AgentHighwayDistanceHandler,
