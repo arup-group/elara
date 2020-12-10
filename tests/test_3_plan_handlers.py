@@ -79,6 +79,7 @@ mode_distances = [
     ({'a':2, 'b':2}, 'a'),
     ({'a':2}, 'a'),
     ({'a':2, 'b':-1}, 'a'),
+    ({'transit_walk':2, 'b':1}, 'b'),
     ({None: 1}, None),
 ]
 
