@@ -141,7 +141,7 @@ class LinkCounter(BenchmarkTool):
 
         # Extract simulation results
         # Build paths and load appropriate volume counts from previous workstation
-        results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
+        results_name = "volume_counts_{}.csv".format(self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=0)
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
@@ -559,7 +559,7 @@ class TransitInteraction(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         model_results = {}
         for direction in ["boardings", "alightings"]:
-            results_name = f"{self.config.name}_{direction}_{self.mode}.csv"
+            results_name = f"stop_{direction}_{self.mode}.csv"
             results_path = os.path.join(self.config.output_path, results_name)
             results_df = pd.read_csv(results_path, index_col=0)
             results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
@@ -845,7 +845,7 @@ class PassengerStopToStop(BenchmarkTool):
 
         # Extract simulation results
         # Build paths and load appropriate volume counts from previous workstation
-        results_name = f"{self.config.name}_stop_to_stop_passenger_counts_{self.mode}_total.csv"
+        results_name = f"stop_to_stop_passenger_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=False)
         results_df.origin = results_df.origin.map(str)  # indices converted to strings
@@ -1096,7 +1096,7 @@ class PointsCounter(BenchmarkTool):
 
         # Extract simulation results
         # Build paths and load appropriate volume counts from previous workstation
-        results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
+        results_name = "volume_counts_{}.csv".format(self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=0)
 
@@ -1236,7 +1236,7 @@ class Cordon(BenchmarkTool):
         logger.info(f'building {self.__str__()}')
 
         # Build paths and load appropriate volume counts
-        results_name = "{}_volume_counts_{}.csv".format(self.config.name, self.mode)
+        results_name = "volume_counts_{}.csv".format(self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=0)
         results_df.index.name = 'link_id'
@@ -1513,7 +1513,7 @@ class ModeStats(BenchmarkTool):
         :return: Dictionary of scores
         """
         # Build paths and load appropriate volume counts
-        results_name = "{}_mode_shares_all_total.csv".format(self.name)
+        results_name = "mode_shares_all_total.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path,
                                  header=None,
