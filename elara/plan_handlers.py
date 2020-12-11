@@ -1215,7 +1215,7 @@ class PlanHandlerWorkStation(WorkStation):
                 self.logger.info(f'Writing results from {handler.__str__()}')
 
                 for name, result in handler.results.items():
-                    csv_name = "{}_{}.csv".format(self.config.name, name)
+                    csv_name = "{}.csv".format(name)
                     self.write_csv(result, csv_name, write_path=write_path)
                     del result
 
