@@ -211,7 +211,7 @@ class AgentWaitingTimes(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        csv_name = "{}_agent_waiting_times_{}.csv".format(self.config.name, self.option)
+        csv_name = "agent_waiting_times_{}.csv".format(self.option)
 
         self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
@@ -1003,7 +1003,7 @@ class StopInteractions(EventHandlerTool):
 
             del data
 
-            key = "{}_{}_total".format(name, self.option)
+            key = "stop_{}_{}".format(name, self.option)
             totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
@@ -1304,8 +1304,8 @@ class EventHandlerWorkStation(WorkStation):
                 self.logger.info(f'Writing results for {handler.__str__()}')
 
                 for name, df in handler.result_dfs.items():
-                    csv_name = "{}_{}.csv".format(self.config.name, name)
-                    geojson_name = "{}_{}.geojson".format(self.config.name, name)
+                    csv_name = "{}.csv".format(name)
+                    geojson_name = "{}.geojson".format(name)
 
                     self.write_csv(df, csv_name, write_path=write_path)
                     if isinstance(df, gpd.GeoDataFrame):
