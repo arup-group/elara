@@ -549,6 +549,7 @@ class Attributes(InputTool):
         }
 
         if self.config.version == 12:
+            self.logger.debug("Loading attribute map from V12 plan")
             self.map = dict(
                 [
                     self.get_person_attribute_from_plans(elem, 'subpopulation')
@@ -557,6 +558,7 @@ class Attributes(InputTool):
             )
 
         else:
+            self.logger.debug("Loading attribute map from V11 personAttributes")
             self.map = dict(
                 [
                     self.get_attribute_text(elem, 'subpopulation')
@@ -639,7 +641,7 @@ class OutputConfig(InputTool):
         ):
             self.sub_populations.add(e.get('value'))
 
-        self.modes = list(self.modes) + ["transit_walk"]
+        self.modes = list(self.modes | set(["transit_walk", "pt"]))
         self.activities = list(self.activities)
         self.sub_populations = list(self.sub_populations)
 
