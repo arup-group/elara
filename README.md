@@ -127,8 +127,9 @@ detailed further below and an [example config](https://github.com/arup-group/ela
 name = "test_town"
 time_periods = 24
 scale_factor = 0.01
+version = 11
 crs = "EPSG:27700"
-verbose = INFO
+verbose = true
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
@@ -359,6 +360,7 @@ Options:
   -f, --full                  Option to disable output contracting.
   -e, --epsg TEXT             EPSG string, defaults to 'EPSG:27700' (UK).
   -s, --scale_factor FLOAT    Scale factor, defaults to 0.1 (10%).
+  -v, --version INT           MATSim version {11,12}, defaults to 11.
   -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
   -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
   -i, --inputs_path PATH      Inputs path location, defaults to current root.
