@@ -44,10 +44,32 @@ def test_config():
     return config
 
 
+@pytest.fixture
+def test_config_v12():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_v12.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+def test_v12_config(test_config_v12):
+    assert test_config_v12.version == 12
+
+
 # Paths
 @pytest.fixture
 def test_paths(test_config):
     paths = PathFinderWorkStation(test_config)
+    paths.connect(managers=None, suppliers=None)
+    paths.load_all_tools()
+    paths.build()
+    assert set(paths.resources) == set(paths.tools)
+    return paths
+
+
+@pytest.fixture
+def test_paths_v12(test_config_v12):
+    paths = PathFinderWorkStation(test_config_v12)
     paths.connect(managers=None, suppliers=None)
     paths.load_all_tools()
     paths.build()
@@ -65,10 +87,27 @@ def input_manager(test_config, test_paths):
     return input_workstation
 
 
+@pytest.fixture
+def input_manager_v12(test_config_v12, test_paths_v12):
+    input_workstation = InputsWorkStation(test_config_v12)
+    input_workstation.connect(managers=None, suppliers=[test_paths_v12])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+    return input_workstation
+
+
 # Base
 @pytest.fixture
 def base_handler(test_config, input_manager):
     base_handler = plan_handlers.PlanHandlerTool(test_config, 'all')
+    assert base_handler.option == 'all'
+    base_handler.build(input_manager.resources, write_path=test_outputs)
+    return base_handler
+
+
+@pytest.fixture
+def base_handler_v12(test_config_v12, input_manager):
+    base_handler = plan_handlers.PlanHandlerTool(test_config_v12, 'all')
     assert base_handler.option == 'all'
     base_handler.build(input_manager.resources, write_path=test_outputs)
     return base_handler
@@ -87,6 +126,59 @@ mode_distances = [
 @pytest.mark.parametrize("modes,mode", mode_distances)
 def get_furthest_mode(modes, mode):
     assert plan_handlers.PlanHandlerTool.get_furthest_mode(modes) == mode
+
+
+def test_extract_mode_from_v11_route_elem(base_handler):
+    class Resource:
+        route_to_mode_map = {"a":"bus"}
+    base_handler.resources['transit_schedule'] = Resource()
+    string = """
+    <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" 
+    distance="10100.0">PT1===home_stop_out===city_line===a===work_stop_in</route>
+    """
+    elem = etree.fromstring(string)
+    assert base_handler.extract_mode_from_v11_route_elem(elem) == ("bus", 'a')
+
+
+def test_extract_mode_from_v12_route_elem(base_handler):
+    class Resource:
+        route_to_mode_map = {"a":"bus"}
+    base_handler.resources['transit_schedule'] = Resource()
+    string = """
+    <route type="default_pt" start_link="1" 
+    end_link="2" trav_time="00:33:03" distance="2772.854305426653">
+    {"transitRouteId":"a","boardingTime":"09:15:00","transitLineId":"b",
+    "accessFacilityId":"1","egressFacilityId":"2"}</route>
+    """
+    elem = etree.fromstring(string)
+    assert base_handler.extract_mode_from_v12_route_elem(elem) == ("bus", 'a')
+
+
+def test_extract_mode_from_route_elem_v11(base_handler):
+    class Resource:
+        route_to_mode_map = {"a":"bus"}
+    base_handler.resources['transit_schedule'] = Resource()
+    string = """
+    <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" 
+    distance="10100.0">PT1===home_stop_out===city_line===a===work_stop_in</route>
+    """
+    elem = etree.fromstring(string)
+    assert base_handler.extract_mode_from_route_elem(elem) == ("bus", 'a')
+
+
+def test_extract_mode_from_route_elem_v12(base_handler_v12):
+    class Resource:
+        route_to_mode_map = {"a":"bus"}
+    base_handler_v12.resources['transit_schedule'] = Resource()
+    print(base_handler_v12.config.version)
+    string = """
+    <route type="default_pt" start_link="1" 
+    end_link="2" trav_time="00:33:03" distance="2772.854305426653">
+    {"transitRouteId":"a","boardingTime":"09:15:00","transitLineId":"b",
+    "accessFacilityId":"1","egressFacilityId":"2"}</route>
+    """
+    elem = etree.fromstring(string)
+    assert base_handler_v12.extract_mode_from_route_elem(elem) == ("bus", 'a')
 
 
 ### Utility Handler ###
@@ -121,7 +213,6 @@ def utility_handler(test_config, input_manager):
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     assert len(handler.utility_log.chunk) == 0
-
     return handler
 
 

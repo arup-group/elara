@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
+import json
 
 from elara.factory import Tool, WorkStation
 
@@ -27,9 +28,26 @@ class PlanHandlerTool(Tool):
 
     def extract_mode_from_route_elem(self, route_elem):
         """
-        Extract mode and route identifieers from a route xml element.
+        Extract mode and route identifieers from a MATSim route xml element.
+        """
+        if self.config.version == 11:
+            return self.extract_mode_from_v11_route_elem(route_elem)
+        return self.extract_mode_from_v12_route_elem(route_elem)
+
+    def extract_mode_from_v11_route_elem(self, route_elem):
+        """
+        Extract mode and route identifieers from a MATSim v12 route xml element.
         """
         route = route_elem.text.split('===')[-2]
+        mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
+        return mode, route
+
+    def extract_mode_from_v12_route_elem(self, route_elem):
+        """
+        Extract mode and route identifieers from a route xml element.
+        """
+        route_dict = json.loads(route_elem.text.strip())
+        route = route_dict["transitRouteId"]
         mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
         return mode, route
 
@@ -142,7 +160,7 @@ class ModeShareHandler(PlanHandlerTool):
         events to determine link volume counts.
         :param elem: Plan XML element
         """
-        for plan in elem:
+        for plan in elem.xpath(".//plan"):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
@@ -324,7 +342,7 @@ class AgentLegLogsHandler(PlanHandlerTool):
 
         :return: Tuple[List[dict]]
         """
-        for plan in elem:
+        for plan in elem.xpath(".//plan"):
 
             if plan.get('selected') == 'yes':
 
@@ -522,7 +540,7 @@ class AgentTripLogsHandler(PlanHandlerTool):
 
         :return: Tuple[List[dict]]
         """
-        for plan in elem:
+        for plan in elem.xpath(".//plan"):
 
             ident = elem.get('id')
             attribute_class = self.resources['attributes'].map.get(ident, 'not found')
@@ -712,7 +730,7 @@ class UtilityHandler(PlanHandlerTool):
 
         ident = elem.get('id')
 
-        for plan in elem:
+        for plan in elem.xpath(".//plan"):
 
             if plan.get('selected') == 'yes':
 
@@ -797,7 +815,7 @@ class AgentPlansHandler(PlanHandlerTool):
         if not self.option == "all" and not subpop == self.option:
             return None
 
-        for pidx, plan in enumerate(elem):
+        for pidx, plan in enumerate(elem.xpath(".//plan")):
 
             selected = str(plan.get('selected'))
             score = float(plan.get('score', 0))
@@ -978,7 +996,7 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         """
         ident = elem.get('id')
 
-        for plan in elem:
+        for plan in elem.xpath(".//plan"):
             if plan.get('selected') == 'yes':
 
                 for stage in plan:
@@ -1102,7 +1120,7 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
         """
         ident = elem.get('id')
 
-        for plan in elem:
+        for plan in elem.xpath(".//plan"):
             if plan.get('selected') == 'yes':
                 
                 trips = []
