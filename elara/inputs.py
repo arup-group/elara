@@ -548,12 +548,21 @@ class Attributes(InputTool):
             "freight": "freight",
         }
 
-        self.map = dict(
-            [
-                self.get_attribute_text(elem, 'subpopulation')
-                for elem in get_elems(path, "object")
-            ]
-        )
+        if self.config.version == 12:
+            self.map = dict(
+                [
+                    self.get_person_attribute_from_plans(elem, 'subpopulation')
+                    for elem in get_elems(path, "person")
+                ]
+            )
+
+        else:
+            self.map = dict(
+                [
+                    self.get_attribute_text(elem, 'subpopulation')
+                    for elem in get_elems(path, "object")
+                ]
+            )
         # self.license = dict(
         #     [
         #         self.get_attribute_text(elem, 'license')
@@ -567,8 +576,12 @@ class Attributes(InputTool):
     def get_attribute_text(self, elem, tag):
         ident = elem.xpath("@id")[0]
         attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
-        # if not attribute:
-        #     return ident, None
+        attribute = self.final_attribute_map.get(attribute.text, attribute.text)
+        return ident, attribute
+
+    def get_person_attribute_from_plans(self, elem, tag):
+        ident = elem.xpath("@id")[0]
+        attribute = elem.find(f'.//attributes/attribute[@name="{tag}"]')
         attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
 
