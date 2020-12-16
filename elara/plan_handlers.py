@@ -26,13 +26,16 @@ class PlanHandlerTool(Tool):
 
         super().build(resources, write_path)
 
-    def extract_mode_from_route_elem(self, route_elem):
+    def extract_mode_from_route_elem(self, leg_mode, route_elem):
         """
         Extract mode and route identifieers from a MATSim route xml element.
         """
         if self.config.version == 11:
-            return self.extract_mode_from_v11_route_elem(route_elem)
-        return self.extract_mode_from_v12_route_elem(route_elem)
+            if leg_mode == "pt":
+                return self.extract_mode_from_v11_route_elem(route_elem)
+            return leg_mode
+
+        return leg_mode
 
     def extract_mode_from_v11_route_elem(self, route_elem):
         """
@@ -40,16 +43,15 @@ class PlanHandlerTool(Tool):
         """
         route = route_elem.text.split('===')[-2]
         mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
-        return mode, route
+        return mode
 
-    def extract_mode_from_v12_route_elem(self, route_elem):
+    def extract_routeid_from_v12_route_elem(self, route_elem):
         """
         Extract mode and route identifieers from a route xml element.
         """
         route_dict = json.loads(route_elem.text.strip())
         route = route_dict["transitRouteId"]
-        mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
-        return mode, route
+        return route
 
     @staticmethod
     def get_furthest_mode(modes):
@@ -122,8 +124,7 @@ class ModeShareHandler(PlanHandlerTool):
         super().build(resources, write_path=write_path)
 
         modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
-        if 'pt' in modes:
-            modes.remove('pt')
+
         self.logger.debug(f'modes = {modes}')
 
         activities = self.resources['output_config'].activities
@@ -172,14 +173,11 @@ class ModeShareHandler(PlanHandlerTool):
                 for stage in plan:
 
                     if stage.tag == 'leg':
-                        mode = stage.get('mode')
+                        leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
-                        if mode == 'pt':
-                            route = route_elem.text.split('===')[-2]
-                            mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
-                            if not mode:
-                                raise UserWarning(f"No schedule mode found for route {route} by agent id {ident}")
+                        
                         mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
                         modes[mode] = modes.get(mode, 0) + distance
 
@@ -412,12 +410,9 @@ class AgentLegLogsHandler(PlanHandlerTool):
                     elif stage.tag == 'leg':
                         leg_seq_idx += 1
 
-                        mode = stage.get('mode')
-                        route = stage.xpath('route')[0]
-                        if mode == 'pt':
-                            mode, route_id = self.extract_mode_from_route_elem(route)
-                            if not mode:
-                                raise UserWarning(f"No schedule mode found for route {route_id} by agent id {ident}")
+                        leg_mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
                         mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
 
                         trav_time = stage.get('trav_time')
@@ -445,7 +440,7 @@ class AgentLegLogsHandler(PlanHandlerTool):
                                 'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
                                 'duration_s': td.total_seconds(),
-                                'distance': route.get('distance')
+                                'distance': route_elem.get('distance')
                             }
                         )
 
@@ -639,14 +634,11 @@ class AgentTripLogsHandler(PlanHandlerTool):
 
                     elif stage.tag == 'leg':
 
-                        mode = stage.get('mode')
+                        leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
                         distance = float(route_elem.get("distance", 0))
 
-                        if mode == 'pt':
-                            mode, route_id = self.extract_mode_from_route_elem(route_elem)
-                            if not mode:
-                                raise UserWarning(f"No schedule mode found for route {route_id} by agent id {ident}")
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
 
                         mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
                         modes[mode] = modes.get(mode, 0) + distance
