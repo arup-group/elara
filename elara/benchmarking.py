@@ -51,6 +51,79 @@ class BenchmarkTool(Tool):
         super().__init__(config, option)
         self.logger = logging.getLogger(__name__)
 
+    def __str__(self):
+        return f'{self.__class__.__name__}'
+
+class CsvComparison(BenchmarkTool):
+
+    index_field = None # index column(s) in the csv files
+    value_field = None # value column in the csv files to compare
+    name = None # suffix to add to the output file names
+    benchmark_data_path = None # filepath to the benchmark csv file
+    simulation_name = None # name of the simulation csv file
+    weight = None # score weight
+
+    def __init__(self, config, option):
+        super().__init__(config, option)
+        self.mode = option
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
+        """
+        Compare two csv files (benchmark vs simulation), calculate and plot their differences
+        """
+
+        # Read benchmark and simulation csv files
+        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_field)
+
+        simulation_path = os.path.join(self.config.output_path, self.simulation_name)
+        simulation_df = pd.read_csv(simulation_path, index_col=self.index_field)
+
+        # compare
+        bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
+        bm_df.columns = ['trips_benchmark', 'trips_simulation']
+        self.plot_comparison(bm_df)
+        bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
+
+        # write results
+        csv_name = '{}_{}_{}.csv'.format(str(self), self.name, self.mode)
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(bm_df, csv_path, write_path=write_path)
+
+        # evaluation metrics
+        bm_mse = np.mean(bm_df['difference'] ** 2) # mean squared error
+        scores = {'mse':bm_mse}
+
+        return scores
+
+    def plot_comparison(self, df):
+        """
+        Bar comparison plot
+        """
+        df.plot(kind="bar", figsize=(17,12)).get_figure().\
+            savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
+
+
+class TestDurationComparison(CsvComparison):
+    requirements = ['trip_breakdowns']
+    valid_options = ['all']
+
+    index_field = ['duration']
+    value_field = 'trips'
+    name = 'test'
+    benchmark_data_path = os.path.join('outputs','TripBreakdowns_duration_all.csv')
+    simulation_name = 'TripBreakdowns_duration_all.csv'
+    weight = 1
+
+class TestEuclideanDistanceComparison(CsvComparison):
+    requirements = ['trip_breakdowns']
+    valid_options = ['all']
+
+    index_field = ['euclidean_distance']
+    value_field = 'trips'
+    name = 'test'
+    benchmark_data_path = os.path.join('outputs','TripBreakdowns_euclidean_distance_all.csv')
+    simulation_name = 'TripBreakdowns_euclidean_distance_all.csv'
+    weight = 1
 
 class LinkCounter(BenchmarkTool):
 
@@ -1740,6 +1813,8 @@ class BenchmarkWorkStation(WorkStation):
         "test_pt_interaction_counter": TestPTInteraction,
         "test_pt_volumes": TestPTVolume,
         "test_town_modeshare": TestTownCommuterStats,
+        "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
+        "test_duration_comparison": TestDurationComparison,
 
         # latest
         "ireland_highways": IrelandHighwayCountersNew,
@@ -1773,6 +1848,7 @@ class BenchmarkWorkStation(WorkStation):
         "test_pt_interaction_counter": 1,
         "test_pt_volumes": 1,
         "test_town_modeshare": 1,
+        "csv_comparison": 1,
         
         "ireland_highways": 1,
         "london_boundary_cordon_car": 1,
