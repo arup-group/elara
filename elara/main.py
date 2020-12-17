@@ -531,7 +531,7 @@ def main(config):
     )
     benchmarks.connect(
         managers=[config_requirements],
-        suppliers=[event_handlers, plan_handlers],
+        suppliers=[postprocessing, event_handlers, plan_handlers],
     )
     postprocessing.connect(
         managers=[config_requirements],
