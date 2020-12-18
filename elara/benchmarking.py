@@ -110,7 +110,7 @@ class TestDurationComparison(CsvComparison):
     index_field = ['duration']
     value_field = 'trips'
     name = 'test'
-    benchmark_data_path = os.path.join('outputs','TripBreakdowns_duration_all.csv')
+    benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'TripBreakdowns_duration_all.csv'))
     simulation_name = 'TripBreakdowns_duration_all.csv'
     weight = 1
 
@@ -121,7 +121,7 @@ class TestEuclideanDistanceComparison(CsvComparison):
     index_field = ['euclidean_distance']
     value_field = 'trips'
     name = 'test'
-    benchmark_data_path = os.path.join('outputs','TripBreakdowns_euclidean_distance_all.csv')
+    benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'TripBreakdowns_euclidean_distance_all.csv'))
     simulation_name = 'TripBreakdowns_euclidean_distance_all.csv'
     weight = 1
 

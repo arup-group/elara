@@ -1,5 +1,5 @@
 fixtures
-#outputs
+outputs
 elara_out
 .idea/
 *.ipynb
