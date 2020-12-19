@@ -82,7 +82,7 @@ class ModeShareHandler(PlanHandlerTool):
 
     requirements = [
         'plans',
-        'attributes',
+        'subpopulations',
         'transit_schedule',
         'output_config',
         'mode_map',
@@ -124,7 +124,6 @@ class ModeShareHandler(PlanHandlerTool):
         super().build(resources, write_path=write_path)
 
         modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
-
         self.logger.debug(f'modes = {modes}')
 
         activities = self.resources['output_config'].activities
@@ -165,7 +164,7 @@ class ModeShareHandler(PlanHandlerTool):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
-                attribute_class = self.resources['attributes'].map.get(ident, 'not found')
+                attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
 
                 end_time = None
                 modes = {}
@@ -282,7 +281,7 @@ class ModeShareHandler(PlanHandlerTool):
 
 class AgentLegLogsHandler(PlanHandlerTool):
 
-    requirements = ['plans', 'transit_schedule']
+    requirements = ['plans', 'transit_schedule', 'subpopulations']
     valid_options = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
@@ -340,20 +339,16 @@ class AgentLegLogsHandler(PlanHandlerTool):
 
         :return: Tuple[List[dict]]
         """
+        ident = elem.get('id')
+
         for plan in elem.xpath(".//plan"):
 
             if plan.get('selected') == 'yes':
 
-                # check that plan starts with an activity
-                if not plan[0].tag == 'activity':
-                    raise UserWarning('Plan does not start with activity.')
-                if plan[0].get('type') == 'pt interaction':
-                    raise UserWarning('Plan cannot start with activity type "pt interaction".')
-
                 activities = []
                 legs = []
-
-                ident = plan.getparent().get('id')
+                
+                attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
 
                 leg_seq_idx = 0
                 trip_seq_idx = 0
@@ -393,6 +388,7 @@ class AgentLegLogsHandler(PlanHandlerTool):
                         activities.append(
                             {
                                 'agent': ident,
+                                'attribute': attribute_class,
                                 'seq': act_seq_idx,
                                 'act': act_type,
                                 'x': x,
@@ -424,6 +420,7 @@ class AgentLegLogsHandler(PlanHandlerTool):
                         legs.append(
                             {
                                 'agent': ident,
+                                'attribute': attribute_class,
                                 'seq': leg_seq_idx,
                                 'trip': trip_seq_idx,
                                 'mode': mode,
@@ -477,7 +474,7 @@ class AgentLegLogsHandler(PlanHandlerTool):
 
 class AgentTripLogsHandler(PlanHandlerTool):
 
-    requirements = ['plans', 'transit_schedule', 'attributes']
+    requirements = ['plans', 'transit_schedule', 'subpopulations']
     valid_options = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
@@ -535,10 +532,11 @@ class AgentTripLogsHandler(PlanHandlerTool):
 
         :return: Tuple[List[dict]]
         """
+        ident = elem.get('id')
+
         for plan in elem.xpath(".//plan"):
 
-            ident = elem.get('id')
-            attribute_class = self.resources['attributes'].map.get(ident, 'not found')
+            attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
 
             if plan.get('selected') == 'yes':
 
@@ -691,9 +689,7 @@ class UtilityHandler(PlanHandlerTool):
         super().__init__(config, option)
 
         self.option = option
-
         self.utility_log = None
-
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
@@ -726,12 +722,8 @@ class UtilityHandler(PlanHandlerTool):
 
             if plan.get('selected') == 'yes':
 
-                utilities = []
-
                 score = plan.get('score')
-
                 utilities = [{'agent': ident,'score': score}]
-                        
                 self.utility_log.add(utilities)
                 
                 return None
@@ -756,7 +748,7 @@ class AgentPlansHandler(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    requirements = ['plans', 'attributes']
+    requirements = ['plans', 'subpopulations']
 
     def __init__(self, config, option=None):
         """
@@ -801,7 +793,7 @@ class AgentPlansHandler(PlanHandlerTool):
         """
 
         ident = elem.get('id')
-        subpop = self.resources['attributes'].map.get(ident)
+        subpop = self.resources['subpopulations'].map.get(ident)
         # license = self.resources['attributes'].license.get(ident)
 
         if not self.option == "all" and not subpop == self.option:
@@ -929,8 +921,8 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
 
     requirements = [
         'plans',
-        'agents',
-        'osm:ways'
+        'subpopulations',
+        'osm_ways'
         ]
     valid_options = ['car']
 
@@ -943,14 +935,11 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         super().__init__(config, option)
 
         self.option = option
-        self.agents = None
         self.osm_ways = None
-
         self.agents_ids = None
         self.ways = None
         self.agent_indices = None
         self.ways_indices = None
-
         self.distances = None
 
         # Initialise results storage
@@ -968,17 +957,17 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        self.agents = resources['agents']
-        self.osm_ways = resources['osm:ways']
+        self.osm_ways = resources['osm_ways']
+        self.subpopulations = resources['subpopulations'].map
 
         # Initialise agent indices
-        self.agents_ids, self.agent_indices = self.generate_indices_map(self.agents.idents)
+        self.agent_ids, self.agent_indices = self.generate_indices_map(list(self.subpopulations))
 
         # Initialise way indices
         self.ways, self.ways_indices = self.generate_indices_map(self.osm_ways.classes)
 
         # Initialise results array
-        self.distances = np.zeros((len(self.agents_ids),
+        self.distances = np.zeros((len(self.agent_ids),
                                    len(self.ways)))
 
     def process_plans(self, elem):
@@ -1020,7 +1009,7 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         """
 
         names = ['agent', 'way']
-        indexes = [self.agents.idents, self.ways]
+        indexes = [self.agent_ids, self.ways]
         index = pd.MultiIndex.from_product(indexes, names=names)
         distance_df = pd.DataFrame(self.distances.flatten(), index=index)[0]
 
@@ -1037,9 +1026,8 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
 
         # join with agent attributes
         key = "agent_distances_{}_breakdown".format(self.option)
-        self.results[key] = distance_df.join(
-            self.agents.attributes_df, how="left"
-        )
+        distance_df['attribute'] = distance_df.index.map(self.subpopulations)
+        self.results[key] = distance_df
 
     def table_position(
         self,
@@ -1064,7 +1052,8 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
 
     requirements = [
         'plans',
-        'osm:ways'
+        'osm_ways',
+        'subpopulations'
         ]
     valid_options = ['car']
 
@@ -1096,7 +1085,8 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        self.osm_ways = resources['osm:ways']
+        self.osm_ways = resources['osm_ways']
+        self.subpopulations = resources['subpopulations'].map
 
         # Initialise ways
         self.ways = self.osm_ways.classes
@@ -1111,6 +1101,7 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
+        subpop = self.subpopulations[ident]
 
         for plan in elem.xpath(".//plan"):
             if plan.get('selected') == 'yes':
@@ -1134,6 +1125,7 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
                             # set counter
                             trip_counter = {
                                 'agent': ident,
+                                'subpop': subpop,
                                 'seq': trip_seq_idx
                             }
                             trip_counter.update(

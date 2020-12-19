@@ -706,15 +706,15 @@ def agent_distances_handler_car_mode(test_config, input_manager):
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
 
-    assert len(handler.agents_ids) == len(handler.resources['agents'].idents)
-    assert list(handler.agent_indices.keys()) == handler.agents_ids
+    assert len(handler.agent_ids) == len(handler.resources['subpopulations'].map)
+    assert list(handler.agent_indices.keys()) == handler.agent_ids
 
-    assert len(handler.ways) == len(handler.resources['osm:ways'].classes)
+    assert len(handler.ways) == len(handler.resources['osm_ways'].classes)
     assert list(handler.ways_indices.keys()) == handler.ways
 
     assert handler.distances.shape == (
-        len(handler.resources['agents'].idents),
-        len(handler.resources['osm:ways'].classes)
+        len(handler.resources['subpopulations'].map),
+        len(handler.resources['osm_ways'].classes)
     )
 
     return handler
@@ -773,7 +773,7 @@ def trip_distances_handler_car_mode(test_config, input_manager):
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
 
-    assert len(handler.ways) == len(handler.resources['osm:ways'].classes)
+    assert len(handler.ways) == len(handler.resources['osm_ways'].classes)
 
     return handler
 
@@ -820,7 +820,7 @@ def test_plan_modeshare_handler(test_config, input_manager):
     # assert len(handler.modes) == len(handler.resources['output_config'].modes)
     assert list(handler.mode_indices.keys()) == handler.modes
 
-    assert len(handler.classes) == len(handler.resources['attributes'].classes)
+    assert len(handler.classes) == len(handler.resources['subpopulations'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
 
     assert len(handler.activities) == len(handler.resources['output_config'].activities)
