@@ -86,7 +86,6 @@ class ModeShareHandler(PlanHandlerTool):
         'transit_schedule',
         'output_config',
         'mode_map',
-        # 'mode_hierarchy'
     ]
     valid_options = ['all']
 
@@ -1173,6 +1172,7 @@ class PlanHandlerWorkStation(WorkStation):
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
+
 
     def build(self, write_path=None):
         """

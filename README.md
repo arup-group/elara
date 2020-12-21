@@ -36,7 +36,8 @@ These are processed by streaming through all output plans from simulation. Compa
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
   * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``agent_logs``: Produce agent activity logs and leg logs for all selected plans.
+  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and legs.
+  * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``agent_plans``: Produce agent plans including unselected plans and scores.
   * ``agent_highway_distances``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
@@ -46,7 +47,7 @@ these are typically more aggregate but can be computationally faster and can be 
 These are outputs produced through additional post-processing of the above outputs.
   * ``vkt``: Produce link volume vehicle kms by time slice.
   * ``plan_summary``: Produce leg and activity time and duration summaries.
-  * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
+  * ``trip_logs``: Superceded by plan_handlers.trip_logs. Produce record of all agent trips using mode hierarchy to reveal mode of trips 
   with multiple leg modes.
 
 * **Benchmarking Handlers**:
@@ -159,7 +160,6 @@ trip_highway_distances = ["car"]
 [post_processors]
 vkt = ["car"]
 plan_summary = ["all"]
-trip_logs = ["all"]
 
 [benchmarks]
 test_pt_interaction_counter = ["bus"]
