@@ -1,3 +1,4 @@
+from elara.plan_handlers import AgentTripLogsHandler
 import os
 import geopandas
 import pandas as pd
