@@ -749,7 +749,7 @@ class InputsWorkStation(WorkStation):
         'plans': Plans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
-        'mode_hierarchy': ModeHierarchy,
+        # 'mode_hierarchy': ModeHierarchy,
     }
 
     def __init__(self, config):

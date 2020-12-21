@@ -237,7 +237,7 @@ class WorkStation:
         self.logger = logging.getLogger(__name__)
 
     def __str__(self):
-        return f'{self.__class__}'
+        return f'{self.__class__.__name__}'
 
     def connect(
             self,
