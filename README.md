@@ -36,7 +36,8 @@ These are processed by streaming through all output plans from simulation. Compa
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
   * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``agent_logs``: Produce agent activity logs and leg logs for all selected plans.
+  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and legs.
+  * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``agent_plans``: Produce agent plans including unselected plans and scores.
   * ``agent_highway_distances``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
@@ -46,8 +47,6 @@ these are typically more aggregate but can be computationally faster and can be 
 These are outputs produced through additional post-processing of the above outputs.
   * ``vkt``: Produce link volume vehicle kms by time slice.
   * ``plan_summary``: Produce leg and activity time and duration summaries.
-  * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-  with multiple leg modes.
 
 * **Benchmarking Handlers**:
 Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
@@ -127,8 +126,9 @@ detailed further below and an [example config](https://github.com/arup-group/ela
 name = "test_town"
 time_periods = 24
 scale_factor = 0.01
+version = 11
 crs = "EPSG:27700"
-verbose = INFO
+verbose = true
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
@@ -158,7 +158,6 @@ trip_highway_distances = ["car"]
 [post_processors]
 vkt = ["car"]
 plan_summary = ["all"]
-trip_logs = ["all"]
 
 [benchmarks]
 test_pt_interaction_counter = ["bus"]
@@ -263,8 +262,6 @@ Specification of the event handlers to be run post processing. Currently availab
 
 * ``vkt``: Produce link volume vehicle kms by time slice.
 * ``plan_summary``: Produce leg and activity time and duration summaries.
-* ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-with multiple leg modes. Suggest not using this in favour of the newer plan handler `trip_logs`.
 
 The associated list attached to each handler allows specification of which modes of transport 
 should be processed using that handler. This allows certain handlers to be activated for public 
@@ -359,6 +356,7 @@ Options:
   -f, --full                  Option to disable output contracting.
   -e, --epsg TEXT             EPSG string, defaults to 'EPSG:27700' (UK).
   -s, --scale_factor FLOAT    Scale factor, defaults to 0.1 (10%).
+  -v, --version INT           MATSim version {11,12}, defaults to 11.
   -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
   -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
   -i, --inputs_path PATH      Inputs path location, defaults to current root.

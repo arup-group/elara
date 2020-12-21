@@ -17,6 +17,7 @@ class Config:
                 "time_periods": 24,
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
+                "version": 11,
                 "verbose": False,
             },
         "inputs":
@@ -45,6 +46,7 @@ class Config:
         self.name = None
         self.time_periods = None
         self.scale_factor = None
+        self.version = None
         self.logging = None
         self.event_handlers = None
         self.plan_handlers = None
@@ -97,6 +99,9 @@ class Config:
         self.scale_factor = self.valid_scale_factor(
             self.settings["scenario"]["scale_factor"]
         )
+        self.version = self.valid_version(
+            self.settings["scenario"].get("version", 11)
+        )
         self.logging = self.valid_verbosity(
             self.settings["scenario"].get("verbose", False)
         )
@@ -148,7 +153,12 @@ class Config:
 
     @property
     def attributes_path(self):
-        return self.valid_path(
+        if self.version == 12:
+            return self.valid_path(
+                self.settings["inputs"]["plans"], "plans(MATSimV12)"
+            )
+        else:
+            return self.valid_path(
             self.settings["inputs"]["attributes"], "attributes"
         )
 
@@ -180,7 +190,7 @@ class Config:
         """
         if inp <= 0 or inp > 96:
             raise ConfigError(
-                "Specified time periods ({}) not in valid range".format(inp)
+                "Configured time periods ({}) not in valid range".format(inp)
             )
         return int(inp)
 
@@ -194,9 +204,22 @@ class Config:
         """
         if inp <= 0 or inp > 1:
             raise ConfigError(
-                "Specified scale factor ({}) not in valid range".format(inp)
+                "Configured scale factor ({}) not in valid range".format(inp)
             )
         return float(inp)
+
+    @staticmethod
+    def valid_version(inp):
+        """
+        Raise exception if specified version is not 11 or 12.
+        :param inp: Version number
+        :return: Version number (int)
+        """
+        if int(inp) not in [11, 12]:
+            raise ConfigError(
+                f"Configured version ({inp}) not valid (please use 11 (default) or 12)"
+            )
+        return int(inp)
 
     @staticmethod
     def valid_path(path, field_name):
@@ -207,7 +230,7 @@ class Config:
         :return: Pass through path if it exists
         """
         if not os.path.exists(path):
-            raise ConfigError("Specified path {} for {} does not exist".format(path, field_name))
+            raise ConfigError("Configured path {} for {} does not exist".format(path, field_name))
         return path
 
     def valid_verbosity(self, inp):
