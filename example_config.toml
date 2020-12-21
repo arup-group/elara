@@ -33,7 +33,6 @@ trip_highway_distances = ["car"]
 [post_processors]
 vkt = ["car"]
 plan_summary = ["all"]
-trip_logs = ["all"]
 
 [benchmarks]
 test_pt_interaction_counter = ["bus"]

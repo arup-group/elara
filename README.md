@@ -47,8 +47,6 @@ these are typically more aggregate but can be computationally faster and can be 
 These are outputs produced through additional post-processing of the above outputs.
   * ``vkt``: Produce link volume vehicle kms by time slice.
   * ``plan_summary``: Produce leg and activity time and duration summaries.
-  * ``trip_logs``: Superceded by plan_handlers.trip_logs. Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-  with multiple leg modes.
 
 * **Benchmarking Handlers**:
 Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
@@ -264,8 +262,6 @@ Specification of the event handlers to be run post processing. Currently availab
 
 * ``vkt``: Produce link volume vehicle kms by time slice.
 * ``plan_summary``: Produce leg and activity time and duration summaries.
-* ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-with multiple leg modes. Suggest not using this in favour of the newer plan handler `trip_logs`.
 
 The associated list attached to each handler allows specification of which modes of transport 
 should be processed using that handler. This allows certain handlers to be activated for public 

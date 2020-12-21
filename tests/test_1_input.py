@@ -364,4 +364,3 @@ def test_load_input_manager(test_xml_config, test_paths):
     assert input_workstation.resources['attributes']
     assert input_workstation.resources['plans']
     assert input_workstation.resources['mode_map']
-    assert input_workstation.resources['mode_hierarchy']
