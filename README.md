@@ -183,6 +183,10 @@ The sample size used in the originating MATSim scenario run. This is used to sca
 as volume counts. For example, if the underlying scenario was run with a 25% sample size, a value
  of ``0.25`` in this field will ensure that all calculated volume counts are scaled by 4 times.
 
+ **#** scenario.**version** *int {11,12}* *(default 11)*
+
+Set `version = 12` if using MATSim version 12 outputs (in which case there will be no output personAttributes file).
+
 **#** scenario.**crs** *string* *(required)*
 
 The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This
