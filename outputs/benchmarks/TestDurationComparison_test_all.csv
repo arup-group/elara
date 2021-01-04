@@ -1,10 +1,10 @@
 duration,trips_benchmark,trips_simulation,difference
-0 to 5 min,1,1,0
-5 to 10 min,2,3,1
-10 to 15 min,1,0,-1
-15 to 30 min,1,1,0
+0 to 5 min,2,1,-1
+5 to 10 min,0,3,3
+10 to 15 min,0,0,0
+15 to 30 min,0,1,1
 30 to 45 min,0,0,0
-45 to 60 min,3,4,1
-60 to 90 min,2,1,-1
+45 to 60 min,0,4,4
+60 to 90 min,0,1,1
 90 to 120 min,0,0,0
-120+ min,0,0,0
+120+ min,2,0,-2
