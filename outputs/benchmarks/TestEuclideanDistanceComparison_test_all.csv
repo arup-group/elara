@@ -1,9 +1,0 @@
-euclidean_distance,trips_benchmark,trips_simulation,difference
-0 to 1 km,1,0,-1
-1 to 5 km,0,0,0
-5 to 10 km,0,2,2
-10 to 25 km,0,8,8
-25 to 50 km,2,0,-2
-50 to 100 km,1,0,-1
-100 to 200 km,0,0,0
-200+ km,0,0,0

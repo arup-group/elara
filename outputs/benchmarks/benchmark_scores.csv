@@ -1,5 +1,0 @@
-,benchmark,type,score
-0,test_link_cordon:car,counters,0.0
-1,test_pt_interaction_counter:bus,counters,0.0
-2,test_euclidean_distance_comparison:all,mse,9.25
-3,test_duration_comparison:all,mse,3.5555555555555554
