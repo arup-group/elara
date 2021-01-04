@@ -31,6 +31,14 @@ def test_xml_config():
 
 
 @pytest.fixture
+def test_xml_config_v12():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_v12.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+@pytest.fixture
 def test_gzip_config():
     config_path = os.path.join(test_dir, 'test_gzip_scenario.toml')
     config = Config(config_path)
@@ -41,6 +49,16 @@ def test_gzip_config():
 @pytest.fixture
 def test_paths(test_xml_config):
     paths = PathFinderWorkStation(test_xml_config)
+    paths.connect(managers=None, suppliers=None)
+    paths.load_all_tools()
+    paths.build()
+    assert set(paths.resources) == set(paths.tools)
+    return paths
+
+
+@pytest.fixture
+def test_paths_v12(test_xml_config_v12):
+    paths = PathFinderWorkStation(test_xml_config_v12)
     paths.connect(managers=None, suppliers=None)
     paths.load_all_tools()
     paths.build()
@@ -83,6 +101,11 @@ def test_set_reproject(example_gdf, set_crs, to_crs, result_crs):
 
 
 # Events
+def test_instantiated_class_names(test_xml_config):
+    events = inputs.Events(test_xml_config)
+    assert str(events) == "Events"
+
+
 def test_loading_xml_events(test_xml_config, test_paths):
     events = inputs.Events(test_xml_config)
     events.build(test_paths.resources)
@@ -198,14 +221,14 @@ def test_load_gzip_transit_vehicles(test_gzip_config, test_zip_paths):
 def test_loading_xml_plans(test_xml_config, test_paths):
     plans = inputs.Plans(test_xml_config)
     plans.build(test_paths.resources)
-    num_plans = sum(1 for _ in plans.plans)
+    num_plans = sum(1 for person in plans.persons for plan in person.xpath(".//plan"))
     assert num_plans == 5
 
 
 def test_loading_gzip_plans(test_gzip_config, test_zip_paths):
     plans = inputs.Plans(test_gzip_config)
     plans.build(test_zip_paths.resources)
-    num_plans = sum(1 for _ in plans.plans)
+    num_plans = sum(1 for person in plans.persons for plan in person.xpath(".//plan"))
     assert num_plans == 5
 
 
@@ -276,36 +299,45 @@ def test_loading_osm_highways_map_from_gzip(test_gzip_config, test_zip_paths):
     assert len(osm_highway.classes) == 2
 
 
-# Attribute
-def test_loading_xml_attribute(test_xml_config, test_paths):
+# Subpopulations
+def test_loading_xml_subpops(test_xml_config, test_paths):
+    attribute = inputs.Subpopulations(test_xml_config)
+    attribute.build(test_paths.resources)
+    assert attribute.map == {'chris': 'rich', 'fatema': 'poor', 'gerry': 'poor', 'fred': 'poor', 'nick': 'poor'}
+
+
+def test_loading_gzip_subpops(test_gzip_config, test_zip_paths):
+    attribute = inputs.Subpopulations(test_gzip_config)
+    attribute.build(test_zip_paths.resources)
+    assert attribute.map == {'chris': 'rich', 'fatema': 'poor', 'gerry': 'poor', 'fred': 'poor', 'nick': 'poor'}
+
+
+def test_loading_v12_subpops(test_xml_config_v12, test_paths_v12):
+    attribute = inputs.Subpopulations(test_xml_config_v12)
+    attribute.build(test_paths_v12.resources)
+    assert attribute.map == {'chris': 'rich', 'fatema': 'poor', 'gerry': 'poor', 'fred': 'poor', 'nick': 'poor'}
+
+
+# Attributes
+def test_loading_xml_attributes(test_xml_config, test_paths):
     attribute = inputs.Attributes(test_xml_config)
     attribute.build(test_paths.resources)
-    assert len(attribute.map) == sum(attribute.attribute_count_map.values())
-
-
-def test_loading_gzip_attribute(test_gzip_config, test_zip_paths):
-    attribute = inputs.Attributes(test_gzip_config)
-    attribute.build(test_zip_paths.resources)
-    assert len(attribute.map) == sum(attribute.attribute_count_map.values())
-
-
-# Agents
-def test_loading_xml_attributes(test_xml_config, test_paths):
-    attributes = inputs.Agents(test_xml_config)
-    attributes.build(test_paths.resources)
-    assert len(attributes.map) == 5
-    assert attributes.idents == ['chris', 'fatema', 'fred', 'gerry', 'nick']
-    assert attributes.attribute_fields == {'age', 'subpopulation'}
-    assert len(attributes.attributes_df) == 5
+    assert len(attribute.map) == 5
+    assert attribute.map['chris'] == {"subpopulation":"rich", "age": "yes"}
 
 
 def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
-    attributes = inputs.Agents(test_gzip_config)
-    attributes.build(test_zip_paths.resources)
-    assert len(attributes.map) == 5
-    assert attributes.idents == ['chris', 'fatema', 'fred', 'gerry', 'nick']
-    assert attributes.attribute_fields == {'age', 'subpopulation'}
-    assert len(attributes.attributes_df) == 5
+    attribute = inputs.Attributes(test_gzip_config)
+    attribute.build(test_zip_paths.resources)
+    assert len(attribute.map) == 5
+    assert attribute.map['chris'] == {"subpopulation":"rich", "age": "yes"}
+
+
+def test_loading_v12_attributes(test_xml_config_v12, test_paths_v12):
+    attribute = inputs.Attributes(test_xml_config_v12)
+    attribute.build(test_paths_v12.resources)
+    assert len(attribute.map) == 5
+    assert attribute.map['chris'] == {"subpopulation":"rich", "age": "yes"}
 
 
 # Output Config
@@ -324,34 +356,11 @@ def test_load_input_manager(test_xml_config, test_paths):
     input_workstation.load_all_tools()
     input_workstation.build()
 
-    events = input_workstation.resources['events']
-    network = input_workstation.resources['network']
-    transit_schedule = input_workstation.resources['transit_schedule']
-    transit_vehicles = input_workstation.resources['transit_vehicles']
-    attributes = input_workstation.resources['attributes']
-    plans = input_workstation.resources['plans']
-    mode_map = input_workstation.resources['mode_map']
-    mode_hierarchy = input_workstation.resources['mode_hierarchy']
-
-    num_events = sum(1 for _ in events.elems)
-    assert num_events == 190
-
-    assert len(network.link_gdf) == 8
-    assert len(network.node_gdf) == 5
-
-    assert len(transit_schedule.stop_gdf) == 4
-
-    assert transit_vehicles.veh_type_capacity_map['Bus'] == 70
-    assert len(
-        transit_vehicles.veh_id_veh_type_map
-    ) == sum(
-        transit_vehicles.transit_vehicle_counts.values()
-    )
-
-    assert len(attributes.map) == sum(attributes.attribute_count_map.values())
-
-    num_plans = sum(1 for _ in plans.plans)
-    assert num_plans == 5
-
-    assert mode_map
-    assert mode_hierarchy
+    assert input_workstation.resources['events']
+    assert input_workstation.resources['network']
+    assert input_workstation.resources['transit_schedule']
+    assert input_workstation.resources['transit_vehicles']
+    assert input_workstation.resources['subpopulations']
+    assert input_workstation.resources['attributes']
+    assert input_workstation.resources['plans']
+    assert input_workstation.resources['mode_map']

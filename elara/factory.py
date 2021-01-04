@@ -41,7 +41,7 @@ class Tool:
         self.option = self._validate_option(option)
 
     def __str__(self):
-        return f'{self.__class__}'
+        return self.__class__.__name__.split(".")[-1]
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
         """
@@ -237,7 +237,7 @@ class WorkStation:
         self.logger = logging.getLogger(__name__)
 
     def __str__(self):
-        return f'{self.__class__}'
+        return f'{self.__class__.__name__}'
 
     def connect(
             self,

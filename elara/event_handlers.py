@@ -105,7 +105,7 @@ class AgentGraph(EventHandlerTool):
     requirements = [
         'events',
         'transit_vehicles',
-        'attributes',
+        'subpopulations',
     ]
 
     def __init__(self, config, option=None) -> None:
@@ -130,7 +130,7 @@ class AgentGraph(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        for person, subpopulation in self.resources['attributes'].map.items():
+        for person, subpopulation in self.resources['subpopulations'].map.items():
             self.graph.add_node(person, subpop=subpopulation)
 
     def process_event(self, elem) -> None:
@@ -142,7 +142,7 @@ class AgentGraph(EventHandlerTool):
         if event_type == "PersonEntersVehicle":
             agent_id = elem.get("person")
 
-            if agent_id not in self.resources['attributes'].map:
+            if agent_id not in self.resources['subpopulations'].map:
                 return None
 
             veh_ident = elem.get("vehicle")
@@ -183,7 +183,7 @@ class AgentWaitingTimes(EventHandlerTool):
     requirements = [
         'events',
         'transit_schedule',
-        'attributes',
+        'subpopulations',
     ]
 
     def __init__(self, config, option=None) -> None:
@@ -196,7 +196,6 @@ class AgentWaitingTimes(EventHandlerTool):
 
         self.agent_status = dict()
         self.veh_waiting_occupancy = dict()
-
         self.waiting_time_log = None
 
         # Initialise results storage
@@ -269,7 +268,7 @@ class AgentWaitingTimes(EventHandlerTool):
                     continue
 
                 # get subpop
-                subpop = self.resources['attributes'].map.get(agent_id)
+                subpop = self.resources['subpopulations'].map.get(agent_id)
 
                 start_time, previous_mode = self.agent_status[agent_id]
 
@@ -323,7 +322,7 @@ class VolumeCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'attributes',
+        'subpopulations',
     ]
 
     def __init__(self, config, option=None) -> None:
@@ -355,7 +354,7 @@ class VolumeCounts(EventHandlerTool):
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(
-            self.resources['attributes'].classes)
+            self.resources['subpopulations'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
 
         # generate index and map for network link dimension
@@ -393,7 +392,7 @@ class VolumeCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.option:
                 # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.resources['attributes'].map.get(ident, 'not_applicable')
+                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 x, y, z = table_position(
@@ -460,7 +459,7 @@ class PassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'attributes',
+        'subpopulations',
     ]
     invalid_options = ['car']
 
@@ -497,7 +496,7 @@ class PassengerCounts(EventHandlerTool):
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
@@ -564,7 +563,7 @@ class PassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
@@ -579,7 +578,7 @@ class PassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if not self.veh_occupancy[veh_id][attribute_class]:
                     pass
@@ -658,7 +657,7 @@ class RoutePassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'attributes',
+        'subpopulations',
     ]
     invalid_options = ['car']
 
@@ -691,7 +690,7 @@ class RoutePassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
 
         # # Initialise element attributes
@@ -754,7 +753,7 @@ class RoutePassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.route_occupancy.get(veh_route, None) is None:
                     self.route_occupancy[veh_route] = {attribute_class: 1}
@@ -770,7 +769,7 @@ class RoutePassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.route_occupancy[veh_route][attribute_class]:
                     self.route_occupancy[veh_route][attribute_class] -= 1
@@ -841,7 +840,7 @@ class StopInteractions(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'attributes',
+        'subpopulations',
     ]
     invalid_options = ['car']
 
@@ -878,7 +877,7 @@ class StopInteractions(EventHandlerTool):
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
@@ -932,7 +931,7 @@ class StopInteractions(EventHandlerTool):
 
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['attributes'].map[agent_id]
+                    attribute_class = self.resources['subpopulations'].map[agent_id]
                     origin_stop = self.agent_status[agent_id][0]
                     x, y, z = table_position(
                         self.elem_indices,
@@ -952,7 +951,7 @@ class StopInteractions(EventHandlerTool):
 
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['attributes'].map[agent_id]
+                    attribute_class = self.resources['subpopulations'].map[agent_id]
                     destination_stop = self.agent_status[agent_id][1]
                     x, y, z = table_position(
                         self.elem_indices,
@@ -1019,7 +1018,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'attributes',
+        'subpopulations',
     ]
     invalid_options = ['car']
 
@@ -1055,7 +1054,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
             raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.option}")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['attributes'].classes)
+        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
         self.logger.debug(f'sub_populations = {self.classes}')
 
         # Initialise element attributes
@@ -1119,7 +1118,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
@@ -1135,7 +1134,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.option:
-                attribute_class = self.resources['attributes'].map[agent_id]
+                attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.veh_occupancy[veh_id][attribute_class]:
                     self.veh_occupancy[veh_id][attribute_class] -= 1
