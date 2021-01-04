@@ -238,12 +238,12 @@ def test_car_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), 3, periods)
     return handler
 
 
@@ -288,7 +288,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 14 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # bus
@@ -302,12 +302,12 @@ def test_bus_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), 3, periods)
     return handler
 
 
@@ -362,7 +362,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 12
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # Passenger Counts Handler Tests
@@ -376,10 +376,10 @@ def bus_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), 3, periods)
     return handler
 
 
@@ -394,10 +394,10 @@ def bus_route_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(set(resources['transit_schedule'].veh_to_route_map.values())), len(resources['attributes'].classes), periods)
+        len(set(resources['transit_schedule'].veh_to_route_map.values())), 3, periods)
     return handler
 
 
@@ -514,7 +514,7 @@ def test_passenger_count_finalise_bus(
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 def test_route_passenger_count_handler_rejects_car_as_mode():
@@ -535,7 +535,7 @@ def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, e
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / bus_route_passenger_count_handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(bus_route_passenger_count_handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(bus_route_passenger_count_handler.resources['subpopulations'].classes)
 
 
 # Stop Interactions
@@ -549,11 +549,11 @@ def test_bus_passenger_interaction_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.boardings.shape == (
         len(resources['transit_schedule'].stop_gdf),
-        len(resources['attributes'].classes),
+        3,
         periods
     )
     return handler
@@ -657,7 +657,7 @@ def test_stop_interaction_finalise_bus(
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 4 / handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # Stop to stop volumes
@@ -675,12 +675,12 @@ def test_bus_stop_to_stop_handler(bus_stop_to_stop_handler, input_manager):
     resources = input_manager.resources
     periods = 24
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
         len(resources['transit_schedule'].stop_gdf),
         len(resources['transit_schedule'].stop_gdf),
-        len(resources['attributes'].classes),
+        3,
         periods
     )
     return handler
@@ -806,7 +806,7 @@ def test_stop_to_stop_finalise_bus(
     df = gdf.loc[:, cols]
     assert np.sum(df.values) == 3 / handler.config.scale_factor
     if 'class' in gdf.columns:
-        assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+        assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
     gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_total"]
     cols = list(range(handler.config.time_periods))
@@ -815,7 +815,7 @@ def test_stop_to_stop_finalise_bus(
     df = gdf.loc[:, cols]
     assert np.sum(df.values) == 3 / handler.config.scale_factor
     if 'class' in gdf.columns:
-        assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+        assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # Event Handler Manager

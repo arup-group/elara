@@ -1,3 +1,4 @@
+from elara.plan_handlers import AgentTripLogsHandler
 import os
 import geopandas
 import pandas as pd
@@ -165,71 +166,6 @@ class TripBreakdowns(PostProcessor):
         csv_breakdown_name = "{}_{}_{}.csv".format(str(self),csv_name, self.option)
         self.write_csv(breakdown_df, csv_breakdown_name, write_path=write_path)  
 
-class AgentTripLogs(PostProcessor):
-    """
-    Process Leg Logs into Trip Logs.
-    """
-
-    requirements = [
-        'leg_logs',
-        'mode_hierarchy'
-    ]
-    valid_options = ['all']
-
-    hierarchy = None
-
-    def __str__(self):
-        return f'AgentTripLogs modes'
-
-    def build(self, resource: dict, write_path=None):
-        super().build(resource, write_path=write_path)
-
-        self.hierarchy = resource['mode_hierarchy']
-
-        mode = self.option
-
-        file_name = "leg_log_{}.csv".format(self.option)
-        file_path = os.path.join(self.config.output_path, file_name)
-        legs_df = pd.read_csv(file_path)
-
-        # Group by trip and aggregate, applying hierarchy
-        def combine_legs(gr):
-            first_line = gr.iloc[0]
-            last_line = gr.iloc[-1]
-
-            # duration = sum(gr.duration)
-            duration_s = sum(gr.duration_s)
-            distance = sum(gr.distance)
-
-            modes = list(gr.loc[:, 'mode'])
-            primary_mode = self.hierarchy.get(modes)
-
-            return pd.Series(
-                {'mode': primary_mode,
-                 'ox': first_line.ox,
-                 'oy': first_line.oy,
-                 'dx': last_line.dx,
-                 'dy': last_line.dy,
-                 'start': first_line.start,
-                 'end': last_line.end,
-                 # 'duration': duration,
-                 'start_s': first_line.start_s,
-                 'end_s': last_line.end_s,
-                 'duration_s': duration_s,
-                 'distance': distance
-                 }
-            )
-
-        trips_df = legs_df.groupby(['agent', 'trip']).apply(combine_legs)
-
-        # reset index
-        trips_df.reset_index(inplace=True)
-
-        # Export results
-        csv_name = "trip_logs_{}.csv".format(mode)
-        self.write_csv(trips_df, csv_name, write_path=write_path)
-
-
 class VKT(PostProcessor):
     requirements = ['volume_counts']
     valid_options = ['car', 'bus', 'train', 'subway', 'ferry']
@@ -292,6 +228,3 @@ class PostProcessWorkStation(WorkStation):
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
-
-    def __str__(self):
-        return f'PostProcessing WorkStation'
