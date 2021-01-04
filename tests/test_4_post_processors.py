@@ -132,3 +132,16 @@ def test_post_process_workstation_with_trips_log_tool(test_config, test_paths):
     tool = pp_workstation.tools['trip_logs']
     pp_workstation.resources['trip_logs'] = tool(test_config, 'all')
     pp_workstation.build(write_path=test_outputs)
+
+
+@pytest.fixture
+def trip_breakdowns_processor(test_config):
+    return postprocessing.TripBreakdowns(test_config, 'all')
+
+
+def test_trip_breakdowns_prerequisites(trip_breakdowns_processor):
+    assert trip_breakdowns_processor.check_prerequisites()
+
+
+def test_trip_breakdowns_build(trip_breakdowns_processor):
+    trip_breakdowns_processor.build(None, write_path=test_outputs)

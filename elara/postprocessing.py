@@ -103,6 +103,67 @@ class PlanTimeSummary(PostProcessor):
             
         return fig
 
+class TripBreakdowns(PostProcessor):
+    """
+    Provide summary breakdowns of trip data:
+        - by duration
+        - by distance band
+        - ... 
+    """
+    requirements = ['trip_logs']
+    valid_options = ['all']
+
+    def __str__(self):
+        return f'{self.__class__.__name__}'
+
+    def build(self, resource: dict, write_path=None):
+        super().build(resource, write_path=write_path)
+        mode = self.option
+
+        # read trip logs
+        file_name = "trip_log_{}.csv".format(mode)
+        file_path = os.path.join(self.config.output_path, file_name)
+        trips_df = pd.read_csv(file_path)
+
+        # duration breakdown
+        self.breakdown(
+            data = trips_df.duration_s / 60,
+            bins = [0, 5, 10, 15, 30, 45, 60, 90, 120, 999999],
+            labels = ['0 to 5 min', '5 to 10 min', '10 to 15 min', '15 to 30 min', '30 to 45 min', '45 to 60 min', '60 to 90 min', '90 to 120 min', '120+ min'],
+            colnames = ['duration', 'trips'],
+            csv_name = "duration",
+            write_path = write_path  
+        )
+
+        # euclidean distance breakdown
+        trips_df['euclidean_distance'] = ((trips_df.ox - trips_df.dx) ** 2 + (trips_df.oy - trips_df.dy) ** 2) ** 0.5
+        self.breakdown(
+            data = trips_df.euclidean_distance / 1000,
+            bins = [0, 1, 5, 10, 25, 50, 100, 200, 999999],
+            labels = ['0 to 1 km', '1 to 5 km', '5 to 10 km', '10 to 25 km', '25 to 50 km', '50 to 100 km', '100 to 200 km', '200+ km'],
+            colnames = ['euclidean_distance', 'trips'],
+            csv_name = "euclidean_distance",
+            write_path = write_path  
+        )
+
+    def breakdown(self, data, bins, labels, colnames, csv_name, write_path):
+        """
+        Bin a data series and export to a csv file
+        :params Pandas Series data: A numerical set
+        :params list bins: data bins
+        :params list labels: data labels
+        :params list colnames: the column names of the output file
+        :params str csv_name: a suffix added to the output file name
+
+        :returns: None 
+        """
+        # bin
+        breakdown_df = pd.cut(data, bins=bins, labels=labels).value_counts().sort_index().reset_index()
+        breakdown_df.columns = colnames                                     
+
+        # Export breakdown
+        csv_breakdown_name = "{}_{}_{}.csv".format(str(self),csv_name, self.option)
+        self.write_csv(breakdown_df, csv_breakdown_name, write_path=write_path)  
 
 class AgentTripLogs(PostProcessor):
     """
@@ -224,6 +285,7 @@ class PostProcessWorkStation(WorkStation):
     tools = {
         'plan_summary': PlanTimeSummary,
         'trip_logs': AgentTripLogs,
+        'trip_breakdowns': TripBreakdowns,
         'vkt': VKT,
     }
 
