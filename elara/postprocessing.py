@@ -220,7 +220,7 @@ class PostProcessWorkStation(WorkStation):
 
     tools = {
         'plan_summary': PlanTimeSummary,
-        'trip_logs': AgentTripLogs,
+        #'trip_logs': AgentTripLogs,
         'trip_breakdowns': TripBreakdowns,
         'vkt': VKT,
     }
