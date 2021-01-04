@@ -1,1 +1,0 @@
-{"test_link_cordon:car": {"scores": {"counters": 0.0}, "weight": 1}, "test_pt_interaction_counter:bus": {"scores": {"counters": 0.0}, "weight": 1}, "test_euclidean_distance_comparison:all": {"scores": {"mse": 9.25}, "weight": 1}, "test_duration_comparison:all": {"scores": {"mse": 3.5555555555555554}, "weight": 1}, "meta_score": 12.805555555555555}
