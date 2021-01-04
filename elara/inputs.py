@@ -464,62 +464,10 @@ class TransitVehicles(InputTool):
         return ident, seated_capacity + standing_capacity
 
 
-class Agents(InputTool):
-
-    requirements = ['attributes_path']
-    final_attribute_map = None
-    map = None
-    idents = None
-    attribute_fields = None
-    attributes_df = None
-
-    def build(self, resources: dict, write_path: Optional[str] = None):
-        """
-        Population subpopulation attributes constructor.
-        :param resources: dict, of resources from suppliers
-        :param write_path: Optional output path overwrite
-        """
-        super().build(resources)
-
-        path = resources['attributes_path'].path
-
-        # Attribute label mapping
-        # TODO move model specific setup elsewhere
-        self.final_attribute_map = {
-            "inc7p": "inc7p",
-            "inc56": "inc56",
-            "inc34": "inc34",
-            "inc12": "inc12",
-            "inc7p_nocar": "inc7p",
-            "inc56_nocar": "inc56",
-            "inc34_nocar": "inc34",
-            "inc12_nocar": "inc12",
-            "freight": "freight",
-        }
-
-        self.map = dict(
-            [
-                self.get_attribute_text(elem)
-                for elem in get_elems(path, "object")
-            ]
-        )
-
-        self.idents = sorted(list(self.map))
-        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
-        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
-
-    def get_attribute_text(self, elem):
-        ident = elem.xpath("@id")[0]
-        attributes = {}
-        for attr in elem.findall('.//attribute'):
-            attributes[attr.get('name')] = self.final_attribute_map.get(attr.text, attr.text)
-        return ident, attributes
-
-
-class Attributes(InputTool):
+class Subpopulations(InputTool):
     
     requirements = ['attributes_path']
-    final_attribute_map = None
+    # final_attribute_map = None
     map = None
     classes = None
     attribute_count_map = None
@@ -536,24 +484,35 @@ class Attributes(InputTool):
 
         # Attribute label mapping
         # TODO move model specific setup elsewhere
-        self.final_attribute_map = {
-            "inc7p": "inc7p",
-            "inc56": "inc56",
-            "inc34": "inc34",
-            "inc12": "inc12",
-            "inc7p_nocar": "inc7p",
-            "inc56_nocar": "inc56",
-            "inc34_nocar": "inc34",
-            "inc12_nocar": "inc12",
-            "freight": "freight",
-        }
+        # self.final_attribute_map = {
+        #     "inc7p": "inc7p",
+        #     "inc56": "inc56",
+        #     "inc34": "inc34",
+        #     "inc12": "inc12",
+        #     "inc7p_nocar": "inc7p",
+        #     "inc56_nocar": "inc56",
+        #     "inc34_nocar": "inc34",
+        #     "inc12_nocar": "inc12",
+        #     "freight": "freight",
+        # }
 
-        self.map = dict(
-            [
-                self.get_attribute_text(elem, 'subpopulation')
-                for elem in get_elems(path, "object")
-            ]
-        )
+        if self.config.version == 12:
+            self.logger.debug("Loading attribute map from V12 plan")
+            self.map = dict(
+                [
+                    self.get_person_attribute_from_plans(elem, 'subpopulation')
+                    for elem in get_elems(path, "person")
+                ]
+            )
+
+        else:
+            self.logger.debug("Loading attribute map from V11 personAttributes")
+            self.map = dict(
+                [
+                    self.get_attribute_text(elem, 'subpopulation')
+                    for elem in get_elems(path, "object")
+                ]
+            )
         # self.license = dict(
         #     [
         #         self.get_attribute_text(elem, 'license')
@@ -563,14 +522,90 @@ class Attributes(InputTool):
 
         self.classes, self.attribute_count_map = count_values(self.map)
         self.classes.append('not_applicable')
+        # self.idents = sorted(list(self.map))
+        # self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
+        # self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
 
     def get_attribute_text(self, elem, tag):
         ident = elem.xpath("@id")[0]
-        attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
-        # if not attribute:
-        #     return ident, None
-        attribute = self.final_attribute_map.get(attribute.text, attribute.text)
+        attribute = elem.find('./attribute[@name="{}"]'.format(tag)).text
+        # attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
+
+    def get_person_attribute_from_plans(self, elem, tag):
+        ident = elem.xpath("@id")[0]
+        attribute = elem.find(f'./attributes/attribute[@name="{tag}"]').text
+        # attribute = self.final_attribute_map.get(attribute.text, attribute.text)
+        return ident, attribute
+
+
+class Attributes(InputTool):
+    
+    requirements = ['attributes_path']
+    # final_attribute_map = None
+    map = None
+    classes = None
+    attribute_count_map = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Population subpopulation attribute constructor.
+        :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
+        """
+        super().build(resources)
+
+        path = resources['attributes_path'].path
+
+        # Attribute label mapping
+        # TODO move model specific setup elsewhere
+        # self.final_attribute_map = {
+        #     "inc7p": "inc7p",
+        #     "inc56": "inc56",
+        #     "inc34": "inc34",
+        #     "inc12": "inc12",
+        #     "inc7p_nocar": "inc7p",
+        #     "inc56_nocar": "inc56",
+        #     "inc34_nocar": "inc34",
+        #     "inc12_nocar": "inc12",
+        #     "freight": "freight",
+        # }
+
+        if self.config.version == 12:
+            self.logger.debug("Loading attribute map from V12 plan")
+            self.map = dict(
+                [
+                    self.get_attributes_from_plans(elem)
+                    for elem in get_elems(path, "person")
+                ]
+            )
+
+        else:
+            self.logger.debug("Loading attribute map from V11 personAttributes")
+            self.map = dict(
+                [
+                    self.get_attributes(elem)
+                    for elem in get_elems(path, "object")
+                ]
+            )
+
+        self.idents = sorted(list(self.map))
+        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
+        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
+
+    def get_attributes(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.xpath('./attribute'):
+            attributes[attr.get('name')] = attr.text
+        return ident, attributes
+
+    def get_attributes_from_plans(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.xpath('./attributes/attribute'):
+            attributes[attr.get('name')] = attr.text
+        return ident, attributes
 
 
 class Plans(InputTool):
@@ -626,7 +661,7 @@ class OutputConfig(InputTool):
         ):
             self.sub_populations.add(e.get('value'))
 
-        self.modes = list(self.modes) + ["transit_walk"]
+        self.modes = list(self.modes | set(["transit_walk", "pt"]))
         self.activities = list(self.activities)
         self.sub_populations = list(self.sub_populations)
 
@@ -704,17 +739,17 @@ class ModeMap(InputTool):
 
 class InputsWorkStation(WorkStation):
     tools = {
-        'events': Events,
+        "events": Events,
         'network': Network,
-        'osm:ways': OSMWays,
+        'osm_ways': OSMWays,
         'transit_schedule': TransitSchedule,
         'transit_vehicles': TransitVehicles,
-        'agents': Agents,
+        'subpopulations': Subpopulations,
         'attributes': Attributes,
         'plans': Plans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
-        'mode_hierarchy': ModeHierarchy,
+        # 'mode_hierarchy': ModeHierarchy,
     }
 
     def __init__(self, config):
