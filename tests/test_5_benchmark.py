@@ -116,6 +116,24 @@ def test_town_mode_share_score_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['counters'] == 0
 
+def test_duration_comparison_score_zero():
+    benchmark = benchmarking.TestDurationComparison
+    test_bm = benchmark(
+        config,
+        'all',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_euclidean_distance_comparison_score_zero():
+    benchmark = benchmarking.TestEuclideanDistanceComparison
+    test_bm = benchmark(
+        config,
+        'all',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
 
 # Config
 @pytest.fixture

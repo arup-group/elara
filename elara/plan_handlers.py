@@ -1162,6 +1162,7 @@ class PlanHandlerWorkStation(WorkStation):
         "mode_share": ModeShareHandler,
         "leg_logs": AgentLegLogsHandler,
         "trip_logs": AgentTripLogsHandler,
+        "trip_log": AgentTripLogsHandler,
         "agent_plans": AgentPlansHandler,
         "agent_utility": UtilityHandler,
         "agent_highway_distances": AgentHighwayDistanceHandler,
