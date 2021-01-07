@@ -449,6 +449,173 @@ class VolumeCounts(EventHandlerTool):
         )
         self.result_dfs[key] = totals_df
 
+class LinkSpeeds(EventHandlerTool):
+    """
+    Extract Volume Counts for mode on given network.
+    """
+
+    requirements = [
+        'events',
+        'network',
+        #'transit_schedule',
+        'subpopulations',
+    ]
+
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(
+            self.resources['subpopulations'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
+
+        # generate index and map for network link dimension
+        self.elem_gdf = self.resources['network'].link_gdf
+        
+        links = resources['network'].mode_to_links_map.get(self.option)
+        if links is None:
+            self.logger.warning(
+                f"""
+                No viable links found for mode:{self.option} in Network, 
+                this may be because the Network modes do not match the configured 
+                modes. Elara will continue with all links found in network.
+                """
+                )
+        else:
+            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[links, :]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise volume count table
+        self.counts = np.zeros((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
+
+                # Initialise volume count table
+        self.durations = np.zeros((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
+
+        self.link_tracker = dict() #{(agent,link):start_time}
+
+    def process_event(self, elem) -> None:
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle leaves traffic'
+        events to determine average time spent on link.
+        :param elem: Event XML element
+
+        The events of interest to this handler look like:
+
+          <event time="300.0"
+                 type="vehicle enters traffic"
+                 person="nick"
+                 link ="1-2"
+                 vehicle="nick"
+                 networkMode="car"
+                 relativePosition="1.0"/>
+          <event time="600.0"
+                 type="vehicle leaves traffic"
+                 person="nick"
+                 link ="1-2"
+                 vehicle="nick"
+                 networkMode="car"
+                 relativePosition="1.0"/>
+
+        """
+
+        event_type = elem.get("type")
+        if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
+            ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(ident)
+            if veh_mode == self.option:
+            # look for attribute_class, if not found assume pt and use mode
+                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
+                link = elem.get("link")
+                start_time = float(elem.get("time"))
+                self.link_tracker[(ident,link)] = start_time
+
+        elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
+            ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(ident)
+            if veh_mode == self.option:
+            # look for attribute_class, if not found assume pt and use mode
+                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
+                link = elem.get("link")
+                end_time = float(elem.get("time"))
+                start_time = self.link_tracker[(ident,link)]
+                duration = end_time - start_time
+                x, y, z = table_position(
+                    self.elem_indices,
+                    self.class_indices,
+                    self.config.time_periods,
+                    link,
+                    attribute_class,
+                    start_time
+                )
+                self.counts[x, y, z] += 1
+                self.durations[x, y, z] += duration
+    
+    def finalise(self) -> None:
+        """
+        Following event processing, the raw events table will contain counts by link
+        by time slice. The only thing left to do is scale by the sample size and
+        create dataframes.
+        """
+
+        # Scale final counts
+        self.counts = self.counts / self.durations*3.6 #speed = vehcounts*linklength/totalduration and convert from m/s to km/h
+        self.counts[np.isnan(self.counts)]=0
+
+        names = ['elem', 'class', 'hour']
+        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+        counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.reset_index().set_index('elem')
+        
+        # calc sum across all recorded attribute classes
+        self.counts = self.counts.sum(1)
+
+        totals_df = pd.DataFrame(
+            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+        ).sort_index()
+
+        del self.counts
+
+        key = "link_counts_{}_total".format(self.option)
+        totals_df = self.elem_gdf.join(
+            totals_df, how="left"
+        )
+        for i in range(self.config.time_periods):
+            #print(totals_df["length"])
+            totals_df[i] = totals_df[i]*totals_df["length"]
+        
+        self.result_dfs[key] = totals_df
 
 class PassengerCounts(EventHandlerTool):
     """
@@ -1243,6 +1410,7 @@ class EventHandlerWorkStation(WorkStation):
 
     tools = {
         "volume_counts": VolumeCounts,
+        "link_speeds": LinkSpeeds,
         "passenger_counts": PassengerCounts,
         "route_passenger_counts": RoutePassengerCounts,
         "stop_interactions": StopInteractions,
