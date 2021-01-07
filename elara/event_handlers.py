@@ -457,7 +457,7 @@ class LinkSpeeds(EventHandlerTool):
     requirements = [
         'events',
         'network',
-        #'transit_schedule',
+        'transit_schedule',
         'subpopulations',
     ]
 
@@ -516,8 +516,13 @@ class LinkSpeeds(EventHandlerTool):
                                 len(self.classes),
                                 self.config.time_periods))
 
-                # Initialise volume count table
+        # Initialise duration cummulative sum table
         self.durations = np.zeros((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
+
+        # Initialise table to hold volume / durations
+        self.intermediate = np.zeros((len(self.elem_indices),
                                 len(self.classes),
                                 self.config.time_periods))
 
@@ -557,7 +562,7 @@ class LinkSpeeds(EventHandlerTool):
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 start_time = float(elem.get("time"))
-                self.link_tracker[(ident,link)] = start_time
+                self.link_tracker[(ident,link)] = {"event": event_type, "time": start_time}
 
         elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
             ident = elem.get("vehicle")
@@ -567,8 +572,8 @@ class LinkSpeeds(EventHandlerTool):
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
-                start_time = self.link_tracker[(ident,link)]
-                duration = end_time - start_time
+                start_time = self.link_tracker[(ident,link)]["time"]
+                start_event_type = self.link_tracker[(ident,link)]["event"]
                 x, y, z = table_position(
                     self.elem_indices,
                     self.class_indices,
@@ -577,6 +582,13 @@ class LinkSpeeds(EventHandlerTool):
                     attribute_class,
                     start_time
                 )
+                # if vehicle entering or leaving traffic, agent placed halfway along link. Therefore need to double duration.
+                # Assuming in the case that vehicle enters and leaves traffic on same link then still only doubled not quadrupled.
+                if (start_event_type == "vehicle enters traffic") or (event_type == "vehicle leaves traffic"):
+                    duration = (end_time - start_time)*2
+                else:
+                    duration = end_time - start_time
+
                 self.counts[x, y, z] += 1
                 self.durations[x, y, z] += duration
     
@@ -587,7 +599,6 @@ class LinkSpeeds(EventHandlerTool):
         create dataframes.
         """
 
-        # Scale final counts
         self.counts = self.counts / self.durations*3.6 #speed = vehcounts*linklength/totalduration and convert from m/s to km/h
         self.counts[np.isnan(self.counts)]=0
 
