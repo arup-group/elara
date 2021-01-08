@@ -557,7 +557,7 @@ class LinkSpeeds(EventHandlerTool):
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 start_time = float(elem.get("time"))
-                self.link_tracker[(ident,link)] = {"event": event_type, "time": start_time}
+                self.link_tracker[ident] = (event_type , start_time)
 
         elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
             ident = elem.get("vehicle")
@@ -567,8 +567,8 @@ class LinkSpeeds(EventHandlerTool):
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
-                start_time = self.link_tracker[(ident,link)]["time"]
-                start_event_type = self.link_tracker[(ident,link)]["event"]
+                start_time = self.link_tracker[ident][1]
+                start_event_type = self.link_tracker[ident][0]
                 x, y, z = table_position(
                     self.elem_indices,
                     self.class_indices,
@@ -580,7 +580,7 @@ class LinkSpeeds(EventHandlerTool):
                 # if vehicle entering or leaving traffic, agent placed halfway along link. Therefore need to double duration.
                 # Assuming in the case that vehicle enters and leaves traffic on same link then still only doubled not quadrupled.
                 if (start_event_type == "vehicle enters traffic") or (event_type == "vehicle leaves traffic"):
-                    duration = (end_time - start_time)*2
+                    duration = (end_time - start_time) * 2
                 else:
                     duration = end_time - start_time
 
@@ -594,7 +594,7 @@ class LinkSpeeds(EventHandlerTool):
         create dataframes.
         """
 
-        self.counts = self.counts / self.durations*3.6 #speed = vehcounts*linklength/totalduration and convert from m/s to km/h
+        self.counts = self.counts / self.durations * 3.6 #speed = vehcounts*linklength/totalduration and convert from m/s to km/h
         self.counts[np.isnan(self.counts)]=0
 
         names = ['elem', 'class', 'hour']
@@ -604,6 +604,21 @@ class LinkSpeeds(EventHandlerTool):
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
         
+        key = "link_speeds_{}".format(self.option)
+        
+        # get or join to link data
+        counts_df = self.elem_gdf.join(
+            counts_df, how="left"
+        )
+        # calculate speed
+        for i in range(self.config.time_periods):
+                    counts_df[i] = counts_df[i] * counts_df["length"]
+        
+        print(counts_df)
+        
+        # add to results
+        self.result_dfs[key] = counts_df
+
         # calc sum across all recorded attribute classes
         self.counts = self.counts.sum(1)
 
@@ -613,13 +628,12 @@ class LinkSpeeds(EventHandlerTool):
 
         del self.counts
 
-        key = "link_counts_{}_total".format(self.option)
+        key = "link_speeds_{}_total".format(self.option)
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
         for i in range(self.config.time_periods):
-            #print(totals_df["length"])
-            totals_df[i] = totals_df[i]*totals_df["length"]
+            totals_df[i] = totals_df[i] * totals_df["length"]
         
         self.result_dfs[key] = totals_df
 
