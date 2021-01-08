@@ -521,11 +521,6 @@ class LinkSpeeds(EventHandlerTool):
                                 len(self.classes),
                                 self.config.time_periods))
 
-        # Initialise table to hold volume / durations
-        self.intermediate = np.zeros((len(self.elem_indices),
-                                len(self.classes),
-                                self.config.time_periods))
-
         self.link_tracker = dict() #{(agent,link):start_time}
 
     def process_event(self, elem) -> None:
