@@ -168,8 +168,8 @@ def test_benchmark_workstation(test_config, test_paths):
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['mode_shares']
+    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
     plan_workstation.build(write_path=test_outputs)
 
     pp_workstation = benchmarking.BenchmarkWorkStation(test_config)
@@ -187,14 +187,14 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = event_workstation.tools['volume_counts']
-    event_workstation.resources['volume_counts'] = tool(test_config, 'all')
+    tool = event_workstation.tools['link_vehicle_counts']
+    event_workstation.resources['link_vehicle_counts'] = tool(test_config, 'all')
     event_workstation.build(write_path=test_outputs)
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['mode_shares']
+    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
     plan_workstation.build(write_path=test_outputs)
 
     pp_workstation = benchmarking.BenchmarkWorkStation(test_config)
