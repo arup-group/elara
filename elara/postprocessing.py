@@ -76,14 +76,14 @@ class PlanTimeSummary(PostProcessor):
         act_summary_df = activity_df.describe()
 
         # # Export results
-        fig_name = "{self.name}_legs.png"
+        fig_name = f"{self.name}_legs.png"
         self.write_png(leg_figure, fig_name, write_path=write_path)
-        csv_name = "{self.name}_legs.csv"
+        csv_name = f"{self.name}_legs.csv"
         self.write_csv(leg_summary_df, csv_name, write_path=write_path)
 
-        fig_name = "{self.name}_activities.png"
+        fig_name = f"{self.name}_activities.png"
         self.write_png(act_figure, fig_name, write_path=write_path)
-        csv_name = "{self.name}_activities.csv"
+        csv_name = f"{self.name}_activities.csv"
         self.write_csv(act_summary_df, csv_name, write_path=write_path)
 
     def time_binner(self, data):
