@@ -209,7 +209,7 @@ def person_plans_elem():
 
 @pytest.fixture
 def utility_handler(test_config, input_manager):
-    handler = plan_handlers.UtilityHandler(test_config, 'all')
+    handler = plan_handlers.UtilityLogs(test_config, 'all')
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     assert len(handler.utility_log.chunk) == 0
@@ -319,7 +319,7 @@ def test_distance(x1,y1,x2,y2,dist):
 # Normal Case
 @pytest.fixture
 def agent_leg_log_handler(test_config, input_manager):
-    handler = plan_handlers.AgentLegLogsHandler(test_config, 'all')
+    handler = plan_handlers.LegLogs(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -391,7 +391,7 @@ def input_bad_plans_manager(test_bad_plans_config, test_bad_plans_paths):
 
 @pytest.fixture
 def agent_leg_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
-    handler = plan_handlers.AgentLegLogsHandler(test_bad_plans_config, 'all')
+    handler = plan_handlers.LegLogs(test_bad_plans_config, 'all')
 
     resources = input_bad_plans_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -424,7 +424,7 @@ def test_finalised_logs_bad_plans(agent_leg_log_handler_finalised_bad_plans):
 # Normal Case
 @pytest.fixture
 def agent_trip_handler(test_config, input_manager):
-    handler = plan_handlers.AgentTripLogsHandler(test_config, 'all')
+    handler = plan_handlers.TripLogs(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -603,7 +603,7 @@ def test_finalised_logs(agent_trip_log_handler_finalised):
 
 @pytest.fixture
 def agent_trip_log_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
-    handler = plan_handlers.AgentTripLogsHandler(test_bad_plans_config, 'all')
+    handler = plan_handlers.TripLogs(test_bad_plans_config, 'all')
 
     resources = input_bad_plans_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -634,7 +634,7 @@ def test_finalised_trips_logs_bad_plans(agent_trips_log_handler_finalised_bad_pl
 # Plan Handler ###
 @pytest.fixture
 def agent_plan_handler(test_bad_plans_config, input_manager):
-    handler = plan_handlers.AgentPlansHandler(test_bad_plans_config, 'poor')
+    handler = plan_handlers.PlanLogs(test_bad_plans_config, 'poor')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -673,7 +673,7 @@ def test_finalised_plans(agent_plans_handler_finalised):
 # Bad Config (plans wrap past 24hrs)
 @pytest.fixture
 def agent_plans_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager):
-    handler = plan_handlers.AgentPlansHandler(test_bad_plans_config, 'poor')
+    handler = plan_handlers.PlanLogs(test_bad_plans_config, 'poor')
 
     resources = input_bad_plans_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -701,7 +701,7 @@ def agent_plans_handler_bad_plans(test_bad_plans_config, input_bad_plans_manager
 ### Agent Highway Distance Handler ###
 @pytest.fixture
 def agent_distances_handler_car_mode(test_config, input_manager):
-    handler = plan_handlers.AgentHighwayDistanceHandler(test_config, 'car')
+    handler = plan_handlers.AgentHighwayDistanceLogs(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -768,7 +768,7 @@ def test_finalised_agent_distances_car(agent_distances_handler_finalised_car):
 ### Trips Highway Distance Handler ###
 @pytest.fixture
 def trip_distances_handler_car_mode(test_config, input_manager):
-    handler = plan_handlers.TripHighwayDistanceHandler(test_config, 'car')
+    handler = plan_handlers.TripHighwayDistanceLogs(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -810,7 +810,7 @@ def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
 ### Modeshare Handler ###
 @pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.ModeShareHandler(test_config, 'all')
+    handler = plan_handlers.ModeShares(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1034,7 +1034,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
     handler = test_plan_handler_finalised
 
     for name, result in handler.results.items():
-        if 'share' in name:
+        if 'counts' not in name:
             cols = handler.modes
             if isinstance(result, pd.DataFrame):
                 for c in cols:
@@ -1065,14 +1065,14 @@ def test_load_plan_handler_manager(test_config, test_paths):
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
 
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['mode_shares']
+    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
 
     plan_workstation.build(write_path=test_outputs)
 
     for handler in plan_workstation.resources.values():
         for name, result in handler.results.items():
-            if 'share' in name:
+            if 'count' not in name:
                 cols = handler.modes
                 if isinstance(result, pd.DataFrame):
                     for c in cols:

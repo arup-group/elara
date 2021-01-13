@@ -97,9 +97,9 @@ class EventHandlerTool(Tool):
         }
 
 
-class AgentGraph(EventHandlerTool):
+class VehiclePassengerGraph(EventHandlerTool):
     """
-    Extract Waiting times for agents.
+    Extract a graph of interactions (where interactions are passengers sharing some time in a vehicle).
     """
 
     requirements = [
@@ -169,15 +169,15 @@ class AgentGraph(EventHandlerTool):
 
     def finalise(self):
         del self.veh_occupancy
-        name = "graph.pkl".format(self.option)
+        name = f"{str(self)}.pkl"
         path = os.path.join(self.config.output_path, name)
         nx.write_gpickle(self.graph, path)
         del self.graph
 
 
-class AgentWaitingTimes(EventHandlerTool):
+class StopPassengerWaiting(EventHandlerTool):
     """
-    Extract interaction graph for agents.
+    Extract agent waiting times at stops.
     """
 
     requirements = [
@@ -210,8 +210,7 @@ class AgentWaitingTimes(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        csv_name = "agent_waiting_times_{}.csv".format(self.option)
-
+        csv_name = f"{str(self)}.csv"
         self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_event(self, elem) -> None:
@@ -313,7 +312,7 @@ class AgentWaitingTimes(EventHandlerTool):
         self.waiting_time_log.finish()
 
 
-class VolumeCounts(EventHandlerTool):
+class LinkVehicleCounts(EventHandlerTool):
     """
     Extract Volume Counts for mode on given network.
     """
@@ -427,8 +426,9 @@ class VolumeCounts(EventHandlerTool):
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
+
         # Create volume counts output
-        key = "volume_counts_{}".format(self.option)
+        key = self.name
         counts_df = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -443,14 +443,14 @@ class VolumeCounts(EventHandlerTool):
 
         del self.counts
 
-        key = "volume_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
         self.result_dfs[key] = totals_df
 
 
-class PassengerCounts(EventHandlerTool):
+class LinkPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts on links for given mode in mode vehicles.
     """
@@ -626,7 +626,7 @@ class PassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "passenger_counts_{}".format(self.option)
+        key = self.name
         counts_df = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -642,7 +642,7 @@ class PassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = "passenger_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -815,7 +815,7 @@ class RoutePassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "route_passenger_counts_{}".format(self.option)
+        key = self.name
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -827,13 +827,13 @@ class RoutePassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = "route_passenger_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         self.result_dfs[key] = totals_df
 
 
-class StopInteractions(EventHandlerTool):
+class StopPassengerCounts(EventHandlerTool):
     """
-    Alightings and Boardings handler for given mode.
+    Stop alightings and boardings handler for given mode.
     """
 
     requirements = [
@@ -977,7 +977,7 @@ class StopInteractions(EventHandlerTool):
         self.alightings *= 1.0 / self.config.scale_factor
 
         # Create passenger counts output
-        for data, name in zip([self.boardings, self.alightings], ['boardings', 'alightings']):
+        for data, direction in zip([self.boardings, self.alightings], ['boardings', 'alightings']):
 
             names = ['elem', 'class', 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
@@ -987,7 +987,7 @@ class StopInteractions(EventHandlerTool):
             counts_df = counts_df.reset_index().set_index('elem')
 
             # Create volume counts output
-            key = "{}_{}".format(name, self.option)
+            key = f"{self.name}_{direction}"
             counts_df = self.elem_gdf.join(
                 counts_df, how="left"
             )
@@ -1002,14 +1002,14 @@ class StopInteractions(EventHandlerTool):
 
             del data
 
-            key = "stop_{}_{}".format(name, self.option)
+            key = f"{self.name}_{direction}_total"
             totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
             self.result_dfs[key] = totals_df
 
 
-class PassengerStopToStopCounts(EventHandlerTool):
+class StopToStopPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts between stops for given mode in mode vehicles.
     """
@@ -1205,7 +1205,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
         # Create volume counts output
-        key = "stop_to_stop_passenger_counts_{}".format(self.option)
+        key = self.name
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -1231,7 +1231,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
-        key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         self.result_dfs[key] = totals_df
 
 
@@ -1242,13 +1242,13 @@ class EventHandlerWorkStation(WorkStation):
     """
 
     tools = {
-        "volume_counts": VolumeCounts,
-        "passenger_counts": PassengerCounts,
+        "link_vehicle_counts": LinkVehicleCounts,
+        "link_passenger_counts": LinkPassengerCounts,
         "route_passenger_counts": RoutePassengerCounts,
-        "stop_interactions": StopInteractions,
-        "waiting_times": AgentWaitingTimes,
-        "graph": AgentGraph,
-        "passenger_stop_to_stop_loading": PassengerStopToStopCounts
+        "stop_passenger_counts": StopPassengerCounts,
+        "stop_passenger_waiting": StopPassengerWaiting,
+        "vehicle_passenger_graph": VehiclePassengerGraph,
+        "stop_to_stop_passenger_counts": StopToStopPassengerCounts
     }
 
     def __init__(self, config):

@@ -75,7 +75,7 @@ class PlanHandlerTool(Tool):
         return list_in, list_indices_map
 
 
-class ModeShareHandler(PlanHandlerTool):
+class ModeShares(PlanHandlerTool):
     """
     Extract Mode Share from Plans.
     """
@@ -110,9 +110,6 @@ class ModeShareHandler(PlanHandlerTool):
 
         # Initialise results storage
         self.results = dict()  # Result geodataframes ready to export
-
-    def __str__(self):
-        return f'ModeShare'
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -222,23 +219,23 @@ class ModeShareHandler(PlanHandlerTool):
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        key = "mode_counts_{}_breakdown".format(self.option)
+        key = f"{self.name}_subpop_counts".format(self.option)
         self.results[key] = counts_df
 
         # mode counts totals output
         total_counts_df = counts_df.sum(0)
-        key = "mode_counts_{}_total".format(self.option)
+        key = f"{self.name}_counts"
         self.results[key] = total_counts_df
 
         # convert to mode shares
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        key = "mode_shares_{}_breakdown".format(self.option)
+        key = f"{self.name}_subpops"
         self.results[key] = counts_df / total
 
         # mode shares totals output
-        key = "mode_shares_{}_total".format(self.option)
+        key = f"{self.name}"
         self.results[key] = total_counts_df / total
 
     @staticmethod
@@ -278,7 +275,7 @@ class ModeShareHandler(PlanHandlerTool):
         return x, y, z, w
 
 
-class AgentLegLogsHandler(PlanHandlerTool):
+class LegLogs(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule', 'subpopulations']
     valid_options = ['all']
@@ -311,9 +308,6 @@ class AgentLegLogsHandler(PlanHandlerTool):
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
-    def __str__(self):
-        return f'LogHandler'
-
     def build(self, resources: dict, write_path=None) -> None:
         """
         Build handler from resources.
@@ -322,8 +316,8 @@ class AgentLegLogsHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        activity_csv_name = f"leg_activity_log_{self.option}.csv"
-        legs_csv_name = f"leg_log_{self.option}.csv"
+        activity_csv_name = f"{self.name}_activities.csv"
+        legs_csv_name = f"{self.name}_legs.csv"
 
         self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
         self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path)
@@ -471,7 +465,7 @@ class AgentLegLogsHandler(PlanHandlerTool):
         return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
 
 
-class AgentTripLogsHandler(PlanHandlerTool):
+class TripLogs(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule', 'subpopulations']
     valid_options = ['all']
@@ -504,8 +498,6 @@ class AgentTripLogsHandler(PlanHandlerTool):
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
-    def __str__(self):
-        return f'LogHandler'
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -515,8 +507,8 @@ class AgentTripLogsHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        activity_csv_name = f"trip_activity_log_{self.option}.csv"
-        trips_csv_name = f"trip_log_{self.option}.csv"
+        activity_csv_name = f"{self.name}_activities.csv"
+        trips_csv_name = f"{self.name}_trips.csv"
 
         self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
         self.trips_log = self.start_chunk_writer(trips_csv_name, write_path=write_path)
@@ -670,7 +662,7 @@ class AgentTripLogsHandler(PlanHandlerTool):
         return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
 
 
-class UtilityHandler(PlanHandlerTool):
+class UtilityLogs(PlanHandlerTool):
 
     requirements = ['plans']
     valid_options = ['all']
@@ -692,9 +684,6 @@ class UtilityHandler(PlanHandlerTool):
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
 
-    def __str__(self):
-        return 'UtilityHandler'
-
     def build(self, resources: dict, write_path=None) -> None:
         """
         Build handler from resources.
@@ -703,7 +692,7 @@ class UtilityHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        utility_csv_name = "{}_utilityscores_{}.csv".format(self.config.name, self.option)
+        utility_csv_name = f"{self.name}.csv"
 
         self.utility_log = self.start_chunk_writer(utility_csv_name, write_path=write_path)
 
@@ -733,7 +722,7 @@ class UtilityHandler(PlanHandlerTool):
         """
         self.utility_log.finish()
 
-class AgentPlansHandler(PlanHandlerTool):
+class PlanLogs(PlanHandlerTool):
     """
     Write log of all plans, including selection and score.
     Format will we mostly duplicate of legs log.
@@ -765,9 +754,6 @@ class AgentPlansHandler(PlanHandlerTool):
         # Initialise results storage
         self.results = dict()  # Results will remain empty as using writer
 
-    def __str__(self):
-        return f'ScoreHandler'
-
     def build(self, resources: dict, write_path=None) -> None:
         """
         Build handler from resources.
@@ -777,7 +763,7 @@ class AgentPlansHandler(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        csv_name = "{}_scores_log_{}.csv".format(self.config.name, self.option)
+        csv_name = f"{self.name}.csv"
         self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_plans(self, elem):
@@ -912,7 +898,7 @@ class AgentPlansHandler(PlanHandlerTool):
         return s + (60 * (m + (60 * h)))
 
 
-class AgentHighwayDistanceHandler(PlanHandlerTool):
+class AgentHighwayDistanceLogs(PlanHandlerTool):
     """
     Extract modal distances from agent plans.
     todo road only will not require transit schedule... maybe split road and pt
@@ -943,9 +929,6 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
-
-    def __str__(self):
-        return f'AgentHighwayDistance)'
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -1020,11 +1003,11 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
 
         # calculate summary
         total_df = distance_df.sum(0)
-        key = "agent_distance_{}_total".format(self.option)
+        key = f"{self.name}_totals"
         self.results[key] = total_df
 
         # join with agent attributes
-        key = "agent_distances_{}_breakdown".format(self.option)
+        key = f"{self.name}"
         distance_df['attribute'] = distance_df.index.map(self.subpopulations)
         self.results[key] = distance_df
 
@@ -1044,7 +1027,7 @@ class AgentHighwayDistanceHandler(PlanHandlerTool):
         return x, y
 
 
-class TripHighwayDistanceHandler(PlanHandlerTool):
+class TripHighwayDistanceLogs(PlanHandlerTool):
     """
     Extract modal distances from agent car trips.
     """
@@ -1072,9 +1055,6 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
         self.distances_log = None
         self.results = dict()  # Results will remain empty as using writer
 
-    def __str__(self):
-        return f'TripHighwayDistance)'
-
     def build(self, resources: dict, write_path=None) -> None:
         """
         Build Handler.
@@ -1091,7 +1071,7 @@ class TripHighwayDistanceHandler(PlanHandlerTool):
         self.ways = self.osm_ways.classes
 
         # Initialise results writer
-        csv_name = "{}_trip_distances_{}.csv".format(self.config.name, self.option)
+        csv_name = f"{self.name}.csv"
         self.distances_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_plans(self, elem):
@@ -1160,14 +1140,13 @@ class PlanHandlerWorkStation(WorkStation):
     """
 
     tools = {
-        "mode_share": ModeShareHandler,
-        "leg_logs": AgentLegLogsHandler,
-        "trip_logs": AgentTripLogsHandler,
-        "trip_log": AgentTripLogsHandler,
-        "agent_plans": AgentPlansHandler,
-        "agent_utility": UtilityHandler,
-        "agent_highway_distances": AgentHighwayDistanceHandler,
-        "trip_highway_distances": TripHighwayDistanceHandler,
+        "mode_shares": ModeShares,
+        "leg_logs": LegLogs,
+        "trip_logs": TripLogs,
+        "plan_logs": PlanLogs,
+        "utility_logs": UtilityLogs,
+        "agent_highway_distance_logs": AgentHighwayDistanceLogs,
+        "trip_highway_distance_logs": TripHighwayDistanceLogs,
     }
 
     def __init__(self, config):
