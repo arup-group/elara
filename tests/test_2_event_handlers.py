@@ -396,7 +396,6 @@ def test_car_link_speed_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
@@ -459,7 +458,6 @@ def bus_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
         len(resources['network'].link_gdf), 3, periods)
@@ -477,7 +475,6 @@ def bus_route_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
         len(set(resources['transit_schedule'].veh_to_route_map.values())), 3, periods)
