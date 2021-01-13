@@ -553,9 +553,6 @@ class LinkSpeeds(EventHandlerTool):
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.option:
-            # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
-                link = elem.get("link")
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type , start_time)
 
@@ -613,8 +610,6 @@ class LinkSpeeds(EventHandlerTool):
         # calculate speed
         for i in range(self.config.time_periods):
                     counts_df[i] = counts_df[i] * counts_df["length"]
-        
-        print(counts_df)
         
         # add to results
         self.result_dfs[key] = counts_df

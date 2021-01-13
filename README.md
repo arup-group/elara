@@ -30,6 +30,7 @@ These are processed by streaming (in order) through all output events from simul
   * ``passenger_counts``: Produce vehicle occupancy by time slice.
   * ``stop_interactions``: Boardings and Alightings by time slice.
   * ``waiting_times``: Agent waiting times for unique pt interaction events.
+  * ``link_speeds``: Average speed by link and time slice, in km/h.
 
 * **Plan Based Handlers/Outputs**:
 These are processed by streaming through all output plans from simulation. Compared to the event based outputs
@@ -42,6 +43,7 @@ these are typically more aggregate but can be computationally faster and can be 
   * ``agent_highway_distances``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
   * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``agent_utility``: Produce list of agent IDs and final utility score of their selected plan.
 
 * **Post Processing Handlers**:
 These are outputs produced through additional post-processing of the above outputs.
@@ -226,6 +228,7 @@ include:
 * ``passenger_counts``: Produce vehicle occupancy by time slice.
 * ``stop_interactions``: Boardings and Alightings by time slice.
 * ``waiting_times``: Agent waiting times for unique pt interaction events.
+* ``link_speeds``: Average speed by link and time slice, in km/h.
 
 The associated list attached to each handler allows specification of which options (typically modes
  of transport) should be processed using that handler. This allows certain handlers to be activated 
