@@ -68,7 +68,7 @@ def test_main(test_config):
 
     factory.build(requirements, write_path=test_outputs)
 
-    path = os.path.join(test_outputs, 'boardings_bus.csv')
+    path = os.path.join(test_outputs, 'stop_passenger_counts_bus_boardings.csv')
     test_town_boardings_bus = pd.read_csv(path)
     assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
 
@@ -117,7 +117,7 @@ def test_main_ordering_graph(test_config):
 
     factory.build(requirements, write_path=test_outputs)
 
-    path = os.path.join(test_outputs, 'boardings_bus.csv')
+    path = os.path.join(test_outputs, 'stop_passenger_counts_bus_boardings.csv')
     test_town_boardings_bus = pd.read_csv(path)
     assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
 
@@ -174,7 +174,7 @@ def test_main_missing_requirement_still_fulfilled(test_config_missing):
 
     factory.build(requirements, write_path=test_outputs)
 
-    path = os.path.join(test_outputs, 'boardings_bus.csv')
+    path = os.path.join(test_outputs, 'stop_passenger_counts_bus_boardings.csv')
     test_town_boardings_bus = pd.read_csv(path)
     assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
 

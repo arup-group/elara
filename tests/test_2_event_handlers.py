@@ -12,7 +12,7 @@ os.chdir(root_dir)
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
 from elara import event_handlers
-from elara.event_handlers import EventHandlerWorkStation
+from elara.event_handlers import EventHandlerWorkStation, LinkVehicleCounts
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -67,6 +67,11 @@ def test_config():
     config = Config(config_path)
     assert config
     return config
+
+
+def test_tool_naming(test_config):
+    tool = LinkVehicleCounts(config=test_config)
+    assert (str(tool)) == "LinkVehicleCounts"
 
 
 # Paths
@@ -169,7 +174,7 @@ def veh_departs_event():
 # Waiting times
 @pytest.fixture
 def test_agent_waiting_times_log_handler(test_config, input_manager):
-    handler = event_handlers.AgentWaitingTimes(test_config, 'all')
+    handler = event_handlers.StopPassengerWaiting(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -250,7 +255,7 @@ def bus_leaves_link_event():
 # Car
 @pytest.fixture
 def test_car_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'car')
+    handler = event_handlers.LinkVehicleCounts(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -258,7 +263,6 @@ def test_car_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
@@ -314,7 +318,7 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
 # bus
 @pytest.fixture
 def test_bus_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'bus')
+    handler = event_handlers.LinkVehicleCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -450,7 +454,7 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
 # Passenger Counts Handler Tests
 @pytest.fixture
 def bus_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.PassengerCounts(test_config, 'bus')
+    handler = event_handlers.LinkPassengerCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -599,7 +603,7 @@ def test_passenger_count_finalise_bus(
 
 def test_route_passenger_count_handler_rejects_car_as_mode():
     with pytest.raises(UserWarning) as ex_info:
-        event_handlers.RoutePassengerCounts(test_config, 'car')
+        event_handlers.RoutePassengerCounts(config=test_config, option='car')
     assert "Invalid option: car at tool" in str(ex_info.value)
 
 
@@ -621,7 +625,7 @@ def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, e
 # Stop Interactions
 @pytest.fixture
 def test_bus_passenger_interaction_handler(test_config, input_manager):
-    handler = event_handlers.StopInteractions(test_config, 'bus')
+    handler = event_handlers.StopPassengerCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -743,7 +747,7 @@ def test_stop_interaction_finalise_bus(
 # Stop to stop volumes
 @pytest.fixture
 def bus_stop_to_stop_handler(test_config, input_manager):
-    handler = event_handlers.PassengerStopToStopCounts(test_config, 'bus')
+    handler = event_handlers.StopToStopPassengerCounts(test_config, 'bus')
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     return handler

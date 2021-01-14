@@ -81,19 +81,19 @@ def event_handlers():
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
-def volume_counts(
+def link_vehicle_counts(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a volume counts output for a given mode or modes. Example invocation for "car" and "bus"
     modes with name "test" and scale factor at 20% is:
 
-    $ elara event-handlers volume-counts car bus -n test -s .2
+    $ elara event-handlers link-vehicle-counts car bus -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["volume_counts"] = list(modes)
+    override["event_handlers"]["link_vehicle_counts"] = list(modes)
     config = Config(override=override)
     main(config)
 
@@ -101,19 +101,19 @@ def volume_counts(
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
-def passenger_counts(
+def link_passenger_counts(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a passenger counts output for a given mode or modes. Example invocation for "train" and
     "bus" modes with name "test" and scale factor at 20% is:
 
-    $ elara event-handlers passenger-counts train bus -n test -s .2
+    $ elara event-handlers link-passenger-counts train bus -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["passenger_counts"] = list(modes)
+    override["event_handlers"]["link_passenger_counts"] = list(modes)
     config = Config(override=override)
     main(config)
 
@@ -141,19 +141,19 @@ def route_passenger_counts(
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
-def stop_interactions(
+def stop_passenger_counts(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a stop interactions output for a given mode or modes. Example invocation for "train" and
     "bus" modes with name "test" and scale factor at 20% is:
 
-    $ elara event-handlers stop-interactions train bus -n test -s .2
+    $ elara event-handlers stop-passenger-counts train bus -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["stop_interactions"] = list(modes)
+    override["event_handlers"]["stop_passenger_counts"] = list(modes)
     config = Config(override=override)
     main(config)
 
@@ -161,19 +161,19 @@ def stop_interactions(
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
-def stop_to_stop(
+def stop_to_stop_passenger_counts(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create stop to stop passenger counts output for a given mode or modes. Example invocation for "train" and
     "bus" modes with name "test" and scale factor at 20% is:
 
-    $ elara event-handlers stop_to_stop train bus -n test -s .2
+    $ elara event-handlers stop_to_stop_passenger_counts train bus -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["passenger_stop_to_stop_loading"] = list(modes)
+    override["event_handlers"]["stop_to_stop_passenger_counts"] = list(modes)
     config = Config(override=override)
     main(config)
 
@@ -189,19 +189,19 @@ def plan_handlers():
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def mode_share(
+def mode_shares(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a mode share output for a given option. Example invocation for option "all" and
      scale factor at 20% is:
 
-    $ elara plan-handlers mode-share all -s .2
+    $ elara plan-handlers mode-shares all -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["mode_share"] = list(options)
+    override["plan_handlers"]["mode_shares"] = list(options)
     config = Config(override=override)
     main(config)
 
@@ -247,18 +247,18 @@ def trip_logs(
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def agent_utility(
+def utility_logs(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent plan utility output. Example invocation for option "all" is:
 
-    $ elara plan-handlers agent-utility all
+    $ elara plan-handlers utility_logs all
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["agent_utility"] = list(options)
+    override["plan_handlers"]["utility_logs"] = list(options)
     config = Config(override=override)
     main(config)
 
@@ -266,19 +266,19 @@ def agent_utility(
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def agent_plans(
+def plan_logs(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent plans output for a given option. Example invocation for sub-populations "a",
     "b" and "c" with name "test" and scale factor at 20% is:
 
-    $ elara plan-handlers agent-plans a b c -n test -s .2
+    $ elara plan-handlers plan_logs a b c -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["agent_plans"] = list(options)
+    override["plan_handlers"]["plan_logs"] = list(options)
     config = Config(override=override)
     main(config)
 
@@ -286,19 +286,19 @@ def agent_plans(
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def agent_highway_distances(
+def agent_highway_distance_logs(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent highways distances output for a given option. Example invocation for option "car" name
     "test" and scale factor at 20% is:
 
-    $ elara plan-handlers highway-distances car -n test -s .2
+    $ elara plan-handlers agent_highway_distance_logs car -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["agent_highway_distances"] = list(options)
+    override["plan_handlers"]["agent_highway_distance_logs"] = list(options)
     config = Config(override=override)
     main(config)
 
@@ -306,19 +306,19 @@ def agent_highway_distances(
 @plan_handlers.command()
 @click.argument('options', nargs=-1, type=click.STRING, required=True)
 @common_options
-def trip_highway_distances(
+def trip_highway_distance_logs(
         options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a trip highways distances output for a given option. Example invocation for option "car" name
     "test" and scale factor at 20% is:
 
-    $ elara plan-handlers highway-distances car -n test -s .2
+    $ elara plan-handlers trip_highway_distance_logs car -n test -s .2
     """
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["trip_highway_distances"] = list(options)
+    override["plan_handlers"]["trip_highway_distance_logs"] = list(options)
     config = Config(override=override)
     main(config)
 
