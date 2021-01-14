@@ -15,12 +15,12 @@ plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [event_handlers]
-volume_counts = ["car"]
-passenger_counts = ["bus", "train"]
-stop_interactions = ["bus", "train"]
+link_vehicle_counts = ["car"]
+link_passenger_counts = ["bus", "train"]
+stop_passenger_counts = ["bus", "train"]
 
 [plan_handlers]
-mode_share = ["all"]
+mode_shares = ["all"]
 
 [post_processors]
 vkt = ["car", "bus"]
