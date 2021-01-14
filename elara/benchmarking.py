@@ -1587,7 +1587,7 @@ class ModeStats(BenchmarkTool):
         :return: Dictionary of scores
         """
         # Build paths and load appropriate volume counts
-        results_name = "mode_shares_all_total.csv"
+        results_name = "mode_shares_all.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path,
                                  header=None,
@@ -1611,7 +1611,7 @@ class ModeStats(BenchmarkTool):
 
 class LondonModeShare(ModeStats):
 
-    requirements = ['mode_share']
+    requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
 
@@ -1669,7 +1669,7 @@ class SqueezeTownHighwayCounters(PointsCounter):
 
 class MultimodalTownModeShare(ModeStats):
 
-    requirements = ['mode_share']
+    requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
 
@@ -1739,7 +1739,7 @@ class DublinCanalCordonCar(Cordon):
 
 class IrelandCommuterStats(ModeStats):
 
-    requirements = ['mode_share']
+    requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
 
@@ -1793,7 +1793,7 @@ class TestTownPeakIn(Cordon):
 
 class TestTownCommuterStats(ModeStats):
 
-    requirements = ['mode_share']
+    requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
 
