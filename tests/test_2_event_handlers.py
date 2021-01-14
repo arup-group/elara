@@ -392,7 +392,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 # Car
 @pytest.fixture
 def test_car_link_speed_handler(test_config, input_manager):
-    handler = event_handlers.LinkSpeeds(test_config, 'car')
+    handler = event_handlers.LinkVehicleSpeeds(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)

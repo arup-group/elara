@@ -591,8 +591,9 @@ class LinkVehicleSpeeds(EventHandlerTool):
         create dataframes.
         """
 
-        self.counts = self.counts / self.durations * 3.6 #speed = vehcounts*linklength/totalduration and convert from m/s to km/h
-        self.counts[np.isnan(self.counts)]=0
+        # speed = vehcounts*linklength/totalduration and convert from m/s to km/h
+        self.counts = np.divide(self.counts, self.durations, out=np.zeros_like(self.counts), where=self.durations!=0) * 3.6
+        # above code avoid divide by zero warnings
 
         names = ['elem', 'class', 'hour']
         indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
