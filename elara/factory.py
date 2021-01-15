@@ -6,6 +6,8 @@ import json
 import logging
 from matplotlib.figure import Figure
 
+from elara.helpers import camel_to_snake
+
 
 class Tool:
     """
@@ -24,6 +26,7 @@ class Tool:
     requirements = []
     options_enabled = False
 
+    option = None
     valid_options = None
     invalid_options = None
 
@@ -41,7 +44,16 @@ class Tool:
         self.option = self._validate_option(option)
 
     def __str__(self):
+        if self.option:
+            return self.__class__.__name__.split(".")[-1] + self.option.title()
         return self.__class__.__name__.split(".")[-1]
+
+    @property
+    def name(self):
+        class_name = self.__class__.__name__.split('.')[-1]
+        if self.option:
+            return f"{camel_to_snake(class_name)}_{self.option}"
+        return camel_to_snake(class_name)
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
         """

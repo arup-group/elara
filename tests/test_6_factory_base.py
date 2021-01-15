@@ -33,6 +33,15 @@ class ExampleTool(Tool):
     pass
 
 
+def test_tool_naming():
+    tool = ExampleTool(Config())
+    assert (str(tool)) == "ExampleTool"
+    assert tool.name == "example_tool"
+    tool = ExampleTool(config=Config(), option="car")
+    assert (str(tool)) == "ExampleToolCar"
+    assert tool.name == "example_tool_car"
+
+
 # Tools
 class VKT(ExampleTool):
     options_enabled = True

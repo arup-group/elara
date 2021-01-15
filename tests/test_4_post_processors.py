@@ -83,8 +83,8 @@ def test_post_process_workstation_with_vkt_tool(test_config, test_paths):
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['mode_shares']
+    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
     plan_workstation.build(write_path=test_outputs)
 
     pp_workstation = postprocessing.PostProcessWorkStation(test_config)
@@ -126,13 +126,26 @@ def test_post_process_workstation_with_trips_log_tool(test_config, test_paths):
 
 
 @pytest.fixture
-def trip_breakdowns_processor(test_config):
-    return postprocessing.TripBreakdowns(test_config, 'all')
+def trip_distance_breakdowns_processor(test_config):
+    return postprocessing.TripEuclidDistanceBreakdown(test_config, 'all')
 
 
-def test_trip_breakdowns_prerequisites(trip_breakdowns_processor):
-    assert trip_breakdowns_processor.check_prerequisites()
+def test_trip_distance_breakdowns_prerequisites(trip_distance_breakdowns_processor):
+    assert trip_distance_breakdowns_processor.check_prerequisites()
 
 
-def test_trip_breakdowns_build(trip_breakdowns_processor):
-    trip_breakdowns_processor.build(None, write_path=test_outputs)
+def test_trip_distance_breakdowns_build(trip_distance_breakdowns_processor):
+    trip_distance_breakdowns_processor.build(None, write_path=test_outputs)
+
+
+@pytest.fixture
+def trip_duration_breakdowns_processor(test_config):
+    return postprocessing.TripDurationBreakdown(test_config, 'all')
+
+
+def test_trip_duration_breakdowns_prerequisites(trip_duration_breakdowns_processor):
+    assert trip_duration_breakdowns_processor.check_prerequisites()
+
+
+def test_trip_duration_breakdowns_build(trip_duration_breakdowns_processor):
+    trip_duration_breakdowns_processor.build(None, write_path=test_outputs)
