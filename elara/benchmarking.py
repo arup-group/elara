@@ -390,15 +390,16 @@ class TestCordon(LinkCounter):
     weight = 1
 
 
-class IrelandHighwayCountersNew(LinkCounter):
+class IrelandHighwayCounters(LinkCounter):
 
-    name = 'ireland_highways_counters_new'
+    name = 'ireland_highways_counters'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'ireland_highways_counters_14july20.json')
+        os.path.join('ireland', 'highways', 'ireland_highways_counters_13jan21_2016.json')
     )
 
     requirements = ['link_vehicle_counts']
     valid_options = ['car', 'bus']
+
     options_enabled = True
 
     weight = 1
@@ -411,8 +412,10 @@ class LondonCentralCordonCar(LinkCounter):
         os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_car_2017.json')
     )
 
+
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
+
     options_enabled = True
 
     weight = 1
@@ -1636,21 +1639,6 @@ class TestHighwayCounters(PointsCounter):
 
     weight = 1
 
-
-class IrelandHighwayCounters(PointsCounter):
-
-    name = 'ireland_highways'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'irish_highways_bm.json')
-    )
-
-    requirements = ['link_vehicle_counts']
-    valid_options = ['car', 'bus']
-    options_enabled = True
-
-    weight = 1
-
-
 class SqueezeTownHighwayCounters(PointsCounter):
 
     name = 'squeeze_town_highways'
@@ -1818,7 +1806,7 @@ class BenchmarkWorkStation(WorkStation):
         "test_duration_comparison": TestDurationComparison,
 
         # latest
-        "ireland_highways": IrelandHighwayCountersNew,
+        "ireland_highways": IrelandHighwayCounters,
         # "london_boundary_cordon_car": LondonBoundaryCordonCar,
         # "london_boundary_cordon_bus": LondonBoundaryCordonBus,
         "london_central_cordon_car": LondonCentralCordonCar,
