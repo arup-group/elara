@@ -97,9 +97,9 @@ class EventHandlerTool(Tool):
         }
 
 
-class AgentGraph(EventHandlerTool):
+class VehiclePassengerGraph(EventHandlerTool):
     """
-    Extract Waiting times for agents.
+    Extract a graph of interactions (where interactions are passengers sharing some time in a vehicle).
     """
 
     requirements = [
@@ -169,15 +169,15 @@ class AgentGraph(EventHandlerTool):
 
     def finalise(self):
         del self.veh_occupancy
-        name = "graph.pkl".format(self.option)
+        name = f"{str(self)}.pkl"
         path = os.path.join(self.config.output_path, name)
         nx.write_gpickle(self.graph, path)
         del self.graph
 
 
-class AgentWaitingTimes(EventHandlerTool):
+class StopPassengerWaiting(EventHandlerTool):
     """
-    Extract interaction graph for agents.
+    Extract agent waiting times at stops.
     """
 
     requirements = [
@@ -210,8 +210,7 @@ class AgentWaitingTimes(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        csv_name = "agent_waiting_times_{}.csv".format(self.option)
-
+        csv_name = f"{str(self)}.csv"
         self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
 
     def process_event(self, elem) -> None:
@@ -313,7 +312,7 @@ class AgentWaitingTimes(EventHandlerTool):
         self.waiting_time_log.finish()
 
 
-class VolumeCounts(EventHandlerTool):
+class LinkVehicleCounts(EventHandlerTool):
     """
     Extract Volume Counts for mode on given network.
     """
@@ -427,8 +426,9 @@ class VolumeCounts(EventHandlerTool):
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
+
         # Create volume counts output
-        key = "volume_counts_{}".format(self.option)
+        key = self.name
         counts_df = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -443,14 +443,197 @@ class VolumeCounts(EventHandlerTool):
 
         del self.counts
 
-        key = "volume_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
         self.result_dfs[key] = totals_df
 
+class LinkVehicleSpeeds(EventHandlerTool):
+    """
+    Extract Volume Counts for mode on given network.
+    """
 
-class PassengerCounts(EventHandlerTool):
+    requirements = [
+        'events',
+        'network',
+        'transit_schedule',
+        'subpopulations',
+    ]
+
+    def __init__(self, config, option=None) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param option: str, mode
+        """
+        super().__init__(config, option)
+
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Initialise class attributes
+        self.classes, self.class_indices = self.generate_elem_ids(
+            self.resources['subpopulations'].classes)
+        self.logger.debug(f'sub_populations = {self.classes}')
+
+        # generate index and map for network link dimension
+        self.elem_gdf = self.resources['network'].link_gdf
+        
+        links = resources['network'].mode_to_links_map.get(self.option)
+        if links is None:
+            self.logger.warning(
+                f"""
+                No viable links found for mode:{self.option} in Network, 
+                this may be because the Network modes do not match the configured 
+                modes. Elara will continue with all links found in network.
+                """
+                )
+        else:
+            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.elem_gdf = self.elem_gdf.loc[links, :]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise volume count table
+        self.counts = np.zeros((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
+
+        # Initialise duration cummulative sum table
+        self.durations = np.zeros((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
+
+        self.link_tracker = dict() #{(agent,link):start_time}
+
+    def process_event(self, elem) -> None:
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle leaves traffic'
+        events to determine average time spent on link.
+        :param elem: Event XML element
+
+        The events of interest to this handler look like:
+
+          <event time="300.0"
+                 type="vehicle enters traffic"
+                 person="nick"
+                 link ="1-2"
+                 vehicle="nick"
+                 networkMode="car"
+                 relativePosition="1.0"/>
+          <event time="600.0"
+                 type="vehicle leaves traffic"
+                 person="nick"
+                 link ="1-2"
+                 vehicle="nick"
+                 networkMode="car"
+                 relativePosition="1.0"/>
+
+        """
+
+        event_type = elem.get("type")
+        if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
+            ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(ident)
+            if veh_mode == self.option:
+                start_time = float(elem.get("time"))
+                self.link_tracker[ident] = (event_type , start_time)
+
+        elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
+            ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(ident)
+            if veh_mode == self.option:
+            # look for attribute_class, if not found assume pt and use mode
+                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
+                link = elem.get("link")
+                end_time = float(elem.get("time"))
+                start_time = self.link_tracker[ident][1]
+                start_event_type = self.link_tracker[ident][0]
+                x, y, z = table_position(
+                    self.elem_indices,
+                    self.class_indices,
+                    self.config.time_periods,
+                    link,
+                    attribute_class,
+                    start_time
+                )
+                # if vehicle entering or leaving traffic, agent placed halfway along link. Therefore need to double duration.
+                # Assuming in the case that vehicle enters and leaves traffic on same link then still only doubled not quadrupled.
+                if (start_event_type == "vehicle enters traffic") or (event_type == "vehicle leaves traffic"):
+                    duration = (end_time - start_time) * 2
+                else:
+                    duration = end_time - start_time
+
+                self.counts[x, y, z] += 1
+                self.durations[x, y, z] += duration
+    
+    def finalise(self) -> None:
+        """
+        Following event processing, the raw events table will contain counts by link
+        by time slice. The only thing left to do is scale by the sample size and
+        create dataframes.
+        """
+
+        # speed = vehcounts*linklength/totalduration and convert from m/s to km/h
+        self.counts = np.divide(self.counts, self.durations, out=np.zeros_like(self.counts), where=self.durations!=0) * 3.6
+        # above code avoid divide by zero warnings
+
+        names = ['elem', 'class', 'hour']
+        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+        counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.reset_index().set_index('elem')
+        
+        key = f"{self.name}_subpops"
+        
+        # get or join to link data
+        counts_df = self.elem_gdf.join(
+            counts_df, how="left"
+        )
+        # calculate speed
+        for i in range(self.config.time_periods):
+                    counts_df[i] = counts_df[i] * counts_df["length"]
+        
+        # add to results
+        self.result_dfs[key] = counts_df
+
+        # calc sum across all recorded attribute classes
+        self.counts = self.counts.sum(1)
+
+        totals_df = pd.DataFrame(
+            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+        ).sort_index()
+
+        del self.counts
+
+        key = f"{self.name}"
+        totals_df = self.elem_gdf.join(
+            totals_df, how="left"
+        )
+        for i in range(self.config.time_periods):
+            totals_df[i] = totals_df[i] * totals_df["length"]
+        
+        self.result_dfs[key] = totals_df
+
+class LinkPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts on links for given mode in mode vehicles.
     """
@@ -626,7 +809,7 @@ class PassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "passenger_counts_{}".format(self.option)
+        key = self.name
         counts_df = self.elem_gdf.join(
             counts_df, how="left"
         )
@@ -642,7 +825,7 @@ class PassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = "passenger_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -815,7 +998,7 @@ class RoutePassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
-        key = "route_passenger_counts_{}".format(self.option)
+        key = self.name
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -827,13 +1010,13 @@ class RoutePassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = "route_passenger_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         self.result_dfs[key] = totals_df
 
 
-class StopInteractions(EventHandlerTool):
+class StopPassengerCounts(EventHandlerTool):
     """
-    Alightings and Boardings handler for given mode.
+    Stop alightings and boardings handler for given mode.
     """
 
     requirements = [
@@ -977,7 +1160,7 @@ class StopInteractions(EventHandlerTool):
         self.alightings *= 1.0 / self.config.scale_factor
 
         # Create passenger counts output
-        for data, name in zip([self.boardings, self.alightings], ['boardings', 'alightings']):
+        for data, direction in zip([self.boardings, self.alightings], ['boardings', 'alightings']):
 
             names = ['elem', 'class', 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
@@ -987,7 +1170,7 @@ class StopInteractions(EventHandlerTool):
             counts_df = counts_df.reset_index().set_index('elem')
 
             # Create volume counts output
-            key = "{}_{}".format(name, self.option)
+            key = f"{self.name}_{direction}"
             counts_df = self.elem_gdf.join(
                 counts_df, how="left"
             )
@@ -1002,14 +1185,14 @@ class StopInteractions(EventHandlerTool):
 
             del data
 
-            key = "stop_{}_{}".format(name, self.option)
+            key = f"{self.name}_{direction}_total"
             totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
             self.result_dfs[key] = totals_df
 
 
-class PassengerStopToStopCounts(EventHandlerTool):
+class StopToStopPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts between stops for given mode in mode vehicles.
     """
@@ -1205,7 +1388,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
         # Create volume counts output
-        key = "stop_to_stop_passenger_counts_{}".format(self.option)
+        key = self.name
         self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -1231,7 +1414,7 @@ class PassengerStopToStopCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
-        key = "stop_to_stop_passenger_counts_{}_total".format(self.option)
+        key = f"{self.name}_total"
         self.result_dfs[key] = totals_df
 
 
@@ -1242,13 +1425,14 @@ class EventHandlerWorkStation(WorkStation):
     """
 
     tools = {
-        "volume_counts": VolumeCounts,
-        "passenger_counts": PassengerCounts,
+        "link_vehicle_speeds": LinkVehicleSpeeds,
+        "link_vehicle_counts": LinkVehicleCounts,
+        "link_passenger_counts": LinkPassengerCounts,
         "route_passenger_counts": RoutePassengerCounts,
-        "stop_interactions": StopInteractions,
-        "waiting_times": AgentWaitingTimes,
-        "graph": AgentGraph,
-        "passenger_stop_to_stop_loading": PassengerStopToStopCounts
+        "stop_passenger_counts": StopPassengerCounts,
+        "stop_passenger_waiting": StopPassengerWaiting,
+        "vehicle_passenger_graph": VehiclePassengerGraph,
+        "stop_to_stop_passenger_counts": StopToStopPassengerCounts
     }
 
     def __init__(self, config):

@@ -26,27 +26,33 @@ for each output are referred to as 'handlers'. There are four main types of outp
 
 * **Event Based Handlers/Outputs**:
 These are processed by streaming (in order) through all output events from simulation. 
-  * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
-  * ``passenger_counts``: Produce vehicle occupancy by time slice.
-  * ``stop_interactions``: Boardings and Alightings by time slice.
-  * ``waiting_times``: Agent waiting times for unique pt interaction events.
+  * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice.
+  * ``link_passenger_counts``: Produce vehicle occupancy by time slice.
+  * ``link_vehicle_speeds``: Produce average vehicle speeds across link.
+  * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
+  * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
+  * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
+  * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 * **Plan Based Handlers/Outputs**:
 These are processed by streaming through all output plans from simulation. Compared to the event based outputs
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
-  * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and legs.
+  * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
-  * ``agent_plans``: Produce agent plans including unselected plans and scores.
-  * ``agent_highway_distances``: Produce agent distances by car on different road 
+  * ``plan_logs``: Produce agent plans including unselected plans and scores.
+  * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
-  * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 
 * **Post Processing Handlers**:
 These are outputs produced through additional post-processing of the above outputs.
   * ``vkt``: Produce link volume vehicle kms by time slice.
-  * ``plan_summary``: Produce leg and activity time and duration summaries.
+  * ``plan_summary``: Produce leg and activity time and duration summaries (png).
+  * ``trip_duration_breakdown``: Produce binned trip durations.
+  * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 
 * **Benchmarking Handlers**:
 Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
@@ -141,27 +147,30 @@ output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [outputs]
 path = "./tests/test_outputs"
-contract = true
 
 [event_handlers]
-volume_counts = ["car"]
-passenger_counts = ["bus", "train"]
-stop_interactions = ["bus", "train"]
-waiting_times = ["all"]
+link_vehicle_counts = ["car", "bus"]
+link_passenger_counts = ["bus"]
+stop_passenger_counts = ["bus"]
+stop_passenger_waiting = ["all"]
 
 [plan_handlers]
-mode_share = ["all"]
+mode_shares = ["all"]
 trip_logs = ["all"]
-agent_highway_distances = ["car"]
-trip_highway_distances = ["car"]
+agent_highway_distance_logs = ["car"]
+trip_highway_distance_logs = ["car"]
 
 [post_processors]
 vkt = ["car"]
 plan_summary = ["all"]
+trip_duration_breakdown = ["all"]
+trip_euclid_distance_breakdown = ["all"]
 
 [benchmarks]
 test_pt_interaction_counter = ["bus"]
 test_link_cordon = ["car"]
+test_duration_comparison = ["all"]
+test_euclidean_distance_comparison = ["all"]
 
 ```
 
@@ -169,7 +178,7 @@ You can run this config on some toy data: `elara run example_config.toml` (from 
 
 **#** scenario.**name** *string* *(required)*
 
-The name of the scenario being processed, used to prefix output files.
+The name of the scenario being processed.
 
 **#** scenario.**time_periods** *integer* *(required)*
 
@@ -222,10 +231,14 @@ If set to *true*, removes rows containing only zero values from the generated ou
 Specification of the event handlers to be run during processing. Currently available handlers 
 include:
 
-* ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
-* ``passenger_counts``: Produce vehicle occupancy by time slice.
-* ``stop_interactions``: Boardings and Alightings by time slice.
-* ``waiting_times``: Agent waiting times for unique pt interaction events.
+  * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice.
+  * ``link_passenger_counts``: Produce vehicle occupancy by time slice.
+  * ``link_vehicle_speeds``: Produce average vehicle speeds across link.
+  * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
+  * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
+  * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
+  * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 The associated list attached to each handler allows specification of which options (typically modes
  of transport) should be processed using that handler. This allows certain handlers to be activated 
@@ -239,20 +252,13 @@ for public transport modes but not private vehicles for example. Possible modes 
 Specification of the plan handlers to be run during processing. Currently available handlers 
 include:
 
-* ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-* ``trip_logs``: Produce flat output of agent activity logs and trip logs, including times, 
-sequences, durations and categories.
-* ``leg_logs``: Produce flat output of agent activity logs and leg logs, including times, 
-sequences, durations and categories. Leg logs include public transport interaction activities.
-* ``agent_utility``: Produce flat output of selected agent plans and utility scores.
-* ``agent_plans``: Produce flat output of agent plans (logs and activities) including unselected 
-plans and scores, 
-including times, 
-sequences, durations and categories.
-* ``agent_highway_distances``: Produce flat output of agent distances by car on different road 
-types (as described by the input network osm:way).
-* ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road 
-types (as described by the input network osm:way).
+  * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
+  * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
+  * ``plan_logs``: Produce agent plans including unselected plans and scores.
+  * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
+  types. Requires network to have `osm:way:highways` attribute.
+  * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 
 The associated list attached to each handler allows specification of additional options:
 
@@ -264,15 +270,17 @@ The associated list attached to each handler allows specification of additional 
 
 Specification of the event handlers to be run post processing. Currently available handlers include:
 
-* ``vkt``: Produce link volume vehicle kms by time slice.
-* ``plan_summary``: Produce leg and activity time and duration summaries.
+  * ``vkt``: Produce link volume vehicle kms by time slice.
+  * ``plan_summary``: Produce leg and activity time and duration summaries (png).
+  * ``trip_duration_breakdown``: Produce binned trip durations.
+  * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 
 The associated list attached to each handler allows specification of which modes of transport 
 should be processed using that handler. This allows certain handlers to be activated for public 
 transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, ...``
-* note that ``trip_logs`` and ``plan_summary`` only support the option of ``["all"]``.
+* note that ``plan_summary`` only support the option of ``["all"]``.
 
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
@@ -394,7 +402,7 @@ a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~
 
 or, much more succinctly:
 
-`elara event-handlers volume-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
+`elara event-handlers link-vehicle-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
 Produce a **benchmark**, in this case we assume that a benchmark has already been created 
 called `ireland-highways` and that it works for buses and cars.
@@ -474,10 +482,19 @@ available).
   of process that might contain a new or multiple new tools. New workstations must be defined and
    connected to their respective suppliers and managers in `main`.
 
+### Conventions
+
+Where possible please name new handlers based on the following:
+
+`<Where><What>`
+
+For example: `LinkPassengerCounts` or `StopPassengerCounts`.
+
 ## Todo
 
 * More descriptive generated column headers in handler results. Right now column headers are 
 simply numbers mapped to the particular time slice during the modelled day. 
+* Try and move away from test_data towards unit tests.
 * More outputs, ie mode distances/times/animations.
 * S3 integration (read and write).
 * automatic discovery of inputs in directory.
