@@ -407,8 +407,8 @@ class LondonCentralCordonCar(LinkCounter):
         os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_car_2017.json')
     )
 
-    requirements = ['volume_counts']
-    valid_options = ['car']
+    requirements = ['link_volume_counts']
+    valid_options = ['car','bus']
     options_enabled = True
 
     weight = 1
