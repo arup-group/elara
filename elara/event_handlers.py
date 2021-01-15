@@ -602,7 +602,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         counts_df = counts_df.unstack(level='hour').sort_index()
         counts_df = counts_df.reset_index().set_index('elem')
         
-        key = "link_speeds_{}".format(self.option)
+        key = f"{self.name}_subpops"
         
         # get or join to link data
         counts_df = self.elem_gdf.join(
@@ -624,7 +624,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
         del self.counts
 
-        key = "link_speeds_{}_total".format(self.option)
+        key = f"{self.name}"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
