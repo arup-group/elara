@@ -252,7 +252,6 @@ class LinkCounter(BenchmarkTool):
 
                 # combine mode link counts
                 for link_id in links:
-                    print(link_id)
                     if str(link_id) not in results_df.index:
                         failed_snaps += 1
                         self.logger.warning(
