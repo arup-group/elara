@@ -181,7 +181,7 @@ class TripEuclidDistanceBreakdown(PostProcessor):
         mode = self.option
 
         # read trip logs
-        file_name = "trip_log_{}.csv".format(mode)
+        file_name = f"trip_logs_{self.option}_trips.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         trips_df = pd.read_csv(file_path)
 
