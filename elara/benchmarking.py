@@ -46,6 +46,12 @@ def comparative_plots(results):
         x="Time (hour)"
         )
 
+def comparative_column_plots(results):
+    plot = ggplot(
+        aes(y="modeshare", x="mode", fill="type"),
+        data=results) + geom_col(position="dodge") + labs(y="Mode Share", 
+        x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
+    return  plot
 
 class BenchmarkTool(Tool):
 
@@ -1606,6 +1612,13 @@ class ModeStats(BenchmarkTool):
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(summary_df, csv_path, write_path=write_path)
 
+        #plot
+        summary_df_plot = pd.melt(summary_df.reset_index(), id_vars=['mode'], value_vars = ['benchmark','model'], var_name = 'type', value_name='modeshare')
+        bm_results_summary_plot = comparative_column_plots(summary_df_plot)
+        plot_name = '{}_modeshare_results.png'.format(self.config.name)
+        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+
+
         # get scores and write outputs
         score = sum(((np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model))) * 100) ** 2)
 
@@ -1621,6 +1634,17 @@ class LondonModeShare(ModeStats):
     weight = 2
     benchmark_path = get_benchmark_data(
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
+    )
+
+class ROIModeShare(ModeStats):
+
+    requirements = ['mode_shares']
+    valid_options = ['all']
+    options_enabled = True
+
+    weight = 2
+    benchmark_path = get_benchmark_data(
+        os.path.join('ireland', 'nhts_survey', 'ROI_modeshare.csv')
     )
 
 
@@ -1820,6 +1844,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": LondonRODS,
         "london_volume_subway": LondonRODSVolume,
         "london_modeshares": LondonModeShare,
+        "ROI_modeshares": ROIModeShare,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
