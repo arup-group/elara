@@ -60,6 +60,7 @@ Where correctly formatted project specific observed data has been made available
  distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
  again that benchmarks are project specific**.
   * ``ireland_highways``
+  * ``ROI_modeshares``
   * ``london_board_alight_subway``
   * ``london_central_cordon_car``
   * ``london_central_cordon_bus``
@@ -290,12 +291,14 @@ cordons and mode share benchmarks for specific projects. **Benchmarks calculated
   given scenario (say 'London') unless the same network and/or schedule are in use.** Where a 
   network or schedule has been changed, the project [bench](https://github.com/arup-group/bench) 
   has been created to pre-process this data. 
+  'Normalised' volume plots (e.g those produced by ``ireland_highways``) refer to total volumes normalised by number of counters, so figure shows profile for the 'average' counter.
 
 Currently available benchmarks include:
 
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
+* ``ROI_modeshares`` ^
 * ``london_board_alight_subway``
 * ``london_central_cordon_car``
 * ``london_central_cordon_bus``
@@ -307,6 +310,8 @@ _newer formats (produced using `bench`):_
 * ``london_thames_screen_bus``
 * ``test_pt_interaction_counter``
 * ``test_link_cordon``
+
+^ note that ``ROI_modeshares`` and other mode share benchmarks only support the option of ``["all"]``.
 
 _older formats (no longer maintained):_
 
