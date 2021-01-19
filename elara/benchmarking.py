@@ -216,6 +216,7 @@ class LinkCounter(BenchmarkTool):
 
         # extract counters
         counter_ids = mode_counts.keys()
+        total_counters = len(counter_ids)
         if not len(counter_ids):
             self.logger.warning(
                 f"no benchmarks found for {self.mode}, returning score of one"
@@ -247,6 +248,7 @@ class LinkCounter(BenchmarkTool):
 
             for direction, counter in counter_location.items():
 
+                
                 links = counter['links']
                 if links==[]:
                     continue # some links are empty lists, we skip them
@@ -378,6 +380,13 @@ class LinkCounter(BenchmarkTool):
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+
+        # plot normalised by number of counters
+        bm_results_normalised_df = bm_results_summary_df
+        bm_results_normalised_df['volume']=bm_results_normalised_df['volume'] / total_counters
+        bm_results_normalised_plot = comparative_plots(bm_results_normalised_df)
+        plot_name = f'{self.name}_{self.mode}_summary_normalised.png'
+        bm_results_normalised_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
