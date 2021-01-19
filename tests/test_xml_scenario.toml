@@ -14,6 +14,7 @@ transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml.gz"
 attributes = "./tests/test_fixtures/output_personAttributes.xml.gz"
 plans= "./tests/test_fixtures/output_plans.xml.gz"
 output_config_path = "./tests/test_fixtures/output_config.xml"
+road_pricing = "./tests/test_fixtures/road_pricing.xml"
 
 [event_handlers]
 link_vehicle_counts = ["car"]

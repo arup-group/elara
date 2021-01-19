@@ -349,6 +349,43 @@ def test_load_xml_output_config(test_xml_config, test_paths):
     assert set(out_config.sub_populations) == set(['rich', 'poor', 'default'])
 
 
+# Road Pricing
+def test_load_road_pricing(test_xml_config, test_paths):
+    road_pricing = inputs.RoadPricing(test_xml_config)
+    road_pricing.build(test_paths.resources)
+    assert set(road_pricing.links) == {"2-3", "3-4", "4-3", "2-1"}
+    road_pricing.links == {
+        '2-3': [
+            {'start_time': '00:00', 'end_time': '06:00', 'amount': '0.0'},
+            {'start_time': '06:01', 'end_time': '10:00', 'amount': '10.0'},
+            {'start_time': '10:01', 'end_time': '16:00', 'amount': '3.0'},
+            {'start_time': '16:01', 'end_time': '19:00', 'amount': '10.0'},
+            {'start_time': '19:01', 'end_time': '23:59', 'amount': '3.0'}
+        ],
+        '3-4': [
+            {'start_time': '00:00', 'end_time': '06:00', 'amount': '0.0'},
+            {'start_time': '06:01', 'end_time': '10:00', 'amount': '10.0'},
+            {'start_time': '10:01', 'end_time': '16:00', 'amount': '3.0'},
+            {'start_time': '16:01', 'end_time': '19:00', 'amount': '10.0'},
+            {'start_time': '19:01', 'end_time': '23:59', 'amount': '3.0'}
+        ],
+        '4-3': [
+            {'start_time': '00:00', 'end_time': '06:00', 'amount': '0.0'},
+            {'start_time': '06:01', 'end_time': '10:00', 'amount': '10.0'},
+            {'start_time': '10:01', 'end_time': '16:00', 'amount': '3.0'},
+            {'start_time': '16:01', 'end_time': '19:00', 'amount': '10.0'},
+            {'start_time': '19:01', 'end_time': '23:59', 'amount': '3.0'}
+        ],
+        '2-1': [
+            {'start_time': '00:00', 'end_time': '06:00', 'amount': '0.0'},
+            {'start_time': '06:01', 'end_time': '10:00', 'amount': '10.0'},
+            {'start_time': '10:01', 'end_time': '16:00', 'amount': '3.0'},
+            {'start_time': '16:01', 'end_time': '19:00', 'amount': '10.0'},
+            {'start_time': '19:01', 'end_time': '23:59', 'amount': '3.0'}
+        ]
+    }
+
+
 # Input Manager
 def test_load_input_manager(test_xml_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_xml_config)
