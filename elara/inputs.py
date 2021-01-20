@@ -763,6 +763,7 @@ class RoadPricing(InputTool):
     def get_costs(self, elem):
         ident = elem.xpath("@id")[0]
         costs = [dict(cost.items()) for cost in elem.xpath('./cost')]
+        costs = sorted(costs, key=lambda k: k['start_time'])
         return ident, costs
 
 
