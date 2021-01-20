@@ -778,6 +778,7 @@ class InputsWorkStation(WorkStation):
         'plans': Plans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
+        'road_pricing': RoadPricing,
         # 'mode_hierarchy': ModeHierarchy,
     }
 
