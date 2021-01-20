@@ -22,6 +22,7 @@ stop_passenger_counts = ["bus", "train"]
 
 [plan_handlers]
 mode_shares = ["all"]
+toll_logs = ["car"]
 
 [post_processors]
 vkt = ["car"]
@@ -30,6 +31,6 @@ vkt = ["car"]
 test_town_cordon = ["car"]
 
 [outputs]
-path = "./tests/test_intermediate_data"
+path = "./tests/test_intermediate_data/"
 contract = true
 

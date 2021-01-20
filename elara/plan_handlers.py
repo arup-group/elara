@@ -897,6 +897,122 @@ class PlanLogs(PlanHandlerTool):
         s = dt.second
         return s + (60 * (m + (60 * h)))
 
+class AgentTollsPaid(PlanHandlerTool):
+    """
+    Extract where and when agents paid tolls and produce summaries by agent and subpopulation.
+    """
+
+    requirements = [
+        'plans',
+        'subpopulations',
+        'road_pricing'
+        ]
+    valid_options = ['car']
+
+    def __init__(self, config, option=None):
+        """
+        Initiate handler.
+        :param config: config
+        :param option: str, mode option
+        """
+        super().__init__(config, option)
+
+        self.option = option
+        self.roadpricing = None
+        self.agents_ids = None
+        self.results = dict()  # Result dataframes ready to export
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, resources from suppliers
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        self.subpopulations = resources['subpopulations'].map
+        self.roadpricing = resources['road_pricing']
+        self.toll_log = pd.DataFrame(columns = ["agent","subpopulation","link","time","toll"]) #df for results
+        
+    def process_plans(self, elem):
+        """
+        Iteratively check whether agent pays toll as part of their car trip and append to log.
+        :param elem: Plan XML element
+        """
+        ident = elem.get('id')
+        subpopulation_attribute = self.resources['subpopulations'].map.get(ident, 'not found')
+        agent_in_tolled_space = [0,0] # {trip marker, whether last link was tolled}
+
+        def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
+            if current_link_tolled == 1 and agent_in_tolled_space[1] == 0: #entering into tolled space from non-tolled space
+                return 1
+            elif current_link_tolled == 1 and agent_in_tolled_space[1] == 1 and agent_in_tolled_space[0] != start_time: #already in a tolled space but starting new trip
+                return 1
+            else:
+                return 0
+        
+        def get_toll(link,time): #assumes prices fed in chronological order
+            for elem in self.roadpricing.links[link]:
+                if time < elem.get('end_time'):
+                    return elem.get('amount')
+
+        for plan in elem.xpath(".//plan"):
+            if plan.get('selected') == 'yes':
+
+                for stage in plan:
+                    if stage.tag == 'leg':
+                        mode = stage.get('mode')
+                        start_time = stage.get('dep_time')
+                        if not mode == self.option:
+                            continue
+                        route = stage.xpath('route')[0].text.split(' ')
+                        
+                        for i, link in enumerate(route):
+                            if link in self.roadpricing.links:
+                                current_link_tolled = 1
+                            else:
+                                current_link_tolled = 0
+                            
+                            # append results to dictionary if toll applies
+                            if apply_toll(agent_in_tolled_space, current_link_tolled, start_time) == 1:
+                                dictionary = {
+                                                "agent": ident,
+                                                "subpopulation": subpopulation_attribute,
+                                                "link": link,
+                                                "time": start_time,
+                                                "toll": get_toll(link,start_time)}
+                                
+                                self.toll_log = self.toll_log.append(dictionary, ignore_index=True)
+                            
+                            #update memory of last link
+                            if link in self.roadpricing.links:
+                                agent_in_tolled_space[1] = 1
+                            else:
+                                agent_in_tolled_space[1] = 0
+                            agent_in_tolled_space[0] = start_time #use start time as a marker of unique leg
+
+
+    def finalise(self):
+        """
+        Following plan processing, we now have a log of all tolls levvied on agents.
+        We write two versions out - the whole log and some aggregate statistics by subpopulation.
+        """
+        # log of individual toll events
+        toll_log_df = self.toll_log
+        toll_log_df['toll'] = pd.to_numeric(toll_log_df['toll'])
+        key = f"tolls_paid_log"
+        self.results[key] = toll_log_df
+
+        #total amount paid by each agent
+        aggregate_df = toll_log_df.groupby(by=['agent','subpopulation'])['toll'].sum()
+        key = f"tolls_paid_total_by_agent"
+        self.results[key] = aggregate_df
+
+        # average amount paid by each agent within subpopulation
+        aggregate_df = aggregate_df.reset_index().groupby(by=['subpopulation'])['toll'].mean()
+        key = f"tolls_paid_average_by_subpopulation"
+        self.results[key] = aggregate_df
 
 class AgentHighwayDistanceLogs(PlanHandlerTool):
     """
@@ -1147,6 +1263,7 @@ class PlanHandlerWorkStation(WorkStation):
         "utility_logs": UtilityLogs,
         "agent_highway_distance_logs": AgentHighwayDistanceLogs,
         "trip_highway_distance_logs": TripHighwayDistanceLogs,
+        "toll_logs": AgentTollsPaid
     }
 
     def __init__(self, config):
