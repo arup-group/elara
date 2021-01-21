@@ -309,8 +309,10 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 14 / handler.config.scale_factor
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
             assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
@@ -383,8 +385,10 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 12
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
             assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
@@ -595,8 +599,10 @@ def test_passenger_count_finalise_bus(
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / handler.config.scale_factor
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
             assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
@@ -738,8 +744,10 @@ def test_stop_interaction_finalise_bus(
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 4 / handler.config.scale_factor
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
             assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
@@ -896,8 +904,10 @@ def test_stop_to_stop_finalise_bus(
     cols = list(range(handler.config.time_periods))
     for c in cols:
         assert c in gdf.columns
+        assert 'total' in gdf.columns
     df = gdf.loc[:, cols]
     assert np.sum(df.values) == 3 / handler.config.scale_factor
+    assert np.sum(df.values) == gdf.total.sum()
     if 'class' in gdf.columns:
         assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
