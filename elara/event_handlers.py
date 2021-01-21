@@ -425,6 +425,9 @@ class LinkVehicleCounts(EventHandlerTool):
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.reset_index().set_index(['elem','class'])
+
+        counts_df['total'] = counts_df.sum(1)
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
@@ -440,6 +443,7 @@ class LinkVehicleCounts(EventHandlerTool):
         totals_df = pd.DataFrame(
             data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
+        totals_df['total'] = totals_df.sum(1)
 
         del self.counts
 
@@ -806,6 +810,8 @@ class LinkPassengerCounts(EventHandlerTool):
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.reset_index().set_index(['elem','class'])
+        counts_df['total'] = counts_df.sum(1)
         counts_df = counts_df.reset_index().set_index('elem')
 
         # Create volume counts output
@@ -822,6 +828,7 @@ class LinkPassengerCounts(EventHandlerTool):
         totals_df = pd.DataFrame(
             data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
         ).sort_index()
+        totals_df['total'] = totals_df.sum(1)
 
         del self.counts
 
@@ -1167,6 +1174,8 @@ class StopPassengerCounts(EventHandlerTool):
             index = pd.MultiIndex.from_product(indexes, names=names)
             counts_df = pd.DataFrame(data.flatten(), index=index)[0]
             counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index(['elem','class'])
+            counts_df['total'] = counts_df.sum(1)
             counts_df = counts_df.reset_index().set_index('elem')
 
             # Create volume counts output
@@ -1182,6 +1191,7 @@ class StopPassengerCounts(EventHandlerTool):
             totals_df = pd.DataFrame(
                 data=data, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
+            totals_df['total'] = totals_df.sum(1)
 
             del data
 
@@ -1381,6 +1391,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             counts_df.index.name = n
 
         counts_df = counts_df.reset_index().set_index(['origin', 'destination', 'class'])
+        counts_df['total'] = counts_df.sum(1)
 
         counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.origin_geometry, counts_df.destination_geometry)]
         counts_df.drop('origin_geometry', axis=1, inplace=True)
