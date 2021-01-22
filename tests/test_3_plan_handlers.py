@@ -418,6 +418,82 @@ def test_finalised_logs_bad_plans(agent_leg_log_handler_finalised_bad_plans):
     handler = agent_leg_log_handler_finalised_bad_plans
     assert len(handler.results) == 0
 
+### Toll Log Handler ###
+
+@pytest.fixture
+def toll_log_handler(test_config, input_manager):
+    handler = plan_handlers.AgentTollsPaid(test_config, 'car')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    return handler
+
+#paying single toll
+def test_toll_onelink(toll_log_handler): 
+    handler = toll_log_handler
+
+    person = """
+    <person id="nick">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+    assert len(handler.toll_log) == 1
+    assert handler.toll_log.iloc[0]['toll']=='10.0'
+
+#using two adjacent toll links consecutively should only incur one charge 
+def test_toll_consecutivelinks(toll_log_handler): 
+    handler = toll_log_handler
+
+    person = """
+    <person id="nick">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-3 3-4</route>
+            </leg>
+            <activity type="work" link="3-4" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+    print(handler.toll_log)
+    assert len(handler.toll_log) == 1
+    assert handler.toll_log.iloc[0]['toll']=='10.0'
+
+#using two adjacent toll links non-consecutively should incur charge twice
+def test_toll_nonconsecutivelinks(toll_log_handler): 
+    handler = toll_log_handler
+
+    person = """
+    <person id="nick">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-3 3-2 2-1</route>
+            </leg>
+            <activity type="work" link="2-1" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+    assert len(handler.toll_log) == 2
 
 ### Trip Log Handler ###
 
@@ -468,7 +544,6 @@ def test_agent_trip_log_process_person(agent_trip_handler):
     assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 4)
     assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
     assert handler.activities_log.chunk[1]["act"] == "work"
-
 
 def test_agent_trip_log_process_pt_bus_person(agent_trip_handler):
     handler = agent_trip_handler
