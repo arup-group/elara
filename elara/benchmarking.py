@@ -413,13 +413,39 @@ class IrelandHighwayCounters(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car', 'bus']
+    valid_options = ['car']
 
     options_enabled = True
 
     weight = 1
 
+class IrelandHighwayCounters_DCC(LinkCounter):
 
+    name = 'ireland_highways_counters_DCC'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('ireland', 'dublin_cordon', 'car_highways_counters_DCC_20210125.json')
+    )
+
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
+
+    options_enabled = True
+
+    weight = 1
+
+class NIHighwayCounters(LinkCounter):
+
+    name = 'ireland_highways_counters_NI'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('ireland', 'highways', 'NI_highways_counters.json')
+    )
+
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
+    
 class LondonCentralCordonCar(LinkCounter):
 
     name = 'london_central_cordon'
@@ -1840,6 +1866,8 @@ class BenchmarkWorkStation(WorkStation):
 
         # latest
         "ireland_highways": IrelandHighwayCounters,
+        "ireland_highways_NI": NIHighwayCounters,
+        "ireland_DCC": IrelandHighwayCounters_DCC,
         # "london_boundary_cordon_car": LondonBoundaryCordonCar,
         # "london_boundary_cordon_bus": LondonBoundaryCordonBus,
         "london_central_cordon_car": LondonCentralCordonCar,
