@@ -434,7 +434,7 @@ def test_toll_onelink(toll_log_handler):
     handler = toll_log_handler
 
     person = """
-    <person id="nick">
+    <person id="chris">
         <plan score="1" selected="yes">
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
@@ -494,6 +494,28 @@ def test_toll_nonconsecutivelinks(toll_log_handler):
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert len(handler.toll_log) == 2
+    assert float(handler.toll_log.iloc[0]['toll'])+ float(handler.toll_log.iloc[1]['toll'])== 20
+
+def test_toll_finalise(toll_log_handler): 
+    handler = toll_log_handler
+
+    person = """
+    <person id="fatema">
+        <plan score="1" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-3 3-2 2-1</route>
+            </leg>
+            <activity type="work" link="2-1" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+    handler.finalise()
+    assert handler.results['tolls_paid_total_by_agent'].sum() == 20
 
 ### Trip Log Handler ###
 

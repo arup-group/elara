@@ -945,12 +945,12 @@ class AgentTollsPaid(PlanHandlerTool):
         agent_in_tolled_space = [0,0] # {trip marker, whether last link was tolled}
 
         def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
-            if current_link_tolled == 1 and agent_in_tolled_space[1] == 0: #entering into tolled space from non-tolled space
-                return 1
-            elif current_link_tolled == 1 and agent_in_tolled_space[1] == 1 and agent_in_tolled_space[0] != start_time: #already in a tolled space but starting new trip
-                return 1
+            if current_link_tolled and agent_in_tolled_space[1] == False: #entering into tolled space from non-tolled space
+                return True
+            elif current_link_tolled and agent_in_tolled_space[1] == True and agent_in_tolled_space[0] != start_time: #already in a tolled space but starting new trip
+                return True
             else:
-                return 0
+                return False
         
         def get_toll(link,time): #assumes prices fed in chronological order
             for elem in self.roadpricing.links[link]:
@@ -970,12 +970,12 @@ class AgentTollsPaid(PlanHandlerTool):
                         
                         for i, link in enumerate(route):
                             if link in self.roadpricing.links:
-                                current_link_tolled = 1
+                                current_link_tolled = True
                             else:
-                                current_link_tolled = 0
+                                current_link_tolled = False
                             
                             # append results to dictionary if toll applies
-                            if apply_toll(agent_in_tolled_space, current_link_tolled, start_time) == 1:
+                            if apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
                                 dictionary = {
                                                 "agent": ident,
                                                 "subpopulation": subpopulation_attribute,
@@ -987,9 +987,9 @@ class AgentTollsPaid(PlanHandlerTool):
                             
                             #update memory of last link
                             if link in self.roadpricing.links:
-                                agent_in_tolled_space[1] = 1
+                                agent_in_tolled_space[1] = True
                             else:
-                                agent_in_tolled_space[1] = 0
+                                agent_in_tolled_space[1] = False
                             agent_in_tolled_space[0] = start_time #use start time as a marker of unique leg
 
 
