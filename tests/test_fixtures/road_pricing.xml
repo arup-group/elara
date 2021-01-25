@@ -1,0 +1,39 @@
+<?xml version="1.0" ?>
+<!DOCTYPE roadpricing SYSTEM "http://www.matsim.org/files/dtd/roadpricing_v1.dtd">
+<roadpricing type="cordon" name="cordon-toll">
+    <description>A simple cordon toll scheme</description>
+    <links>
+        <!-- === oubound === -->
+        <link id="2-3">
+            <cost start_time="00:00" end_time="06:00" amount="0.0"/>
+            <cost start_time="06:01" end_time="10:00" amount="10.0"/>
+            <cost start_time="10:01" end_time="16:00" amount="3.0"/>
+            <cost start_time="16:01" end_time="19:00" amount="10.0"/>
+            <cost start_time="19:01" end_time="23:59" amount="3.0"/>
+        </link>
+        <link id="3-4">
+            <cost start_time="00:00" end_time="06:00" amount="0.0"/>
+            <cost start_time="06:01" end_time="10:00" amount="10.0"/>
+            <cost start_time="10:01" end_time="16:00" amount="3.0"/>
+            <cost start_time="16:01" end_time="19:00" amount="10.0"/>
+            <cost start_time="19:01" end_time="23:59" amount="3.0"/>
+        </link>
+        <!-- === inbound 1 === -->
+        <link id="4-3">
+            <cost start_time="00:00" end_time="06:00" amount="0.0"/>
+            <cost start_time="06:01" end_time="10:00" amount="10.0"/>
+            <cost start_time="10:01" end_time="16:00" amount="3.0"/>
+            <cost start_time="16:01" end_time="19:00" amount="10.0"/>
+            <cost start_time="19:01" end_time="23:59" amount="3.0"/>
+        </link>
+        <!-- === inbound 2 === -->
+        <link id="2-1">
+            <cost start_time="19:01" end_time="23:59" amount="3.0"/>
+            <cost start_time="00:00" end_time="06:00" amount="0.0"/>
+            <cost start_time="10:01" end_time="16:00" amount="3.0"/>
+            <cost start_time="06:01" end_time="10:00" amount="10.0"/>
+            <cost start_time="16:01" end_time="19:00" amount="10.0"/>
+            
+        </link>
+    </links>
+</roadpricing>

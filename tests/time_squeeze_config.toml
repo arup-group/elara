@@ -19,4 +19,4 @@ link_volume_counts = ["car"]
 [outputs]
 path = "./out"
 contract = true
-
+    

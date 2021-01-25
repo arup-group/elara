@@ -29,6 +29,7 @@ class Config:
                 "attributes": "./output_personAttributes.xml.gz",
                 "plans": "./output_plans.xml.gz",
                 "output_config_path": "./output_config.xml",
+                "road_pricing": "./road_pricing.xml",
             },
         "outputs":
             {
@@ -178,6 +179,12 @@ class Config:
     def output_config_path(self):
         return self.valid_path(
             self.settings["inputs"]["output_config_path"], "output_config"
+        )
+
+    @property
+    def road_pricing_path(self):
+        return self.valid_path(
+            self.settings["inputs"]["road_pricing"], "output_config"
         )
 
     @staticmethod
@@ -360,6 +367,14 @@ class GetOutputConfigPath(PathTool):
         self.path = self.config.output_config_path
 
 
+class GetRoadPricingPath(PathTool):
+    path = None
+
+    def build(self, resource: dict, write_path=None):
+        super().build(resource)
+        self.path = self.config.road_pricing_path
+
+
 class PathFinderWorkStation(WorkStation):
     tools = {
         'crs': GetCRS,
@@ -370,6 +385,7 @@ class PathFinderWorkStation(WorkStation):
         'transit_schedule_path': GetTransitSchedulePath,
         'transit_vehicles_path': GetTransitVehiclesPath,
         'output_config_path': GetOutputConfigPath,
+        'road_pricing_path': GetRoadPricingPath,
     }
 
     def __init__(self, config):
