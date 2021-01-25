@@ -433,15 +433,15 @@ class IrelandHighwayCounters_DCC(LinkCounter):
 
     weight = 1
 
-class NIHighwayCounters(PointsCounter):
+class NIHighwayCounters(LinkCounter):
 
-    name = 'NIreland_highways'
+    name = 'ireland_highways_counters_NI'
     benchmark_data_path = get_benchmark_data(
         os.path.join('ireland', 'highways', 'NI_highways_counters.json')
     )
 
-    requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
     options_enabled = True
 
     weight = 1
@@ -1866,7 +1866,7 @@ class BenchmarkWorkStation(WorkStation):
 
         # latest
         "ireland_highways": IrelandHighwayCounters,
-        'NIreland_highways': NIHighwayCounters,
+        "ireland_highways_NI": NIHighwayCounters,
         "ireland_DCC": IrelandHighwayCounters_DCC,
         # "london_boundary_cordon_car": LondonBoundaryCordonCar,
         # "london_boundary_cordon_bus": LondonBoundaryCordonBus,
