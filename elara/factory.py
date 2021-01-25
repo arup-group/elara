@@ -248,8 +248,16 @@ class WorkStation:
         self.supplier_resources = {}
         self.logger = logging.getLogger(__name__)
 
+    # def __str__(self):
+    #     return f'{self.__class__.__name__}'
+
     def __str__(self):
-        return f'{self.__class__.__name__}'
+        return self.__class__.__name__.split(".")[-1]
+
+    @property
+    def name(self):
+        class_name = self.__class__.__name__.split('.')[-1]
+        return camel_to_snake(class_name)
 
     def connect(
             self,
@@ -354,9 +362,10 @@ class WorkStation:
 
         # check for missing requirements
         missing = set(self.requirements) - set(supplier_tools)
+        missing_names = [str(m) for m in missing]
         if missing:
             raise ValueError(
-                f'{self} missing requirements: {missing} from suppliers: {self.suppliers}.'
+                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {self.suppliers}.'
             )
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:

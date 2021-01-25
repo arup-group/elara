@@ -737,6 +737,36 @@ class ModeMap(InputTool):
         raise KeyError(f"key:'{key}' not found in ModeMap")
 
 
+class RoadPricing(InputTool):
+
+    requirements = ['road_pricing_path']
+    links = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Network road pricing input file.
+        :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
+        """
+        super().build(resources)
+
+        path = resources['road_pricing_path'].path
+
+        self.logger.debug(f"Loading road pricing from {path}")
+        self.links = dict(
+            [
+                self.get_costs(elem)
+                for elem in get_elems(path, "link")
+            ]
+        )
+
+    def get_costs(self, elem):
+        ident = elem.xpath("@id")[0]
+        costs = [dict(cost.items()) for cost in elem.xpath('./cost')]
+        costs = sorted(costs, key=lambda k: k['start_time'])
+        return ident, costs
+
+
 class InputsWorkStation(WorkStation):
     tools = {
         "events": Events,
@@ -749,6 +779,7 @@ class InputsWorkStation(WorkStation):
         'plans': Plans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
+        'road_pricing': RoadPricing,
         # 'mode_hierarchy': ModeHierarchy,
     }
 
