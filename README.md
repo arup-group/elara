@@ -20,6 +20,12 @@ Inputs to Elara are MATSim format output files, eg:
 
 In most cases these Elara inputs may be zipped (`xml.gz`).
 
+### Optional Inputs
+
+If you are running a scenario with road pricing, it will be needed to calculate toll log outputs. 
+
+* **road pricing config** = "./tests/test_fixtures/roadpricing.xml"
+
 ### Outputs
 Elara supports and can be selectively configured to output a growing number of outputs. The units responsible
 for each output are referred to as 'handlers'. There are four main types of output/handler:
@@ -46,6 +52,7 @@ these are typically more aggregate but can be computationally faster and can be 
   * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
   * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``toll_logs``: Produces summary of amounts agents paid at tolls, depending on the route they drove. Requires road pricing input file. Only works for option ``["car"]``.
 
 * **Post Processing Handlers**:
 These are outputs produced through additional post-processing of the above outputs.
@@ -60,6 +67,8 @@ Where correctly formatted project specific observed data has been made available
  distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
  again that benchmarks are project specific**.
   * ``ireland_highways``
+  * ``ireland_highways_NI`` 
+  * ``ireland_DCC``
   * ``ROI_modeshares``
   * ``london_board_alight_subway``
   * ``london_central_cordon_car``
@@ -145,6 +154,7 @@ transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
 attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
+road_pricing = "./tests/test_fixtures/roadpricing.xml"
 
 [outputs]
 path = "./tests/test_outputs"
@@ -160,6 +170,7 @@ mode_shares = ["all"]
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
+toll_logs = ["car']
 
 [post_processors]
 vkt = ["car"]
@@ -260,6 +271,7 @@ include:
   * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
   * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``toll_logs`` : Produces summaries of tolls paid by agents. Requires ``roadpricing.xml`` as input parameter. 
 
 The associated list attached to each handler allows specification of additional options:
 
@@ -298,6 +310,8 @@ Currently available benchmarks include:
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
+* ``ireland_highways_NI`` 
+* ``ireland_DCC``
 * ``ROI_modeshares`` ^
 * ``london_board_alight_subway``
 * ``london_central_cordon_car``
