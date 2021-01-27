@@ -5,6 +5,7 @@
     <links>
         <!-- === oubound === -->
         <link id="2-3">
+            <tollname name="Toll Road 2"/>
             <cost start_time="00:00" end_time="06:00" amount="0.0"/>
             <cost start_time="06:01" end_time="10:00" amount="10.0"/>
             <cost start_time="10:01" end_time="16:00" amount="3.0"/>
@@ -12,6 +13,7 @@
             <cost start_time="19:01" end_time="23:59" amount="3.0"/>
         </link>
         <link id="3-4">
+            <tollname name="Toll Road 3"/>
             <cost start_time="00:00" end_time="06:00" amount="0.0"/>
             <cost start_time="06:01" end_time="10:00" amount="10.0"/>
             <cost start_time="10:01" end_time="16:00" amount="3.0"/>
@@ -20,6 +22,7 @@
         </link>
         <!-- === inbound 1 === -->
         <link id="4-3">
+            <tollname name="Toll Road 3"/>
             <cost start_time="00:00" end_time="06:00" amount="0.0"/>
             <cost start_time="06:01" end_time="10:00" amount="10.0"/>
             <cost start_time="10:01" end_time="16:00" amount="3.0"/>
@@ -28,6 +31,7 @@
         </link>
         <!-- === inbound 2 === -->
         <link id="2-1">
+            <tollname name="Toll Road 1"/>
             <cost start_time="19:01" end_time="23:59" amount="3.0"/>
             <cost start_time="00:00" end_time="06:00" amount="0.0"/>
             <cost start_time="10:01" end_time="16:00" amount="3.0"/>

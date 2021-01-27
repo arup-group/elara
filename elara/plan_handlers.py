@@ -933,7 +933,7 @@ class AgentTollsPaid(PlanHandlerTool):
 
         self.subpopulations = resources['subpopulations'].map
         self.roadpricing = resources['road_pricing']
-        self.toll_log = pd.DataFrame(columns = ["agent","subpopulation","link","time","toll"]) #df for results
+        self.toll_log = pd.DataFrame(columns = ["agent","subpopulation","tollname","link","time","toll"]) #df for results
         
     def process_plans(self, elem):
         """
@@ -943,6 +943,7 @@ class AgentTollsPaid(PlanHandlerTool):
         ident = elem.get('id')
         subpopulation_attribute = self.resources['subpopulations'].map.get(ident, 'not found')
         agent_in_tolled_space = [0,0] # {trip marker, whether last link was tolled}
+
 
         def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
             if current_link_tolled and agent_in_tolled_space[1] == False: #entering into tolled space from non-tolled space
@@ -979,10 +980,11 @@ class AgentTollsPaid(PlanHandlerTool):
                                 dictionary = {
                                                 "agent": ident,
                                                 "subpopulation": subpopulation_attribute,
+                                                "tollname":self.roadpricing.tollnames[link],
                                                 "link": link,
                                                 "time": start_time,
                                                 "toll": get_toll(link,start_time)}
-                                
+                                print(dictionary)
                                 self.toll_log = self.toll_log.append(dictionary, ignore_index=True)
                             
                             #update memory of last link
@@ -1000,6 +1002,7 @@ class AgentTollsPaid(PlanHandlerTool):
         """
         # log of individual toll events
         toll_log_df = self.toll_log
+        print(toll_log_df)
         toll_log_df['toll'] = pd.to_numeric(toll_log_df['toll'])
         key = f"tolls_paid_log"
         self.results[key] = toll_log_df
