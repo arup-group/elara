@@ -984,7 +984,6 @@ class AgentTollsPaid(PlanHandlerTool):
                                                 "link": link,
                                                 "time": start_time,
                                                 "toll": get_toll(link,start_time)}
-                                print(dictionary)
                                 self.toll_log = self.toll_log.append(dictionary, ignore_index=True)
                             
                             #update memory of last link
@@ -1002,7 +1001,6 @@ class AgentTollsPaid(PlanHandlerTool):
         """
         # log of individual toll events
         toll_log_df = self.toll_log
-        print(toll_log_df)
         toll_log_df['toll'] = pd.to_numeric(toll_log_df['toll'])
         key = f"tolls_paid_log"
         self.results[key] = toll_log_df
