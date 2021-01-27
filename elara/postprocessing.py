@@ -15,19 +15,27 @@ class PostProcessor(Tool):
         self.logger = logging.getLogger(__name__)
         super().__init__(config, option)
 
-    def breakdown(self, data, bins, labels, colnames, write_path):
+    def breakdown(self, data, bins, labels, colnames, write_path, groupby_field = None, groupby_data = None):
         """
         Bin a data series and export to a csv file
         :params Pandas Series data: A numerical set
         :params list bins: data bins
         :params list labels: data labels
         :params list colnames: the column names of the output file
+        :params str groupby_field: the attribute name of the attribute used to cross tabulate (e.g. mode or purpose)
+        :params Pandas Series groupby_data: A categorical set to cross tabulate distance by
 
         :returns: None 
         """
+        
         # bin
-        breakdown_df = pd.cut(data, bins=bins, labels=labels).value_counts().sort_index().reset_index()
-        breakdown_df.columns = colnames
+        if groupby_field:
+            breakdown_df = pd.concat([data, groupby_data, pd.cut(data, bins=bins, labels=labels)], axis=1)
+            breakdown_df.columns = ["trips", groupby_field, "euclidean_distance"]
+            breakdown_df = breakdown_df.groupby(by=[groupby_field, "euclidean_distance"]).count().sort_index().reset_index()
+        else:
+            breakdown_df = pd.cut(data, bins=bins, labels=labels).value_counts().sort_index().reset_index()
+            breakdown_df.columns = colnames        
 
         # Export breakdown
         csv_breakdown_name = f"{self.name}.csv"
@@ -167,32 +175,45 @@ class TripDurationBreakdown(PostProcessor):
 
 class TripEuclidDistanceBreakdown(PostProcessor):
     """
-    Provide summary breakdowns of trip data:
-        - by duration
-        - by distance band
-        - ... 
+    Provide summary breakdowns of trip distance with options to crosstabulate by
+        - mode
+        - purpose
     """
     requirements = ['trip_logs']
-    valid_options = ['all']
+    valid_options = ['all','mode','purpose']
 
     def build(self, resource: dict, write_path=None):
 
         super().build(resource, write_path=write_path)
-        mode = self.option
 
+        print(self.option)
         # read trip logs
         file_name = f"trip_logs_{self.option}_trips.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         trips_df = pd.read_csv(file_path)
-
+        
         # euclidean distance breakdown
         trips_df['euclidean_distance'] = ((trips_df.ox - trips_df.dx) ** 2 + (trips_df.oy - trips_df.dy) ** 2) ** 0.5
+
+        # deal with cross tab options
+        if self.option == "mode":
+            groupby_field_input = "mode"
+            groupby_data_input = trips_df["mode"]
+        elif self.option == "purpose":
+            groupby_field_input = "d_act"
+            groupby_data_input = trips_df["d_act"]
+        if self.option == "all":
+            groupby_field_input = None
+            groupby_data_input = None
+
         self.breakdown(
             data = trips_df.euclidean_distance / 1000,
             bins = [0, 1, 5, 10, 25, 50, 100, 200, 999999],
             labels = ['0 to 1 km', '1 to 5 km', '5 to 10 km', '10 to 25 km', '25 to 50 km', '50 to 100 km', '100 to 200 km', '200+ km'],
             colnames = ['euclidean_distance', 'trips'],
-            write_path = write_path  
+            write_path = write_path,
+            groupby_field = groupby_field_input,  
+            groupby_data = groupby_data_input
         )
 
 class VKT(PostProcessor):
