@@ -125,6 +125,15 @@ We strongly recommend using a virtual environment.
 Note that we require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
 between coordinate reference systems.
 
+**Note for Windows Users:**
+If installation fails with a traceback indicating `geos_c.dll` cannot be found, this is usually a problem with installing `shapely` and `fiona` requirements.
+
+One workaround is is the following (assumes you are using an Anaconda or Miniconda distribution):
+- Activate a conda environment
+- Install `geopandas` first using `conda install geopandas -c conda-forge`. (Geopandas requires both `shapely` and `fiona`, and conda may be able to install them without issue.)
+- Remove `geopandas`, `shapely`, and `fiona` from the `requirements.txt` file in a text editor (nb: please don't commit these changes when pushing new code).
+- Install the rest of the dependencies as normal: `pip install -e .`
+
 ## Configuration
 
 For reproducibility or to process a range of outputs, configuration is the most sensible and 
