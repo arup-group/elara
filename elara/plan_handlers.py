@@ -977,14 +977,14 @@ class AgentTollsPaid(PlanHandlerTool):
                             
                             # append results to dictionary if toll applies
                             if apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
-                                dictionary = {
+                                toll_dictionary = {
                                                 "agent": ident,
                                                 "subpopulation": subpopulation_attribute,
                                                 "tollname":self.roadpricing.tollnames[link],
                                                 "link": link,
                                                 "time": start_time,
                                                 "toll": get_toll(link,start_time)}
-                                self.toll_log = self.toll_log.append(dictionary, ignore_index=True)
+                                self.toll_log = self.toll_log.append(toll_dictionary, ignore_index=True)
                             
                             #update memory of last link
                             if link in self.roadpricing.links:
