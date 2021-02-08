@@ -523,8 +523,12 @@ def test_toll_tagged(toll_log_handler):
     for plan in plans.persons:
         handler.process_plans(plan)
     handler.finalise()
+    print(handler.results['tolls_paid_log'])
     assert handler.results['tolls_paid_log'].iloc[1]['tollname'] == "Toll Road 3"
+    assert handler.results['tolls_paid_log'].iloc[3]['tollname'] == "missing"
+    
     return handler
+
 
 ### Trip Log Handler ###
 

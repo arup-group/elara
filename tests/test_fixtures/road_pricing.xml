@@ -31,7 +31,6 @@
         </link>
         <!-- === inbound 2 === -->
         <link id="2-1">
-            <tollname name="Toll Road 1"/>
             <cost start_time="19:01" end_time="23:59" amount="3.0"/>
             <cost start_time="00:00" end_time="06:00" amount="0.0"/>
             <cost start_time="10:01" end_time="16:00" amount="3.0"/>
