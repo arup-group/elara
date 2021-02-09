@@ -1,0 +1,15 @@
+﻿access_walk,0
+bike,0.0214200012472971
+bus_dublin,0
+bus_interurban_rural,0.044980885636815
+bus_other_city_town,0.000540805698100105
+car,0.793514613389083
+egress_walk,0
+ferry,0
+heavy_rail_dart,0.00164568756323749
+heavy_rail_other,0.0014697628180724
+light_rail_luas_green,0.00139622813623091
+light_rail_luas_red,0.000928026301214811
+pt,0
+transit_walk,0
+walk,0.134103989209948
