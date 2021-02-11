@@ -34,7 +34,8 @@ class Tool:
 
     def __init__(
             self, config,
-            option: Union[None, str] = None
+            option: Union[None, str] = None,
+            **kwargs
     ) -> None:
         """
         Initiate a tool instance with optional option (ie: 'bus').
@@ -316,11 +317,21 @@ class WorkStation:
                 for manager_requirement, options in manager_requirements.items():
                     if manager_requirement == tool_name:
                         if options:
+                            if isinstance(options, dict):
+                                # if handler options are passed as dictionaries
+                                # split them between "mode" options and optional arguments
+                                optional_args = {key : options[key] for key in options if key != 'mode'}
+                                options = options['mode']
+                            else:
+                                optional_args = None
+
                             for option in options:
                                 # build unique key for tool initiated with option
                                 key = str(tool_name) + ':' + str(option)
-                                self.resources[key] = tool(self.config, option)
-
+                                if optional_args:
+                                    self.resources[key] = tool(self.config, option, **optional_args)
+                                else:
+                                    self.resources[key] = tool(self.config, option)
                                 tool_requirements = self.resources[key].get_requirements()
                                 all_requirements.append(tool_requirements)
                         else:
@@ -749,9 +760,15 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
             options = set()
             for req in reqs:
                 if req and req.get(tool):
-                    options.update(req[tool])
+                    if isinstance(req.get(tool), dict):
+                        options = req.get(tool)
+                    else:
+                        options.update(req[tool])
             if options:
-                combined_reqs[tool] = list(options)
+                if isinstance(options, dict):
+                    combined_reqs[tool] = options
+                else:
+                    combined_reqs[tool] = list(options)
             else:
                 combined_reqs[tool] = None
     return combined_reqs

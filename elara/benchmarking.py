@@ -111,6 +111,18 @@ class CsvComparison(BenchmarkTool):
         df.plot(kind="bar", figsize=(17,12)).get_figure().\
             savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
 
+class DurationComparison(CsvComparison):
+    def __init__(self, config, option, benchmark_data_path=None):
+        super().__init__(config, option)
+        self.benchmark_data_path = benchmark_data_path
+
+    requirements = ['trip_duration_breakdown']
+    valid_options = ['all']
+    index_field = ['duration']
+    value_field = 'trips'
+    name = 'test'
+    simulation_name = 'trip_duration_breakdown_all.csv'
+    weight = 1
 
 class TestDurationComparison(CsvComparison):
     requirements = ['trip_duration_breakdown']
@@ -1863,6 +1875,7 @@ class BenchmarkWorkStation(WorkStation):
         "test_town_modeshare": TestTownCommuterStats,
         "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
         "test_duration_comparison": TestDurationComparison,
+        "duration_comparison": DurationComparison,
 
         # latest
         "ireland_highways": IrelandHighwayCounters,
