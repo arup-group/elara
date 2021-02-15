@@ -759,12 +759,28 @@ class RoadPricing(InputTool):
                 for elem in get_elems(path, "link")
             ]
         )
+        self.tollnames = dict(
+            [
+                self.get_tollnames(elem)
+                for elem in get_elems(path, "link")
+            ]
+        )
 
     def get_costs(self, elem):
         ident = elem.xpath("@id")[0]
         costs = [dict(cost.items()) for cost in elem.xpath('./cost')]
         costs = sorted(costs, key=lambda k: k['start_time'])
         return ident, costs
+
+    def get_tollnames(self,elem):
+        ident = elem.xpath("@id")[0]
+        if len(elem.xpath('./tollname/@name')): #if the toll link has a tag called tollname
+            tollname = elem.xpath('./tollname/@name')[0]
+        else:
+            tollname = 'missing'
+        return ident, tollname
+
+        
 
 
 class InputsWorkStation(WorkStation):
