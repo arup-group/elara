@@ -468,7 +468,7 @@ class LegLogs(PlanHandlerTool):
 class TripLogs(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule', 'subpopulations']
-    valid_options = ['all', 'mode', 'purpose'] #mode and purpose options need to be enabled for post-processing cross tabulation w euclidian distance
+    valid_options = ['all'] #mode and purpose options need to be enabled for post-processing cross tabulation w euclidian distance
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
