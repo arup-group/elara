@@ -521,10 +521,10 @@ class LinkVehicleSpeeds(EventHandlerTool):
                                 self.config.time_periods))
 
         # Initialise duration cummulative sum table
-        self.durations = np.zeros((len(self.elem_indices),
-                                len(self.classes),
-                                self.config.time_periods))
-
+        self.duration_sum = np.zeros((len(self.elem_indices),len(self.classes),self.config.time_periods))
+        self.duration_min = np.zeros((len(self.elem_indices),len(self.classes),self.config.time_periods))
+        self.duration_max = np.zeros((len(self.elem_indices),len(self.classes),self.config.time_periods))
+        
         self.link_tracker = dict() #{(agent,link):start_time}
 
     def process_event(self, elem) -> None:
@@ -586,7 +586,13 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     duration = end_time - start_time
 
                 self.counts[x, y, z] += 1
-                self.durations[x, y, z] += duration
+                self.duration_sum[x, y, z] += duration
+                self.duration_max[x, y, z] = max(duration,self.duration_max[x, y, z]) 
+
+                if self.duration_min[x, y, z] ==0: #needs this condition or else the minimum duration would ever budge from zero
+                    self.duration_min[x, y, z] = duration
+                else:
+                    self.duration_min[x, y, z] = min(duration,self.duration_min[x, y, z])
     
     def finalise(self) -> None:
         """
@@ -594,48 +600,64 @@ class LinkVehicleSpeeds(EventHandlerTool):
         by time slice. The only thing left to do is scale by the sample size and
         create dataframes.
         """
+        unit_matrix = np.ones((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
 
-        # speed = vehcounts*linklength/totalduration and convert from m/s to km/h
-        self.counts = np.divide(self.counts, self.durations, out=np.zeros_like(self.counts), where=self.durations!=0) * 3.6
-        # above code avoid divide by zero warnings
+        for calc_type in ["average","min","max"]:
+            
+            # speed = vehcounts*linklength/totalduration and convert from m/s to km/h
+            # above code avoid divide by zero warnings
+            if calc_type == "average":
+                counts_holder = np.divide(self.counts, self.duration_sum, out=np.zeros_like(self.counts), where=self.duration_sum!=0)
+            elif calc_type == "min":
+                counts_holder = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            elif calc_type == "max":
+                counts_holder = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+                
+            names = ['elem', 'class', 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            counts_df = pd.DataFrame(counts_holder.flatten(), index=index)[0]
+            counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index('elem')
+            
+            key = f"{self.name}_{calc_type}_subpops"
+            
+            # get or join to link data
+            counts_df = self.elem_gdf.join(
+                counts_df, how="left"
+            )
+            # calculate speed
+            for i in range(self.config.time_periods):
+                        counts_df[i] = counts_df[i] * counts_df["length"]
+            
+            # add to results
+            self.result_dfs[key] = counts_df
 
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index('elem')
-        
-        key = f"{self.name}_subpops"
-        
-        # get or join to link data
-        counts_df = self.elem_gdf.join(
-            counts_df, how="left"
-        )
-        # calculate speed
-        for i in range(self.config.time_periods):
-                    counts_df[i] = counts_df[i] * counts_df["length"]
-        
-        # add to results
-        self.result_dfs[key] = counts_df
+            # calc required value (sum, min, max) across all recorded attribute classes
+            if calc_type == "average":
+                counts_holder = counts_holder.sum(1)
+            elif calc_type == "min":
+                counts_holder[counts_holder==0]=9999999
+                counts_holder = counts_holder.min(1)
+                counts_holder[counts_holder==9999999]=0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
+            elif calc_type == "max":
+                counts_holder = counts_holder.max(1)
 
-        # calc sum across all recorded attribute classes
-        self.counts = self.counts.sum(1)
 
-        totals_df = pd.DataFrame(
-            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
-        ).sort_index()
+            totals_df = pd.DataFrame(
+                data=counts_holder, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
 
-        del self.counts
-
-        key = f"{self.name}"
-        totals_df = self.elem_gdf.join(
-            totals_df, how="left"
-        )
-        for i in range(self.config.time_periods):
-            totals_df[i] = totals_df[i] * totals_df["length"]
-        
-        self.result_dfs[key] = totals_df
+            key = f"{self.name}_{calc_type}"
+            totals_df = self.elem_gdf.join(
+                totals_df, how="left"
+            )
+            for i in range(self.config.time_periods):
+                totals_df[i] = totals_df[i] * totals_df["length"]
+            print(totals_df)
+            self.result_dfs[key] = totals_df
 
 class LinkPassengerCounts(EventHandlerTool):
     """
