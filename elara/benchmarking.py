@@ -1679,7 +1679,7 @@ class ROIModeShare(ModeStats):
 
     weight = 2
     benchmark_path = get_benchmark_data(
-        os.path.join('ireland', 'nhts_survey', 'ROI_modeshare.csv')
+        os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
     )
 
 
