@@ -656,7 +656,6 @@ class LinkVehicleSpeeds(EventHandlerTool):
             )
             for i in range(self.config.time_periods):
                 totals_df[i] = totals_df[i] * totals_df["length"]
-            print(totals_df)
             self.result_dfs[key] = totals_df
 
 class LinkPassengerCounts(EventHandlerTool):
