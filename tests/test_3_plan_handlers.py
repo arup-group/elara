@@ -517,6 +517,19 @@ def test_toll_finalise(toll_log_handler):
     handler.finalise()
     assert handler.results['tolls_paid_total_by_agent'].sum() == 20
 
+def test_toll_tagged(toll_log_handler):
+    handler = toll_log_handler
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    handler.finalise()
+    print(handler.results['tolls_paid_log'])
+    assert handler.results['tolls_paid_log'].iloc[1]['tollname'] == "Toll Road 3"
+    assert handler.results['tolls_paid_log'].iloc[3]['tollname'] == "missing"
+    
+    return handler
+
+
 ### Trip Log Handler ###
 
 # Normal Case
@@ -542,7 +555,8 @@ def test_agent_trip_log_process_person(agent_trip_handler):
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
             <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
-            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            <route
+             type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
             <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
