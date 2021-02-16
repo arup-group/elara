@@ -586,7 +586,10 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     duration = end_time - start_time
 
                 self.counts[x, y, z] += 1
-                self.duration_sum[x, y, z] += 1/duration
+                
+                if duration != 0:
+                    self.duration_sum[x, y, z] += 1/duration
+                
                 self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
 
                 if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
