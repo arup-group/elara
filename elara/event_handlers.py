@@ -610,11 +610,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
                 counts_holder = self.duration_sum
                 counts_holder_reduced = counts_holder
                 counts_holder_reduced[counts_holder_reduced == 0] = np.nan
-                #np.divide(self.counts, self.duration_sum, out=np.zeros_like(self.counts), where=self.duration_sum!=0)
-                #counts_holder_reduced = counts_holder.mean(1)
                 counts_holder_reduced = np.nanmean(counts_holder_reduced, axis = 1)
                 counts_holder_reduced = np.nan_to_num(counts_holder_reduced, nan = 0)
-                print(counts_holder_reduced)
             elif calc_type == "min":
                 counts_holder = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
                 counts_holder_reduced = counts_holder
