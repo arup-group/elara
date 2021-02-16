@@ -434,12 +434,12 @@ def test_link_speed_process_events_car(test_car_link_speed_handler, car_link_pai
     for elem in car_link_pair_event:
         handler.process_event(elem)
     assert np.sum(handler.counts) == 2
-    assert np.sum(handler.duration_sum)== 250
+    assert np.sum(handler.duration_sum)== 0.025
     link_index = handler.elem_indices['1-2']
     class_index = handler.class_indices['rich']
     period = 6
     assert handler.counts[link_index][class_index][period] == 1
-    assert handler.duration_sum[link_index][class_index][period] == 200
+    assert handler.duration_sum[link_index][class_index][period] == 1/200
 
 
 def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_event):
@@ -453,7 +453,7 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
             assert c in gdf.columns
         df = gdf.loc[:, cols]
         if name == "link_vehicle_speeds_car_average":
-            assert np.sum(df.values) == 2.5
+            assert np.sum(df.values) == 1.25
         elif name == "link_vehicle_speeds_car_min":
             assert np.sum(df.values) == 0.5
         elif name == "link_vehicle_speeds_car_max":

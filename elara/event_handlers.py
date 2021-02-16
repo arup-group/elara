@@ -586,7 +586,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     duration = end_time - start_time
 
                 self.counts[x, y, z] += 1
-                self.duration_sum[x, y, z] += duration
+                self.duration_sum[x, y, z] += 1/duration
                 self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
 
                 if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
@@ -607,8 +607,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
         def counts_holder_generator(calc_type):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
             if calc_type == "average":
-                counts_holder = np.divide(self.counts, self.duration_sum, out=np.zeros_like(self.counts), where=self.duration_sum!=0)
-                counts_holder_reduced = counts_holder.sum(1)
+                counts_holder = self.duration_sum
+                counts_holder_reduced = counts_holder
+                counts_holder_reduced[counts_holder_reduced == 0] = np.nan
+                #np.divide(self.counts, self.duration_sum, out=np.zeros_like(self.counts), where=self.duration_sum!=0)
+                #counts_holder_reduced = counts_holder.mean(1)
+                counts_holder_reduced = np.nanmean(counts_holder_reduced, axis = 1)
+                counts_holder_reduced = np.nan_to_num(counts_holder_reduced, nan = 0)
+                print(counts_holder_reduced)
             elif calc_type == "min":
                 counts_holder = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
                 counts_holder_reduced = counts_holder
