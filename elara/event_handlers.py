@@ -521,9 +521,9 @@ class LinkVehicleSpeeds(EventHandlerTool):
                                 self.config.time_periods))
 
         # Initialise duration cummulative sum table
-        self.duration_sum = np.zeros((len(self.elem_indices),len(self.classes),self.config.time_periods))
-        self.duration_min = np.zeros((len(self.elem_indices),len(self.classes),self.config.time_periods))
-        self.duration_max = np.zeros((len(self.elem_indices),len(self.classes),self.config.time_periods))
+        self.duration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         
         self.link_tracker = dict() #{(agent,link):start_time}
 
@@ -587,12 +587,15 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
                 self.counts[x, y, z] += 1
                 self.duration_sum[x, y, z] += duration
-                self.duration_max[x, y, z] = max(duration,self.duration_max[x, y, z]) 
+                self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
 
-                if self.duration_min[x, y, z] ==0: #needs this condition or else the minimum duration would ever budge from zero
+                if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
                     self.duration_min[x, y, z] = duration
                 else:
-                    self.duration_min[x, y, z] = min(duration,self.duration_min[x, y, z])
+                    self.duration_min[x, y, z] = min(duration, self.duration_min[x, y, z])
+    
+
+        
     
     def finalise(self) -> None:
         """
@@ -600,21 +603,28 @@ class LinkVehicleSpeeds(EventHandlerTool):
         by time slice. The only thing left to do is scale by the sample size and
         create dataframes.
         """
-        unit_matrix = np.ones((len(self.elem_indices),
-                                len(self.classes),
-                                self.config.time_periods))
-
-        for calc_type in ["average","min","max"]:
-            
-            # speed = vehcounts*linklength/totalduration and convert from m/s to km/h
-            # above code avoid divide by zero warnings
+        # Speed = vol / duration * length. This function generates the array of vol / duration part, firstly by hour and subpop and secondly by hour.
+        def counts_holder_generator(calc_type):
+            unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
             if calc_type == "average":
                 counts_holder = np.divide(self.counts, self.duration_sum, out=np.zeros_like(self.counts), where=self.duration_sum!=0)
+                counts_holder_reduced = counts_holder.sum(1)
             elif calc_type == "min":
                 counts_holder = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+                counts_holder_reduced = counts_holder
+                counts_holder_reduced[counts_holder_reduced == 0] = 9999999
+                counts_holder_reduced = counts_holder_reduced.min(1)
+                counts_holder_reduced[counts_holder_reduced == 9999999] = 0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
             elif calc_type == "max":
                 counts_holder = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
-                
+                counts_holder_reduced = counts_holder.max(1)
+            return [counts_holder, counts_holder_reduced]
+
+
+        for calc_type in ["average", "min", "max"]:
+            
+            counts_holder = counts_holder_generator(calc_type)[0] #generate matrix vol/duration part of speed calc by subpop and hour
+                 
             names = ['elem', 'class', 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
             index = pd.MultiIndex.from_product(indexes, names=names)
@@ -630,32 +640,26 @@ class LinkVehicleSpeeds(EventHandlerTool):
             )
             # calculate speed
             for i in range(self.config.time_periods):
-                        counts_df[i] = counts_df[i] * counts_df["length"]
+                counts_df[i] = counts_df[i] * counts_df["length"]
             
             # add to results
             self.result_dfs[key] = counts_df
 
-            # calc required value (sum, min, max) across all recorded attribute classes
-            if calc_type == "average":
-                counts_holder = counts_holder.sum(1)
-            elif calc_type == "min":
-                counts_holder[counts_holder==0]=9999999
-                counts_holder = counts_holder.min(1)
-                counts_holder[counts_holder==9999999]=0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
-            elif calc_type == "max":
-                counts_holder = counts_holder.max(1)
-
+            key = f"{self.name}_{calc_type}"
+            
+            #generate matrix vol/duration part of speed calc by hour
+            counts_holder = counts_holder_generator(calc_type)[1] 
 
             totals_df = pd.DataFrame(
                 data=counts_holder, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
-
-            key = f"{self.name}_{calc_type}"
+            
             totals_df = self.elem_gdf.join(
-                totals_df, how="left"
-            )
+                totals_df, how="left")
+            
             for i in range(self.config.time_periods):
                 totals_df[i] = totals_df[i] * totals_df["length"]
+            
             self.result_dfs[key] = totals_df
 
 class LinkPassengerCounts(EventHandlerTool):
