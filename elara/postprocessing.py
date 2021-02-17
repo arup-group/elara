@@ -163,14 +163,21 @@ class TripDurationBreakdown(PostProcessor):
         file_path = os.path.join(self.config.output_path, file_name)
         trips_df = pd.read_csv(file_path)
 
+        cross_tab_dict = {"mode": trips_df["mode"],
+                            "d_act": trips_df["d_act"],
+                            None: None} #cross tabulate by mode, dest purpose of activity, all together
+
         # duration breakdown
-        self.breakdown(
-            data = trips_df.duration_s / 60,
-            bins = [0, 5, 10, 15, 30, 45, 60, 90, 120, 999999],
-            labels = ['0 to 5 min', '5 to 10 min', '10 to 15 min', '15 to 30 min', '30 to 45 min', '45 to 60 min', '60 to 90 min', '90 to 120 min', '120+ min'],
-            colnames = ['duration', 'trips'],
-            write_path = write_path  
-        )
+        for key in cross_tab_dict:
+            self.breakdown(
+                data = trips_df.duration_s / 60,
+                bins = [0, 5, 10, 15, 30, 45, 60, 90, 120, 999999],
+                labels = ['0 to 5 min', '5 to 10 min', '10 to 15 min', '15 to 30 min', '30 to 45 min', '45 to 60 min', '60 to 90 min', '90 to 120 min', '120+ min'],
+                colnames = ['duration', 'trips'],
+                write_path = write_path,
+                groupby_field = key,  
+                groupby_data = cross_tab_dict[key]  
+            )
 
 
 class TripEuclidDistanceBreakdown(PostProcessor):
