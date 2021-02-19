@@ -553,14 +553,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
         """
 
         event_type = elem.get("type")
-        if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
+        if event_type == "entered link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.option:
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type , start_time)
 
-        elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
+        elif event_type == "left link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.option:
@@ -568,35 +568,34 @@ class LinkVehicleSpeeds(EventHandlerTool):
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
-                start_time = self.link_tracker[ident][1]
-                start_event_type = self.link_tracker[ident][0]
-                x, y, z = table_position(
-                    self.elem_indices,
-                    self.class_indices,
-                    self.config.time_periods,
-                    link,
-                    attribute_class,
-                    start_time
-                )
-                # if vehicle entering or leaving traffic, agent placed halfway along link. Therefore need to double duration.
-                # Assuming in the case that vehicle enters and leaves traffic on same link then still only doubled not quadrupled.
-                if (start_event_type == "vehicle enters traffic") or (event_type == "vehicle leaves traffic"):
-                    duration = (end_time - start_time) * 2
-                else:
+                if ident in self.link_tracker: #if person not in link tracker, this means they've entered link via "vehicle enters traffic event" and should be ignored.
+                    start_time = self.link_tracker[ident][1]
+                    start_event_type = self.link_tracker[ident][0]
+                    x, y, z = table_position(
+                        self.elem_indices,
+                        self.class_indices,
+                        self.config.time_periods,
+                        link,
+                        attribute_class,
+                        start_time
+                    )
+
                     duration = end_time - start_time
 
-                self.counts[x, y, z] += 1
-                
-                if duration != 0:
-                    self.duration_sum[x, y, z] += 1/duration
-                
-                self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
+                    self.counts[x, y, z] += 1
+                    
+                    if duration != 0:
+                        self.duration_sum[x, y, z] += 1/duration
+                    
+                    self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
 
-                if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
-                    self.duration_min[x, y, z] = duration
+                    if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
+                        self.duration_min[x, y, z] = duration
+                    else:
+                        self.duration_min[x, y, z] = min(duration, self.duration_min[x, y, z])
+                    
                 else:
-                    self.duration_min[x, y, z] = min(duration, self.duration_min[x, y, z])
-    
+                    pass
 
         
     
