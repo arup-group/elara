@@ -181,7 +181,7 @@ def test_benchmark_workstation(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='bus')
+    event_workstation.load_all_tools(mode='bus')
     event_workstation.build(write_path=test_outputs)
 
     plan_workstation = PlanHandlerWorkStation(test_config)

@@ -26,34 +26,34 @@ class Tool:
     requirements = []
     options_enabled = False
 
-    option = None
-    valid_options = None
-    invalid_options = None
+    mode = None
+    valid_modes = None
+    invalid_modes = None
 
     resources = {}
 
     def __init__(
             self, config,
-            option: Union[None, str] = None,
+            mode: Union[None, str] = None,
             **kwargs
     ) -> None:
         """
         Initiate a tool instance with optional option (ie: 'bus').
-        :param option: optional option, typically assumed to be str
+        :param mode: optional mode, typically assumed to be str
         """
         self.config = config
-        self.option = self._validate_option(option)
+        self.mode = self._validate_mode(mode)
 
     def __str__(self):
-        if self.option:
-            return self.__class__.__name__.split(".")[-1] + self.option.title()
+        if self.mode:
+            return self.__class__.__name__.split(".")[-1] + self.mode.title()
         return self.__class__.__name__.split(".")[-1]
 
     @property
     def name(self):
         class_name = self.__class__.__name__.split('.')[-1]
-        if self.option:
-            return f"{camel_to_snake(class_name)}_{self.option}"
+        if self.mode:
+            return f"{camel_to_snake(class_name)}_{self.mode}"
         return camel_to_snake(class_name)
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
@@ -68,7 +68,7 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: [self.option] for req in self.requirements}
+            requirements = {req: [self.mode] for req in self.requirements}
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -89,20 +89,20 @@ class Tool:
         self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
         self.resources = resource
 
-    def _validate_option(self, option: str) -> str:
+    def _validate_mode(self, mode: str) -> str:
         """
         Validate option based on .valid_options and .invalid_option if not None.
         Raises UserWarning if option is not in .valid_options or in .invalid_options.
         :param option: str
         :return: str
         """
-        if self.valid_options:
-            if option not in self.valid_options:
-                raise UserWarning(f'Unsupported option: {option} at tool: {self}')
-        if self.invalid_options:
-            if option in self.invalid_options:
-                raise UserWarning(f'Invalid option: {option} at tool: {self}')
-        return option
+        if self.valid_modes:
+            if mode not in self.valid_modes:
+                raise UserWarning(f'Unsupported mode option: {mode} at tool: {self}')
+        if self.invalid_modes:
+            if mode in self.invalid_modes:
+                raise UserWarning(f'Invalid mode option: {mode} at tool: {self}')
+        return mode
 
     def start_chunk_writer(self, csv_name: str, write_path=None):
         """
@@ -320,18 +320,16 @@ class WorkStation:
                             if isinstance(options, dict):
                                 # if handler options are passed as dictionaries
                                 # split them between "mode" options and optional arguments
-                                optional_args = {key : options[key] for key in options if key != 'mode'}
-                                options = options['mode']
+                                optional_args = {key : options[key] for key in options if key != 'modes'}
+                                modes = options['modes']
                             else:
                                 optional_args = None
 
-                            for option in options:
+                            for mode in modes:
                                 # build unique key for tool initiated with option
-                                key = str(tool_name) + ':' + str(option)
-                                if optional_args:
-                                    self.resources[key] = tool(self.config, option, **optional_args)
-                                else:
-                                    self.resources[key] = tool(self.config, option)
+                                key = str(tool_name) + ':' + str(mode)
+                                self.resources[key] = tool(self.config, mode, **optional_args)
+
                                 tool_requirements = self.resources[key].get_requirements()
                                 all_requirements.append(tool_requirements)
                         else:
@@ -412,7 +410,7 @@ class WorkStation:
 
                 tool.build(self.supplier_resources, write_path)
 
-    def load_all_tools(self, option=None) -> None:
+    def load_all_tools(self, mode=None) -> None:
         """
         Method used for testing.
         Load all available tools into resources with given option.
@@ -421,9 +419,9 @@ class WorkStation:
         """
         self.logger.info(f"Loading all tools for {self.__str__()}")
         for name, tool in self.tools.items():
-            if option is None and tool.valid_options is not None:
-                option = tool.valid_options[0]
-            self.resources[name] = tool(self.config, option)
+            if mode is None and tool.valid_modes is not None:
+                mode = tool.valid_modes[0]
+            self.resources[name] = tool(self.config, mode)
 
     def write_csv(
             self,
@@ -755,22 +753,28 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
         if req:
             tool_set.update(list(req))
     combined_reqs = {}
+
     for tool in tool_set:
+        combined_reqs[tool] = {}
         if tool_set:
-            options = set()
+            # collect unique modes
+            modes = set()
             for req in reqs:
                 if req and req.get(tool):
                     if isinstance(req.get(tool), dict):
-                        options = req.get(tool)
+                        modes.update(req.get(tool)['modes'])
                     else:
-                        options.update(req[tool])
-            if options:
-                if isinstance(options, dict):
-                    combined_reqs[tool] = options
-                else:
-                    combined_reqs[tool] = list(options)
+                        modes.update(req[tool])
+            if modes:
+                for req in reqs:
+                    if req and req.get(tool):
+                        if isinstance(req.get(tool), dict):
+                            combined_reqs[tool] = req.get(tool)
+                        
+                    combined_reqs[tool]['modes'] = list(modes)
             else:
                 combined_reqs[tool] = None
+
     return combined_reqs
 
 

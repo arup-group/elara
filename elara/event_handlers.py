@@ -21,9 +21,9 @@ class EventHandlerTool(Tool):
     result_dfs = dict()
     options_enabled = True
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
     def build(
             self,
@@ -108,13 +108,13 @@ class VehiclePassengerGraph(EventHandlerTool):
         'subpopulations',
     ]
 
-    def __init__(self, config, option=None) -> None:
+    def __init__(self, config, mode=None) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.veh_occupancy = dict()
 
@@ -186,13 +186,13 @@ class StopPassengerWaiting(EventHandlerTool):
         'subpopulations',
     ]
 
-    def __init__(self, config, option=None) -> None:
+    def __init__(self, config, mode=None) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.agent_status = dict()
         self.veh_waiting_occupancy = dict()
@@ -324,13 +324,13 @@ class LinkVehicleCounts(EventHandlerTool):
         'subpopulations',
     ]
 
-    def __init__(self, config, option=None) -> None:
+    def __init__(self, config, mode=None) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.classes = None
         self.class_indices = None
@@ -359,17 +359,17 @@ class LinkVehicleCounts(EventHandlerTool):
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
         
-        links = resources['network'].mode_to_links_map.get(self.option)
+        links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
                 f"""
-                No viable links found for mode:{self.option} in Network, 
+                No viable links found for mode:{self.mode} in Network, 
                 this may be because the Network modes do not match the configured 
                 modes. Elara will continue with all links found in network.
                 """
                 )
         else:
-            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.logger.debug(f'Selecting links for mode:{self.mode}.')
             self.elem_gdf = self.elem_gdf.loc[links, :]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
@@ -389,7 +389,7 @@ class LinkVehicleCounts(EventHandlerTool):
         if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 # look for attribute_class, if not found assume pt and use mode
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
@@ -414,7 +414,7 @@ class LinkVehicleCounts(EventHandlerTool):
         # Overwrite the scale factor for public transport vehicles (these do not need to
         # be expanded.
         scale_factor = self.config.scale_factor
-        if self.option != "car":
+        if self.mode != "car":
             scale_factor = 1.0
 
         # Scale final counts
@@ -465,13 +465,13 @@ class LinkVehicleSpeeds(EventHandlerTool):
         'subpopulations',
     ]
 
-    def __init__(self, config, option=None) -> None:
+    def __init__(self, config, mode=None) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.classes = None
         self.class_indices = None
@@ -500,17 +500,17 @@ class LinkVehicleSpeeds(EventHandlerTool):
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
         
-        links = resources['network'].mode_to_links_map.get(self.option)
+        links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
                 f"""
-                No viable links found for mode:{self.option} in Network, 
+                No viable links found for mode:{self.mode} in Network, 
                 this may be because the Network modes do not match the configured 
                 modes. Elara will continue with all links found in network.
                 """
                 )
         else:
-            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.logger.debug(f'Selecting links for mode:{self.mode}.')
             self.elem_gdf = self.elem_gdf.loc[links, :]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
@@ -556,14 +556,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
         if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type , start_time)
 
         elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
             # look for attribute_class, if not found assume pt and use mode
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
@@ -648,15 +648,15 @@ class LinkPassengerCounts(EventHandlerTool):
         'transit_schedule',
         'subpopulations',
     ]
-    invalid_options = ['car']
+    invalid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -679,7 +679,7 @@ class LinkPassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Check for car
-        if self.option == 'car':
+        if self.mode == 'car':
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
@@ -689,17 +689,17 @@ class LinkPassengerCounts(EventHandlerTool):
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
 
-        links = resources['network'].mode_to_links_map.get(self.option)
+        links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
                 f"""
-                No viable links found for mode:{self.option} in Network, 
+                No viable links found for mode:{self.mode} in Network, 
                 this may be because the Network modes do not match the configured 
                 modes. Elara will continue with all links found in network.
                 """
                 )
         else:
-            self.logger.debug(f'Selecting links for mode:{self.option}.')
+            self.logger.debug(f'Selecting links for mode:{self.mode}.')
             self.elem_gdf = self.elem_gdf.loc[links, :]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
@@ -749,7 +749,7 @@ class LinkPassengerCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(veh_id)
 
             # Filter out PT drivers from transit volume statistics
-            if agent_id[:2] != "pt" and veh_mode == self.option:
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
                 attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.veh_occupancy.get(veh_id, None) is None:
@@ -764,7 +764,7 @@ class LinkPassengerCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(veh_id)
 
             # Filter out PT drivers from transit volume statistics
-            if agent_id[:2] != "pt" and veh_mode == self.option:
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
                 attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if not self.veh_occupancy[veh_id][attribute_class]:
@@ -778,7 +778,7 @@ class LinkPassengerCounts(EventHandlerTool):
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
 
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 # Increment link passenger volumes
                 time = float(elem.get("time"))
                 link = elem.get("link")
@@ -849,15 +849,15 @@ class RoutePassengerCounts(EventHandlerTool):
         'transit_schedule',
         'subpopulations',
     ]
-    invalid_options = ['car']
+    invalid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -886,12 +886,12 @@ class RoutePassengerCounts(EventHandlerTool):
         # # Initialise element attributes
         # all_routes = set(resources['transit_schedule'].veh_to_route_map.values())
         # get routes used by this mode
-        self.logger.debug(f'Selecting routes for mode:{self.option}.')
-        routes = resources['transit_schedule'].mode_to_routes_map.get(self.option)
+        self.logger.debug(f'Selecting routes for mode:{self.mode}.')
+        routes = resources['transit_schedule'].mode_to_routes_map.get(self.mode)
         if routes is None:
             self.logger.warning(
                 f"""
-                No viable routes found for mode:{self.option} in TransitSchedule, 
+                No viable routes found for mode:{self.mode} in TransitSchedule, 
                 this may be because the Schedule modes do not match the configured 
                 modes. Elara will continue with all routes found in schedule.
                 """
@@ -942,7 +942,7 @@ class RoutePassengerCounts(EventHandlerTool):
             veh_route = self.vehicle_route(veh_id)
 
             # Filter out PT drivers from transit volume statistics
-            if agent_id[:2] != "pt" and veh_mode == self.option:
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
                 attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.route_occupancy.get(veh_route, None) is None:
@@ -958,7 +958,7 @@ class RoutePassengerCounts(EventHandlerTool):
             veh_route = self.vehicle_route(veh_id)
 
             # Filter out PT drivers from transit volume statistics
-            if agent_id[:2] != "pt" and veh_mode == self.option:
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
                 attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.route_occupancy[veh_route][attribute_class]:
@@ -970,7 +970,7 @@ class RoutePassengerCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(veh_id)
             veh_route = self.vehicle_route(veh_id)
 
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 time = float(elem.get("time"))
                 occupancy_dict = self.route_occupancy.get(veh_route, {})
 
@@ -1032,15 +1032,15 @@ class StopPassengerCounts(EventHandlerTool):
         'transit_schedule',
         'subpopulations',
     ]
-    invalid_options = ['car']
+    invalid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -1063,7 +1063,7 @@ class StopPassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Check for car
-        if self.option == 'car':
+        if self.mode == 'car':
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
@@ -1073,17 +1073,17 @@ class StopPassengerCounts(EventHandlerTool):
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
         # get stops used by this mode
-        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.option)
+        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
         if viable_stops is None:
             self.logger.warning(
                 f"""
-                No viable stops found for mode:{self.option} in TransitSchedule, 
+                No viable stops found for mode:{self.mode} in TransitSchedule, 
                 this may be because the Schedule modes do not match the configured 
                 modes. Elara will continue with all stops found in schedule.
                 """
                 )
         else:
-            self.logger.debug(f'Filtering stops for mode:{self.option}.')
+            self.logger.debug(f'Filtering stops for mode:{self.mode}.')
             self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
@@ -1116,7 +1116,7 @@ class StopPassengerCounts(EventHandlerTool):
         elif event_type == "PersonEntersVehicle":
             veh_mode = self.vehicle_mode(elem.get("vehicle"))
 
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 agent_id = elem.get("person")
 
                 if self.agent_status.get(agent_id, None) is not None:
@@ -1136,7 +1136,7 @@ class StopPassengerCounts(EventHandlerTool):
         elif event_type == "PersonLeavesVehicle":
             veh_mode = self.vehicle_mode(elem.get("vehicle"))
 
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 agent_id = elem.get("person")
 
                 if self.agent_status.get(agent_id, None) is not None:
@@ -1213,15 +1213,15 @@ class StopToStopPassengerCounts(EventHandlerTool):
         'transit_schedule',
         'subpopulations',
     ]
-    invalid_options = ['car']
+    invalid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -1243,8 +1243,8 @@ class StopToStopPassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Check for car
-        if self.option in ['car','walk','bike']:
-            raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.option}")
+        if self.mode in ['car','walk','bike']:
+            raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.mode}")
 
         # Initialise class attributes
         self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
@@ -1253,17 +1253,17 @@ class StopToStopPassengerCounts(EventHandlerTool):
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
         # get stops used by this mode
-        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.option)
+        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
         if viable_stops is None:
             self.logger.warning(
                 f"""
-                No viable stops found for mode:{self.option} in TransitSchedule, 
+                No viable stops found for mode:{self.mode} in TransitSchedule, 
                 this may be because the Schedule modes do not match the configured 
                 modes. Elara will continue with all stops found in schedule.
                 """
                 )
         else:
-            self.logger.debug(f'Filtering stops for mode:{self.option}.')
+            self.logger.debug(f'Filtering stops for mode:{self.mode}.')
             self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
@@ -1310,7 +1310,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(veh_id)
 
             # Filter out PT drivers from transit volume statistics
-            if agent_id[:2] != "pt" and veh_mode == self.option:
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
                 attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.veh_occupancy.get(veh_id, None) is None:
@@ -1326,7 +1326,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(veh_id)
 
             # Filter out PT drivers from transit volume statistics
-            if agent_id[:2] != "pt" and veh_mode == self.option:
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
                 attribute_class = self.resources['subpopulations'].map[agent_id]
 
                 if self.veh_occupancy[veh_id][attribute_class]:
@@ -1338,7 +1338,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
 
-            if veh_mode == self.option:
+            if veh_mode == self.mode:
                 stop_id = elem.get('facility')
                 prev_stop_id = self.veh_tracker.get(veh_id, None)
                 self.veh_tracker[veh_id] = stop_id
