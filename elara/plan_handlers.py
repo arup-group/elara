@@ -15,9 +15,9 @@ class PlanHandlerTool(Tool):
     """
     options_enabled = True
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
     def build(
             self,
@@ -87,17 +87,17 @@ class ModeShares(PlanHandlerTool):
         'output_config',
         'mode_map',
     ]
-    valid_options = ['all']
+    valid_modes = ['all']
 
-    def __init__(self, config, option=None) -> None:
+    def __init__(self, config, mode=None) -> None:
         """
         Initiate Handler.
         :param config: Config
-        :param option: str, option
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option  # todo options not implemented
+        self.mode = mode  # todo options not implemented
 
         self.modes = None
         self.mode_indices = None
@@ -219,7 +219,7 @@ class ModeShares(PlanHandlerTool):
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        key = f"{self.name}_subpop_counts".format(self.option)
+        key = f"{self.name}_subpop_counts".format(self.mode)
         self.results[key] = counts_df
 
         # mode counts totals output
@@ -278,7 +278,7 @@ class ModeShares(PlanHandlerTool):
 class LegLogs(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule', 'subpopulations']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
@@ -290,16 +290,16 @@ class LegLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
 
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
@@ -468,7 +468,7 @@ class LegLogs(PlanHandlerTool):
 class TripLogs(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule', 'subpopulations']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
@@ -480,16 +480,16 @@ class TripLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
 
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
@@ -665,21 +665,21 @@ class TripLogs(PlanHandlerTool):
 class UtilityLogs(PlanHandlerTool):
 
     requirements = ['plans']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
 
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
         self.utility_log = None
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
@@ -738,16 +738,16 @@ class PlanLogs(PlanHandlerTool):
 
     requirements = ['plans', 'subpopulations']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
 
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
 
         self.plans_log = None
 
@@ -781,7 +781,7 @@ class PlanLogs(PlanHandlerTool):
         subpop = self.resources['subpopulations'].map.get(ident)
         # license = self.resources['attributes'].license.get(ident)
 
-        if not self.option == "all" and not subpop == self.option:
+        if not self.mode == "all" and not subpop == self.mode:
             return None
 
         for pidx, plan in enumerate(elem.xpath(".//plan")):
@@ -907,17 +907,17 @@ class AgentTollsPaid(PlanHandlerTool):
         'subpopulations',
         'road_pricing'
         ]
-    valid_options = ['car']
+    valid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
         self.roadpricing = None
         self.agents_ids = None
         self.results = dict()  # Result dataframes ready to export
@@ -964,7 +964,7 @@ class AgentTollsPaid(PlanHandlerTool):
                     if stage.tag == 'leg':
                         mode = stage.get('mode')
                         start_time = stage.get('dep_time')
-                        if not mode == self.option:
+                        if not mode == self.mode:
                             continue
                         route = stage.xpath('route')[0].text.split(' ')
                         
@@ -1025,17 +1025,17 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         'subpopulations',
         'osm_ways'
         ]
-    valid_options = ['car']
+    valid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
         self.osm_ways = None
         self.agents_ids = None
         self.ways = None
@@ -1082,7 +1082,7 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
 
                     if stage.tag == 'leg':
                         mode = stage.get('mode')
-                        if not mode == self.option:
+                        if not mode == self.mode:
                             continue
 
                         route = stage.xpath('route')[0].text.split(' ')
@@ -1153,17 +1153,17 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         'osm_ways',
         'subpopulations'
         ]
-    valid_options = ['car']
+    valid_modes = ['car']
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         """
         Initiate handler.
         :param config: config
-        :param option: str, mode option
+        :param mode: str, mode option
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.option = option
+        self.mode = mode
         self.osm_ways = None
         self.ways = None
 
@@ -1229,7 +1229,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
 
                     if stage.tag == 'leg':
                         mode = stage.get('mode')
-                        if not mode == self.option:
+                        if not mode == self.mode:
                             continue
 
                         route = stage.xpath('route')[0].text.split(' ')
