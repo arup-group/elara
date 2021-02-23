@@ -521,7 +521,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                                 self.config.time_periods))
 
         # Initialise duration cummulative sum table
-        self.duration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.inverseduration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         
@@ -585,7 +585,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     self.counts[x, y, z] += 1
                     
                     if duration != 0:
-                        self.duration_sum[x, y, z] += 1/duration
+                        self.inverseduration_sum[x, y, z] += 1/duration
                     
                     self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
 
@@ -605,67 +605,92 @@ class LinkVehicleSpeeds(EventHandlerTool):
         by time slice. The only thing left to do is scale by the sample size and
         create dataframes.
         """
-        # Speed = vol / duration * length. This function generates the array of vol / duration part, firstly by hour and subpop and secondly by hour.
-        def counts_holder_generator(calc_type):
+
+        def calc_av_matrices(self):
+            counts_pop = self.counts.sum(1)
+            duration_pop = self.inverseduration_sum.sum(1)
+            av_pop = np.divide(duration_pop, counts_pop, out=np.zeros_like(counts_pop), where=duration_pop != 0)
+            return av_pop
+        
+        def calc_max_matrices(self):            
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
-            if calc_type == "average":
-                counts_holder = self.duration_sum
-                counts_holder_reduced = counts_holder
-                counts_reduced = self.counts.sum(1)
-                counts_holder_reduced = counts_holder_reduced.sum(1)
-                counts_holder_reduced = np.divide(counts_holder_reduced, counts_reduced, out=np.zeros_like(counts_reduced), where=counts_holder_reduced != 0)
-            elif calc_type == "min":
-                counts_holder = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
-                counts_holder_reduced = counts_holder
-                counts_holder_reduced[counts_holder_reduced == 0] = 9999999
-                counts_holder_reduced = counts_holder_reduced.min(1)
-                counts_holder_reduced[counts_holder_reduced == 9999999] = 0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
-            elif calc_type == "max":
-                counts_holder = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
-                counts_holder_reduced = counts_holder.max(1)
-            return [counts_holder, counts_holder_reduced]
+            max_subpop = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            max_pop = max_subpop.max(1)
+            return [max_subpop, max_pop]
+        
+        def calc_min_matrices(self):
+            unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
+            min_subpop = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            min_pop = min_subpop
+            min_pop[min_pop == 0] = 9999999
+            min_pop = min_pop.min(1)
+            min_pop[min_pop == 9999999] = 0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
+            return [min_subpop, min_pop]
 
-
-        for calc_type in ["average", "min", "max"]:
-            
-            counts_holder = counts_holder_generator(calc_type)[0] #generate matrix vol/duration part of speed calc by subpop and hour
-                 
+        def flatten_subpops(self, subpop_matrix):
             names = ['elem', 'class', 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
             index = pd.MultiIndex.from_product(indexes, names=names)
-            counts_df = pd.DataFrame(counts_holder.flatten(), index=index)[0]
-            counts_df = counts_df.unstack(level='hour').sort_index()
-            counts_df = counts_df.reset_index().set_index('elem')
-            
-            key = f"{self.name}_{calc_type}_subpops"
-            
-            # get or join to link data
-            counts_df = self.elem_gdf.join(
-                counts_df, how="left"
-            )
-            # calculate speed
+            df = pd.DataFrame(subpop_matrix.flatten(), index=index)[0]
+            df = df.unstack(level='hour').sort_index()
+            df = df.reset_index().set_index('elem')
+            return df
+        
+        def calc_speeds(self, df): #converts 1/duration matrix into speeds by multiplying through by length
             for i in range(self.config.time_periods):
-                counts_df[i] = counts_df[i] * counts_df["length"]
-            
-            # add to results
-            self.result_dfs[key] = counts_df
-
-            key = f"{self.name}_{calc_type}"
-            
-            #generate matrix vol/duration part of speed calc by hour
-            counts_holder = counts_holder_generator(calc_type)[1] 
-
-            totals_df = pd.DataFrame(
-                data=counts_holder, index=self.elem_ids, columns=range(0, self.config.time_periods)
+                df[i] = df[i] * df["length"]
+            return df
+        
+        # Calc average at subpop level
+        key = f"{self.name}_average_subpops"
+        average_speeds = flatten_subpops(self, self.inverseduration_sum)
+        average_speeds = self.elem_gdf.join(average_speeds, how="left")
+        average_speeds = calc_speeds(self, average_speeds)
+        self.result_dfs[key] = average_speeds
+        
+        # Calc average at pop level
+        key = f"{self.name}_average"
+        average_speeds = calc_av_matrices(self)
+        average_speeds = pd.DataFrame(
+                data=average_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
-            
-            totals_df = self.elem_gdf.join(
-                totals_df, how="left")
-            
-            for i in range(self.config.time_periods):
-                totals_df[i] = totals_df[i] * totals_df["length"]
-            
-            self.result_dfs[key] = totals_df
+        average_speeds = self.elem_gdf.join(average_speeds, how="left")
+        average_speeds = calc_speeds(self, average_speeds)
+        self.result_dfs[key] = average_speeds
+        
+        # Calc max at subpop level
+        key = f"{self.name}_max_subpops"
+        max_speeds = flatten_subpops(self, calc_max_matrices(self)[0])
+        max_speeds = self.elem_gdf.join(max_speeds, how="left")
+        max_speeds = calc_speeds(self, max_speeds)
+        self.result_dfs[key] = max_speeds
+
+        # Calc max at pop level
+        key = f"{self.name}_max"
+        max_speeds = calc_max_matrices(self)[1]
+        max_speeds = pd.DataFrame(
+                data=max_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
+        max_speeds = self.elem_gdf.join(max_speeds, how="left")
+        max_speeds = calc_speeds(self, max_speeds)
+        self.result_dfs[key] = max_speeds
+
+        # Calc min at subpop level
+        key = f"{self.name}_min_subpops"
+        min_speeds = flatten_subpops(self, calc_min_matrices(self)[0])
+        min_speeds = self.elem_gdf.join(min_speeds, how="left")
+        min_speeds = calc_speeds(self, min_speeds)
+        self.result_dfs[key] = min_speeds
+
+        # Calc max at pop level
+        key = f"{self.name}_min"
+        min_speeds = calc_min_matrices(self)[1]
+        min_speeds = pd.DataFrame(
+                data=min_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
+        min_speeds = self.elem_gdf.join(min_speeds, how="left")
+        min_speeds = calc_speeds(self, min_speeds)
+        self.result_dfs[key] = min_speeds  
 
 class LinkPassengerCounts(EventHandlerTool):
     """
