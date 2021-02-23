@@ -261,12 +261,13 @@ include:
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
-The associated list attached to each handler allows specification of which options (typically modes
- of transport) should be processed using that handler. This allows certain handlers to be activated 
+The associated list attached to each handler allows specification of which transport modes should be processed using that handler. This allows certain handlers to be activated 
 for public transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, tram, ferry, ...``.
 * note that ``waiting_times`` only supports the option of ``["all"]``.
+
+Options can also be passed in a dictionary format, ie {modes=["car","bus"], path = "./tests/test_outputs", ...}.
 
 **#** plan_handlers.**[handler name]** *list of strings* *(optional)*
 
@@ -499,7 +500,7 @@ relevant workstations 'roster' of tools (ie `.tools`).
 New tool classes must correctly inherit and implement a number of values and methods so that they 
 play well with their respective workstation:
  
-* ``.__init__(self, config, option)``: Used for early validation of option and 
+* ``.__init__(self, config, mode)``: Used for early validation of mode and 
 subsequent requirements.
 * ``.build(self, resource=None)``: Used to process required output (assumes required resources are 
 available).

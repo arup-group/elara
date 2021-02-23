@@ -15,7 +15,7 @@ class Tool:
     Values:
         .requirements: list, of requirements that that must be provided by suppliers.
         .options_enabled: bool, for if requirements should carry through manager options.
-        .valid_options/.invalid_options: Optional lists for option validation at init.
+        .valid_modes/.invalid_modes: Optional lists for option validation at init.
         .resources: dict, of supplier resources collected with .build() method.
 
     Methods:
@@ -68,7 +68,7 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: [self.mode] for req in self.requirements}
+            requirements = {req: {'modes': [self.mode]} for req in self.requirements}
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -91,8 +91,8 @@ class Tool:
 
     def _validate_mode(self, mode: str) -> str:
         """
-        Validate option based on .valid_options and .invalid_option if not None.
-        Raises UserWarning if option is not in .valid_options or in .invalid_options.
+        Validate option based on .valid_modes and .invalid_mode if not None.
+        Raises UserWarning if option is not in .valid_modes or in .invalid_modes.
         :param option: str
         :return: str
         """
@@ -317,14 +317,10 @@ class WorkStation:
                 for manager_requirement, options in manager_requirements.items():
                     if manager_requirement == tool_name:
                         if options:
-                            if isinstance(options, dict):
-                                # if handler options are passed as dictionaries
-                                # split them between "mode" options and optional arguments
-                                optional_args = {key : options[key] for key in options if key != 'modes'}
-                                modes = options['modes']
-                            else:
-                                optional_args = None
-
+                            # split options between modes and optional arguments
+                            modes = options['modes']
+                            optional_args = {key : options[key] for key in options if key != 'modes'}
+                            
                             for mode in modes:
                                 # build unique key for tool initiated with option
                                 key = str(tool_name) + ':' + str(mode)
@@ -753,25 +749,22 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
         if req:
             tool_set.update(list(req))
     combined_reqs = {}
-
     for tool in tool_set:
         combined_reqs[tool] = {}
         if tool_set:
-            # collect unique modes
+            # collect unique mode dependencies
             modes = set()
             for req in reqs:
-                if req and req.get(tool):
-                    if isinstance(req.get(tool), dict):
-                        modes.update(req.get(tool)['modes'])
-                    else:
-                        modes.update(req[tool])
+                if req and req.get(tool):  
+                    modes.update(req[tool]['modes'])
+
             if modes:
+                print('----reqs:',reqs)
                 for req in reqs:
+                    # keep all arguments of current (in the loop) tool, but only pass "modes" argument to dependencies
                     if req and req.get(tool):
-                        if isinstance(req.get(tool), dict):
-                            combined_reqs[tool] = req.get(tool)
-                        
-                    combined_reqs[tool]['modes'] = list(modes)
+                        combined_reqs[tool] = req.get(tool)                        
+                combined_reqs[tool]['modes'] = list(modes)
             else:
                 combined_reqs[tool] = None
 
