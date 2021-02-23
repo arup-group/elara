@@ -189,7 +189,7 @@ class TemplateBenchmark(Tool):
     param2 = None
     param3 = None
 
-    def __init__(self, config, mode_map) -> None:
+    def __init__(self, config, mode) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
