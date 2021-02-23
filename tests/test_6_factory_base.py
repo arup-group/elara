@@ -24,7 +24,7 @@ class Config:
         pass
 
     def get_requirements(self):
-        return {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
+        return {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
 
 
 class ExampleTool(Tool):
@@ -198,10 +198,10 @@ def test_requirements(
     config_paths.connect([inputs_process], None)
 
     build(start)
-
+    print('start',start)
     assert equals(
         start.gather_manager_requirements(),
-        {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
+        {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
     )
     assert equals(
         post_process.gather_manager_requirements(),

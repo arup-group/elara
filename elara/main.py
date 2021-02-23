@@ -93,7 +93,7 @@ def link_vehicle_counts(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["link_vehicle_counts"] = list(modes)
+    override["event_handlers"]["link_vehicle_counts"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -113,7 +113,7 @@ def link_passenger_counts(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["link_passenger_counts"] = list(modes)
+    override["event_handlers"]["link_passenger_counts"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -133,7 +133,7 @@ def route_passenger_counts(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["route_passenger_counts"] = list(modes)
+    override["event_handlers"]["route_passenger_counts"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -153,7 +153,7 @@ def stop_passenger_counts(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["stop_passenger_counts"] = list(modes)
+    override["event_handlers"]["stop_passenger_counts"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -173,7 +173,7 @@ def stop_to_stop_passenger_counts(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["event_handlers"]["stop_to_stop_passenger_counts"] = list(modes)
+    override["event_handlers"]["stop_to_stop_passenger_counts"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -187,10 +187,10 @@ def plan_handlers():
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def mode_shares(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a mode share output for a given option. Example invocation for option "all" and
@@ -201,16 +201,16 @@ def mode_shares(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["mode_shares"] = list(options)
+    override["plan_handlers"]["mode_shares"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def leg_logs(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent leg logs output. Example invocation for option "all" is:
@@ -220,16 +220,16 @@ def leg_logs(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["leg_logs"] = list(options)
+    override["plan_handlers"]["leg_logs"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def trip_logs(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent trip logs output. Example invocation for option "all" is:
@@ -239,16 +239,16 @@ def trip_logs(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["trip_logs"] = list(options)
+    override["plan_handlers"]["trip_logs"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def utility_logs(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent plan utility output. Example invocation for option "all" is:
@@ -258,16 +258,16 @@ def utility_logs(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["utility_logs"] = list(options)
+    override["plan_handlers"]["utility_logs"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def plan_logs(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent plans output for a given option. Example invocation for sub-populations "a",
@@ -278,16 +278,16 @@ def plan_logs(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["plan_logs"] = list(options)
+    override["plan_handlers"]["plan_logs"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def agent_highway_distance_logs(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create an agent highways distances output for a given option. Example invocation for option "car" name
@@ -298,16 +298,16 @@ def agent_highway_distance_logs(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["agent_highway_distance_logs"] = list(options)
+    override["plan_handlers"]["agent_highway_distance_logs"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
 
 @plan_handlers.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def trip_highway_distance_logs(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a trip highways distances output for a given option. Example invocation for option "car" name
@@ -318,7 +318,7 @@ def trip_highway_distance_logs(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["trip_highway_distance_logs"] = list(options)
+    override["plan_handlers"]["trip_highway_distance_logs"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -352,10 +352,10 @@ def vkt(
 
 
 @post_processors.command()
-@click.argument('options', nargs=-1, type=click.STRING, required=True)
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def plan_summary(
-        options, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
     """
     Create a Plan Summary output. Example invocation for option "all", name
@@ -366,7 +366,7 @@ def plan_summary(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["post_processors"]["plan_summary"] = list(options)
+    override["post_processors"]["plan_summary"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -394,7 +394,7 @@ def london_central_cordon(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["benchmarks"]["london_central_cordon_car"] = list(modes)
+    override["benchmarks"]["london_central_cordon_car"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -414,7 +414,7 @@ def london_modeshares(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["benchmarks"]["london_modeshares"] = list(modes)
+    override["benchmarks"]["london_modeshares"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -434,7 +434,7 @@ def ireland_highways(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["benchmarks"]["ireland_highways"] = list(modes)
+    override["benchmarks"]["ireland_highways"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -454,7 +454,7 @@ def london_rods_stops(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["benchmarks"]["london_board_alight_subway"] = list(modes)
+    override["benchmarks"]["london_board_alight_subway"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
@@ -474,7 +474,7 @@ def london_rods_volumes(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["benchmarks"]["london_volume_subway"] = list(modes)
+    override["benchmarks"]["london_volume_subway"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 

@@ -66,26 +66,18 @@ class Config:
             self.logger.debug(f' Loading default config')
             self.settings = self.default_settings
 
-        # convert settings to dictionary
+        # convert list-format handler arguments to dictionary
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
             for handler in self.settings.get(handler_group):
                 if handler:
                     options = self.settings[handler_group][handler]
-                    # if options is None:                        
-                    #     self.settings[handler_group][handler] = {'modes': ['all']}
                     if isinstance(options, list):
                         self.settings[handler_group][handler] = {'modes': options}
                     elif isinstance(options, dict):
+                        # if no modes option is specified, assume "all"
                         if 'modes' not in options:
                             self.settings[handler_group][handler] = {'modes': ['all']}
 
-        print(self.settings)
-
-# tr = deepcopy(t)
-# for section in tr:
-#     for handler in tr[section]:
-#         if isinstance(tr[section][handler], list):
-#             tr[section][handler] = {'modes':tr[section][handler]}
 
         self.load_required_settings()
 
