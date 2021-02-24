@@ -759,7 +759,6 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
                     modes.update(req[tool]['modes'])
 
             if modes:
-                print('----reqs:',reqs)
                 for req in reqs:
                     # keep all arguments of current (in the loop) tool, but only pass "modes" argument to dependencies
                     if req and req.get(tool):
