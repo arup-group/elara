@@ -72,13 +72,13 @@ class TemplateEventHandler(EventHandlerTool):
         '3',
     ]
 
-    def __init__(self, config, option=None) -> None:
+    def __init__(self, config, mode=None) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.data1 = None
         self.data2 = None
@@ -87,7 +87,7 @@ class TemplateEventHandler(EventHandlerTool):
         self.result_dfs = dict()  # Result geodataframes ready to export
 
     def __str__(self):
-        return f'<INSERT NAME> mode: {self.option}'
+        return f'<INSERT NAME> mode: {self.mode}'
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> None:
         """
@@ -146,15 +146,15 @@ class TemplatePostProcessor(PostProcessor):
     """
 
     requirements = ['typically a handler']
-    valid_options = ['eg', 'car', 'bus', 'train', 'subway', 'ferry']
+    valid_modes = ['eg', 'car', 'bus', 'train', 'subway', 'ferry']
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         Optional pre processing at init (for validation/early fail)
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         # prepare post processor
 
@@ -189,14 +189,14 @@ class TemplateBenchmark(Tool):
     param2 = None
     param3 = None
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         # prepare benchmark
 

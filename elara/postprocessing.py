@@ -11,9 +11,9 @@ class PostProcessor(Tool):
 
     options_enabled = True
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
     def breakdown(self, data, bins, labels, colnames, write_path):
         """
@@ -49,7 +49,7 @@ class PlanTimeSummary(PostProcessor):
     requirements = [
         'leg_logs',
     ]
-    valid_options = ['all']
+    valid_modes = ['all']
 
     hierarchy = None
 
@@ -59,11 +59,11 @@ class PlanTimeSummary(PostProcessor):
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        file_name = f"leg_logs_{self.option}_legs.csv"
+        file_name = f"leg_logs_{self.mode}_legs.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         legs_df = pd.read_csv(file_path, index_col=0)
 
-        file_name = f"leg_logs_{self.option}_activities.csv"
+        file_name = f"leg_logs_{self.mode}_activities.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         activity_df = pd.read_csv(file_path, index_col=0)
 
@@ -144,14 +144,14 @@ class TripDurationBreakdown(PostProcessor):
         - ... 
     """
     requirements = ['trip_logs']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     def build(self, resource: dict, write_path=None):
 
         super().build(resource, write_path=write_path)
 
         # read trip logs
-        file_name = f"trip_logs_{self.option}_trips.csv"
+        file_name = f"trip_logs_{self.mode}_trips.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         trips_df = pd.read_csv(file_path)
 
@@ -173,15 +173,15 @@ class TripEuclidDistanceBreakdown(PostProcessor):
         - ... 
     """
     requirements = ['trip_logs']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     def build(self, resource: dict, write_path=None):
 
         super().build(resource, write_path=write_path)
-        mode = self.option
+        mode = self.mode
 
         # read trip logs
-        file_name = f"trip_logs_{self.option}_trips.csv"
+        file_name = f"trip_logs_{self.mode}_trips.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         trips_df = pd.read_csv(file_path)
 
@@ -200,12 +200,12 @@ class VKT(PostProcessor):
     requirements = ['link_vehicle_counts']
 
     def __str__(self):
-        return f'VKT PostProcessor mode: {self.option}'
+        return f'VKT PostProcessor mode: {self.mode}'
 
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        mode = self.option
+        mode = self.mode
 
         file_name = f"link_vehicle_counts_{mode}.geojson"
         file_path = os.path.join(self.config.output_path, file_name)

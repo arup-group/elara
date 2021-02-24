@@ -57,8 +57,8 @@ class BenchmarkTool(Tool):
 
     options_enabled = True
 
-    def __init__(self, config, option=None):
-        super().__init__(config, option)
+    def __init__(self, config, mode=None):
+        super().__init__(config, mode)
         self.logger = logging.getLogger(__name__)
 
     def __str__(self):
@@ -73,9 +73,9 @@ class CsvComparison(BenchmarkTool):
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
-    def __init__(self, config, option):
-        super().__init__(config, option)
-        self.mode = option
+    def __init__(self, config, mode):
+        super().__init__(config, mode)
+        self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -111,10 +111,22 @@ class CsvComparison(BenchmarkTool):
         df.plot(kind="bar", figsize=(17,12)).get_figure().\
             savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
 
+class DurationComparison(CsvComparison):
+    def __init__(self, config, mode, benchmark_data_path=None):
+        super().__init__(config, mode)
+        self.benchmark_data_path = benchmark_data_path
+
+    requirements = ['trip_duration_breakdown']
+    valid_modes = ['all']
+    index_field = ['duration']
+    value_field = 'trips'
+    name = 'test'
+    simulation_name = 'trip_duration_breakdown_all.csv'
+    weight = 1
 
 class TestDurationComparison(CsvComparison):
     requirements = ['trip_duration_breakdown']
-    valid_options = ['all']
+    valid_modes = ['all']
     index_field = ['duration']
     value_field = 'trips'
     name = 'test'
@@ -125,7 +137,7 @@ class TestDurationComparison(CsvComparison):
 
 class TestEuclideanDistanceComparison(CsvComparison):
     requirements = ['trip_euclid_distance_breakdown']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     index_field = ['euclidean_distance']
     value_field = 'trips'
@@ -144,15 +156,15 @@ class LinkCounter(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.mode = option
+        self.mode = mode
         
         self.logger.info(
             f"Initiating {str(self)}"
@@ -399,7 +411,7 @@ class TestCordon(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car', 'bus']
+    valid_modes = ['car', 'bus']
     options_enabled = True
 
     weight = 1
@@ -413,7 +425,7 @@ class IrelandHighwayCounters(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
 
     options_enabled = True
 
@@ -427,7 +439,7 @@ class IrelandHighwayCounters_DCC(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
 
     options_enabled = True
 
@@ -441,7 +453,7 @@ class NIHighwayCounters(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
     options_enabled = True
 
     weight = 1
@@ -455,7 +467,7 @@ class LondonCentralCordonCar(LinkCounter):
 
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
 
     options_enabled = True
 
@@ -470,7 +482,7 @@ class LondonCentralCordonBus(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['bus']
+    valid_modes = ['bus']
     options_enabled = True
 
     weight = 1
@@ -484,7 +496,7 @@ class LondonInnerCordonCar(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
     options_enabled = True
 
     weight = 1
@@ -498,7 +510,7 @@ class LondonInnerCordonBus(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['bus']
+    valid_modes = ['bus']
     options_enabled = True
 
     weight = 1
@@ -512,7 +524,7 @@ class LondonInnerCordonBus(LinkCounter):
 #     )
 
 #     requirements = ['volume_counts']
-#     valid_options = ['car']
+#     valid_modes = ['car']
 #     options_enabled = True
 
 #     weight = 1
@@ -526,7 +538,7 @@ class LondonInnerCordonBus(LinkCounter):
 #     )
 
 #     requirements = ['volume_counts']
-#     valid_options = ['bus']
+#     valid_modes = ['bus']
 #     options_enabled = True
 
 #     weight = 1
@@ -540,7 +552,7 @@ class LondonThamesScreenCar(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
     options_enabled = True
 
     weight = 1
@@ -554,7 +566,7 @@ class LondonThamesScreenBus(LinkCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['bus']
+    valid_modes = ['bus']
     options_enabled = True
 
     weight = 1
@@ -568,7 +580,7 @@ class LondonThamesScreenBus(LinkCounter):
 #     )
 
 #     requirements = ['volume_counts']
-#     valid_options = ['car', 'bus']
+#     valid_modes = ['car', 'bus']
 #     options_enabled = True
 
 #     weight = 1
@@ -582,7 +594,7 @@ class LondonThamesScreenBus(LinkCounter):
 #     )
 
 #     requirements = ['volume_counts']
-#     valid_options = ['car', 'bus']
+#     valid_modes = ['car', 'bus']
 #     options_enabled = True
 
 #     weight = 1
@@ -597,16 +609,16 @@ class TransitInteraction(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         PT Interaction (boardings and alightings) benchmarker for json formatted {mode: {id: {dir: {
         nodes: [], counts: {}}}}}.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.mode = option
+        self.mode = mode
 
         self.logger.info(
             f"Initiating {str(self)}"
@@ -854,7 +866,7 @@ class TestPTInteraction(TransitInteraction):
     )
 
     requirements = ['stop_passenger_counts']
-    valid_options = ['bus']
+    valid_modes = ['bus']
     options_enabled = True
 
     weight = 1
@@ -868,7 +880,7 @@ class LondonRODS(TransitInteraction):
     )
 
     requirements = ['stop_passenger_counts']
-    valid_options = ['subway']
+    valid_modes = ['subway']
     options_enabled = True
 
     weight = 1
@@ -883,7 +895,7 @@ class PassengerStopToStop(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         PT Volume count (between stops) benchmarker for json formatted
         {mode: {o: {d: {
@@ -893,11 +905,11 @@ class PassengerStopToStop(BenchmarkTool):
         line: str
         }}}}.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.mode = option
+        self.mode = mode
 
         self.logger.info(
             f"Initiating {self.__str__()}"
@@ -1141,7 +1153,7 @@ class TestPTVolume(PassengerStopToStop):
     )
 
     requirements = ['stop_to_stop_passenger_counts']
-    valid_options = ['bus']
+    valid_modes = ['bus']
     options_enabled = True
 
     weight = 1
@@ -1155,7 +1167,7 @@ class LondonRODSVolume(PassengerStopToStop):
     )
 
     requirements = ['stop_to_stop_passenger_counts']
-    valid_options = ['subway']
+    valid_modes = ['subway']
     options_enabled = True
 
     weight = 1
@@ -1170,16 +1182,16 @@ class PointsCounter(BenchmarkTool):
     benchmark_data_path = None
     requirements = ['volume_counts']
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         Points Counter parent object used for highways traffic counter networks (ie 'coils' or
         'loops').
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
-        self.mode = option
+        self.mode = mode
 
         with open(self.benchmark_data_path) as json_file:
             self.link_counts = json.load(json_file)
@@ -1317,18 +1329,18 @@ class Cordon(BenchmarkTool):
     hours = None
     modes = None
 
-    def __init__(self, config, option) -> None:
+    def __init__(self, config, mode) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.cordon_counts = []
 
-        self.mode = option
+        self.mode = mode
 
         counts_df = pd.read_csv(self.benchmark_path)
         links_df = pd.read_csv(self.cordon_path, index_col=0)
@@ -1381,7 +1393,7 @@ class CordonDirectionCount(BenchmarkTool):
         :param counts_df: DataFrame of all benchmark counts for cordon
         :param links_df: DataFrame of cordon-count to links
         """
-        super().__init__(config=None, option=None)
+        super().__init__(config=None, mode=None)
 
         self.cordon_name = parent.name
         self.config = parent.config
@@ -1612,13 +1624,13 @@ class ModeStats(BenchmarkTool):
 
     benchmark_path = None
 
-    def __init__(self, config, option):
+    def __init__(self, config, mode):
         """
         ModeStat parent object for benchmarking with mode share data.
         :param config: Config object
-        :param option: str, mode
+        :param mode: str, mode
         """
-        super().__init__(config, option)
+        super().__init__(config, mode)
 
         self.benchmark_df = pd.read_csv(self.benchmark_path,
                                         header=None,
@@ -1663,7 +1675,7 @@ class ModeStats(BenchmarkTool):
 class LondonModeShare(ModeStats):
 
     requirements = ['mode_shares']
-    valid_options = ['all']
+    valid_modes = ['all']
     options_enabled = True
 
     weight = 2
@@ -1674,7 +1686,7 @@ class LondonModeShare(ModeStats):
 class ROIModeShare(ModeStats):
 
     requirements = ['mode_shares']
-    valid_options = ['all']
+    valid_modes = ['all']
     options_enabled = True
 
     weight = 2
@@ -1693,7 +1705,7 @@ class TestHighwayCounters(PointsCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car', 'bus']
+    valid_modes = ['car', 'bus']
     options_enabled = True
 
     weight = 1
@@ -1706,7 +1718,7 @@ class SqueezeTownHighwayCounters(PointsCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car', 'bus']
+    valid_modes = ['car', 'bus']
     options_enabled = True
 
     weight = 1
@@ -1717,7 +1729,7 @@ class SqueezeTownHighwayCounters(PointsCounter):
 class MultimodalTownModeShare(ModeStats):
 
     requirements = ['mode_shares']
-    valid_options = ['all']
+    valid_modes = ['all']
     options_enabled = True
 
     weight = 1
@@ -1734,7 +1746,7 @@ class MultimodalTownCarCounters(PointsCounter):
     )
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car', 'bus']
+    valid_modes = ['car', 'bus']
     options_enabled = True
 
     weight = 1
@@ -1745,7 +1757,7 @@ class MultimodalTownCarCounters(PointsCounter):
 # class LondonInnerCordonCar(Cordon):
 
 #     requirements = ['volume_counts']
-#     valid_options = ['car']
+#     valid_modes = ['car']
 #     options_enabled = True
 
 #     weight = 1
@@ -1766,7 +1778,7 @@ class MultimodalTownCarCounters(PointsCounter):
 class DublinCanalCordonCar(Cordon):
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
     options_enabled = True
 
     weight = 1
@@ -1787,7 +1799,7 @@ class DublinCanalCordonCar(Cordon):
 class IrelandCommuterStats(ModeStats):
 
     requirements = ['mode_shares']
-    valid_options = ['all']
+    valid_modes = ['all']
     options_enabled = True
 
     weight = 1
@@ -1799,7 +1811,7 @@ class IrelandCommuterStats(ModeStats):
 class TestTownHourlyCordon(Cordon):
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
     options_enabled = True
 
     weight = 1
@@ -1820,7 +1832,7 @@ class TestTownHourlyCordon(Cordon):
 class TestTownPeakIn(Cordon):
 
     requirements = ['link_vehicle_counts']
-    valid_options = ['car']
+    valid_modes = ['car']
     options_enabled = True
 
     weight = 1
@@ -1841,7 +1853,7 @@ class TestTownPeakIn(Cordon):
 class TestTownCommuterStats(ModeStats):
 
     requirements = ['mode_shares']
-    valid_options = ['all']
+    valid_modes = ['all']
     options_enabled = True
 
     weight = 1
@@ -1863,6 +1875,7 @@ class BenchmarkWorkStation(WorkStation):
         "test_town_modeshare": TestTownCommuterStats,
         "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
         "test_duration_comparison": TestDurationComparison,
+        "duration_comparison": DurationComparison,
 
         # latest
         "ireland_highways": IrelandHighwayCounters,
