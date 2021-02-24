@@ -99,7 +99,7 @@ def input_manager(test_config, test_paths):
 @pytest.fixture
 def base_handler(test_config, input_manager):
     base_handler = event_handlers.EventHandlerTool(test_config, 'car')
-    assert base_handler.option == 'car'
+    assert base_handler.mode == 'car'
     base_handler.build(input_manager.resources)
     return base_handler
 
@@ -377,7 +377,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
     for elem in events:
         handler.process_event(elem)
 
-    assert handler.option.lower() == 'bus'
+    assert handler.mode.lower() == 'bus'
     assert handler.config.scale_factor == 0.0001
 
     handler.finalise()
@@ -609,8 +609,8 @@ def test_passenger_count_finalise_bus(
 
 def test_route_passenger_count_handler_rejects_car_as_mode():
     with pytest.raises(UserWarning) as ex_info:
-        event_handlers.RoutePassengerCounts(config=test_config, option='car')
-    assert "Invalid option: car at tool" in str(ex_info.value)
+        event_handlers.RoutePassengerCounts(config=test_config, mode='car')
+    assert "Invalid mode option: car at tool" in str(ex_info.value)
 
 
 def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, events):
@@ -921,7 +921,7 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='bus')
+    event_workstation.load_all_tools(mode='bus')
     event_workstation.build(write_path=test_outputs)
 
     for handler_name, handler in event_workstation.resources.items():

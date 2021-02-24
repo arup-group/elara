@@ -47,12 +47,12 @@ def test_config_dependencies():
 def test_requirements_workstation(test_config):
     requirements = RequirementsWorkStation(test_config)
     assert requirements.gather_manager_requirements() == {
-        'mode_shares': ['all'],
-        'link_passenger_counts': ['bus', 'train'],
-        'stop_passenger_counts': ['bus', 'train'],
-        'vkt': ['car'],
-        'link_vehicle_counts': ['car'],
-        'test_town_cordon': ['car'],
+        'mode_shares': {'modes':['all']},
+        'link_passenger_counts': {'modes':['bus', 'train']},
+        'stop_passenger_counts': {'modes':['bus', 'train']},
+        'vkt': {'modes':['car']},
+        'link_vehicle_counts': {'modes':['car']},
+        'test_town_cordon': {'modes':['car']},
     }
 
 

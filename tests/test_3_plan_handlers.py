@@ -100,7 +100,7 @@ def input_manager_v12(test_config_v12, test_paths_v12):
 @pytest.fixture
 def base_handler(test_config, input_manager):
     base_handler = plan_handlers.PlanHandlerTool(test_config, 'all')
-    assert base_handler.option == 'all'
+    assert base_handler.mode == 'all'
     base_handler.build(input_manager.resources, write_path=test_outputs)
     return base_handler
 
@@ -108,7 +108,7 @@ def base_handler(test_config, input_manager):
 @pytest.fixture
 def base_handler_v12(test_config_v12, input_manager):
     base_handler = plan_handlers.PlanHandlerTool(test_config_v12, 'all')
-    assert base_handler.option == 'all'
+    assert base_handler.mode == 'all'
     base_handler.build(input_manager.resources, write_path=test_outputs)
     return base_handler
 
