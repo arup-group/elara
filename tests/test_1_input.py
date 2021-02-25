@@ -297,7 +297,9 @@ def test_loading_network_with_complex_geometry(test_xml_simplified_network, test
     network.build(test_paths.resources)
     assert len(network.link_gdf) == 8
     assert len(network.node_gdf) == 5
-    assert network.link_gdf['geometry'].apply(lambda x: list(x.coords)).to_list() == [
+
+    tolerance = 8
+    correct_coords = [
         [(-0.1403892118791123, 51.517816929581734), (-0.14032602928632185, 51.51781909041342),
          (-0.1402952968723176, 51.51781246963323), (-0.140266850823084, 51.51779638128217),
          (-0.140245383287218, 51.517775712545316)],
@@ -314,6 +316,10 @@ def test_loading_network_with_complex_geometry(test_xml_simplified_network, test
         [(-7.417545678424332, 49.773439508592794), (-7.41892824926648, 49.77337466402741)],
         [(-0.13237809053619856, 51.50920190350734), (-0.13148519539355796, 51.50804017486844),
          (-0.13237809053619856, 51.50920190350734)]]
+
+    assert [[(round(tup[0], tolerance), round(tup[1], tolerance)) for tup in elem] for elem in
+            network.link_gdf['geometry'].apply(lambda x: list(x.coords)).to_list()] == [
+               [(round(tup[0], tolerance), round(tup[1], tolerance)) for tup in coords] for coords in correct_coords]
 
 
 # OSMWay
