@@ -39,6 +39,14 @@ def test_xml_config_v12():
 
 
 @pytest.fixture
+def test_xml_simplified_network():
+    config_path = os.path.join(test_dir, 'test_simplified_network_scenario.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+@pytest.fixture
 def test_gzip_config():
     config_path = os.path.join(test_dir, 'test_gzip_scenario.toml')
     config = Config(config_path)
@@ -265,6 +273,9 @@ def test_hierarchy_get_(modes, mode):
 
 # Network
 def test_loading_xml_network(test_xml_config, test_paths):
+    # this test uses a network.xml.gz, it is not testing loading a network.xml file
+    # the input files are actually identical to the gzip scenario but I don't understand
+    # enough to do anything about it // Kasia Feb 25th 2021
     network = inputs.Network(test_xml_config)
     network.build(test_paths.resources)
     assert len(network.link_gdf) == 8
@@ -276,12 +287,32 @@ def test_loading_gzip_network(test_gzip_config, test_zip_paths):
     network.build(test_zip_paths.resources)
     assert len(network.link_gdf) == 8
     assert len(network.node_gdf) == 5
-
-    
-def test_loading_gzip_network(test_gzip_config, test_zip_paths):
-    network = inputs.Network(test_gzip_config)
-    network.build(test_zip_paths.resources)
     assert network.mode_to_links_map == {'bus': {'2-3', '1-2', '3-4', '2-1', '5-1', '3-2', '1-5', '4-3'}, 'car': {'2-3', '1-2', '3-4', '2-1', '5-1', '3-2', '1-5', '4-3'}}
+
+
+def test_loading_network_with_complex_geometry(test_xml_simplified_network, test_paths):
+    network = inputs.Network(test_xml_simplified_network)
+    test_paths.resources['network_path'].path = test_xml_simplified_network.network_path
+    network.build(test_paths.resources)
+    assert len(network.link_gdf) == 8
+    assert len(network.node_gdf) == 5
+    assert network.link_gdf['geometry'].apply(lambda x: list(x.coords)).to_list() ==\
+           [[(-0.1403892118791123, 51.517816929581734), (-0.14032602928632185, 51.51781909041342),
+             (-0.1402952968723176, 51.51781246963323), (-0.140266850823084, 51.51779638128217),
+             (-0.140245383287218, 51.517775712545316)],
+            [(-7.557159806905189, 49.766807235142615), (-7.567451710645153, 49.85632405463851)],
+            [(-0.1475142186110153, 51.51658412793532), (-0.14754546505671687, 51.51665306860732),
+             (-0.14780688134124575, 51.51722872469941), (-0.14810407318283295, 51.51786112933848),
+             (-0.14858752220849442, 51.5189557242561), (-0.14860024582236223, 51.51898466472551),
+             (-0.14861132897908963, 51.51900903512551), (-0.14865244681035394, 51.51909280476233)],
+            [(-7.555777743594833, 49.76687372248375), (-7.41892824926648, 49.77337466402741)],
+            [(-0.1552162791955049, 51.51474587606497), (-0.15509310247754937, 51.51439096378744),
+             (-0.15510337157060158, 51.51436480295138), (-0.15512502057492397, 51.514350818529415),
+             (-0.155156200823716, 51.51433946828442), (-0.15621461648473414, 51.51424125833044)],
+            [(-7.41892824926648, 49.77337466402741), (-7.417545678424332, 49.773439508592794)],
+            [(-7.417545678424332, 49.773439508592794), (-7.41892824926648, 49.77337466402741)],
+            [(-0.13237809053619856, 51.50920190350734), (-0.13148519539355796, 51.50804017486844),
+             (-0.13237809053619856, 51.50920190350734)]]
 
 
 # OSMWay
