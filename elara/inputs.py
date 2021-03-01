@@ -11,6 +11,7 @@ import logging
 from collections import defaultdict
 
 from elara.factory import WorkStation, Tool
+from elara.helpers import decode_polyline_to_shapely_linestring
 
 WGS_84 = pyproj.Proj("epsg:4326")
 
@@ -168,10 +169,13 @@ class Network(InputTool):
         from_id = str(elem.get("from"))
         to_id = str(elem.get("to"))
 
-        from_point = node_lookup[from_id]["geometry"]
-        to_point = node_lookup[to_id]["geometry"]
-
-        geometry = LineString([from_point, to_point])
+        geometry = elem.find('.//attribute[@name="geometry"]')
+        if geometry is not None:
+            geometry = decode_polyline_to_shapely_linestring(geometry.text)
+        else:
+            from_point = node_lookup[from_id]["geometry"]
+            to_point = node_lookup[to_id]["geometry"]
+            geometry = LineString([from_point, to_point])
 
         return {
             "id": str(elem.get("id")),
