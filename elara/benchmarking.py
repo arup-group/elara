@@ -421,7 +421,7 @@ class IrelandHighwayCounters(LinkCounter):
 
     name = 'ireland_highways_counters'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'ireland_highways_counters_13jan21_2016.json')
+        os.path.join('ireland', 'highways', 'car_highways_counters_20210302.json')
     )
 
     requirements = ['link_vehicle_counts']
@@ -435,7 +435,7 @@ class IrelandHighwayCounters_DCC(LinkCounter):
 
     name = 'ireland_highways_counters_DCC'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', 'car_highways_counters_DCC_20210125.json')
+        os.path.join('ireland', 'dublin_cordon', 'car_highways_counters_DCC.json')
     )
 
     requirements = ['link_vehicle_counts']
@@ -449,7 +449,7 @@ class NIHighwayCounters(LinkCounter):
 
     name = 'ireland_highways_counters_NI'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'NI_highways_counters.json')
+        os.path.join('ireland', 'highways', 'NI_car_20210302.json')
     )
 
     requirements = ['link_vehicle_counts']
