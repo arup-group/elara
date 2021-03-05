@@ -23,72 +23,72 @@
 		<link id="1-2" from="1" to="2" length="100.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="1-5" from="1" to="5" length="10000.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="2-1" from="2" to="1" length="100.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="2-3" from="2" to="3" length="10000.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="3-2" from="3" to="2" length="10000.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="3-4" from="3" to="4" length="100.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="4-3" from="4" to="3" length="100.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:highway" class="java.lang.String" >trunk</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:highway" class="java.lang.String" >trunk</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 		<link id="5-1" from="5" to="1" length="10000.0" freespeed="22.0" capacity="1000.0" permlanes="1.0" oneway="1" modes="bus,car" >
 			<attributes>
 				<attribute name="osm:relation:route" class="java.lang.String" >bus,road</attribute>
-				<attribute name="osm:way:id" class="java.lang.Long" >253252840</attribute>
-				<attribute name="osm:way:lanes" class="java.lang.String" >2</attribute>
-				<attribute name="osm:way:oneway" class="java.lang.String" >yes</attribute>
+				<attribute name="osm:id" class="java.lang.Long" >253252840</attribute>
+				<attribute name="osm:lanes" class="java.lang.String" >2</attribute>
+				<attribute name="osm:oneway" class="java.lang.String" >yes</attribute>
 			</attributes>
 		</link>
 	</links>
