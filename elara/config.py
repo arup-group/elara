@@ -312,7 +312,7 @@ class Config:
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
             for handler in self.settings.get(handler_group):
                 if handler in renaming_dict.keys():                      
-                    self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{rename_dict[handler]}"?') 
+                    self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
     def override(self, path_override):
         """
