@@ -229,7 +229,7 @@ class OSMWays(InputTool):
         """
 
         # for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
-        for name in ['osm:highway', 'osm:railway', 'osm:network']:
+        for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
             attribute = elem.find('.//attribute[@name="{}"]'.format(name))
             if attribute is not None:
                 attribute = attribute.text
