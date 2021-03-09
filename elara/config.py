@@ -307,7 +307,7 @@ class Config:
             'passenger_counts':'link_passenger_counts',
             'volume_counts':'link_vehicle_counts',
             'stop_interactions':'stop_passenger_counts',
-            'waiting_times':'stop_passenger_waiting'
+            'waiting_times':'stop_passenger_waiting',
             'mode_share':'mode_shares'
         }
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
