@@ -100,6 +100,7 @@ class Config:
         self.logger.debug(f'Required Post Processors = {self.post_processors}')
         self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
         self.logger.debug(f'Contract = {self.contract}')
+        self.check_handler_renamed()                      
 
     def load_required_settings(self):
 
@@ -294,6 +295,25 @@ class Config:
         if not isinstance(inp, str):
             raise ConfigError('Configured CRS should be string format, for example: "EPSG:27700"')
         return inp
+
+    def check_handler_renamed(self):
+        """
+        Return a warning if the user has requested a handler that was renamed as part of this PR:
+        https://github.com/arup-group/elara/pull/81
+
+        """
+        renaming_dict = {
+            'volume_counts':'link_vehicle_counts',
+            'passenger_counts':'link_passenger_counts',
+            'volume_counts':'link_vehicle_counts',
+            'stop_interactions':'stop_passenger_counts',
+            'waiting_times':'stop_passenger_waiting',
+            'mode_share':'mode_shares'
+        }
+        for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
+            for handler in self.settings.get(handler_group):
+                if handler in renaming_dict.keys():                      
+                    self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
     def override(self, path_override):
         """
