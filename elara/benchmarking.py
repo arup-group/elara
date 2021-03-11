@@ -435,7 +435,7 @@ class IrelandHighwayCounters_DCC(LinkCounter):
 
     name = 'ireland_highways_counters_DCC'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', 'car_highways_counters_DCC.json')
+        os.path.join('ireland', 'dublin_cordon', 'car_highways_counters_DCC_20210304.json')
     )
 
     requirements = ['link_vehicle_counts']
