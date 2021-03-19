@@ -521,10 +521,10 @@ class LinkVehicleSpeeds(EventHandlerTool):
                                 self.config.time_periods))
 
         # Initialise duration cummulative sum table
-        self.durations = np.zeros((len(self.elem_indices),
-                                len(self.classes),
-                                self.config.time_periods))
-
+        self.inverseduration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        
         self.link_tracker = dict() #{(agent,link):start_time}
 
     def process_event(self, elem) -> None:
@@ -553,14 +553,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
         """
 
         event_type = elem.get("type")
-        if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
+        if event_type == "entered link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type , start_time)
 
-        elif (event_type == "vehicle leaves traffic") or (event_type == "left link"):
+        elif event_type == "left link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
@@ -568,25 +568,36 @@ class LinkVehicleSpeeds(EventHandlerTool):
                 attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
-                start_time = self.link_tracker[ident][1]
-                start_event_type = self.link_tracker[ident][0]
-                x, y, z = table_position(
-                    self.elem_indices,
-                    self.class_indices,
-                    self.config.time_periods,
-                    link,
-                    attribute_class,
-                    start_time
-                )
-                # if vehicle entering or leaving traffic, agent placed halfway along link. Therefore need to double duration.
-                # Assuming in the case that vehicle enters and leaves traffic on same link then still only doubled not quadrupled.
-                if (start_event_type == "vehicle enters traffic") or (event_type == "vehicle leaves traffic"):
-                    duration = (end_time - start_time) * 2
-                else:
+                if ident in self.link_tracker: #if person not in link tracker, this means they've entered link via "vehicle enters traffic event" and should be ignored.
+                    start_time = self.link_tracker[ident][1]
+                    start_event_type = self.link_tracker[ident][0]
+                    x, y, z = table_position(
+                        self.elem_indices,
+                        self.class_indices,
+                        self.config.time_periods,
+                        link,
+                        attribute_class,
+                        start_time
+                    )
+
                     duration = end_time - start_time
 
-                self.counts[x, y, z] += 1
-                self.durations[x, y, z] += duration
+                    self.counts[x, y, z] += 1
+                    
+                    if duration != 0:
+                        self.inverseduration_sum[x, y, z] += 1/duration
+                    
+                    self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
+
+                    if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
+                        self.duration_min[x, y, z] = duration
+                    else:
+                        self.duration_min[x, y, z] = min(duration, self.duration_min[x, y, z])
+                    
+                else:
+                    pass
+
+        
     
     def finalise(self) -> None:
         """
@@ -595,47 +606,91 @@ class LinkVehicleSpeeds(EventHandlerTool):
         create dataframes.
         """
 
-        # speed = vehcounts*linklength/totalduration and convert from m/s to km/h
-        self.counts = np.divide(self.counts, self.durations, out=np.zeros_like(self.counts), where=self.durations!=0) * 3.6
-        # above code avoid divide by zero warnings
-
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index('elem')
+        def calc_av_matrices(self):
+            counts_pop = self.counts.sum(1)
+            duration_pop = self.inverseduration_sum.sum(1)
+            av_pop = np.divide(duration_pop, counts_pop, out=np.zeros_like(counts_pop), where=duration_pop != 0)
+            return av_pop
         
-        key = f"{self.name}_subpops"
+        def calc_max_matrices(self):            
+            unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
+            max_subpop = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            max_pop = max_subpop.max(1)
+            return [max_subpop, max_pop]
         
-        # get or join to link data
-        counts_df = self.elem_gdf.join(
-            counts_df, how="left"
-        )
-        # calculate speed
-        for i in range(self.config.time_periods):
-                    counts_df[i] = counts_df[i] * counts_df["length"]
+        def calc_min_matrices(self):
+            unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
+            min_subpop = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            min_pop = min_subpop
+            min_pop[min_pop == 0] = 9999999
+            min_pop = min_pop.min(1)
+            min_pop[min_pop == 9999999] = 0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
+            return [min_subpop, min_pop]
+
+        def flatten_subpops(self, subpop_matrix):
+            names = ['elem', 'class', 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            df = pd.DataFrame(subpop_matrix.flatten(), index=index)[0]
+            df = df.unstack(level='hour').sort_index()
+            df = df.reset_index().set_index('elem')
+            return df
         
-        # add to results
-        self.result_dfs[key] = counts_df
-
-        # calc sum across all recorded attribute classes
-        self.counts = self.counts.sum(1)
-
-        totals_df = pd.DataFrame(
-            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
-        ).sort_index()
-
-        del self.counts
-
-        key = f"{self.name}"
-        totals_df = self.elem_gdf.join(
-            totals_df, how="left"
-        )
-        for i in range(self.config.time_periods):
-            totals_df[i] = totals_df[i] * totals_df["length"]
+        def calc_speeds(self, df): #converts 1/duration matrix into speeds by multiplying through by length
+            for i in range(self.config.time_periods):
+                df[i] = df[i] * df["length"]
+            return df
         
-        self.result_dfs[key] = totals_df
+        # Calc average at subpop level
+        key = f"{self.name}_average_subpops"
+        average_speeds = flatten_subpops(self, self.inverseduration_sum)
+        average_speeds = self.elem_gdf.join(average_speeds, how="left")
+        average_speeds = calc_speeds(self, average_speeds)
+        self.result_dfs[key] = average_speeds
+        
+        # Calc average at pop level
+        key = f"{self.name}_average"
+        average_speeds = calc_av_matrices(self)
+        average_speeds = pd.DataFrame(
+                data=average_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
+        average_speeds = self.elem_gdf.join(average_speeds, how="left")
+        average_speeds = calc_speeds(self, average_speeds)
+        self.result_dfs[key] = average_speeds
+        
+        # Calc max at subpop level
+        key = f"{self.name}_max_subpops"
+        max_speeds = flatten_subpops(self, calc_max_matrices(self)[0])
+        max_speeds = self.elem_gdf.join(max_speeds, how="left")
+        max_speeds = calc_speeds(self, max_speeds)
+        self.result_dfs[key] = max_speeds
+
+        # Calc max at pop level
+        key = f"{self.name}_max"
+        max_speeds = calc_max_matrices(self)[1]
+        max_speeds = pd.DataFrame(
+                data=max_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
+        max_speeds = self.elem_gdf.join(max_speeds, how="left")
+        max_speeds = calc_speeds(self, max_speeds)
+        self.result_dfs[key] = max_speeds
+
+        # Calc min at subpop level
+        key = f"{self.name}_min_subpops"
+        min_speeds = flatten_subpops(self, calc_min_matrices(self)[0])
+        min_speeds = self.elem_gdf.join(min_speeds, how="left")
+        min_speeds = calc_speeds(self, min_speeds)
+        self.result_dfs[key] = min_speeds
+
+        # Calc max at pop level
+        key = f"{self.name}_min"
+        min_speeds = calc_min_matrices(self)[1]
+        min_speeds = pd.DataFrame(
+                data=min_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index()
+        min_speeds = self.elem_gdf.join(min_speeds, how="left")
+        min_speeds = calc_speeds(self, min_speeds)
+        self.result_dfs[key] = min_speeds  
 
 class LinkPassengerCounts(EventHandlerTool):
     """
