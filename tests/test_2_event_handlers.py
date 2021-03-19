@@ -230,7 +230,11 @@ def car_link_pair_event():
             link = "1-2" vehicle = "chris" networkMode = "car" relativePosition = "1.0" />
             <event time = "23500.0" type = "left link" vehicle = "chris" link = "1-2" />
             <event time="23400.0" type="entered link" vehicle="nick" link="1-2" />
-            <event time = "23500.0" type = "left link" vehicle = "nick" link="1-2" />
+            <event time = "23450.0" type = "left link" vehicle = "nick" link="1-2" />
+            <event time="23400.0" type="entered link" vehicle="sarah" link="1-2" />
+            <event time = "23420.0" type = "left link" vehicle = "sarah" link="1-2" />
+            <event time="23400.0" type="entered link" vehicle="fred" link="1-2" />
+            <event time = "23425.0" type = "left link" vehicle = "fred" link="1-2" />
         </events>
         """
     return etree.fromstring(string)
@@ -433,13 +437,13 @@ def test_link_speed_process_events_car(test_car_link_speed_handler, car_link_pai
     handler = test_car_link_speed_handler
     for elem in car_link_pair_event:
         handler.process_event(elem)
-    assert np.sum(handler.counts) == 2
-    assert np.sum(handler.durations)== 300
+    assert np.sum(handler.counts) == 3
+    assert np.sum(handler.inverseduration_sum)== 0.11
     link_index = handler.elem_indices['1-2']
-    class_index = handler.class_indices['rich']
+    class_index = handler.class_indices['poor']
     period = 6
-    assert handler.counts[link_index][class_index][period] == 1
-    assert handler.durations[link_index][class_index][period] == 200
+    assert handler.counts[link_index][class_index][period] == 2
+    assert handler.inverseduration_sum[link_index][class_index][period] == 1/50+1/25
 
 
 def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_event):
@@ -452,7 +456,12 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
         for c in cols:
             assert c in gdf.columns
         df = gdf.loc[:, cols]
-        assert np.sum(df.values) == 5.4
+        if name == "link_vehicle_speeds_car_average":
+            assert np.sum(df.values) == (2+5+4)/3
+        elif name == "link_vehicle_speeds_car_min":
+            assert np.sum(df.values) == 2
+        elif name == "link_vehicle_speeds_car_max":
+            assert np.sum(df.values) == 5
 
 
 # Passenger Counts Handler Tests
