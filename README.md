@@ -144,7 +144,7 @@ Configuration is accessed via the CLI:
 `elara run <CONFIG PATH>` 
 
 Config files must be `.toml` format and be roughly formatted as follows. The various fields are 
-detailed further below and an [example config](https://github.com/arup-group/elara/blob/master/example_scenario.toml) is also included in the repo:
+detailed further below and an [example config](https://github.com/arup-group/elara/blob/master/example_config.toml) is also included in the repo:
 
 ```
 [scenario]
