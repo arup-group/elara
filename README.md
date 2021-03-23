@@ -109,12 +109,11 @@ Also note that elara is often used within simulation pipelines
 [ie BitSim](https://github.com/arup-group/bitsim). In which case it is typically run using a config. 
 
 ## Installation
-Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to install the libraries in. 
+Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to install the libraries in. Assuming python ~3.7 and using git:
 ```
-
-brew install python3.7
-brew install virtualenv (or equivalent in conda for example)
-virtualenv -p python3.7 venv (or equivalent in conda for example)
+git clone git@github.com:arup-group/elara.git
+cd elara
+python3 -m venv venv (or equivalent in conda for example) #intall into virtual environment
 source venv/bin/activate (or equivalent in conda for example)
 pip3 install -e .
 elara --help
