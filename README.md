@@ -32,8 +32,8 @@ for each output are referred to as 'handlers'. There are four main types of outp
 
 * **Event Based Handlers/Outputs**:
 These are processed by streaming (in order) through all output events from simulation. 
-  * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice.
-  * ``link_passenger_counts``: Produce vehicle occupancy by time slice.
+  * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice. Counts **vehicles** entering link (PT vehicles counted once).
+  * ``link_passenger_counts``: Produce link passenger counts by time slice. Counts **agents** entering link.
   * ``link_vehicle_speeds``: Produce average vehicle speeds across link.
   * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
   * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
