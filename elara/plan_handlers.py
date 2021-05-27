@@ -534,7 +534,7 @@ class TripLogs(PlanHandlerTool):
 
             attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
 
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') == 'yes' or plan.get("selected") == "no":
 
                 # check that plan starts with an activity
                 if not plan[0].tag == 'activity':
@@ -599,6 +599,8 @@ class TripLogs(PlanHandlerTool):
                                         'duration': trip_duration,
                                         'duration_s': trip_duration.total_seconds(),
                                         'distance': trip_distance,
+                                        "utility": plan.get("score"),
+                                        "selected": plan.get('selected'),
                                     }
                                 )
 
@@ -620,7 +622,10 @@ class TripLogs(PlanHandlerTool):
                                     'start_s': self.get_seconds(activity_start_dt),
                                     'end_s': self.get_seconds(activity_end_dt),
                                     'duration': activity_duration,
-                                    'duration_s': activity_duration.total_seconds()
+                                    'duration_s': activity_duration.total_seconds(),
+                                    "utility": plan.get("score"),
+                                    "selected": plan.get('selected'),
+
                                 }
                             )
 
