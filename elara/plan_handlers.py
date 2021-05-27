@@ -336,7 +336,9 @@ class LegLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            if plan.get('selected') == 'yes':
+            # hack - get them all
+            # add a "selected" field to output
+            if plan.get('selected') == 'yes' or plan.get('selected') == 'no' :
 
                 activities = []
                 legs = []
@@ -389,6 +391,8 @@ class LegLogs(PlanHandlerTool):
                                 'start': arrival_dt.time(),
                                 'end': activity_end_dt.time(),
                                 'end_day': activity_end_dt.day,
+                                "utility": plan.get("score"),
+                                "selected": plan.get('selected'),
                                 # 'duration': duration,
                                 'start_s': self.get_seconds(arrival_dt),
                                 'end_s': self.get_seconds(activity_end_dt),
@@ -426,7 +430,8 @@ class LegLogs(PlanHandlerTool):
                                 'start': activity_end_dt.time(),
                                 'end': arrival_dt.time(),
                                 'end_day': arrival_dt.day,
-                                # 'duration': td,
+                                "utility": plan.get("score"),
+                                "selected": plan.get('selected'),
                                 'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
                                 'duration_s': td.total_seconds(),
