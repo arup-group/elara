@@ -355,9 +355,6 @@ class LegLogs(PlanHandlerTool):
                 x = None
                 y = None
 
-                # This is used to track different output plans, and therefore compare unselected plans
-                innovation_hash = str(uuid.uuid4())
-
                 for stage in plan:
 
                     if stage.tag == 'activity':
@@ -395,9 +392,6 @@ class LegLogs(PlanHandlerTool):
                                 'start': arrival_dt.time(),
                                 'end': activity_end_dt.time(),
                                 'end_day': activity_end_dt.day,
-                                "utility": plan.get("score"),
-                                "selected": plan.get('selected'),
-                                "innovation_hash" : innovation_hash,
                                 # 'duration': duration,
                                 'start_s': self.get_seconds(arrival_dt),
                                 'end_s': self.get_seconds(activity_end_dt),
@@ -435,9 +429,6 @@ class LegLogs(PlanHandlerTool):
                                 'start': activity_end_dt.time(),
                                 'end': arrival_dt.time(),
                                 'end_day': arrival_dt.day,
-                                "utility": plan.get("score"),
-                                "innovation_hash" : innovation_hash,
-                                "selected": plan.get('selected'),
                                 'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
                                 'duration_s': td.total_seconds(),
@@ -561,6 +552,9 @@ class TripLogs(PlanHandlerTool):
                 modes = {}
                 trip_distance = 0
 
+                # This is used to track different output plans, and therefore compare unselected plans
+                innovation_hash = str(uuid.uuid4())
+
                 for stage in plan:
 
                     if stage.tag == 'activity':
@@ -607,6 +601,7 @@ class TripLogs(PlanHandlerTool):
                                         'distance': trip_distance,
                                         "utility": plan.get("score"),
                                         "selected": plan.get('selected'),
+                                        "innovation_hash" : innovation_hash,
                                     }
                                 )
 
@@ -631,7 +626,7 @@ class TripLogs(PlanHandlerTool):
                                     'duration_s': activity_duration.total_seconds(),
                                     "utility": plan.get("score"),
                                     "selected": plan.get('selected'),
-
+                                    "innovation_hash" : innovation_hash,
                                 }
                             )
 
