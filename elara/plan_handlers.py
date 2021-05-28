@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import logging
 import json
+import uuid
 
 from elara.factory import Tool, WorkStation
 
@@ -354,6 +355,9 @@ class LegLogs(PlanHandlerTool):
                 x = None
                 y = None
 
+                # This is used to track different output plans, and therefore compare unselected plans
+                innovation_hash = str(uuid.uuid4())
+
                 for stage in plan:
 
                     if stage.tag == 'activity':
@@ -393,6 +397,7 @@ class LegLogs(PlanHandlerTool):
                                 'end_day': activity_end_dt.day,
                                 "utility": plan.get("score"),
                                 "selected": plan.get('selected'),
+                                "innovation_hash" : innovation_hash,
                                 # 'duration': duration,
                                 'start_s': self.get_seconds(arrival_dt),
                                 'end_s': self.get_seconds(activity_end_dt),
@@ -431,6 +436,7 @@ class LegLogs(PlanHandlerTool):
                                 'end': arrival_dt.time(),
                                 'end_day': arrival_dt.day,
                                 "utility": plan.get("score"),
+                                "innovation_hash" : innovation_hash,
                                 "selected": plan.get('selected'),
                                 'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
