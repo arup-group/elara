@@ -1685,6 +1685,7 @@ class ModeStats(BenchmarkTool):
         return {'counters': score}
 
 
+<<<<<<< HEAD
 class LondonModeShare(ModeStats):
 
     requirements = ['mode_shares']
@@ -1699,13 +1700,19 @@ class LondonModeShare(ModeStats):
 <<<<<<< HEAD
 class ROIModeShare(ModeStats):
 =======
+=======
+>>>>>>> updated NZ modesahre (global) benchmark for new simulation
 class NZModeShare(ModeStats):
-    
+    def __init__(self, config, mode, benchmark_data_path=None):
+    super().__init__(config, mode)
+    self.benchmark_data_path = benchmark_data_path
+
     requirements = ['mode_share']
     valid_options = ['all']
     options_enabled = True
 
     weight = 2
+<<<<<<< HEAD
     benchmark_path = get_benchmark_data(
         os.path.join('new_zealand', 'modeshare','nz_modestats.csv')
     )
@@ -1720,6 +1727,8 @@ class NZModeShare(ModeStats):
         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
     )
 
+=======
+>>>>>>> updated NZ modesahre (global) benchmark for new simulation
 
 # Highway Counters
 
@@ -1799,39 +1808,6 @@ class MultimodalTownCarCounters(PointsCounter):
 #     year = 2016
 #     hours = None
 #     modes = ['car']
-
-
-class DublinCanalCordonCar(Cordon):
-
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-    options_enabled = True
-
-    weight = 1
-    cordon_counter = PeriodCordonDirectionCount
-    benchmark_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
-    )
-    cordon_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
-    )
-
-    directions = {'in': 1}
-    year = 2016
-    hours = [7, 8, 9]
-    modes = ['car']
-
-
-class IrelandCommuterStats(ModeStats):
-
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
-
-    weight = 1
-    benchmark_path = get_benchmark_data(
-        os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
-    )
 
 
 class TestTownHourlyCordon(Cordon):
@@ -1929,8 +1905,6 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        "dublin_canal_cordon_car": DublinCanalCordonCar,
-        "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
     }
