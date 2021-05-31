@@ -12,7 +12,7 @@ os.chdir(root_dir)
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
 from elara import event_handlers
-from elara.event_handlers import EventHandlerWorkStation
+from elara.event_handlers import EventHandlerWorkStation, LinkVehicleCounts
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -69,6 +69,11 @@ def test_config():
     return config
 
 
+def test_tool_naming(test_config):
+    tool = LinkVehicleCounts(config=test_config)
+    assert (str(tool)) == "LinkVehicleCounts"
+
+
 # Paths
 @pytest.fixture
 def test_paths(test_config):
@@ -94,7 +99,7 @@ def input_manager(test_config, test_paths):
 @pytest.fixture
 def base_handler(test_config, input_manager):
     base_handler = event_handlers.EventHandlerTool(test_config, 'car')
-    assert base_handler.option == 'car'
+    assert base_handler.mode == 'car'
     base_handler.build(input_manager.resources)
     return base_handler
 
@@ -169,7 +174,7 @@ def veh_departs_event():
 # Waiting times
 @pytest.fixture
 def test_agent_waiting_times_log_handler(test_config, input_manager):
-    handler = event_handlers.AgentWaitingTimes(test_config, 'all')
+    handler = event_handlers.StopPassengerWaiting(test_config, 'all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -216,6 +221,23 @@ def car_enters_link_event():
         """
     return etree.fromstring(string)
 
+@pytest.fixture
+def car_link_pair_event():
+    time = 6.5 * 60 * 60
+    string = """
+        <events>
+            <event time = "23400.0" type = "vehicle enters traffic" person = "chris"
+            link = "1-2" vehicle = "chris" networkMode = "car" relativePosition = "1.0" />
+            <event time = "23500.0" type = "left link" vehicle = "chris" link = "1-2" />
+            <event time="23400.0" type="entered link" vehicle="nick" link="1-2" />
+            <event time = "23450.0" type = "left link" vehicle = "nick" link="1-2" />
+            <event time="23400.0" type="entered link" vehicle="sarah" link="1-2" />
+            <event time = "23420.0" type = "left link" vehicle = "sarah" link="1-2" />
+            <event time="23400.0" type="entered link" vehicle="fred" link="1-2" />
+            <event time = "23425.0" type = "left link" vehicle = "fred" link="1-2" />
+        </events>
+        """
+    return etree.fromstring(string)
 
 @pytest.fixture
 def bus_enters_link_event():
@@ -225,12 +247,19 @@ def bus_enters_link_event():
         """
     return etree.fromstring(string)
 
+@pytest.fixture
+def bus_leaves_link_event():
+    time = 6.5 * 60 * 60
+    string = """
+        <event time="23450.0" type="left link" vehicle="bus1" link="1-2" />
+        """
+    return etree.fromstring(string)
 
 # Volume Counts
 # Car
 @pytest.fixture
 def test_car_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'car')
+    handler = event_handlers.LinkVehicleCounts(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -238,12 +267,11 @@ def test_car_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), 3, periods)
     return handler
 
 
@@ -285,16 +313,18 @@ def test_volume_count_finalise_car(test_car_volume_count_handler, events):
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 14 / handler.config.scale_factor
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # bus
 @pytest.fixture
 def test_bus_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.VolumeCounts(test_config, 'bus')
+    handler = event_handlers.LinkVehicleCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -302,12 +332,12 @@ def test_bus_volume_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert len(handler.elem_ids) == len(resources['network'].link_gdf)
     assert list(handler.elem_indices.keys()) == handler.elem_ids
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), 3, periods)
     return handler
 
 
@@ -351,7 +381,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
     for elem in events:
         handler.process_event(elem)
 
-    assert handler.option.lower() == 'bus'
+    assert handler.mode.lower() == 'bus'
     assert handler.config.scale_factor == 0.0001
 
     handler.finalise()
@@ -359,16 +389,18 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 12
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
-
-# Passenger Counts Handler Tests
+# Link Speeds
+# Car
 @pytest.fixture
-def bus_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.PassengerCounts(test_config, 'bus')
+def test_car_link_speed_handler(test_config, input_manager):
+    handler = event_handlers.LinkVehicleSpeeds(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -376,10 +408,76 @@ def bus_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    assert list(handler.class_indices.keys()) == handler.classes
+    assert len(handler.elem_ids) == len(resources['network'].link_gdf)
+    assert list(handler.elem_indices.keys()) == handler.elem_ids
+    assert handler.counts.shape == (
+        len(resources['network'].link_gdf), 3, periods)
+    return handler
+
+
+def test_link_speed_process_single_event_car(test_car_link_speed_handler, car_enters_link_event):
+    handler = test_car_link_speed_handler
+    elem = car_enters_link_event
+    handler.process_event(elem)
+    assert np.sum(handler.counts) == 0 #shouldnt add count for entering event, only leaving
+    link_index = handler.elem_indices['1-2']
+    class_index = handler.class_indices['rich']
+    period = 6
+    assert handler.counts[link_index][class_index][period] == 0
+
+def test_link_speed_process_single_event_not_car(test_car_link_speed_handler, bus_enters_link_event):
+    handler = test_car_link_speed_handler
+    elem = bus_enters_link_event
+    handler.process_event(elem)
+    assert np.sum(handler.counts) == 0
+
+
+def test_link_speed_process_events_car(test_car_link_speed_handler, car_link_pair_event):
+    handler = test_car_link_speed_handler
+    for elem in car_link_pair_event:
+        handler.process_event(elem)
+    assert np.sum(handler.counts) == 3
+    assert np.sum(handler.inverseduration_sum)== 0.11
+    link_index = handler.elem_indices['1-2']
+    class_index = handler.class_indices['poor']
+    period = 6
+    assert handler.counts[link_index][class_index][period] == 2
+    assert handler.inverseduration_sum[link_index][class_index][period] == 1/50+1/25
+
+
+def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_event):
+    handler = test_car_link_speed_handler
+    for elem in car_link_pair_event:
+        handler.process_event(elem)
+    handler.finalise()
+    for name, gdf in handler.result_dfs.items():
+        cols = list(range(handler.config.time_periods))
+        for c in cols:
+            assert c in gdf.columns
+        df = gdf.loc[:, cols]
+        if name == "link_vehicle_speeds_car_average":
+            assert np.sum(df.values) == (2+5+4)/3
+        elif name == "link_vehicle_speeds_car_min":
+            assert np.sum(df.values) == 2
+        elif name == "link_vehicle_speeds_car_max":
+            assert np.sum(df.values) == 5
+
+
+# Passenger Counts Handler Tests
+@pytest.fixture
+def bus_passenger_count_handler(test_config, input_manager):
+    handler = event_handlers.LinkPassengerCounts(test_config, 'bus')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert 'not_applicable' in handler.classes
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(resources['network'].link_gdf), len(resources['attributes'].classes), periods)
+        len(resources['network'].link_gdf), 3, periods)
     return handler
 
 
@@ -394,10 +492,9 @@ def bus_route_passenger_count_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
-        len(set(resources['transit_schedule'].veh_to_route_map.values())), len(resources['attributes'].classes), periods)
+        len(set(resources['transit_schedule'].veh_to_route_map.values())), 3, periods)
     return handler
 
 
@@ -511,16 +608,18 @@ def test_passenger_count_finalise_bus(
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / handler.config.scale_factor
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 def test_route_passenger_count_handler_rejects_car_as_mode():
     with pytest.raises(UserWarning) as ex_info:
-        event_handlers.RoutePassengerCounts(test_config, 'car')
-    assert "Invalid option: car at tool" in str(ex_info.value)
+        event_handlers.RoutePassengerCounts(config=test_config, mode='car')
+    assert "Invalid mode option: car at tool" in str(ex_info.value)
 
 
 def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, events):
@@ -535,13 +634,13 @@ def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, e
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 8 / bus_route_passenger_count_handler.config.scale_factor
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(bus_route_passenger_count_handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(bus_route_passenger_count_handler.resources['subpopulations'].classes)
 
 
 # Stop Interactions
 @pytest.fixture
 def test_bus_passenger_interaction_handler(test_config, input_manager):
-    handler = event_handlers.StopInteractions(test_config, 'bus')
+    handler = event_handlers.StopPassengerCounts(test_config, 'bus')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -549,11 +648,11 @@ def test_bus_passenger_interaction_handler(test_config, input_manager):
     periods = 24
 
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.boardings.shape == (
         len(resources['transit_schedule'].stop_gdf),
-        len(resources['attributes'].classes),
+        3,
         periods
     )
     return handler
@@ -654,16 +753,18 @@ def test_stop_interaction_finalise_bus(
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
+            assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 4 / handler.config.scale_factor
+        assert np.sum(df.values) == gdf.total.sum()
         if 'class' in gdf.columns:
-            assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+            assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # Stop to stop volumes
 @pytest.fixture
 def bus_stop_to_stop_handler(test_config, input_manager):
-    handler = event_handlers.PassengerStopToStopCounts(test_config, 'bus')
+    handler = event_handlers.StopToStopPassengerCounts(test_config, 'bus')
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     return handler
@@ -675,12 +776,12 @@ def test_bus_stop_to_stop_handler(bus_stop_to_stop_handler, input_manager):
     resources = input_manager.resources
     periods = 24
     assert 'not_applicable' in handler.classes
-    assert len(handler.classes) == len(resources['attributes'].classes)
+    3
     assert list(handler.class_indices.keys()) == handler.classes
     assert handler.counts.shape == (
         len(resources['transit_schedule'].stop_gdf),
         len(resources['transit_schedule'].stop_gdf),
-        len(resources['attributes'].classes),
+        3,
         periods
     )
     return handler
@@ -806,16 +907,18 @@ def test_stop_to_stop_finalise_bus(
     df = gdf.loc[:, cols]
     assert np.sum(df.values) == 3 / handler.config.scale_factor
     if 'class' in gdf.columns:
-        assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+        assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
     gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_total"]
     cols = list(range(handler.config.time_periods))
     for c in cols:
         assert c in gdf.columns
+        assert 'total' in gdf.columns
     df = gdf.loc[:, cols]
     assert np.sum(df.values) == 3 / handler.config.scale_factor
+    assert np.sum(df.values) == gdf.total.sum()
     if 'class' in gdf.columns:
-        assert set(gdf.loc[:, 'class']) == set(handler.resources['attributes'].classes)
+        assert set(gdf.loc[:, 'class']) == set(handler.resources['subpopulations'].classes)
 
 
 # Event Handler Manager
@@ -827,7 +930,7 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='bus')
+    event_workstation.load_all_tools(mode='bus')
     event_workstation.build(write_path=test_outputs)
 
     for handler_name, handler in event_workstation.resources.items():

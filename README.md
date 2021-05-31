@@ -20,34 +20,46 @@ Inputs to Elara are MATSim format output files, eg:
 
 In most cases these Elara inputs may be zipped (`xml.gz`).
 
+### Optional Inputs
+
+If you are running a scenario with road pricing, it will be needed to calculate toll log outputs. 
+
+* **road pricing config** = "./tests/test_fixtures/roadpricing.xml"
+
 ### Outputs
 Elara supports and can be selectively configured to output a growing number of outputs. The units responsible
 for each output are referred to as 'handlers'. There are four main types of output/handler:
 
 * **Event Based Handlers/Outputs**:
 These are processed by streaming (in order) through all output events from simulation. 
-  * ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
-  * ``passenger_counts``: Produce vehicle occupancy by time slice.
-  * ``stop_interactions``: Boardings and Alightings by time slice.
-  * ``waiting_times``: Agent waiting times for unique pt interaction events.
+  * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice. Counts **vehicles** entering link (PT vehicles counted once).
+  * ``link_passenger_counts``: Produce link passenger counts by time slice. Counts **agents** entering link.
+  * ``link_vehicle_speeds``: Produce average vehicle speeds across link.
+  * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
+  * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
+  * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
+  * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 * **Plan Based Handlers/Outputs**:
 These are processed by streaming through all output plans from simulation. Compared to the event based outputs
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
-  * ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``agent_logs``: Produce agent activity logs and leg logs for all selected plans.
-  * ``agent_plans``: Produce agent plans including unselected plans and scores.
-  * ``agent_highway_distances``: Produce agent distances by car on different road 
+  * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
+  * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
+  * ``plan_logs``: Produce agent plans including unselected plans and scores.
+  * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
   types. Requires network to have `osm:way:highways` attribute.
-  * ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``toll_logs``: Produces summary of amounts agents paid at tolls, depending on the route they drove. Requires road pricing input file. Only works for option ``["car"]``.
 
 * **Post Processing Handlers**:
 These are outputs produced through additional post-processing of the above outputs.
   * ``vkt``: Produce link volume vehicle kms by time slice.
-  * ``plan_summary``: Produce leg and activity time and duration summaries.
-  * ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-  with multiple leg modes.
+  * ``plan_summary``: Produce leg and activity time and duration summaries (png).
+  * ``trip_duration_breakdown``: Produce binned trip durations.
+  * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 
 * **Benchmarking Handlers**:
 Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
@@ -55,6 +67,9 @@ Where correctly formatted project specific observed data has been made available
  distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
  again that benchmarks are project specific**.
   * ``ireland_highways``
+  * ``ireland_highways_NI`` 
+  * ``ireland_DCC``
+  * ``ROI_modeshares``
   * ``london_board_alight_subway``
   * ``london_central_cordon_car``
   * ``london_central_cordon_bus``
@@ -94,20 +109,30 @@ Also note that elara is often used within simulation pipelines
 [ie BitSim](https://github.com/arup-group/bitsim). In which case it is typically run using a config. 
 
 ## Installation
-Clone or download this repository. Once available locally, navigate to the folder and run:
+Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to
+install the libraries in. Assuming Python >=3.7 and using git:
 ```
-brew install python3.7
-brew install virtualenv (or equivalent in conda for example)
-virtualenv -p python3.7 venv (or equivalent in conda for example)
+git clone git@github.com:arup-group/elara.git
+cd elara
+python3 -m venv venv (or equivalent in conda for example) #intall into virtual environment
 source venv/bin/activate (or equivalent in conda for example)
 pip3 install -e .
 elara --help
 ```
 
-We striongly recommend using a virtual environment.
+We strongly recommend using a virtual environment.
 
 Note that we require pyproj=='2.4.0' because older version have proven to be very slow/hang for converting 
 between coordinate reference systems.
+
+**Note for Windows Users:**
+If installation fails with a traceback indicating `geos_c.dll` cannot be found, this is usually a problem with installing `shapely` and `fiona` requirements.
+
+One workaround is is the following (assumes you are using an Anaconda or Miniconda distribution):
+- Activate a conda environment
+- Install `geopandas` first using `conda install geopandas -c conda-forge`. (Geopandas requires both `shapely` and `fiona`, and conda may be able to install them without issue.)
+- Remove `geopandas`, `shapely`, and `fiona` from the `requirements.txt` file in a text editor (nb: please don't commit these changes when pushing new code).
+- Install the rest of the dependencies as normal: `pip install -e .`
 
 ## Configuration
 
@@ -119,15 +144,16 @@ Configuration is accessed via the CLI:
 `elara run <CONFIG PATH>` 
 
 Config files must be `.toml` format and be roughly formatted as follows. The various fields are 
-detailed further below and an [example config](https://github.com/arup-group/elara/blob/master/example_scenario.toml) is also included in the repo:
+detailed further below and an [example config](https://github.com/arup-group/elara/blob/master/example_config.toml) is also included in the repo:
 
 ```
 [scenario]
 name = "test_town"
 time_periods = 24
 scale_factor = 0.01
+version = 11
 crs = "EPSG:27700"
-verbose = INFO
+verbose = true
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml"
@@ -137,31 +163,35 @@ transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
 attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
+road_pricing = "./tests/test_fixtures/roadpricing.xml"
 
 [outputs]
 path = "./tests/test_outputs"
-contract = true
 
 [event_handlers]
-volume_counts = ["car"]
-passenger_counts = ["bus", "train"]
-stop_interactions = ["bus", "train"]
-waiting_times = ["all"]
+link_vehicle_counts = ["car", "bus"]
+link_passenger_counts = ["bus"]
+stop_passenger_counts = ["bus"]
+stop_passenger_waiting = ["all"]
 
 [plan_handlers]
-mode_share = ["all"]
-agent_logs = ["all"]
-agent_highway_distances = ["car"]
-trip_highway_distances = ["car"]
+mode_shares = ["all"]
+trip_logs = ["all"]
+agent_highway_distance_logs = ["car"]
+trip_highway_distance_logs = ["car"]
+toll_logs = ["car']
 
 [post_processors]
 vkt = ["car"]
 plan_summary = ["all"]
-trip_logs = ["all"]
+trip_duration_breakdown = ["all"]
+trip_euclid_distance_breakdown = ["all"]
 
 [benchmarks]
 test_pt_interaction_counter = ["bus"]
 test_link_cordon = ["car"]
+test_duration_comparison = ["all"]
+test_euclidean_distance_comparison = ["all"]
 
 ```
 
@@ -169,7 +199,7 @@ You can run this config on some toy data: `elara run example_config.toml` (from 
 
 **#** scenario.**name** *string* *(required)*
 
-The name of the scenario being processed, used to prefix output files.
+The name of the scenario being processed.
 
 **#** scenario.**time_periods** *integer* *(required)*
 
@@ -182,6 +212,10 @@ of ``24`` will produce summary metrics for each our of the day. Similarly, a val
 The sample size used in the originating MATSim scenario run. This is used to scale metrics such 
 as volume counts. For example, if the underlying scenario was run with a 25% sample size, a value
  of ``0.25`` in this field will ensure that all calculated volume counts are scaled by 4 times.
+
+ **#** scenario.**version** *int {11,12}* *(default 11)*
+
+Set `version = 12` if using MATSim version 12 outputs (in which case there will be no output personAttributes file).
 
 **#** scenario.**crs** *string* *(required)*
 
@@ -218,34 +252,36 @@ If set to *true*, removes rows containing only zero values from the generated ou
 Specification of the event handlers to be run during processing. Currently available handlers 
 include:
 
-* ``volume_counts``: Produce link volume counts and volume capacity ratios by time slice.
-* ``passenger_counts``: Produce vehicle occupancy by time slice.
-* ``stop_interactions``: Boardings and Alightings by time slice.
-* ``waiting_times``: Agent waiting times for unique pt interaction events.
+  * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice.
+  * ``link_passenger_counts``: Produce vehicle occupancy by time slice.
+  * ``link_vehicle_speeds``: Produce average vehicle speeds across link.
+  * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
+  * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
+  * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
+  * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
-The associated list attached to each handler allows specification of which options (typically modes
- of transport) should be processed using that handler. This allows certain handlers to be activated 
+The associated list attached to each handler allows specification of which transport modes should be processed using that handler. This allows certain handlers to be activated 
 for public transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, tram, ferry, ...``.
 * note that ``waiting_times`` only supports the option of ``["all"]``.
+
+Options can also be passed in a dictionary format, ie {modes=["car","bus"], path = "./tests/test_outputs", ...}.
 
 **#** plan_handlers.**[handler name]** *list of strings* *(optional)*
 
 Specification of the plan handlers to be run during processing. Currently available handlers 
 include:
 
-* ``mode_share``: Produce global modeshare of final plans using a mode hierarchy.
-* ``agent_logs``: Produce flat output of agent activity logs and leg logs, including times, 
-sequences, durations and categories.
-* ``agent_plans``: Produce flat output of agent plans (logs and activities) including unselected 
-plans and scores, 
-including times, 
-sequences, durations and categories.
-* ``agent_highway_distances``: Produce flat output of agent distances by car on different road 
-types (as described by the input network osm:way).
-* ``trip_highway_distances``: Produce flat output of agent trip distances by car on different road 
-types (as described by the input network osm:way).
+  * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
+  * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
+  * ``plan_logs``: Produce agent plans including unselected plans and scores.
+  * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
+  types. Requires network to have `osm:way:highways` attribute.
+  * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
+  * ``toll_logs`` : Produces summaries of tolls paid by agents. Requires ``roadpricing.xml`` as input parameter. 
 
 The associated list attached to each handler allows specification of additional options:
 
@@ -257,17 +293,17 @@ The associated list attached to each handler allows specification of additional 
 
 Specification of the event handlers to be run post processing. Currently available handlers include:
 
-* ``vkt``: Produce link volume vehicle kms by time slice.
-* ``plan_summary``: Produce leg and activity time and duration summaries.
-* ``trip_logs``: Produce record of all agent trips using mode hierarchy to reveal mode of trips 
-with multiple leg modes.
+  * ``vkt``: Produce link volume vehicle kms by time slice.
+  * ``plan_summary``: Produce leg and activity time and duration summaries (png).
+  * ``trip_duration_breakdown``: Produce binned trip durations.
+  * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 
 The associated list attached to each handler allows specification of which modes of transport 
 should be processed using that handler. This allows certain handlers to be activated for public 
 transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, ...``
-* note that ``trip_logs`` and ``plan_summary`` only support the option of ``["all"]``.
+* note that ``plan_summary`` only support the option of ``["all"]``.
 
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
@@ -277,12 +313,16 @@ cordons and mode share benchmarks for specific projects. **Benchmarks calculated
   given scenario (say 'London') unless the same network and/or schedule are in use.** Where a 
   network or schedule has been changed, the project [bench](https://github.com/arup-group/bench) 
   has been created to pre-process this data. 
+  'Normalised' volume plots (e.g those produced by ``ireland_highways``) refer to total volumes normalised by number of counters, so figure shows profile for the 'average' counter.
 
 Currently available benchmarks include:
 
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
+* ``ireland_highways_NI`` 
+* ``ireland_DCC``
+* ``ROI_modeshares`` ^
 * ``london_board_alight_subway``
 * ``london_central_cordon_car``
 * ``london_central_cordon_bus``
@@ -294,6 +334,8 @@ _newer formats (produced using `bench`):_
 * ``london_thames_screen_bus``
 * ``test_pt_interaction_counter``
 * ``test_link_cordon``
+
+^ note that ``ROI_modeshares`` and other mode share benchmarks only support the option of ``["all"]``.
 
 _older formats (no longer maintained):_
 
@@ -355,6 +397,7 @@ Options:
   -f, --full                  Option to disable output contracting.
   -e, --epsg TEXT             EPSG string, defaults to 'EPSG:27700' (UK).
   -s, --scale_factor FLOAT    Scale factor, defaults to 0.1 (10%).
+  -v, --version INT           MATSim version {11,12}, defaults to 11.
   -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
   -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
   -i, --inputs_path PATH      Inputs path location, defaults to current root.
@@ -388,7 +431,7 @@ a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~
 
 or, much more succinctly:
 
-`elara event-handlers volume-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
+`elara event-handlers link-vehicle-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
 Produce a **benchmark**, in this case we assume that a benchmark has already been created 
 called `ireland-highways` and that it works for buses and cars.
@@ -457,7 +500,7 @@ relevant workstations 'roster' of tools (ie `.tools`).
 New tool classes must correctly inherit and implement a number of values and methods so that they 
 play well with their respective workstation:
  
-* ``.__init__(self, config, option)``: Used for early validation of option and 
+* ``.__init__(self, config, mode)``: Used for early validation of mode and 
 subsequent requirements.
 * ``.build(self, resource=None)``: Used to process required output (assumes required resources are 
 available).
@@ -468,10 +511,19 @@ available).
   of process that might contain a new or multiple new tools. New workstations must be defined and
    connected to their respective suppliers and managers in `main`.
 
+### Conventions
+
+Where possible please name new handlers based on the following:
+
+`<Where><What>`
+
+For example: `LinkPassengerCounts` or `StopPassengerCounts`.
+
 ## Todo
 
 * More descriptive generated column headers in handler results. Right now column headers are 
 simply numbers mapped to the particular time slice during the modelled day. 
+* Try and move away from test_data towards unit tests.
 * More outputs, ie mode distances/times/animations.
 * S3 integration (read and write).
 * automatic discovery of inputs in directory.

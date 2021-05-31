@@ -11,6 +11,7 @@ import logging
 from collections import defaultdict
 
 from elara.factory import WorkStation, Tool
+from elara.helpers import decode_polyline_to_shapely_linestring
 
 WGS_84 = pyproj.Proj("epsg:4326")
 
@@ -168,10 +169,13 @@ class Network(InputTool):
         from_id = str(elem.get("from"))
         to_id = str(elem.get("to"))
 
-        from_point = node_lookup[from_id]["geometry"]
-        to_point = node_lookup[to_id]["geometry"]
-
-        geometry = LineString([from_point, to_point])
+        geometry = elem.find('.//attribute[@name="geometry"]')
+        if geometry is not None:
+            geometry = decode_polyline_to_shapely_linestring(geometry.text)
+        else:
+            from_point = node_lookup[from_id]["geometry"]
+            to_point = node_lookup[to_id]["geometry"]
+            geometry = LineString([from_point, to_point])
 
         return {
             "id": str(elem.get("id")),
@@ -225,7 +229,7 @@ class OSMWays(InputTool):
         """
 
         # for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
-        for name in ['osm:highway', 'osm:railway', 'osm:network']:
+        for name in ['osm:way:highway', 'osm:way:railway', 'osm:way:network']:
             attribute = elem.find('.//attribute[@name="{}"]'.format(name))
             if attribute is not None:
                 attribute = attribute.text
@@ -400,6 +404,7 @@ class TransitSchedule(InputTool):
 
 
 class TransitVehicles(InputTool):
+
     requirements = ['transit_vehicles_path']
     veh_type_mode_map = None
     veh_type_capacity_map = None
@@ -463,60 +468,10 @@ class TransitVehicles(InputTool):
         return ident, seated_capacity + standing_capacity
 
 
-class Agents(InputTool):
+class Subpopulations(InputTool):
+    
     requirements = ['attributes_path']
-    final_attribute_map = None
-    map = None
-    idents = None
-    attribute_fields = None
-    attributes_df = None
-
-    def build(self, resources: dict, write_path: Optional[str] = None):
-        """
-        Population subpopulation attributes constructor.
-        :param resources: dict, of resources from suppliers
-        :param write_path: Optional output path overwrite
-        """
-        super().build(resources)
-
-        path = resources['attributes_path'].path
-
-        # Attribute label mapping
-        # TODO move model specific setup elsewhere
-        self.final_attribute_map = {
-            "inc7p": "inc7p",
-            "inc56": "inc56",
-            "inc34": "inc34",
-            "inc12": "inc12",
-            "inc7p_nocar": "inc7p",
-            "inc56_nocar": "inc56",
-            "inc34_nocar": "inc34",
-            "inc12_nocar": "inc12",
-            "freight": "freight",
-        }
-
-        self.map = dict(
-            [
-                self.get_attribute_text(elem)
-                for elem in get_elems(path, "object")
-            ]
-        )
-
-        self.idents = sorted(list(self.map))
-        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
-        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
-
-    def get_attribute_text(self, elem):
-        ident = elem.xpath("@id")[0]
-        attributes = {}
-        for attr in elem.findall('.//attribute'):
-            attributes[attr.get('name')] = self.final_attribute_map.get(attr.text, attr.text)
-        return ident, attributes
-
-
-class Attributes(InputTool):
-    requirements = ['attributes_path']
-    final_attribute_map = None
+    # final_attribute_map = None
     map = None
     classes = None
     attribute_count_map = None
@@ -533,24 +488,35 @@ class Attributes(InputTool):
 
         # Attribute label mapping
         # TODO move model specific setup elsewhere
-        self.final_attribute_map = {
-            "inc7p": "inc7p",
-            "inc56": "inc56",
-            "inc34": "inc34",
-            "inc12": "inc12",
-            "inc7p_nocar": "inc7p",
-            "inc56_nocar": "inc56",
-            "inc34_nocar": "inc34",
-            "inc12_nocar": "inc12",
-            "freight": "freight",
-        }
+        # self.final_attribute_map = {
+        #     "inc7p": "inc7p",
+        #     "inc56": "inc56",
+        #     "inc34": "inc34",
+        #     "inc12": "inc12",
+        #     "inc7p_nocar": "inc7p",
+        #     "inc56_nocar": "inc56",
+        #     "inc34_nocar": "inc34",
+        #     "inc12_nocar": "inc12",
+        #     "freight": "freight",
+        # }
 
-        self.map = dict(
-            [
-                self.get_attribute_text(elem, 'subpopulation')
-                for elem in get_elems(path, "object")
-            ]
-        )
+        if self.config.version == 12:
+            self.logger.debug("Loading attribute map from V12 plan")
+            self.map = dict(
+                [
+                    self.get_person_attribute_from_plans(elem, 'subpopulation')
+                    for elem in get_elems(path, "person")
+                ]
+            )
+
+        else:
+            self.logger.debug("Loading attribute map from V11 personAttributes")
+            self.map = dict(
+                [
+                    self.get_attribute_text(elem, 'subpopulation')
+                    for elem in get_elems(path, "object")
+                ]
+            )
         # self.license = dict(
         #     [
         #         self.get_attribute_text(elem, 'license')
@@ -560,14 +526,90 @@ class Attributes(InputTool):
 
         self.classes, self.attribute_count_map = count_values(self.map)
         self.classes.append('not_applicable')
+        # self.idents = sorted(list(self.map))
+        # self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
+        # self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
 
     def get_attribute_text(self, elem, tag):
         ident = elem.xpath("@id")[0]
-        attribute = elem.find('.//attribute[@name="{}"]'.format(tag))
-        # if not attribute:
-        #     return ident, None
-        attribute = self.final_attribute_map.get(attribute.text, attribute.text)
+        attribute = elem.find('./attribute[@name="{}"]'.format(tag)).text
+        # attribute = self.final_attribute_map.get(attribute.text, attribute.text)
         return ident, attribute
+
+    def get_person_attribute_from_plans(self, elem, tag):
+        ident = elem.xpath("@id")[0]
+        attribute = elem.find(f'./attributes/attribute[@name="{tag}"]').text
+        # attribute = self.final_attribute_map.get(attribute.text, attribute.text)
+        return ident, attribute
+
+
+class Attributes(InputTool):
+    
+    requirements = ['attributes_path']
+    # final_attribute_map = None
+    map = None
+    classes = None
+    attribute_count_map = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Population subpopulation attribute constructor.
+        :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
+        """
+        super().build(resources)
+
+        path = resources['attributes_path'].path
+
+        # Attribute label mapping
+        # TODO move model specific setup elsewhere
+        # self.final_attribute_map = {
+        #     "inc7p": "inc7p",
+        #     "inc56": "inc56",
+        #     "inc34": "inc34",
+        #     "inc12": "inc12",
+        #     "inc7p_nocar": "inc7p",
+        #     "inc56_nocar": "inc56",
+        #     "inc34_nocar": "inc34",
+        #     "inc12_nocar": "inc12",
+        #     "freight": "freight",
+        # }
+
+        if self.config.version == 12:
+            self.logger.debug("Loading attribute map from V12 plan")
+            self.map = dict(
+                [
+                    self.get_attributes_from_plans(elem)
+                    for elem in get_elems(path, "person")
+                ]
+            )
+
+        else:
+            self.logger.debug("Loading attribute map from V11 personAttributes")
+            self.map = dict(
+                [
+                    self.get_attributes(elem)
+                    for elem in get_elems(path, "object")
+                ]
+            )
+
+        self.idents = sorted(list(self.map))
+        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
+        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
+
+    def get_attributes(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.xpath('./attribute'):
+            attributes[attr.get('name')] = attr.text
+        return ident, attributes
+
+    def get_attributes_from_plans(self, elem):
+        ident = elem.xpath("@id")[0]
+        attributes = {}
+        for attr in elem.xpath('./attributes/attribute'):
+            attributes[attr.get('name')] = attr.text
+        return ident, attributes
 
 
 class Plans(InputTool):
@@ -623,7 +665,7 @@ class OutputConfig(InputTool):
         ):
             self.sub_populations.add(e.get('value'))
 
-        self.modes = list(self.modes) + ["transit_walk"]
+        self.modes = list(self.modes | set(["transit_walk", "pt"]))
         self.activities = list(self.activities)
         self.sub_populations = list(self.sub_populations)
 
@@ -699,19 +741,66 @@ class ModeMap(InputTool):
         raise KeyError(f"key:'{key}' not found in ModeMap")
 
 
+class RoadPricing(InputTool):
+
+    requirements = ['road_pricing_path']
+    links = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Network road pricing input file.
+        :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
+        """
+        super().build(resources)
+
+        path = resources['road_pricing_path'].path
+
+        self.logger.debug(f"Loading road pricing from {path}")
+        self.links = dict(
+            [
+                self.get_costs(elem)
+                for elem in get_elems(path, "link")
+            ]
+        )
+        self.tollnames = dict(
+            [
+                self.get_tollnames(elem)
+                for elem in get_elems(path, "link")
+            ]
+        )
+
+    def get_costs(self, elem):
+        ident = elem.xpath("@id")[0]
+        costs = [dict(cost.items()) for cost in elem.xpath('./cost')]
+        costs = sorted(costs, key=lambda k: k['start_time'])
+        return ident, costs
+
+    def get_tollnames(self,elem):
+        ident = elem.xpath("@id")[0]
+        if len(elem.xpath('./tollname/@name')): #if the toll link has a tag called tollname
+            tollname = elem.xpath('./tollname/@name')[0]
+        else:
+            tollname = 'missing'
+        return ident, tollname
+
+        
+
+
 class InputsWorkStation(WorkStation):
     tools = {
-        'events': Events,
+        "events": Events,
         'network': Network,
-        'osm:ways': OSMWays,
+        'osm_ways': OSMWays,
         'transit_schedule': TransitSchedule,
         'transit_vehicles': TransitVehicles,
-        'agents': Agents,
+        'subpopulations': Subpopulations,
         'attributes': Attributes,
         'plans': Plans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
-        'mode_hierarchy': ModeHierarchy,
+        'road_pricing': RoadPricing,
+        # 'mode_hierarchy': ModeHierarchy,
     }
 
     def __init__(self, config):

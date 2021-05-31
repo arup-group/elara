@@ -2,7 +2,7 @@ import os
 import geopandas
 import pandas as pd
 import logging
-from matplotlib import pyplot as plt
+from matplotlib import axes, pyplot as plt
 
 from elara.factory import WorkStation, Tool
 
@@ -11,9 +11,35 @@ class PostProcessor(Tool):
 
     options_enabled = True
 
-    def __init__(self, config, option=None):
+    def __init__(self, config, mode=None):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, option)
+        super().__init__(config, mode)
+
+    def breakdown(self, data, bins, labels, colnames, write_path, groupby_field = None, groupby_data = None):
+        """
+        Bin a data series and export to a csv file
+        :params Pandas Series data: A numerical set
+        :params list bins: data bins
+        :params list labels: data labels
+        :params list colnames: the column names of the output file
+        :params str groupby_field: the attribute name of the attribute used to cross tabulate (e.g. mode or purpose)
+        :params Pandas Series groupby_data: A categorical set to cross tabulate distance by
+
+        :returns: None 
+        """        
+        # bin
+        if groupby_field:
+            breakdown_df = pd.concat([data, groupby_data, pd.cut(data, bins=bins, labels=labels)], axis=1)
+            breakdown_df.columns = [colnames[1], groupby_field, colnames[0]]
+            breakdown_df = breakdown_df.groupby(by=[groupby_field, colnames[0]]).count().sort_index().reset_index()
+            csv_breakdown_name = f"{self.name}.csv".replace("all",groupby_field)
+        else:
+            breakdown_df = pd.cut(data, bins=bins, labels=labels).value_counts().sort_index().reset_index()
+            breakdown_df.columns = colnames
+            csv_breakdown_name = f"{self.name}.csv"        
+
+        # Export breakdown
+        self.write_csv(breakdown_df, csv_breakdown_name, write_path=write_path)
 
     @staticmethod
     def check_prerequisites():
@@ -29,9 +55,9 @@ class PlanTimeSummary(PostProcessor):
     """
 
     requirements = [
-        'agent_logs',
+        'leg_logs',
     ]
-    valid_options = ['all']
+    valid_modes = ['all']
 
     hierarchy = None
 
@@ -41,11 +67,11 @@ class PlanTimeSummary(PostProcessor):
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        file_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        file_name = f"leg_logs_{self.mode}_legs.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         legs_df = pd.read_csv(file_path, index_col=0)
 
-        file_name = "{}_activity_log_{}.csv".format(self.config.name, self.option)
+        file_name = f"leg_logs_{self.mode}_activities.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         activity_df = pd.read_csv(file_path, index_col=0)
 
@@ -58,14 +84,14 @@ class PlanTimeSummary(PostProcessor):
         act_summary_df = activity_df.describe()
 
         # # Export results
-        fig_name = "{}_leg_summary_{}.png".format(self.config.name, self.option)
+        fig_name = f"{self.name}_legs.png"
         self.write_png(leg_figure, fig_name, write_path=write_path)
-        csv_name = "{}_leg_summary_{}.csv".format(self.config.name, self.option)
+        csv_name = f"{self.name}_legs.csv"
         self.write_csv(leg_summary_df, csv_name, write_path=write_path)
 
-        fig_name = "{}_activity_summary_{}.png".format(self.config.name, self.option)
+        fig_name = f"{self.name}_activities.png"
         self.write_png(act_figure, fig_name, write_path=write_path)
-        csv_name = "{}_activity_summary_{}.csv".format(self.config.name, self.option)
+        csv_name = f"{self.name}_activities.csv"
         self.write_csv(act_summary_df, csv_name, write_path=write_path)
 
     def time_binner(self, data):
@@ -85,13 +111,12 @@ class PlanTimeSummary(PostProcessor):
     def plot_time_bins(self, data, sub_col):
     
         subs = set(data[sub_col])
-        fig, axs = plt.subplots(len(subs), figsize=(12, len(subs)), sharex=True)
-        
-        for ax, sub in zip(axs, subs):
 
+        if len(subs) == 1:
+            sub = list(subs)[0]
+            fig, ax = plt.subplots(1, figsize=(12, 1))
             binned = self.time_binner(data.loc[data[sub_col] == sub])
             ax.pcolormesh(binned.T, cmap='cool', edgecolors='white', linewidth=1)
-
             ax.set_xticks([i for i in range(0,97,8)])
             ax.set_xticklabels([f"{h:02}:00" for h in range(0,25,2)])
             ax.set_yticks([0.5,1.5,2.5])
@@ -100,88 +125,112 @@ class PlanTimeSummary(PostProcessor):
             for pos in ['right','top','bottom','left']:
                 ax.spines[pos].set_visible(False)
             ax.set_ylabel(sub.title(), fontsize='medium')
-            
+
+        else:
+            fig, axs = plt.subplots(len(subs), figsize=(12, len(subs)), sharex=True)
+            for ax, sub in zip(axs, subs):
+                binned = self.time_binner(data.loc[data[sub_col] == sub])
+                ax.pcolormesh(binned.T, cmap='cool', edgecolors='white', linewidth=1)
+
+                ax.set_xticks([i for i in range(0,97,8)])
+                ax.set_xticklabels([f"{h:02}:00" for h in range(0,25,2)])
+                ax.set_yticks([0.5,1.5,2.5])
+                ax.set_yticklabels(['Duration', 'End time', 'Start time'])
+                ax.grid(which='minor', color='w', linestyle='-', linewidth=2)
+                for pos in ['right','top','bottom','left']:
+                    ax.spines[pos].set_visible(False)
+                ax.set_ylabel(sub.title(), fontsize='medium')
+                
         return fig
 
 
-class AgentTripLogs(PostProcessor):
+class TripDurationBreakdown(PostProcessor):
     """
-    Process Leg Logs into Trip Logs.
+    Provide summary breakdowns of trip data:
+        - by duration
+        - by distance band
+        - ... 
     """
-
-    requirements = [
-        'agent_logs',
-        'mode_hierarchy'
-    ]
-    valid_options = ['all']
-
-    hierarchy = None
-
-    def __str__(self):
-        return f'AgentTripLogs modes'
+    requirements = ['trip_logs']
+    valid_modes = ['all']
 
     def build(self, resource: dict, write_path=None):
+
         super().build(resource, write_path=write_path)
 
-        self.hierarchy = resource['mode_hierarchy']
-
-        mode = self.option
-
-        file_name = "{}_leg_log_{}.csv".format(self.config.name, self.option)
+        # read trip logs
+        file_name = f"trip_logs_{self.mode}_trips.csv"
         file_path = os.path.join(self.config.output_path, file_name)
-        legs_df = pd.read_csv(file_path)
+        trips_df = pd.read_csv(file_path)
 
-        # Group by trip and aggregate, applying hierarchy
-        def combine_legs(gr):
-            first_line = gr.iloc[0]
-            last_line = gr.iloc[-1]
+        cross_tab_dict = {"mode": trips_df["mode"],
+                            "d_act": trips_df["d_act"],
+                            None: None} #cross tabulate by mode, dest purpose of activity, all together
 
-            # duration = sum(gr.duration)
-            duration_s = sum(gr.duration_s)
-            distance = sum(gr.distance)
-
-            modes = list(gr.loc[:, 'mode'])
-            primary_mode = self.hierarchy.get(modes)
-
-            return pd.Series(
-                {'mode': primary_mode,
-                 'ox': first_line.ox,
-                 'oy': first_line.oy,
-                 'dx': last_line.dx,
-                 'dy': last_line.dy,
-                 'start': first_line.start,
-                 'end': last_line.end,
-                 # 'duration': duration,
-                 'start_s': first_line.start_s,
-                 'end_s': last_line.end_s,
-                 'duration_s': duration_s,
-                 'distance': distance
-                 }
+        # duration breakdown
+        for key in cross_tab_dict:
+            self.breakdown(
+                data = trips_df.duration_s / 60,
+                bins = [0, 5, 10, 15, 30, 45, 60, 90, 120, 999999],
+                labels = ['0 to 5 min', '5 to 10 min', '10 to 15 min', '15 to 30 min', '30 to 45 min', '45 to 60 min', '60 to 90 min', '90 to 120 min', '120+ min'],
+                colnames = ['duration', 'trips'],
+                write_path = write_path,
+                groupby_field = key,  
+                groupby_data = cross_tab_dict[key]  
             )
 
-        trips_df = legs_df.groupby(['agent', 'trip']).apply(combine_legs)
 
-        # reset index
-        trips_df.reset_index(inplace=True)
+class TripEuclidDistanceBreakdown(PostProcessor):
+    """
+    Provide summary breakdowns of trip distance with options to crosstabulate by
+        - mode
+        - purpose
+    """
+    requirements = ['trip_logs']
+    valid_modes = ['all']
 
-        # Export results
-        csv_name = "{}_trip_logs_{}.csv".format(self.config.name, mode)
-        self.write_csv(trips_df, csv_name, write_path=write_path)
+    def build(self, resource: dict, write_path=None):
 
+        super().build(resource, write_path=write_path)
+        mode = self.mode
+
+        # read trip logs
+        file_name = f"trip_logs_{self.mode}_trips.csv"
+        file_path = os.path.join(self.config.output_path, file_name)
+        trips_df = pd.read_csv(file_path)
+        
+        # euclidean distance breakdown
+        trips_df['euclidean_distance'] = ((trips_df.ox - trips_df.dx) ** 2 + (trips_df.oy - trips_df.dy) ** 2) ** 0.5
+
+        cross_tab_dict = {"mode": trips_df["mode"],
+                            "d_act": trips_df["d_act"],
+                            None: None} #cross tabulate by mode, dest purpose of activity, all together
+
+
+        for key in cross_tab_dict:
+            self.breakdown(
+                data = trips_df.euclidean_distance / 1000,
+                bins = [0, 1, 5, 10, 25, 50, 100, 200, 999999],
+                labels = ['0 to 1 km', '1 to 5 km', '5 to 10 km', '10 to 25 km', '25 to 50 km', '50 to 100 km', '100 to 200 km', '200+ km'],
+                colnames = ['euclidean_distance', 'trips'],
+                write_path = write_path,
+                groupby_field = key,  
+                groupby_data = cross_tab_dict[key]
+        )
 
 class VKT(PostProcessor):
-    requirements = ['volume_counts']
-    valid_options = ['car', 'bus', 'train', 'subway', 'ferry']
+
+    requirements = ['link_vehicle_counts']
 
     def __str__(self):
-        return f'VKT PostProcessor mode: {self.option}'
+        return f'VKT PostProcessor mode: {self.mode}'
 
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        mode = self.option
+        mode = self.mode
 
-        file_name = "{}_volume_counts_{}_total.geojson".format(self.config.name, mode)
+        file_name = f"link_vehicle_counts_{mode}.geojson"
         file_path = os.path.join(self.config.output_path, file_name)
         volumes_gdf = geopandas.read_file(file_path)
 
@@ -192,8 +241,8 @@ class VKT(PostProcessor):
         vkt = volumes.multiply(link_lengths, axis=0)
         vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
 
-        csv_name = "{}_vkt_{}.csv".format(self.config.name, mode)
-        geojson_name = "{}_vkt_{}.geojson".format(self.config.name, mode)
+        csv_name = f"{self.name}.csv"
+        geojson_name = f"{self.name}.geojson"
 
         self.write_csv(vkt_gdf, csv_name, write_path=write_path)
         self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
@@ -223,13 +272,12 @@ class PostProcessWorkStation(WorkStation):
 
     tools = {
         'plan_summary': PlanTimeSummary,
-        'trip_logs': AgentTripLogs,
+        #'trip_logs': AgentTripLogs,
+        'trip_duration_breakdown': TripDurationBreakdown,
+        'trip_euclid_distance_breakdown': TripEuclidDistanceBreakdown,
         'vkt': VKT,
     }
 
     def __init__(self, config):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
-
-    def __str__(self):
-        return f'PostProcessing WorkStation'

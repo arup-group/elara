@@ -14,9 +14,9 @@ attributes = "./out/output_personAttributes.xml.gz"
 plans = "./out/output_plans.xml.gz"
 
 [event_handlers]
-volume_counts = ["car"]
+link_volume_counts = ["car"]
 
 [outputs]
 path = "./out"
 contract = true
-
+    

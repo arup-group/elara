@@ -47,12 +47,12 @@ def test_config_dependencies():
 def test_requirements_workstation(test_config):
     requirements = RequirementsWorkStation(test_config)
     assert requirements.gather_manager_requirements() == {
-        'mode_share': ['all'],
-        'passenger_counts': ['bus', 'train'],
-        'stop_interactions': ['bus', 'train'],
-        'vkt': ['car'],
-        'volume_counts': ['car'],
-        'test_town_cordon': ['car'],
+        'mode_shares': {'modes':['all']},
+        'link_passenger_counts': {'modes':['bus', 'train']},
+        'stop_passenger_counts': {'modes':['bus', 'train']},
+        'vkt': {'modes':['car']},
+        'link_vehicle_counts': {'modes':['car']},
+        'test_town_cordon': {'modes':['car']},
     }
 
 
@@ -159,14 +159,13 @@ def test_bfs(requirements):
     assert set(requirements.suppliers[0].resources) == set({'vkt:car': factory.Tool})
     assert set(requirements.suppliers[2].resources) == set(
         {
-            'stop_interactions:train': factory.Tool,
-            'stop_interactions:bus': factory.Tool,
-            'passenger_counts:train': factory.Tool,
-            'passenger_counts:bus': factory.Tool,
-            'volume_counts:car': factory.Tool,
+            'stop_passenger_counts:train': factory.Tool,
+            'stop_passenger_counts:bus': factory.Tool,
+            'link_passenger_counts:train': factory.Tool,
+            'link_passenger_counts:bus': factory.Tool,
+            'link_vehicle_counts:car': factory.Tool,
         }
     )
-
 
 
 #test_config_dependencies
@@ -224,12 +223,12 @@ def test_bfs_depends(requirements_depends):
     )
     assert set(requirements.suppliers[2].resources) == set(
         {
-            'stop_interactions:train': factory.Tool,
-            'stop_interactions:bus': factory.Tool,
-            'passenger_counts:train': factory.Tool,
-            'passenger_counts:bus': factory.Tool,
-            'volume_counts:car': factory.Tool,
-            'volume_counts:bus': factory.Tool,
+            'stop_passenger_counts:train': factory.Tool,
+            'stop_passenger_counts:bus': factory.Tool,
+            'link_passenger_counts:train': factory.Tool,
+            'link_passenger_counts:bus': factory.Tool,
+            'link_vehicle_counts:car': factory.Tool,
+            'link_vehicle_counts:bus': factory.Tool,
         }
     )
 

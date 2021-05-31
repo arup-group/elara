@@ -24,26 +24,35 @@ class Config:
         pass
 
     def get_requirements(self):
-        return {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
+        return {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
 
 
 class ExampleTool(Tool):
-    options_enbled = False
+    options_enabled = False
     logger = logging.getLogger(__name__)
     pass
+
+
+def test_tool_naming():
+    tool = ExampleTool(Config())
+    assert (str(tool)) == "ExampleTool"
+    assert tool.name == "example_tool"
+    tool = ExampleTool(config=Config(), mode="car")
+    assert (str(tool)) == "ExampleToolCar"
+    assert tool.name == "example_tool_car"
 
 
 # Tools
 class VKT(ExampleTool):
     options_enabled = True
     requirements = ['volume_counts']
-    valid_options = ['car', 'bus']
+    valid_modes = ['car', 'bus']
 
 
 class VolumeCounts(ExampleTool):
     options_enabled = True
     requirements = ['network', 'events']
-    valid_options = ['car', 'bus']
+    valid_modes = ['car', 'bus']
 
     def get_requirements(self):
         return {req: None for req in self.requirements}
@@ -52,7 +61,7 @@ class VolumeCounts(ExampleTool):
 class ModeShare(ExampleTool):
     options_enabled = True
     requirements = ['network', 'plans']
-    valid_options = ['all']
+    valid_modes = ['all']
 
     def get_requirements(self):
         return {req: None for req in self.requirements}
@@ -189,22 +198,22 @@ def test_requirements(
     config_paths.connect([inputs_process], None)
 
     build(start)
-
+    print('start',start)
     assert equals(
         start.gather_manager_requirements(),
-        {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
+        {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
     )
     assert equals(
         post_process.gather_manager_requirements(),
-        {'volume_counts': ['car'], 'vkt': ['bus'], 'mode_share': ['all']}
+        {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
     )
     assert equals(
         event_handler_process.gather_manager_requirements(),
-        {'vkt': ['bus'], 'volume_counts': ['car', 'bus'], 'mode_share': ['all']}
+        {'vkt': {'modes':['bus']}, 'volume_counts': {'modes':['car', 'bus']}, 'mode_share': {'modes':['all']}}
     )
     assert equals(
         plan_handler_process.gather_manager_requirements(),
-        {'vkt': ['bus'], 'volume_counts': ['car', 'bus'], 'mode_share': ['all']}
+        {'vkt': {'modes':['bus']}, 'volume_counts': {'modes':['car', 'bus']}, 'mode_share': {'modes':['all']}}
     )
     assert equals(
         inputs_process.gather_manager_requirements(),
