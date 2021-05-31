@@ -1719,19 +1719,11 @@ class ModeStats(BenchmarkTool):
         return {'counters': score}
 
 
-class LondonModeShare(ModeStats):
-
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
-
-    weight = 2
-    benchmark_path = get_benchmark_data(
-        os.path.join('london', 'travel-in-london-11', 'modestats.csv')
-    )
-
 class NZModeShare(ModeStats):
-    
+    def __init__(self, config, mode, benchmark_data_path=None):
+    super().__init__(config, mode)
+    self.benchmark_data_path = benchmark_data_path
+
     requirements = ['mode_share']
     def __init__(self, config, mode, benchmark_data_path):
         self.benchmark_path = benchmark_data_path
@@ -1836,39 +1828,6 @@ class MultimodalTownCarCounters(PointsCounter):
 #     modes = ['car']
 
 
-class DublinCanalCordonCar(Cordon):
-
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-    options_enabled = True
-
-    weight = 1
-    cordon_counter = PeriodCordonDirectionCount
-    benchmark_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
-    )
-    cordon_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
-    )
-
-    directions = {'in': 1}
-    year = 2016
-    hours = [7, 8, 9]
-    modes = ['car']
-
-
-class IrelandCommuterStats(ModeStats):
-
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
-
-    weight = 1
-    benchmark_path = get_benchmark_data(
-        os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
-    )
-
-
 class TestTownHourlyCordon(Cordon):
 
     requirements = ['link_vehicle_counts']
@@ -1964,8 +1923,6 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        "dublin_canal_cordon_car": DublinCanalCordonCar,
-        "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
     }
@@ -1990,11 +1947,8 @@ class BenchmarkWorkStation(WorkStation):
         "london_volume_subway": 1,
         "london_modeshares": 1,
         "nz_modeshares":1,
-<<<<<<< HEAD
         "auckland_counters":1,
         "wellington_counters":1,
-=======
->>>>>>> ABMNZ-390 added modeshare benchmark and the relevant data
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
