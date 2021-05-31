@@ -4,6 +4,7 @@ time_periods = 24
 scale_factor = 0.0001
 crs = "EPSG:27700"
 verbose = true
+version = 11
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml.gz"
@@ -13,14 +14,15 @@ transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml.gz"
 attributes = "./tests/test_fixtures/output_personAttributes.xml.gz"
 plans= "./tests/test_fixtures/output_plans.xml.gz"
 output_config_path = "./tests/test_fixtures/output_config.xml"
+road_pricing = "./tests/test_fixtures/road_pricing.xml"
 
 [event_handlers]
-volume_counts = ["car"]
-passenger_counts = ["bus", "train"]
-stop_interactions = ["bus", "train"]
+link_vehicle_counts = ["car"]
+link_passenger_counts = ["bus", "train"]
+stop_passenger_counts = ["bus", "train"]
 
 [plan_handlers]
-mode_share = ["all"]
+mode_shares = ["all"]
 
 [post_processors]
 vkt = ["car"]

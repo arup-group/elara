@@ -6,6 +6,8 @@ import json
 import logging
 from matplotlib.figure import Figure
 
+from elara.helpers import camel_to_snake
+
 
 class Tool:
     """
@@ -13,7 +15,7 @@ class Tool:
     Values:
         .requirements: list, of requirements that that must be provided by suppliers.
         .options_enabled: bool, for if requirements should carry through manager options.
-        .valid_options/.invalid_options: Optional lists for option validation at init.
+        .valid_modes/.invalid_modes: Optional lists for option validation at init.
         .resources: dict, of supplier resources collected with .build() method.
 
     Methods:
@@ -24,24 +26,35 @@ class Tool:
     requirements = []
     options_enabled = False
 
-    valid_options = None
-    invalid_options = None
+    mode = None
+    valid_modes = None
+    invalid_modes = None
 
     resources = {}
 
     def __init__(
             self, config,
-            option: Union[None, str] = None
+            mode: Union[None, str] = None,
+            **kwargs
     ) -> None:
         """
         Initiate a tool instance with optional option (ie: 'bus').
-        :param option: optional option, typically assumed to be str
+        :param mode: optional mode, typically assumed to be str
         """
         self.config = config
-        self.option = self._validate_option(option)
+        self.mode = self._validate_mode(mode)
 
     def __str__(self):
-        return f'{self.__class__}'
+        if self.mode:
+            return self.__class__.__name__.split(".")[-1] + self.mode.title()
+        return self.__class__.__name__.split(".")[-1]
+
+    @property
+    def name(self):
+        class_name = self.__class__.__name__.split('.')[-1]
+        if self.mode:
+            return f"{camel_to_snake(class_name)}_{self.mode}"
+        return camel_to_snake(class_name)
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
         """
@@ -55,7 +68,7 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: [self.option] for req in self.requirements}
+            requirements = {req: {'modes': [self.mode]} for req in self.requirements}
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -76,20 +89,20 @@ class Tool:
         self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
         self.resources = resource
 
-    def _validate_option(self, option: str) -> str:
+    def _validate_mode(self, mode: str) -> str:
         """
-        Validate option based on .valid_options and .invalid_option if not None.
-        Raises UserWarning if option is not in .valid_options or in .invalid_options.
+        Validate option based on .valid_modes and .invalid_mode if not None.
+        Raises UserWarning if option is not in .valid_modes or in .invalid_modes.
         :param option: str
         :return: str
         """
-        if self.valid_options:
-            if option not in self.valid_options:
-                raise UserWarning(f'Unsupported option: {option} at tool: {self}')
-        if self.invalid_options:
-            if option in self.invalid_options:
-                raise UserWarning(f'Invalid option: {option} at tool: {self}')
-        return option
+        if self.valid_modes:
+            if mode not in self.valid_modes:
+                raise UserWarning(f'Unsupported mode option: {mode} at tool: {self}')
+        if self.invalid_modes:
+            if mode in self.invalid_modes:
+                raise UserWarning(f'Invalid mode option: {mode} at tool: {self}')
+        return mode
 
     def start_chunk_writer(self, csv_name: str, write_path=None):
         """
@@ -236,8 +249,16 @@ class WorkStation:
         self.supplier_resources = {}
         self.logger = logging.getLogger(__name__)
 
+    # def __str__(self):
+    #     return f'{self.__class__.__name__}'
+
     def __str__(self):
-        return f'{self.__class__}'
+        return self.__class__.__name__.split(".")[-1]
+
+    @property
+    def name(self):
+        class_name = self.__class__.__name__.split('.')[-1]
+        return camel_to_snake(class_name)
 
     def connect(
             self,
@@ -296,10 +317,14 @@ class WorkStation:
                 for manager_requirement, options in manager_requirements.items():
                     if manager_requirement == tool_name:
                         if options:
-                            for option in options:
+                            # split options between modes and optional arguments
+                            modes = options['modes']
+                            optional_args = {key : options[key] for key in options if key != 'modes'}
+                            
+                            for mode in modes:
                                 # build unique key for tool initiated with option
-                                key = str(tool_name) + ':' + str(option)
-                                self.resources[key] = tool(self.config, option)
+                                key = str(tool_name) + ':' + str(mode)
+                                self.resources[key] = tool(self.config, mode, **optional_args)
 
                                 tool_requirements = self.resources[key].get_requirements()
                                 all_requirements.append(tool_requirements)
@@ -342,9 +367,10 @@ class WorkStation:
 
         # check for missing requirements
         missing = set(self.requirements) - set(supplier_tools)
+        missing_names = [str(m) for m in missing]
         if missing:
             raise ValueError(
-                f'Missing requirements: {missing} from suppliers: {self.suppliers}.'
+                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {self.suppliers}.'
             )
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:
@@ -380,7 +406,7 @@ class WorkStation:
 
                 tool.build(self.supplier_resources, write_path)
 
-    def load_all_tools(self, option=None) -> None:
+    def load_all_tools(self, mode=None) -> None:
         """
         Method used for testing.
         Load all available tools into resources with given option.
@@ -389,9 +415,9 @@ class WorkStation:
         """
         self.logger.info(f"Loading all tools for {self.__str__()}")
         for name, tool in self.tools.items():
-            if option is None and tool.valid_options is not None:
-                option = tool.valid_options[0]
-            self.resources[name] = tool(self.config, option)
+            if mode is None and tool.valid_modes is not None:
+                mode = tool.valid_modes[0]
+            self.resources[name] = tool(self.config, mode)
 
     def write_csv(
             self,
@@ -519,6 +545,9 @@ class ChunkWriter:
     def finish(self) -> None:
         self.write()
         self.logger.info(f'Chunkwriter finished for {self.path}')
+
+    def __len__(self):
+        return self.idx + len(self.chunk)
 
 
 def build(start_node: WorkStation, write_path=None) -> list:
@@ -721,15 +750,23 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
             tool_set.update(list(req))
     combined_reqs = {}
     for tool in tool_set:
+        combined_reqs[tool] = {}
         if tool_set:
-            options = set()
+            # collect unique mode dependencies
+            modes = set()
             for req in reqs:
-                if req and req.get(tool):
-                    options.update(req[tool])
-            if options:
-                combined_reqs[tool] = list(options)
+                if req and req.get(tool):  
+                    modes.update(req[tool]['modes'])
+
+            if modes:
+                for req in reqs:
+                    # keep all arguments of current (in the loop) tool, but only pass "modes" argument to dependencies
+                    if req and req.get(tool):
+                        combined_reqs[tool] = req.get(tool)                        
+                combined_reqs[tool]['modes'] = list(modes)
             else:
                 combined_reqs[tool] = None
+
     return combined_reqs
 
 

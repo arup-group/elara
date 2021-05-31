@@ -17,6 +17,7 @@ class Config:
                 "time_periods": 24,
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
+                "version": 11,
                 "verbose": False,
             },
         "inputs":
@@ -28,6 +29,7 @@ class Config:
                 "attributes": "./output_personAttributes.xml.gz",
                 "plans": "./output_plans.xml.gz",
                 "output_config_path": "./output_config.xml",
+                "road_pricing": "./road_pricing.xml",
             },
         "outputs":
             {
@@ -45,6 +47,7 @@ class Config:
         self.name = None
         self.time_periods = None
         self.scale_factor = None
+        self.version = None
         self.logging = None
         self.event_handlers = None
         self.plan_handlers = None
@@ -62,6 +65,19 @@ class Config:
         else:
             self.logger.debug(f' Loading default config')
             self.settings = self.default_settings
+
+        # convert list-format handler arguments to dictionary
+        for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
+            for handler in self.settings.get(handler_group):
+                if handler:
+                    options = self.settings[handler_group][handler]
+                    if isinstance(options, list):
+                        self.settings[handler_group][handler] = {'modes': options}
+                    elif isinstance(options, dict):
+                        # if no modes option is specified, assume "all"
+                        if 'modes' not in options:
+                            self.settings[handler_group][handler] = {'modes': ['all']}
+
 
         self.load_required_settings()
 
@@ -84,6 +100,7 @@ class Config:
         self.logger.debug(f'Required Post Processors = {self.post_processors}')
         self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
         self.logger.debug(f'Contract = {self.contract}')
+        self.check_handler_renamed()                      
 
     def load_required_settings(self):
 
@@ -96,6 +113,9 @@ class Config:
         )
         self.scale_factor = self.valid_scale_factor(
             self.settings["scenario"]["scale_factor"]
+        )
+        self.version = self.valid_version(
+            self.settings["scenario"].get("version", 11)
         )
         self.logging = self.valid_verbosity(
             self.settings["scenario"].get("verbose", False)
@@ -148,7 +168,12 @@ class Config:
 
     @property
     def attributes_path(self):
-        return self.valid_path(
+        if self.version == 12:
+            return self.valid_path(
+                self.settings["inputs"]["plans"], "plans(MATSimV12)"
+            )
+        else:
+            return self.valid_path(
             self.settings["inputs"]["attributes"], "attributes"
         )
 
@@ -170,6 +195,12 @@ class Config:
             self.settings["inputs"]["output_config_path"], "output_config"
         )
 
+    @property
+    def road_pricing_path(self):
+        return self.valid_path(
+            self.settings["inputs"]["road_pricing"], "output_config"
+        )
+
     @staticmethod
     def valid_time_periods(inp):
         """
@@ -180,7 +211,7 @@ class Config:
         """
         if inp <= 0 or inp > 96:
             raise ConfigError(
-                "Specified time periods ({}) not in valid range".format(inp)
+                "Configured time periods ({}) not in valid range".format(inp)
             )
         return int(inp)
 
@@ -194,9 +225,22 @@ class Config:
         """
         if inp <= 0 or inp > 1:
             raise ConfigError(
-                "Specified scale factor ({}) not in valid range".format(inp)
+                "Configured scale factor ({}) not in valid range".format(inp)
             )
         return float(inp)
+
+    @staticmethod
+    def valid_version(inp):
+        """
+        Raise exception if specified version is not 11 or 12.
+        :param inp: Version number
+        :return: Version number (int)
+        """
+        if int(inp) not in [11, 12]:
+            raise ConfigError(
+                f"Configured version ({inp}) not valid (please use 11 (default) or 12)"
+            )
+        return int(inp)
 
     @staticmethod
     def valid_path(path, field_name):
@@ -207,7 +251,7 @@ class Config:
         :return: Pass through path if it exists
         """
         if not os.path.exists(path):
-            raise ConfigError("Specified path {} for {} does not exist".format(path, field_name))
+            raise ConfigError("Configured path {} for {} does not exist".format(path, field_name))
         return path
 
     def valid_verbosity(self, inp):
@@ -251,6 +295,25 @@ class Config:
         if not isinstance(inp, str):
             raise ConfigError('Configured CRS should be string format, for example: "EPSG:27700"')
         return inp
+
+    def check_handler_renamed(self):
+        """
+        Return a warning if the user has requested a handler that was renamed as part of this PR:
+        https://github.com/arup-group/elara/pull/81
+
+        """
+        renaming_dict = {
+            'volume_counts':'link_vehicle_counts',
+            'passenger_counts':'link_passenger_counts',
+            'volume_counts':'link_vehicle_counts',
+            'stop_interactions':'stop_passenger_counts',
+            'waiting_times':'stop_passenger_waiting',
+            'mode_share':'mode_shares'
+        }
+        for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
+            for handler in self.settings.get(handler_group):
+                if handler in renaming_dict.keys():                      
+                    self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
     def override(self, path_override):
         """
@@ -337,6 +400,14 @@ class GetOutputConfigPath(PathTool):
         self.path = self.config.output_config_path
 
 
+class GetRoadPricingPath(PathTool):
+    path = None
+
+    def build(self, resource: dict, write_path=None):
+        super().build(resource)
+        self.path = self.config.road_pricing_path
+
+
 class PathFinderWorkStation(WorkStation):
     tools = {
         'crs': GetCRS,
@@ -347,6 +418,7 @@ class PathFinderWorkStation(WorkStation):
         'transit_schedule_path': GetTransitSchedulePath,
         'transit_vehicles_path': GetTransitVehiclesPath,
         'output_config_path': GetOutputConfigPath,
+        'road_pricing_path': GetRoadPricingPath,
     }
 
     def __init__(self, config):

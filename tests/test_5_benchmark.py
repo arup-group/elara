@@ -116,6 +116,35 @@ def test_town_mode_share_score_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['counters'] == 0
 
+def test_duration_comparison_score_zero():
+    benchmark = benchmarking.TestDurationComparison
+    test_bm = benchmark(
+        config,
+        'all',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_duration_comparison_score_zero():
+    benchmark = benchmarking.TestDurationComparison
+    test_bm = benchmark(
+        config,
+        'all',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_duration_comparison_score_zero_filepath():
+    benchmark = benchmarking.DurationComparison
+    benchmark_data_path = os.path.join('tests','test_outputs','trip_duration_breakdown_all.csv')
+    test_bm = benchmark(
+        config,
+        'all',
+        benchmark_data_path = benchmark_data_path
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
 
 # Config
 @pytest.fixture
@@ -124,6 +153,13 @@ def test_config():
     config = Config(config_path)
     assert config
     return config
+
+@pytest.fixture
+def test_config_dictionary():
+    config_dictionary_path = os.path.join(test_dir, 'test_xml_scenario_dictionary.toml')
+    config_dictionary = Config(config_dictionary_path)
+    assert config_dictionary
+    return config_dictionary
 
 
 # Paths
@@ -145,13 +181,13 @@ def test_benchmark_workstation(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    event_workstation.load_all_tools(option='bus')
+    event_workstation.load_all_tools(mode='bus')
     event_workstation.build(write_path=test_outputs)
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['mode_shares']
+    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
     plan_workstation.build(write_path=test_outputs)
 
     pp_workstation = benchmarking.BenchmarkWorkStation(test_config)
@@ -169,14 +205,14 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
 
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = event_workstation.tools['volume_counts']
-    event_workstation.resources['volume_counts'] = tool(test_config, 'all')
+    tool = event_workstation.tools['link_vehicle_counts']
+    event_workstation.resources['link_vehicle_counts'] = tool(test_config, 'all')
     event_workstation.build(write_path=test_outputs)
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_share']
-    plan_workstation.resources['mode_share'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['mode_shares']
+    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
     plan_workstation.build(write_path=test_outputs)
 
     pp_workstation = benchmarking.BenchmarkWorkStation(test_config)
@@ -191,10 +227,34 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
     pp_workstation.build(write_path=test_outputs)
 
 
-def test_all_paths_exist(test_config):
-    benchmark_workstation = benchmarking.BenchmarkWorkStation(test_config)
-    for name, tool in benchmark_workstation.tools.items():
-        try:
-            assert os.path.exists(tool.benchmark_data_path)
-        except AttributeError:
-            continue
+# def test_all_paths_exist(test_config):
+## this test is no longer relevant, as we can pass file paths as handler arguments
+#     benchmark_workstation = benchmarking.BenchmarkWorkStation(test_config)
+#     for name, tool in benchmark_workstation.tools.items():
+#         try:
+#             assert os.path.exists(tool.benchmark_data_path)
+#         except AttributeError:
+#             continue
+
+def test_benchmark_duration_workstation_dictionary(test_config_dictionary, test_paths):
+    # call duration comparison handler with dictionary arguments
+    input_workstation = InputsWorkStation(test_config_dictionary)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    event_workstation = EventHandlerWorkStation(test_config_dictionary)
+    event_workstation.connect(managers=None, suppliers=[input_workstation])
+
+    plan_workstation = PlanHandlerWorkStation(test_config_dictionary)
+    plan_workstation.connect(managers=None, suppliers=[input_workstation])
+
+    pp_workstation = benchmarking.BenchmarkWorkStation(test_config_dictionary)
+    pp_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
+
+    benchmarking_workstation = benchmarking.BenchmarkWorkStation(test_config_dictionary)
+    benchmarking_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation, pp_workstation])
+    tool = benchmarking_workstation.tools['duration_comparison']
+    benchmarking_workstation.resources['duration_comparison'] = tool(test_config_dictionary, 'all', benchmark_data_path='./tests/test_outputs/trip_duration_breakdown_all.csv')
+
+    benchmarking_workstation.build(write_path=test_outputs)
