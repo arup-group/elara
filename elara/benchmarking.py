@@ -1684,7 +1684,17 @@ class ModeStats(BenchmarkTool):
 
         return {'counters': score}
 
+class LondonModeShare(ModeStats):
 
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    options_enabled = True
+
+    weight = 2
+    benchmark_path = get_benchmark_data(
+        os.path.join('london', 'travel-in-london-11', 'modestats.csv')
+    )
+    
 class NZModeShare(ModeStats):
     def __init__(self, config, mode, benchmark_data_path=None):
         super().__init__(config, mode)
