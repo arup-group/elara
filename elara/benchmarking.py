@@ -1696,7 +1696,6 @@ class LondonModeShare(ModeStats):
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
 
-
 class NZModeShare(ModeStats):
     
     requirements = ['mode_share']
