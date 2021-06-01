@@ -532,7 +532,7 @@ class AucklandCounters(LinkCounter):
     def __init__(self, config, mode, benchmark_data_path=None):
         super().__init__(config, mode)
         self.benchmark_data_path = benchmark_data_path
-
+    print("HEHRHEHEH")
     name = 'auckland_counters'
     requirements = ['volume_counts']
     valid_options = ['all']
@@ -549,32 +549,32 @@ class WellingtonCounters(LinkCounter):
     options_enabled = True
 
 
-class LondonBoundaryCordonCar(LinkCounter):
+# class LondonBoundaryCordonCar(LinkCounter):
 
-    name = 'london_outer_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
-    )
+#     name = 'london_outer_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_modes = ['car']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_modes = ['car']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
-class LondonBoundaryCordonBus(LinkCounter):
+# class LondonBoundaryCordonBus(LinkCounter):
 
-    name = 'london_outer_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
-    )
+#     name = 'london_outer_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_modes = ['bus']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_modes = ['bus']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
 class LondonThamesScreenCar(LinkCounter):
@@ -1894,6 +1894,8 @@ class BenchmarkWorkStation(WorkStation):
         "london_modeshares": LondonModeShare,
         "new_zealand_counters" : NewZealandCounters,
         "nz_modeshares": NZModeShare,
+        "auckland_counters":AucklandCounters,
+        "wellington_counters":WellingtonCounters,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
