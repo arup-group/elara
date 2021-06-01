@@ -565,30 +565,43 @@ class WellingtonCounters(LinkCounter):
     weight = 1
 # class LondonBoundaryCordonCar(LinkCounter):
 
-#     name = 'london_outer_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
-#     )
+class WellingtonCounters(LinkCounter):
+    def __init__(self, config, mode, benchmark_data_path=None):
+        super().__init__(config, mode)
+        self.benchmark_data_path = benchmark_data_path
+    
+    name = 'wellington_counters'
+    requirements = ['volume_counts']
+    valid_options = ['all']
+    options_enabled = True
 
-#     requirements = ['volume_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
 
-#     weight = 1
+class LondonBoundaryCordonCar(LinkCounter):
+
+    name = 'london_outer_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_modes = ['car']
+    options_enabled = True
+
+    weight = 1
 
 
-# class LondonBoundaryCordonBus(LinkCounter):
+class LondonBoundaryCordonBus(LinkCounter):
 
-#     name = 'london_outer_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
-#     )
+    name = 'london_outer_cordon'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
+    )
 
-#     requirements = ['volume_counts']
-#     valid_modes = ['bus']
-#     options_enabled = True
+    requirements = ['volume_counts']
+    valid_modes = ['bus']
+    options_enabled = True
 
-#     weight = 1
+    weight = 1
 
 
 class LondonThamesScreenCar(LinkCounter):
