@@ -1687,8 +1687,8 @@ class ModeStats(BenchmarkTool):
 
 class NZModeShare(ModeStats):
     def __init__(self, config, mode, benchmark_data_path=None):
-    super().__init__(config, mode)
-    self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+        self.benchmark_data_path = benchmark_data_path
 
     requirements = ['mode_share']
     valid_options = ['all']
