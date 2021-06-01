@@ -411,6 +411,31 @@ def new_zealand_counters(
     config = Config(override=override)
     main(config)
 
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def auckland_counters(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["auckland_counters"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def wellington_counters(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["wellington_counters"] = list(modes)
+    config = Config(override=override)
+    main(config)
 
 @benchmarks.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
