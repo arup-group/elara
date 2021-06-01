@@ -576,32 +576,32 @@ class WellingtonCounters(LinkCounter):
     options_enabled = True
 
 
-class LondonBoundaryCordonCar(LinkCounter):
+# class LondonBoundaryCordonCar(LinkCounter):
 
-    name = 'london_outer_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
-    )
+#     name = 'london_outer_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_modes = ['car']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_modes = ['car']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
-class LondonBoundaryCordonBus(LinkCounter):
+# class LondonBoundaryCordonBus(LinkCounter):
 
-    name = 'london_outer_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
-    )
+#     name = 'london_outer_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
+#     )
 
-    requirements = ['volume_counts']
-    valid_modes = ['bus']
-    options_enabled = True
+#     requirements = ['volume_counts']
+#     valid_modes = ['bus']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
 class LondonThamesScreenCar(LinkCounter):
@@ -1940,6 +1940,8 @@ class BenchmarkWorkStation(WorkStation):
         # "ROI_modeshares": ROIModeShare,
         "new_zealand_counters" : NewZealandCounters,
         "nz_modeshares": NZModeShare,
+        "auckland_counters":AucklandCounters,
+        "wellington_counters":WellingtonCounters,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
