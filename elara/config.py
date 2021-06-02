@@ -1,4 +1,4 @@
-import ast
+import json
 import os.path
 import toml
 from elara.factory import WorkStation, Tool
@@ -100,7 +100,7 @@ class Config:
         self.logger.debug(f'Required Post Processors = {self.post_processors}')
         self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
         self.logger.debug(f'Contract = {self.contract}')
-        self.check_handler_renamed()                      
+        self.check_handler_renamed()
 
     def load_required_settings(self):
 
@@ -315,20 +315,35 @@ class Config:
                 if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
-    def override(self, path_override):
+    def override(self, path_override, dump_log=True):
         """
         :param path_override: override the config input and output paths
+        "param dump_log: (bool) optionally dump overriden config to disk
         """
         # Construct a dictionary from the path_overrides str
         for path in self.settings['inputs']:
             if path == "road_pricing":  # assume that road pricing file is not overridden
                 continue
             file_name = self.settings['inputs'][path].split('/')[-1]
-            self.settings['inputs'][path] = "{}/{}".format(path_override, file_name)
+            self.settings['inputs'][path] = os.path.join(path_override, file_name)
 
         output_dir = self.settings['outputs']['path'].split('/')[-1]
-        self.settings['outputs']['path'] = f"{path_override}/{output_dir}"
-        self.output_path = f"{path_override}/{output_dir}"
+        self.settings['outputs']['path'] = os.path.join(path_override, output_dir)
+        self.output_path = os.path.join(path_override, output_dir)
+
+        if dump_log:
+            self.dump_settings_to_disk(
+                os.path.join(path_override, "elara_override_log.json")
+            )
+
+
+    def dump_settings_to_disk(self, path):
+        """
+        Dump json of self.settings to path.
+        path (str): path.json
+        """
+        with open(path, "w") as fp:
+            json.dump(self.settings , fp) 
 
 
 class PathTool(Tool):
