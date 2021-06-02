@@ -312,7 +312,7 @@ class Config:
         }
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
             for handler in self.settings.get(handler_group):
-                if handler in renaming_dict.keys():                      
+                if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
     def override(self, path_override):
@@ -321,6 +321,8 @@ class Config:
         """
         # Construct a dictionary from the path_overrides str
         for path in self.settings['inputs']:
+            if path == "road_pricing":  # assume that road pricing file is not overridden
+                continue
             file_name = self.settings['inputs'][path].split('/')[-1]
             self.settings['inputs'][path] = "{}/{}".format(path_override, file_name)
 
