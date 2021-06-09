@@ -530,25 +530,25 @@ class NewZealandCounters(LinkCounter):
 
 class AucklandCounters(LinkCounter):
     def __init__(self, config, mode, benchmark_data_path=None):
-        super().__init__(config, mode)
         self.benchmark_data_path = benchmark_data_path
-    print("HEHRHEHEH")
+        super().__init__(config, mode)
     name = 'auckland_counters'
-    requirements = ['volume_counts']
-    valid_options = ['all']
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
     options_enabled = True
+    
+    weight = 1
 
 class WellingtonCounters(LinkCounter):
     def __init__(self, config, mode, benchmark_data_path=None):
-        super().__init__(config, mode)
         self.benchmark_data_path = benchmark_data_path
-    
+        super().__init__(config, mode)
     name = 'wellington_counters'
-    requirements = ['volume_counts']
-    valid_options = ['all']
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
     options_enabled = True
 
-
+    weight = 1
 # class LondonBoundaryCordonCar(LinkCounter):
 
 #     name = 'london_outer_cordon'
@@ -1714,17 +1714,17 @@ class LondonModeShare(ModeStats):
     benchmark_path = get_benchmark_data(
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
-    
-class NZModeShare(ModeStats):
-    def __init__(self, config, mode, benchmark_data_path=None):
-        super().__init__(config, mode)
-        self.benchmark_data_path = benchmark_data_path
 
-    requirements = ['mode_share']
+class NZModeShare(ModeStats):
+    def __init__(self, config, mode, benchmark_data_path):
+        self.benchmark_path = benchmark_data_path
+        super().__init__(config, mode)
+    requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
 
     weight = 2
+
 
 # Highway Counters
 
@@ -1926,6 +1926,8 @@ class BenchmarkWorkStation(WorkStation):
         "london_volume_subway": 1,
         "london_modeshares": 1,
         "nz_modeshares":1,
+        "auckland_counters":1,
+        "wellington_counters":1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
