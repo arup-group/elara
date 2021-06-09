@@ -529,6 +529,27 @@ class NewZealandCounters(LinkCounter):
     weight = 1
 
 
+class AucklandCounters(LinkCounter):
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+    name = 'auckland_counters'
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
+    options_enabled = True
+    
+    weight = 1
+
+class WellingtonCounters(LinkCounter):
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+    name = 'wellington_counters'
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
 # class LondonBoundaryCordonCar(LinkCounter):
 
 #     name = 'london_outer_cordon'
@@ -1699,6 +1720,10 @@ class LondonModeShare(ModeStats):
 class NZModeShare(ModeStats):
     
     requirements = ['mode_share']
+    def __init__(self, config, mode, benchmark_data_path):
+        self.benchmark_path = benchmark_data_path
+        super().__init__(config, mode)
+    requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
 
@@ -1715,6 +1740,7 @@ class NZModeShare(ModeStats):
     benchmark_path = get_benchmark_data(
         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
     )
+
 
 
 # Highway Counters
@@ -1951,6 +1977,8 @@ class BenchmarkWorkStation(WorkStation):
         "london_volume_subway": 1,
         "london_modeshares": 1,
         "nz_modeshares":1,
+        "auckland_counters":1,
+        "wellington_counters":1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
