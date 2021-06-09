@@ -561,21 +561,22 @@ class WellingtonCounters(LinkCounter):
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
     options_enabled = True
+    
+    weight = 1
 
     weight = 1
 # class LondonBoundaryCordonCar(LinkCounter):
 
 class WellingtonCounters(LinkCounter):
     def __init__(self, config, mode, benchmark_data_path=None):
-        super().__init__(config, mode)
         self.benchmark_data_path = benchmark_data_path
-    
+        super().__init__(config, mode)
     name = 'wellington_counters'
-    requirements = ['volume_counts']
-    valid_options = ['all']
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
     options_enabled = True
 
-
+    weight = 1
 # class LondonBoundaryCordonCar(LinkCounter):
 
 #     name = 'london_outer_cordon'
@@ -1741,16 +1742,20 @@ class LondonModeShare(ModeStats):
     benchmark_path = get_benchmark_data(
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
-    
+
 class NZModeShare(ModeStats):
-    def __init__(self, config, mode, benchmark_data_path=None):
+    def __init__(self, config, mode, benchmark_data_path):
+        self.benchmark_path = benchmark_data_path
         super().__init__(config, mode)
+<<<<<<< HEAD
         self.benchmark_data_path = benchmark_data_path
 
     requirements = ['mode_share']
     def __init__(self, config, mode, benchmark_data_path):
         self.benchmark_path = benchmark_data_path
         super().__init__(config, mode)
+=======
+>>>>>>> Added New Zealand Benchmarks
     requirements = ['mode_shares']
     valid_options = ['all']
     options_enabled = True
@@ -1768,6 +1773,7 @@ class NZModeShare(ModeStats):
     benchmark_path = get_benchmark_data(
         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
     )
+
 
 
 
