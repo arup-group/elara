@@ -614,19 +614,19 @@ class SuffolkCarScreenlinesCounters(LinkCounter):
 
     weight = 1
 
-class SuffolkHGVScreenlinesCounters(LinkCounter):
+# class SuffolkHGVScreenlinesCounters(LinkCounter):
 
-    name = 'suffolk_hgv_screenlines_counters'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('suffolk', 'screenlines', 'screenlines_hgv.json')
-    )
+#     name = 'suffolk_hgv_screenlines_counters'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('suffolk', 'screenlines', 'screenlines_hgv.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ["hgv"]
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ["hgv"]
 
-    options_enabled = True
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 # class LondonNorthScreen(LinkCounter):
 
@@ -1946,7 +1946,7 @@ class BenchmarkWorkStation(WorkStation):
         "suffolk_screenlines":SuffolkScreenlinesCounters,
         "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
         "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
-        "suffolk_HGV_screenlines":SuffolkHGVScreenlinesCounters,
+        # "suffolk_HGV_screenlines":SuffolkHGVScreenlinesCounters,
         "ireland_highways": IrelandHighwayCounters,
         "ireland_highways_NI": NIHighwayCounters,
         "ireland_DCC": IrelandHighwayCounters_DCC,
@@ -1987,7 +1987,7 @@ class BenchmarkWorkStation(WorkStation):
         "suffolk_screenlines": 1,
         "suffolk_disaggregated_screenlines": 1,
         "suffolk_car_screenlines":1,
-        "suffolk_HGV_screenlines":1,
+        # "suffolk_HGV_screenlines":1,
         "ireland_highways": 1,
         "london_boundary_cordon_car": 1,
         "london_boundary_cordon_bus": 1,
