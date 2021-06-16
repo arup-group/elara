@@ -440,6 +440,20 @@ def wellington_counters(
 @benchmarks.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
+def wellington_pt_interactions(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor,version, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    override["benchmarks"]["wellington_stop_passenger_counts"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
 def london_modeshares(
         modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
