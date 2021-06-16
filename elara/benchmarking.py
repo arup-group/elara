@@ -918,6 +918,19 @@ class LondonRODS(TransitInteraction):
 
     weight = 1
 
+class WellingtonPTInteration(TransitInteraction):
+
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+
+    name = 'wellington_stop_passenger_counts'
+
+    requirements = ['stop_passenger_counts']
+    valid_modes = ['bus']
+    options_enabled = True
+
+    weight = 1
 
 class PassengerStopToStop(BenchmarkTool):
 
@@ -1904,9 +1917,13 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": LondonRODS,
         "london_volume_subway": LondonRODSVolume,
         "london_modeshares": LondonModeShare,
-        "ROI_modeshares": ROIModeShare,
+        # "ROI_modeshares": ROIModeShare,
         "new_zealand_counters" : NewZealandCounters,
+        "auckland_counters":AucklandCounters,
+        "wellington_counters":WellingtonCounters,
         "nz_modeshares": NZModeShare,
+        "wellington_stop_passenger_counts": WellingtonPTInteration,
+        
 
         # old style:
         "test_town_highways": TestHighwayCounters,
@@ -1939,6 +1956,7 @@ class BenchmarkWorkStation(WorkStation):
         "nz_modeshares":1,
         "auckland_counters":1,
         "wellington_counters":1,
+        "wellington_stop_passenger_counts":1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
