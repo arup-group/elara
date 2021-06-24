@@ -239,7 +239,7 @@ class LinkCounter(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = f"link_vehicle_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=0)
+        results_df = pd.read_csv(results_path, index_col=0, dtype={0:str})
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         results_df.index = results_df.index.map(str)  # indices converted to strings
@@ -753,7 +753,7 @@ class TransitInteraction(BenchmarkTool):
         for direction in ["boardings", "alightings"]:
             results_name = f"stop_passenger_counts_{self.mode}_{direction}.csv"
             results_path = os.path.join(self.config.output_path, results_name)
-            results_df = pd.read_csv(results_path, index_col=0)
+            results_df = pd.read_csv(results_path, index_col=0,dtype={0:str})
             results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
             results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
             results_df.index = results_df.index.map(str)  # indices converted to strings
@@ -1052,7 +1052,7 @@ class PassengerStopToStop(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = f"stop_to_stop_passenger_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=False)
+        results_df = pd.read_csv(results_path, index_col=False,dtype = {0:str})
         results_df.origin = results_df.origin.map(str)  # indices converted to strings
         results_df.destination = results_df.destination.map(str)  # indices converted to strings
         results_df = results_df.set_index(["origin", "destination"])
@@ -1302,7 +1302,7 @@ class PointsCounter(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = "link_vehicle_counts_{}.csv".format(self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=0)
+        results_df = pd.read_csv(results_path, index_col=0,dtype={0:str})
 
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
 
