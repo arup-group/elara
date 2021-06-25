@@ -446,7 +446,23 @@ def wellington_pt_interactions(
     override = common_override(
         debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
+    print("In Main")
+    print(list(modes))
     override["benchmarks"]["wellington_stop_passenger_counts"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def auckland_pt_interactions(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor,version, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    print(list(modes))
+    override["benchmarks"]["auckland_stop_passenger_counts"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 

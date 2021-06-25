@@ -88,6 +88,7 @@ class CsvComparison(BenchmarkTool):
         simulation_df = pd.read_csv(simulation_path, index_col=self.index_field)
 
         # compare
+        print("IN comparison")
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
         bm_df.columns = ['trips_benchmark', 'trips_simulation']
         self.plot_comparison(bm_df)
@@ -793,6 +794,7 @@ class TransitInteraction(BenchmarkTool):
                         f"results.columns: {model_results[direction].columns}")
 
                 # combine mode stop counts
+                  
                 for stop_id in stops:
                     if str(stop_id) not in model_results[direction].index:
                         failed_snaps += 1
@@ -953,7 +955,21 @@ class WellingtonPTInteration(TransitInteraction):
     name = 'wellington_stop_passenger_counts'
 
     requirements = ['stop_passenger_counts']
-    valid_modes = ['bus']
+    valid_modes = ['bus','pt','train']
+    options_enabled = True
+
+    weight = 1
+    
+class AucklandPTInteraction(TransitInteraction):
+
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+
+    name = 'auckland_stop_passenger_counts'
+
+    requirements = ['stop_passenger_counts']
+    valid_modes = ['bus','pt','rail', 'ferry']
     options_enabled = True
 
     weight = 1
@@ -1942,6 +1958,7 @@ class BenchmarkWorkStation(WorkStation):
         "auckland_counters":AucklandCounters,
         "wellington_counters":WellingtonCounters,
         "wellington_stop_passenger_counts": WellingtonPTInteration,
+        "auckland_stop_passenger_counts":AucklandPTInteraction,
         
 
         # old style:
