@@ -426,6 +426,7 @@ class LegLogs(PlanHandlerTool):
                                 'd_act': None,
                                 'start': activity_end_dt.time(),
                                 'end': arrival_dt.time(),
+                                # 'duration': td,
                                 'end_day': arrival_dt.day,
                                 'start_s': self.get_seconds(activity_end_dt),
                                 'end_s': self.get_seconds(arrival_dt),
