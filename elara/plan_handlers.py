@@ -337,7 +337,6 @@ class LegLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            # hack - get them all
             # add a "selected" field to output
             if plan.get('selected') == 'yes' or plan.get('selected') == 'no' :
 
