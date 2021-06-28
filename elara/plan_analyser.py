@@ -5,8 +5,6 @@ import sys
 import geopandas
 import numpy as np
 
-# trips = pd.read_csv("./elara/20210525_01p/trip_logs_all_trips.csv")
-# trips = pd.read_csv("./elara/20210526_10p/trip_logs_all_trips.csv")
 trips = pd.read_csv("./elara/20210609_10p/experiment3_no_car_100times_cost/trip_logs_all_trips.csv")
 
 # simplify for now
@@ -34,15 +32,16 @@ trips.to_csv("./out/allTrips.csv")
 plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
 
 # add relative score to selected score, gives indication of relative proximity
-# version where we get selected, not maximum score
-# m=plans['selected']=="yes"
-# plans.loc[plans['selected']=="yes",'relativeDisUtilityToSelected'] = plans.loc[plans['selected']=="yes",'utility'] - plans[plans['selected']=="yes"].groupby('agent')['utility'].transform('max').values
-# plans.loc[m,'relativeDisUtilityToSelected'] = plans.loc[m,'utility']- plans[m].groupby('agent')['utility'].transform('max')
-
-# This is wrong - we assume max score is selected, which it often isn't.
+# This is naive - we assume max score is selected, which it often isn't.
 # good enough for now
 plans['relativeDisUtilityToSelected'] = plans['utility'] - plans.groupby(['agent'])['utility'].transform('max')
 plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
+
+
+# version where we get selected score, not maximum score, when calculating relative score
+# m=plans['selected']=="yes"
+# plans.loc[plans['selected']=="yes",'relativeDisUtilityToSelected'] = plans.loc[plans['selected']=="yes",'utility'] - plans[plans['selected']=="yes"].groupby('agent')['utility'].transform('max').values
+# plans.loc[m,'relativeDisUtilityToSelected'] = plans.loc[m,'utility']- plans[m].groupby('agent')['utility'].transform('max')
 
 # We find the home locations, based on the origin activity (home)
 # we use home locations for visulisation purposes
@@ -61,18 +60,20 @@ gdf.crs = {'init': 'epsg:27700'}
 # re-project to 4326
 gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
 
+# sort by utility
 gdf = gdf.sort_values("utility")
+# flatten, one row per innovation (removes duplicates from lazy processes above)
 gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
 
 # Kepler weirdness. Moving from yes/no (matsim lingo) to a bool for whether or not it was selected
+# enables this to be toggled on/off on kepler
 gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
 
-# let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc)
+# let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
 gdf = gdf.sort_values('utility')
 gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
 
-gdf.to_csv("./tmp.csv")
-
+# subselecting them into 2 different dfs
 selectedPlans = gdf[gdf.selected==True]
 unSelectedPlans = gdf[gdf.selected==False]
 
@@ -84,11 +85,15 @@ unSelectedPlans = gdf[gdf.selected==False]
 unSelectedPlans = unSelectedPlans.sort_values("utility")
 unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','mode'], keep='last')
 
+# zip them back together again
 gdf = pd.concat([selectedPlans,unSelectedPlans])
 
 # kepler'able geojson
 gdf.to_file("./out/AllPlans.geojson", driver="GeoJSON")
 
+# creation of a df where car is selected
+# but PT exists in their unchosen plans
+# "mode shift opportunity" gdf
 PlanAgentsSel = gdf[gdf.selected==True]
 carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
 
@@ -96,25 +101,8 @@ unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanA
 unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.dominantTripMode.isin(['bus','rail'])]
 unSelectedPlansCarSelected.to_file("./out/CarModeShiftOpportunities.geojson",driver='GeoJSON')
 
-
+# next steps:
 # aggregate all innovations
 # per lsoa?
 # per income group?
 # per mosaic data?
-
-
-# let's remove those selected, keep only those not selected
-# gdfUnSelected = gdf[gdf['selected']==False]
-
-# # let's order these unselected by their utility
-# # let's keep the best (unselected closest plan)
-# gdfUnSelectedTop = gdfUnSelected.sort_values('utility').drop_duplicates(['agent'],keep='last')
-
-# # write to geojson
-# gdfUnSelectedTop.to_file("./out/topUnselected.geojson",driver='GeoJSON')
-
-# # let's find plans where they have an unselected pt (bus and or rail) option
-# pt_misses = gdfUnSelectedTop[(gdfUnSelectedTop['mode'].str.contains("rail|bus"))]
-
-# # write to geojson
-# pt_misses.to_file("./out/topUnselectedPT.geojson",driver="GeoJSON")
