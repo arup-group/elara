@@ -82,14 +82,14 @@ class ModeShares(PlanHandlerTool):
 
     requirements = [
         'plans',
-        'subpopulations',
+        'attributes',
         'transit_schedule',
         'output_config',
         'mode_map',
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None) -> None:
+    def __init__(self, config, mode=None, attribute_slicer=None) -> None:
         """
         Initiate Handler.
         :param config: Config
@@ -98,6 +98,7 @@ class ModeShares(PlanHandlerTool):
         super().__init__(config, mode)
 
         self.mode = mode  # todo options not implemented
+        self.attribute_slicer = attribute_slicer
 
         self.modes = None
         self.mode_indices = None
@@ -124,15 +125,23 @@ class ModeShares(PlanHandlerTool):
 
         activities = self.resources['output_config'].activities
         self.logger.debug(f'activities = {activities}')
-        sub_populations = self.resources['output_config'].sub_populations
-        self.logger.debug(f'sub_populations = {sub_populations}')
+
+        if self.attribute_slicer:
+            availability = self.resources['attributes'].attribute_key_availability(self.attribute_slicer)
+            self.logger.debug(f'availability of attribute {self.attribute_slicer} = {availability*100}%')
+            if availability < 1:
+                self.logger.warning(f'availability of attribute {self.attribute_slicer} = {availability*100}%')
+            attributes = self.resources['attributes'].attribute_values(self.attribute_slicer) | {None}
+        else:
+            attributes = [None]
+        self.logger.debug(f'attributes = {attributes}')
 
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(modes)
 
         # Initialise class classes
         self.classes, self.class_indices = self.generate_id_map(
-            sub_populations
+            attributes
         )
 
         # Initialise activity classes
@@ -160,7 +169,7 @@ class ModeShares(PlanHandlerTool):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
-                attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
+                attribute_class = self.resources['attributes'].get(ident, {}).get(self.attribute_slicer)
 
                 end_time = None
                 modes = {}
@@ -219,8 +228,9 @@ class ModeShares(PlanHandlerTool):
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        key = f"{self.name}_subpop_counts".format(self.mode)
-        self.results[key] = counts_df
+        if self.attribute_slicer:
+            key = f"{self.name}_subpop_counts".format(self.mode)
+            self.results[key] = counts_df
 
         # mode counts totals output
         total_counts_df = counts_df.sum(0)
@@ -231,8 +241,9 @@ class ModeShares(PlanHandlerTool):
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        key = f"{self.name}_subpops"
-        self.results[key] = counts_df / total
+        if self.attribute_slicer:
+            key = f"{self.name}_subpops"
+            self.results[key] = counts_df / total
 
         # mode shares totals output
         key = f"{self.name}"

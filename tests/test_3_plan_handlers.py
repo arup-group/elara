@@ -187,9 +187,9 @@ def test_extract_mode_from_route_elem_v12(base_handler_v12):
 def person_single_plan_elem():
     string = """
         <person id="test1">
-		<plan score="10" selected="yes">
-		</plan>
-	</person>
+        <plan score="10" selected="yes">
+        </plan>
+    </person>
         """
     return etree.fromstring(string)
 
@@ -198,11 +198,11 @@ def person_single_plan_elem():
 def person_plans_elem():
     string = """
         <person id="test2">
-		<plan score="10" selected="yes">
-		</plan>
+        <plan score="10" selected="yes">
+        </plan>
         <plan score="8" selected="no">
-		</plan>
-	</person>
+        </plan>
+    </person>
         """
     return etree.fromstring(string)
 
@@ -591,23 +591,23 @@ def test_agent_trip_log_process_pt_bus_person(agent_trip_handler):
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
             <leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
-			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
+                <route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
             <leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="1010.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="pt" trav_time="00:43:42">
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="1010.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+                <route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
             <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -642,23 +642,23 @@ def test_agent_trip_log_process_pt_rail_person(agent_trip_handler):
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
             <leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
-			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
+                <route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
             <leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="pt" trav_time="00:43:42">
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+                <route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
             <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -921,7 +921,7 @@ def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
 ### Modeshare Handler ###
 @pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.ModeShares(test_config, 'all')
+    handler = plan_handlers.ModeShares(test_config, mode='all', attribute_slicer="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -931,8 +931,8 @@ def test_plan_modeshare_handler(test_config, input_manager):
     # assert len(handler.modes) == len(handler.resources['output_config'].modes)
     assert list(handler.mode_indices.keys()) == handler.modes
 
-    assert len(handler.classes) == len(handler.resources['subpopulations'].classes)
-    assert list(handler.class_indices.keys()) == handler.classes
+    assert len(handler.classes) == 3
+    assert set(handler.class_indices.keys()) == {"rich", "poor", None}
 
     assert len(handler.activities) == len(handler.resources['output_config'].activities)
     assert list(handler.activity_indices.keys()) == handler.activities
@@ -942,7 +942,7 @@ def test_plan_modeshare_handler(test_config, input_manager):
     return handler
 
 
-def test_distance_mode_share_simple(test_plan_modeshare_handler):
+def test_mode_share_simple(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
     string = """
     <person id="nick">
@@ -962,7 +962,7 @@ def test_distance_mode_share_simple(test_plan_modeshare_handler):
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 1
 
 
-def test_distance_mode_share_pt(test_plan_modeshare_handler):
+def test_mode_share_pt(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
     string = """
     <person id="nick">
@@ -970,18 +970,18 @@ def test_distance_mode_share_pt(test_plan_modeshare_handler):
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
             <leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
-			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
+                <route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="pt" trav_time="00:43:42">
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+                <route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
             <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -1007,23 +1007,23 @@ def test_distance_mode_share_complex_pt_1(test_plan_modeshare_handler):
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
             <leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
-			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
+                <route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
             <leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="pt" trav_time="00:43:42">
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+                <route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
             <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -1049,23 +1049,23 @@ def test_distance_mode_share_complex_pt_2(test_plan_modeshare_handler):
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
             <leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
-			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
+                <route type="generic" start_link="1-2" end_link="1-2" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
             <leg mode="pt" trav_time="00:43:42">
-				<route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
-			</leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
-			</activity>
-			<leg mode="transit_walk" trav_time="00:01:18">
-				<route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
-			</leg>
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10101.0">PT1===home_stop_out===city_line===work_bound===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="pt" trav_time="00:43:42">
+                <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">PT1===home_stop_out===rail_dummy===rail_dummy===work_stop_in</route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="transit_walk" trav_time="00:01:18">
+                <route type="generic" start_link="3-4" end_link="3-4" trav_time="00:01:18" distance="65.0"></route>
+            </leg>
             <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -1075,6 +1075,130 @@ def test_distance_mode_share_complex_pt_2(test_plan_modeshare_handler):
     handler.process_plans(person)
     assert np.sum(handler.mode_counts[handler.mode_indices['bus']]) == 1
 
+
+### Modeshare Handler No Attribute Slices###
+@pytest.fixture
+def test_plan_modeshare_handler_no_attribute_slice(test_config_v12, input_manager):
+    handler = plan_handlers.ModeShares(test_config_v12, mode='all')
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    # assert len(handler.modes) == len(handler.resources['output_config'].modes)
+    assert list(handler.mode_indices.keys()) == handler.modes
+
+    assert len(handler.classes) == 1
+    assert list(handler.class_indices.keys()) == [None]
+
+    assert len(handler.activities) == len(handler.resources['output_config'].activities)
+    assert list(handler.activity_indices.keys()) == handler.activities
+
+    assert handler.mode_counts.shape == (6, 1, 2, 24)
+
+    return handler
+
+
+def test_mode_share_without_attribute_slice(test_plan_modeshare_handler_no_attribute_slice):
+    handler = test_plan_modeshare_handler_no_attribute_slice
+    string = """
+    <person id="nick">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 1
+
+
+### Modeshare Handler With Attribute Slices###
+@pytest.fixture
+def test_plan_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
+    handler = plan_handlers.ModeShares(test_config_v12, mode='all', attribute_slicer="age")
+
+    resources = input_manager_v12.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    # assert len(handler.modes) == len(handler.resources['output_config'].modes)
+    assert list(handler.mode_indices.keys()) == handler.modes
+
+    assert len(handler.classes) == 3
+    assert set(handler.classes) == {"yes", "no", None}
+
+    assert len(handler.activities) == len(handler.resources['output_config'].activities)
+    assert list(handler.activity_indices.keys()) == handler.activities
+
+    assert handler.mode_counts.shape == (6, 3, 2, 24)
+
+    return handler
+
+
+def test_mode_share_without_attribute_slice(test_plan_modeshare_handler_age_attribute_slice):
+    handler = test_plan_modeshare_handler_age_attribute_slice
+    string = """
+    <person id="nick">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">young</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    string = """
+    <person id="chris">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">old</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
+    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
 
 def test_plan_handler_test_data(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
@@ -1151,7 +1275,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                 for c in cols:
                     assert c in result.columns
                 df = result.loc[:, cols]
-                assert np.sum(df.values) == 1
+                assert np.sum(df.values) > 0.9999999
 
                 if 'class' in result.columns:
                     assert set(result.loc[:, 'class']) == set(handler.classes)

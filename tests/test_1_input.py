@@ -360,22 +360,22 @@ def test_loading_v12_subpops(test_xml_config_v12, test_paths_v12):
 def test_loading_xml_attributes(test_xml_config, test_paths):
     attribute = inputs.Attributes(test_xml_config)
     attribute.build(test_paths.resources)
-    assert len(attribute.map) == 5
-    assert attribute.map['chris'] == {"subpopulation": "rich", "age": "yes"}
+    assert len(attribute.attributes) == 5
+    assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
 
 
 def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
     attribute = inputs.Attributes(test_gzip_config)
     attribute.build(test_zip_paths.resources)
-    assert len(attribute.map) == 5
-    assert attribute.map['chris'] == {"subpopulation": "rich", "age": "yes"}
+    assert len(attribute.attributes) == 5
+    assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
 
 
 def test_loading_v12_attributes(test_xml_config_v12, test_paths_v12):
     attribute = inputs.Attributes(test_xml_config_v12)
     attribute.build(test_paths_v12.resources)
-    assert len(attribute.map) == 5
-    assert attribute.map['chris'] == {"subpopulation": "rich", "age": "yes"}
+    assert len(attribute.attributes) == 5
+    assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
 
 
 # Output Config
