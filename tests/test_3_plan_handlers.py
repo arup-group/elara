@@ -1,5 +1,6 @@
 import sys
 import os
+from numpy.matrixlib import defmatrix
 import pytest
 import pandas as pd
 import numpy as np
@@ -1257,8 +1258,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                 for c in cols:
                     assert c in result.columns
                 df = result.loc[:, cols]
-                print(df.loc[df[cols].sum(1) > 0])
-                assert np.sum(df.values) == 1
+                assert df.sum().sum() == 1
 
                 if 'class' in result.columns:
                     assert set(result.loc[:, 'class']) == set(handler.classes)
@@ -1268,7 +1268,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                 for c in cols:
                     assert c in result.index
                 df = result.loc[cols]
-                assert np.sum(df.values) == 1
+                assert df.sum().sum() == 1
 
 
 # Plan Handler Manager
