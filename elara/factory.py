@@ -755,14 +755,14 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
             # collect unique mode dependencies
             modes = set()
             for req in reqs:
-                if req and req.get(tool):  
+                if req and req.get(tool):
                     modes.update(req[tool]['modes'])
 
             if modes:
                 for req in reqs:
                     # keep all arguments of current (in the loop) tool, but only pass "modes" argument to dependencies
                     if req and req.get(tool):
-                        combined_reqs[tool] = req.get(tool)                        
+                        combined_reqs[tool] = req.get(tool)
                 combined_reqs[tool]['modes'] = list(modes)
             else:
                 combined_reqs[tool] = None
