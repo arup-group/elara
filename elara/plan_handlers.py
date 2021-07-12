@@ -89,7 +89,7 @@ class ModeShares(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, attribute_slicer=None) -> None:
+    def __init__(self, config, mode=None, attribute=None) -> None:
         """
         Initiate Handler.
         :param config: Config
@@ -98,14 +98,12 @@ class ModeShares(PlanHandlerTool):
         super().__init__(config, mode)
 
         self.mode = mode  # todo options not implemented
-        self.attribute_slicer = attribute_slicer
+        self.attribute_slicer = attribute
 
         self.modes = None
         self.mode_indices = None
         self.classes = None
         self.class_indices = None
-        self.activities = None
-        self.activity_indices = None
         self.mode_counts = None
         self.results = None
 
@@ -122,9 +120,6 @@ class ModeShares(PlanHandlerTool):
 
         modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
         self.logger.debug(f'modes = {modes}')
-
-        activities = self.resources['output_config'].activities
-        self.logger.debug(f'activities = {activities}')
 
         if self.attribute_slicer:
             availability = self.resources['attributes'].attribute_key_availability(self.attribute_slicer)
@@ -144,18 +139,11 @@ class ModeShares(PlanHandlerTool):
             attributes
         )
 
-        # Initialise activity classes
-        self.activities, self.activity_indices = self.generate_id_map(
-            activities
-        )
-
-        # TODO - don't need to keep pt interactions or/for modeshare
-
         # Initialise mode count table
-        self.mode_counts = np.zeros((len(self.modes),
-                                    len(self.classes),
-                                    len(self.activities),
-                                    self.config.time_periods))
+        self.mode_counts = np.zeros((
+            len(self.modes),
+            len(self.classes),
+            self.config.time_periods))
 
         self.results = dict()
 
@@ -186,23 +174,20 @@ class ModeShares(PlanHandlerTool):
                         modes[mode] = modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
-                        activity = stage.get('type')
-
-                        if activity == 'pt interaction':  # ignore pt interaction activities
+                        if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
                             continue
 
                         # only add activity modes when there has been previous activity
                         # (ie trip start time)
                         if end_time:
                             mode = self.get_furthest_mode(modes)
-                            x, y, z, w = self.table_position(
+                            x, y, z = self.table_position(
                                 mode,
                                 attribute_class,
-                                activity,
                                 end_time
                             )
 
-                            self.mode_counts[x, y, z, w] += 1
+                            self.mode_counts[x, y, z] += 1
 
                         # update endtime for next activity
                         end_time = convert_time_to_seconds(stage.get('end_time'))
@@ -221,15 +206,15 @@ class ModeShares(PlanHandlerTool):
         # Scale final counts
         self.mode_counts *= 1.0 / self.config.scale_factor
 
-        names = ['mode', 'class', 'activity', 'hour']
-        indexes = [self.modes, self.classes, self.activities, range(self.config.time_periods)]
+        names = ['mode', 'class', 'hour']
+        indexes = [self.modes, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
         if self.attribute_slicer:
-            key = f"{self.name}_subpop_counts".format(self.mode)
+            key = f"{self.name}_{self.attribute_slicer}_counts"
             self.results[key] = counts_df
 
         # mode counts totals output
@@ -242,7 +227,7 @@ class ModeShares(PlanHandlerTool):
 
         # mode shares breakdown output
         if self.attribute_slicer:
-            key = f"{self.name}_subpops"
+            key = f"{self.name}_{self.attribute_slicer}"
             self.results[key] = counts_df / total
 
         # mode shares totals output
@@ -268,22 +253,19 @@ class ModeShares(PlanHandlerTool):
         self,
         mode,
         attribute_class,
-        activity,
         time
     ):
         """
         Calculate the result table coordinates from given maps.
         :param mode: String, mode id
         :param attribute_class: String, class id
-        :param activity: String, activity id
         :param time: Timestamp of event
         :return: (x, y, z, w) tuple of integers to index results table
         """
         x = self.mode_indices[mode]
         y = self.class_indices[attribute_class]
-        z = self.activity_indices[activity]
-        w = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
-        return x, y, z, w
+        z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
+        return x, y, z
 
 
 class LegLogs(PlanHandlerTool):

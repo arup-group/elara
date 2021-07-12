@@ -68,7 +68,7 @@ class Config:
 
         # convert list-format handler arguments to dictionary
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
-            for handler in self.settings.get(handler_group):
+            for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]
                     if isinstance(options, list):
@@ -76,7 +76,7 @@ class Config:
                     elif isinstance(options, dict):
                         # if no modes option is specified, assume "all"
                         if 'modes' not in options:
-                            self.settings[handler_group][handler] = {'modes': ['all']}
+                            self.settings[handler_group][handler]["modes"] = ['all']
 
 
         self.load_required_settings()
