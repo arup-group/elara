@@ -98,7 +98,7 @@ class ModeShares(PlanHandlerTool):
         super().__init__(config, mode)
 
         self.mode = mode  # todo options not implemented
-        self.attribute_slicer = attribute
+        self.attribute_key = attribute
 
         self.modes = None
         self.mode_indices = None
@@ -121,12 +121,12 @@ class ModeShares(PlanHandlerTool):
         modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
         self.logger.debug(f'modes = {modes}')
 
-        if self.attribute_slicer:
-            availability = self.resources['attributes'].attribute_key_availability(self.attribute_slicer)
-            self.logger.debug(f'availability of attribute {self.attribute_slicer} = {availability*100}%')
+        if self.attribute_key:
+            availability = self.resources['attributes'].attribute_key_availability(self.attribute_key)
+            self.logger.debug(f'availability of attribute {self.attribute_key} = {availability*100}%')
             if availability < 1:
-                self.logger.warning(f'availability of attribute {self.attribute_slicer} = {availability*100}%')
-            attributes = self.resources['attributes'].attribute_values(self.attribute_slicer) | {None}
+                self.logger.warning(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            attributes = self.resources['attributes'].attribute_values(self.attribute_key) | {None}
         else:
             attributes = [None]
         self.logger.debug(f'attributes = {attributes}')
@@ -157,7 +157,7 @@ class ModeShares(PlanHandlerTool):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
-                attribute_class = self.resources['attributes'].get(ident, {}).get(self.attribute_slicer)
+                attribute_class = self.resources['attributes'].get(ident, {}).get(self.attribute_key)
 
                 end_time = None
                 modes = {}
@@ -213,8 +213,8 @@ class ModeShares(PlanHandlerTool):
 
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        if self.attribute_slicer:
-            key = f"{self.name}_{self.attribute_slicer}_counts"
+        if self.attribute_key:
+            key = f"{self.name}_{self.attribute_key}_counts"
             self.results[key] = counts_df
 
         # mode counts totals output
@@ -226,8 +226,8 @@ class ModeShares(PlanHandlerTool):
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        if self.attribute_slicer:
-            key = f"{self.name}_{self.attribute_slicer}"
+        if self.attribute_key:
+            key = f"{self.name}_{self.attribute_key}"
             self.results[key] = counts_df / total
 
         # mode shares totals output
@@ -270,7 +270,7 @@ class ModeShares(PlanHandlerTool):
 
 class LegLogs(PlanHandlerTool):
 
-    requirements = ['plans', 'transit_schedule', 'subpopulations']
+    requirements = ['plans', 'transit_schedule', 'attributes']
     valid_modes = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
@@ -283,16 +283,18 @@ class LegLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute="subpopulation"):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
+        :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
         super().__init__(config, mode)
 
         self.mode = mode
+        self.attribute_key = attribute
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
@@ -308,6 +310,8 @@ class LegLogs(PlanHandlerTool):
         :param write_path: Optional output path overwrite
         """
         super().build(resources, write_path=write_path)
+
+        self.attributes = self.resources["attributes"]
 
         activity_csv_name = f"{self.name}_activities.csv"
         legs_csv_name = f"{self.name}_legs.csv"
@@ -334,7 +338,7 @@ class LegLogs(PlanHandlerTool):
                 activities = []
                 legs = []
                 
-                attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
+                attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
 
                 leg_seq_idx = 0
                 trip_seq_idx = 0
@@ -374,7 +378,7 @@ class LegLogs(PlanHandlerTool):
                         activities.append(
                             {
                                 'agent': ident,
-                                'attribute': attribute_class,
+                                'attribute': attribute,
                                 'seq': act_seq_idx,
                                 'act': act_type,
                                 'x': x,
@@ -406,7 +410,7 @@ class LegLogs(PlanHandlerTool):
                         legs.append(
                             {
                                 'agent': ident,
-                                'attribute': attribute_class,
+                                'attribute': attribute,
                                 'seq': leg_seq_idx,
                                 'trip': trip_seq_idx,
                                 'mode': mode,
@@ -460,7 +464,7 @@ class LegLogs(PlanHandlerTool):
 
 class TripLogs(PlanHandlerTool):
 
-    requirements = ['plans', 'transit_schedule', 'subpopulations']
+    requirements = ['plans', 'transit_schedule', 'attributes']
     valid_modes = ['all'] #mode and purpose options need to be enabled for post-processing cross tabulation w euclidian distance
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
@@ -473,16 +477,18 @@ class TripLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute="subpopulation"):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
+        :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
         super().__init__(config, mode)
 
         self.mode = mode
+        self.attribute_key = attribute
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
@@ -499,6 +505,8 @@ class TripLogs(PlanHandlerTool):
         :param write_path: Optional output path overwrite
         """
         super().build(resources, write_path=write_path)
+
+        self.attributes = self.resources["attributes"]
 
         activity_csv_name = f"{self.name}_activities.csv"
         trips_csv_name = f"{self.name}_trips.csv"
@@ -520,7 +528,7 @@ class TripLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            attribute_class = self.resources['subpopulations'].map.get(ident, 'not found')
+            attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
 
             if plan.get('selected') == 'yes':
 
@@ -569,7 +577,7 @@ class TripLogs(PlanHandlerTool):
                                 trips.append(
                                     {
                                         'agent': ident,
-                                        'attribute': attribute_class,
+                                        'attribute': attribute,
                                         'seq': act_seq_idx-1,
                                         'mode': self.get_furthest_mode(modes),
                                         'ox': activities[-1]['x'],
@@ -596,7 +604,7 @@ class TripLogs(PlanHandlerTool):
                             activities.append(
                                 {
                                     'agent': ident,
-                                    'attribute': attribute_class,
+                                    'attribute': attribute,
                                     'seq': act_seq_idx,
                                     'act': act_type,
                                     'x': x,
@@ -661,7 +669,6 @@ class UtilityLogs(PlanHandlerTool):
     valid_modes = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
-
 
     def __init__(self, config, mode=None):
         """
@@ -729,9 +736,9 @@ class PlanLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    requirements = ['plans', 'subpopulations']
+    requirements = ['plans', 'attributes']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute="subpopulation"):
         """
         Initiate handler.
         :param config: config
@@ -741,6 +748,7 @@ class PlanLogs(PlanHandlerTool):
         super().__init__(config, mode)
 
         self.mode = mode
+        self.attribute_key = attribute
 
         self.plans_log = None
 
@@ -755,6 +763,8 @@ class PlanLogs(PlanHandlerTool):
         :return: None
         """
         super().build(resources, write_path=write_path)
+
+        self.attributes = self.resources["attributes"]
 
         csv_name = f"{self.name}.csv"
         self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path)
@@ -771,10 +781,9 @@ class PlanLogs(PlanHandlerTool):
         """
 
         ident = elem.get('id')
-        subpop = self.resources['subpopulations'].map.get(ident)
-        # license = self.resources['attributes'].license.get(ident)
+        attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
 
-        if not self.mode == "all" and not subpop == self.mode:
+        if not self.mode == "all" and not attribute == self.mode:
             return None
 
         for pidx, plan in enumerate(elem.xpath(".//plan")):
@@ -823,7 +832,7 @@ class PlanLogs(PlanHandlerTool):
                             trip_records.append(
                                 {
                                 "pid": ident,
-                                "subpop": subpop,
+                                "subpop": attribute,
                                 # "license": license,
                                 "plan": pidx,
                                 "seq": trip_seq,
@@ -897,20 +906,22 @@ class AgentTollsPaid(PlanHandlerTool):
 
     requirements = [
         'plans',
-        'subpopulations',
+        'attributes',
         'road_pricing'
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute="subpopulation"):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
+        :param attribute: str, attribute key defaults to subpopulation
         """
         super().__init__(config, mode)
 
         self.mode = mode
+        self.attribute_key = attribute
         self.roadpricing = None
         self.agents_ids = None
         self.results = dict()  # Result dataframes ready to export
@@ -924,7 +935,7 @@ class AgentTollsPaid(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        self.subpopulations = resources['subpopulations'].map
+        self.attributes = resources['attributes']
         self.roadpricing = resources['road_pricing']
         self.toll_log = pd.DataFrame(columns = ["agent","subpopulation","tollname","link","time","toll"]) #df for results
         
@@ -934,9 +945,8 @@ class AgentTollsPaid(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
-        subpopulation_attribute = self.resources['subpopulations'].map.get(ident, 'not found')
+        attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
         agent_in_tolled_space = [0,0] # {trip marker, whether last link was tolled}
-
 
         def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
             if current_link_tolled and agent_in_tolled_space[1] == False: #entering into tolled space from non-tolled space
@@ -972,7 +982,7 @@ class AgentTollsPaid(PlanHandlerTool):
                             if apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
                                 toll_dictionary = {
                                                 "agent": ident,
-                                                "subpopulation": subpopulation_attribute,
+                                                "subpopulation": attribute,
                                                 "tollname":self.roadpricing.tollnames[link],
                                                 "link": link,
                                                 "time": start_time,
@@ -984,8 +994,7 @@ class AgentTollsPaid(PlanHandlerTool):
                                 agent_in_tolled_space[1] = True
                             else:
                                 agent_in_tolled_space[1] = False
-                            agent_in_tolled_space[0] = start_time #use start time as a marker of unique leg
-
+                            agent_in_tolled_space[0] = start_time # use start time as a marker of unique leg
 
     def finalise(self):
         """
@@ -1007,6 +1016,7 @@ class AgentTollsPaid(PlanHandlerTool):
         aggregate_df = aggregate_df.reset_index().groupby(by=['subpopulation'])['toll'].mean()
         key = f"tolls_paid_average_by_subpopulation"
         self.results[key] = aggregate_df
+
 
 class AgentHighwayDistanceLogs(PlanHandlerTool):
     """
@@ -1059,8 +1069,10 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         self.ways, self.ways_indices = self.generate_indices_map(self.osm_ways.classes)
 
         # Initialise results array
-        self.distances = np.zeros((len(self.agent_ids),
-                                   len(self.ways)))
+        self.distances = np.zeros((
+            len(self.agent_ids),
+            len(self.ways))
+        )
 
     def process_plans(self, elem):
         """
@@ -1145,19 +1157,21 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
     requirements = [
         'plans',
         'osm_ways',
-        'subpopulations'
+        'attributes'
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute="subpopulation"):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
+        :param attribute: str, attribute key defaults to 'subpopulation'
         """
         super().__init__(config, mode)
 
         self.mode = mode
+        self.attribute_slicer = attribute
         self.osm_ways = None
         self.ways = None
 
@@ -1175,7 +1189,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         super().build(resources, write_path=write_path)
 
         self.osm_ways = resources['osm_ways']
-        self.subpopulations = resources['subpopulations'].map
+        self.attributes = resources['attributes']
 
         # Initialise ways
         self.ways = self.osm_ways.classes
@@ -1190,7 +1204,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
-        subpop = self.subpopulations[ident]
+        attribute = self.attributes.get(ident, {}).get(self.attribute_slicer, None)
 
         for plan in elem.xpath(".//plan"):
             if plan.get('selected') == 'yes':
@@ -1214,7 +1228,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
                             # set counter
                             trip_counter = {
                                 'agent': ident,
-                                'subpop': subpop,
+                                'subpop': attribute,
                                 'seq': trip_seq_idx
                             }
                             trip_counter.update(

@@ -71,7 +71,9 @@ class Config:
             for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]
-                    if isinstance(options, list):
+                    if not options:
+                        self.settings[handler_group][handler] = {'modes': options} 
+                    elif isinstance(options, list):
                         self.settings[handler_group][handler] = {'modes': options}
                     elif isinstance(options, dict):
                         # if no modes option is specified, assume "all"
