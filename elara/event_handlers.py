@@ -1152,7 +1152,7 @@ class StopPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, attribute=None):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
