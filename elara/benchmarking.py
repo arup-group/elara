@@ -237,10 +237,10 @@ class LinkCounter(BenchmarkTool):
 
         # Extract simulation results
         # Build paths and load appropriate volume counts from previous workstation
-        results_name = f"link_vehicle_counts_{self.mode}.csv"
+        results_name = f"link_vehicle_counts_{self.mode}_total.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=0)
-        results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+        # results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         results_df.index = results_df.index.map(str)  # indices converted to strings
         results_df.index.name = 'link_id'
@@ -748,10 +748,10 @@ class TransitInteraction(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         model_results = {}
         for direction in ["boardings", "alightings"]:
-            results_name = f"stop_passenger_counts_{self.mode}_{direction}.csv"
+            results_name = f"stop_passenger_counts_{self.mode}_{direction}_total.csv"
             results_path = os.path.join(self.config.output_path, results_name)
             results_df = pd.read_csv(results_path, index_col=0)
-            results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+            # results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
             results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
             results_df.index = results_df.index.map(str)  # indices converted to strings
             results_df.index.name = 'stop_id'

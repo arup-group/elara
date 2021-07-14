@@ -291,7 +291,7 @@ The associated list attached to each handler allows specification of additional 
 * agent_plans support subpopulation selection, eg ``rich, poor``
 * highway_distances only supports ``car``
 
-The mode share handler additionally supports a `subpopulation` option, eg: `mode_shares = {attribute="subpopulation"}`.
+The mode share handler additionally supports a `subpopulation` option, eg: `mode_shares = {attribute="subpopulation"}`. This adds an additional output breaking down mode counts and shares by the chosen person attribute.
 
 **#** post_processors.**[post-processor name]** *list of strings* *(optional)*
 
@@ -324,9 +324,9 @@ Currently available benchmarks include:
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
-* ``ireland_highways_NI`` 
+* ``ireland_highways_NI``
 * ``ireland_DCC``
-* ``ROI_modeshares`` ^
+* ``ROI_modeshares``
 * ``london_board_alight_subway``
 * ``london_central_cordon_car``
 * ``london_central_cordon_bus``
