@@ -121,23 +121,23 @@ class ModeShares(PlanHandlerTool):
         modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
         self.logger.debug(f'modes = {modes}')
 
-        if self.attribute_key:
-            availability = self.resources['attributes'].attribute_key_availability(self.attribute_key)
-            self.logger.debug(f'availability of attribute {self.attribute_key} = {availability*100}%')
-            if availability < 1:
-                self.logger.warning(f'availability of attribute {self.attribute_key} = {availability*100}%')
-            attributes = self.resources['attributes'].attribute_values(self.attribute_key) | {None}
-        else:
-            attributes = [None]
-        self.logger.debug(f'attributes = {attributes}')
-
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(modes)
 
+        if self.attribute_key:
+            self.attributes = self.resources["attributes"]
+            availability = self.attributes.attribute_key_availability(self.attribute_key)
+            self.logger.debug(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            if availability < 1:
+                self.logger.warning(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            found_attributes = self.resources['attributes'].attribute_values(self.attribute_key) | {None}
+        else:
+            self.attributes = {}
+            found_attributes = [None]
+        self.logger.debug(f'attributes = {found_attributes}')
+
         # Initialise class classes
-        self.classes, self.class_indices = self.generate_id_map(
-            attributes
-        )
+        self.classes, self.class_indices = self.generate_id_map(found_attributes)
 
         # Initialise mode count table
         self.mode_counts = np.zeros((
@@ -157,7 +157,7 @@ class ModeShares(PlanHandlerTool):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
-                attribute_class = self.resources['attributes'].get(ident, {}).get(self.attribute_key)
+                attribute_class = self.attributes.get(ident, {}).get(self.attribute_key)
 
                 end_time = None
                 modes = {}

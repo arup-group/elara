@@ -564,6 +564,9 @@ class Attributes(InputTool):
     def get(self, key, default):
         return self.attributes.get(key, default)
 
+    def __contains__(self, other):
+        return other in self.attributes
+
     def __getattr__(self, key):
         return self.attributes[key]
 

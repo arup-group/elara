@@ -406,7 +406,7 @@ class WorkStation:
 
                 tool.build(self.supplier_resources, write_path)
 
-    def load_all_tools(self, mode=None) -> None:
+    def load_all_tools(self, mode=None, attribute=None) -> None:
         """
         Method used for testing.
         Load all available tools into resources with given option.
