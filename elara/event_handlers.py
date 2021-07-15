@@ -25,6 +25,8 @@ class EventHandlerTool(Tool):
         self.logger = logging.getLogger(__name__)
         super().__init__(config, mode)
 
+        self.attribute_key = None
+
     def build(
             self,
             resources: dict,
@@ -106,6 +108,24 @@ class EventHandlerTool(Tool):
         if availability < 1:
             self.logger.warning(f'availability of attribute {attribute_key} = {availability*100}%')
         return attributes.attribute_values(attribute_key) | {None}
+    
+    def extract_attributes(self) -> Tuple:
+        """
+        Get attributes input and find available attribute values based on self.attribute_key.
+        If key is None, return empty attribute dictionary and {None}.
+
+        Returns:
+            Tuple: (elara.inputs.Attributes, found_attributes)
+        """
+        if self.attribute_key:
+            attributes = self.resources['attributes']
+            found_attributes = self.extract_attribute_values(attributes, self.attribute_key)
+        else:
+            attributes = {}
+            found_attributes = {None}
+        self.logger.debug(f'found attributes = {found_attributes}')
+
+        return attributes, found_attributes
 
 
 class VehiclePassengerGraph(EventHandlerTool):
@@ -230,10 +250,7 @@ class StopPassengerWaiting(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        if self.attribute_key:
-            self.agent_attributes = self.resources["attributes"]
-        else:
-            self.agent_attributes = {}
+        self.agent_attributes, _ = self.extract_attributes()
 
         csv_name = f"{str(self)}.csv"
         self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
@@ -377,14 +394,7 @@ class LinkVehicleCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        if self.attribute_key:
-            self.attributes = self.resources['attributes']
-            found_attributes = self.extract_attribute_values(self.attributes, self.attribute_key)
-        else:
-            self.attributes = {}
-            found_attributes = {None}
-        self.logger.debug(f'found attributes = {found_attributes}')
-
+        self.attributes, found_attributes = self.extract_attributes()
         self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
         self.logger.debug(f'available population {self.attribute_key} values = {self.classes}')
 
@@ -527,14 +537,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        if self.attribute_key:
-            self.attributes = self.resources['attributes']
-            found_attributes = self.extract_attribute_values(self.attributes, self.attribute_key)
-        else:
-            self.attributes = {}
-            found_attributes = {None}
-        self.logger.debug(f'found attributes = {found_attributes}')
-
+        self.attributes, found_attributes = self.extract_attributes()
         self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
         self.logger.debug(f'available population {self.attribute_key} values = {self.classes}')
 
@@ -783,14 +786,7 @@ class LinkPassengerCounts(EventHandlerTool):
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        if self.attribute_key:
-            self.attributes = self.resources['attributes']
-            found_attributes = self.extract_attribute_values(self.attributes, self.attribute_key)
-        else:
-            self.attributes = {}
-            found_attributes = {None}
-        self.logger.debug(f'found attributes = {found_attributes}')
-
+        self.attributes, found_attributes = self.extract_attributes()
         self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
         self.logger.debug(f'available population {self.attribute_key} values = {self.classes}')
 
@@ -989,14 +985,7 @@ class RoutePassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        if self.attribute_key:
-            self.attributes = self.resources['attributes']
-            found_attributes = self.extract_attribute_values(self.attributes, self.attribute_key)
-        else:
-            self.attributes = {}
-            found_attributes = {None}
-        self.logger.debug(f'found attributes = {found_attributes}')
-
+        self.attributes, found_attributes = self.extract_attributes()
         self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
         self.logger.debug(f'available population {self.attribute_key} values = {self.classes}')
 
@@ -1186,14 +1175,7 @@ class StopPassengerCounts(EventHandlerTool):
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        if self.attribute_key:
-            self.attributes = self.resources['attributes']
-            found_attributes = self.extract_attribute_values(self.attributes, self.attribute_key)
-        else:
-            self.attributes = {}
-            found_attributes = {None}
-        self.logger.debug(f'found attributes = {found_attributes}')
-
+        self.attributes, found_attributes = self.extract_attributes()
         self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
         self.logger.debug(f'available population {self.attribute_key} values = {self.classes}')
 
@@ -1376,14 +1358,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.mode}")
 
         # Initialise class attributes
-        if self.attribute_key:
-            self.attributes = self.resources['attributes']
-            found_attributes = self.extract_attribute_values(self.attributes, self.attribute_key)
-        else:
-            self.attributes = {}
-            found_attributes = {None}
-        self.logger.debug(f'found attributes = {found_attributes}')
-
+        self.attributes, found_attributes = self.extract_attributes()
         self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
         self.logger.debug(f'available population {self.attribute_key} values = {self.classes}')
 
