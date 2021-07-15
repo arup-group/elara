@@ -605,6 +605,62 @@ class LondonThamesScreenBus(LinkCounter):
 
     weight = 1
 
+class SuffolkScreenlinesCounters(LinkCounter):
+
+    name = 'suffolk_screenlines_counters'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('suffolk', 'screenlines', 'combined_car_benchmarks.json')
+    )
+
+    requirements = ['link_vehicle_counts']
+    valid_modes = ['car']
+
+    options_enabled = True
+
+    weight = 1
+
+
+class SuffolkDisaggregatedScreenlinesCounters(LinkCounter):
+
+    name = 'suffolk_disaggregated_screenlines_counters'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('suffolk', 'screenlines', 'benchmarks.json')
+    )
+
+    requirements = ['link_vehicle_counts']
+    valid_modes = ['car']
+
+    options_enabled = True
+
+    weight = 1
+
+class SuffolkCarScreenlinesCounters(LinkCounter):
+
+    name = 'suffolk_car_screenlines_counters'
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('suffolk', 'screenlines', 'screenlines_car.json')
+    )
+
+    requirements = ['link_vehicle_counts']
+    valid_modes = ['car']
+
+    options_enabled = True
+
+    weight = 1
+
+# class SuffolkHGVScreenlinesCounters(LinkCounter):
+
+#     name = 'suffolk_hgv_screenlines_counters'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('suffolk', 'screenlines', 'screenlines_hgv.json')
+#     )
+
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ["hgv"]
+
+#     options_enabled = True
+
+#     weight = 1
 
 # class LondonNorthScreen(LinkCounter):
 
@@ -1766,6 +1822,16 @@ class ROIModeShare(ModeStats):
         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
     )
 
+class SuffolkModeShare(ModeStats):
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    options_enabled = True
+
+    weight = 2
+    benchmark_path = get_benchmark_data(
+        os.path.join('suffolk', 'mode_share_validation', 'combined_pop_mode_share_20210601_10pct.csv')
+    )
 # Highway Counters
 
 class TestHighwayCounters(PointsCounter):
@@ -1950,6 +2016,10 @@ class BenchmarkWorkStation(WorkStation):
         "duration_comparison": DurationComparison,
 
         # latest
+        "suffolk_screenlines":SuffolkScreenlinesCounters,
+        "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
+        "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
+        # "suffolk_HGV_screenlines":SuffolkHGVScreenlinesCounters,
         "ireland_highways": IrelandHighwayCounters,
         "ireland_highways_NI": NIHighwayCounters,
         "ireland_DCC": IrelandHighwayCounters_DCC,
@@ -1976,6 +2046,7 @@ class BenchmarkWorkStation(WorkStation):
         "wellington_stop_passenger_counts": WellingtonPTInteration,
         "auckland_stop_passenger_counts":AucklandPTInteraction,
         
+        "suffolk_modeshares": SuffolkModeShare,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
@@ -1995,6 +2066,10 @@ class BenchmarkWorkStation(WorkStation):
         "test_town_modeshare": 1,
         "csv_comparison": 1,
         
+        "suffolk_screenlines": 1,
+        "suffolk_disaggregated_screenlines": 1,
+        "suffolk_car_screenlines":1,
+        # "suffolk_HGV_screenlines":1,
         "ireland_highways": 1,
         "london_boundary_cordon_car": 1,
         "london_boundary_cordon_bus": 1,
