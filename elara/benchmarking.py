@@ -88,7 +88,6 @@ class CsvComparison(BenchmarkTool):
         simulation_df = pd.read_csv(simulation_path, index_col=self.index_field)
 
         # compare
-        print("IN comparison")
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
         bm_df.columns = ['trips_benchmark', 'trips_simulation']
         self.plot_comparison(bm_df)
@@ -529,20 +528,6 @@ class NewZealandCounters(LinkCounter):
 
     weight = 1
 
-class NewZealandCounters(LinkCounter):
-
-    name = 'new_zealand_counters'
-    benchmark_data_path = get_benchmark_data(
-    os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
-    )
-
-    requirements = ['volume_counts']
-    valid_options = ['car']
-    options_enabled = True
-
-    weight = 1
-
-
 class AucklandCounters(LinkCounter):
     def __init__(self, config, mode, benchmark_data_path=None):
         self.benchmark_data_path = benchmark_data_path
@@ -564,18 +549,7 @@ class WellingtonCounters(LinkCounter):
     options_enabled = True
 
     weight = 1
-# class LondonBoundaryCordonCar(LinkCounter):
 
-class WellingtonCounters(LinkCounter):
-    def __init__(self, config, mode, benchmark_data_path=None):
-        self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode)
-    name = 'wellington_counters'
-    requirements = ['link_vehicle_counts']
-    valid_options = ['car']
-    options_enabled = True
-
-    weight = 1
 # class LondonBoundaryCordonCar(LinkCounter):
 
 #     name = 'london_outer_cordon'
@@ -1772,17 +1746,25 @@ class LondonModeShare(ModeStats):
 
 class NZModeShare(ModeStats):
     
-    requirements = ['mode_share']
+    requirements = ['mode_shares']
     def __init__(self, config, mode, benchmark_data_path):
         self.benchmark_path = benchmark_data_path
         super().__init__(config, mode)
-    requirements = ['mode_shares']
-    valid_options = ['all']
+    valid_modes = ['all']
     options_enabled = True
 
     weight = 2
 
+class ROIModeShare(ModeStats):
 
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    options_enabled = True
+
+    weight = 2
+    benchmark_path = get_benchmark_data(
+        os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
+    )
 
 # Highway Counters
 
@@ -1862,6 +1844,40 @@ class MultimodalTownCarCounters(PointsCounter):
 #     year = 2016
 #     hours = None
 #     modes = ['car']
+
+
+class DublinCanalCordonCar(Cordon):
+
+    requirements = ['link_vehicle_counts']
+    valid_modes = ['car']
+    options_enabled = True
+
+    weight = 1
+    cordon_counter = PeriodCordonDirectionCount
+    benchmark_path = get_benchmark_data(
+        os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
+    )
+    cordon_path = get_benchmark_data(
+        os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
+    )
+
+    directions = {'in': 1}
+    year = 2016
+    hours = [7, 8, 9]
+    modes = ['car']
+
+
+class IrelandCommuterStats(ModeStats):
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    options_enabled = True
+
+    weight = 1
+    benchmark_path = get_benchmark_data(
+        os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
+    )
+
 
 
 class TestTownHourlyCordon(Cordon):
@@ -1950,7 +1966,7 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": LondonRODS,
         "london_volume_subway": LondonRODSVolume,
         "london_modeshares": LondonModeShare,
-        # "ROI_modeshares": ROIModeShare,
+        "ROI_modeshares": ROIModeShare,
         "new_zealand_counters" : NewZealandCounters,
         "auckland_counters":AucklandCounters,
         "wellington_counters":WellingtonCounters,
@@ -1966,6 +1982,8 @@ class BenchmarkWorkStation(WorkStation):
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
+        "dublin_canal_cordon_car": DublinCanalCordonCar,
+        "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
     }
