@@ -1,4 +1,4 @@
-import ast
+import json
 import os.path
 import toml
 from elara.factory import WorkStation, Tool
@@ -335,6 +335,15 @@ class Config:
             self.dump_settings_to_disk(
                 os.path.join(path_override, "elara_override_log.json")
             )
+
+
+    def dump_settings_to_disk(self, path):
+        """
+        Dump json of self.settings to path.
+        path (str): path.json
+        """
+        with open(path, "w") as fp:
+            json.dump(self.settings , fp) 
 
 
 class PathTool(Tool):
