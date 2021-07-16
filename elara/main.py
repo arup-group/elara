@@ -482,17 +482,26 @@ def london_rods_volumes(
 @cli.command()
 @click.argument("config_path", type=click.Path(exists=True))
 @click.option("--path_override", '-o', default=None)
-def run(config_path, path_override):
+@click.option("--root", '-r', default=None)
+def run(config_path, path_override, root):
     """
     Run Elara using a config.
     :param config_path: Configuration file path
     :param path_override: containing directory to update for [inputs], outputs.path in toml
+    :param root: add root to all paths (assumes that paths in config are relative)
     """
+    if path_override and root:
+        raise UserWarning(
+            "Cannot run elara from config with both --path_override and --root options, please choose one."
+            )
 
     config = Config(config_path)
 
     if path_override:
         config.override(path_override)
+    
+    if root:
+        config.set_paths_root(root)
         
     main(config)
 
