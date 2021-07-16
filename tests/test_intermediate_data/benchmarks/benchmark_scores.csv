@@ -1,3 +1,2 @@
 ,benchmark,type,score
-0,test_town_cordon:car,in,0.0
-1,test_town_cordon:car,out,0.0
+0,test_link_cordon:car,counters,0.0

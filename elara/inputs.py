@@ -486,20 +486,6 @@ class Subpopulations(InputTool):
 
         path = resources['attributes_path'].path
 
-        # Attribute label mapping
-        # TODO move model specific setup elsewhere
-        # self.final_attribute_map = {
-        #     "inc7p": "inc7p",
-        #     "inc56": "inc56",
-        #     "inc34": "inc34",
-        #     "inc12": "inc12",
-        #     "inc7p_nocar": "inc7p",
-        #     "inc56_nocar": "inc56",
-        #     "inc34_nocar": "inc34",
-        #     "inc12_nocar": "inc12",
-        #     "freight": "freight",
-        # }
-
         if self.config.version == 12:
             self.logger.debug("Loading attribute map from V12 plan")
             self.map = dict(
@@ -517,12 +503,6 @@ class Subpopulations(InputTool):
                     for elem in get_elems(path, "object")
                 ]
             )
-        # self.license = dict(
-        #     [
-        #         self.get_attribute_text(elem, 'license')
-        #         for elem in get_elems(path, "object")
-        #     ]
-        # )
 
         self.classes, self.attribute_count_map = count_values(self.map)
         self.classes.append('not_applicable')
@@ -546,9 +526,7 @@ class Subpopulations(InputTool):
 class Attributes(InputTool):
     
     requirements = ['attributes_path']
-    # final_attribute_map = None
-    map = None
-    classes = None
+    attributes = {}
     attribute_count_map = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -561,23 +539,9 @@ class Attributes(InputTool):
 
         path = resources['attributes_path'].path
 
-        # Attribute label mapping
-        # TODO move model specific setup elsewhere
-        # self.final_attribute_map = {
-        #     "inc7p": "inc7p",
-        #     "inc56": "inc56",
-        #     "inc34": "inc34",
-        #     "inc12": "inc12",
-        #     "inc7p_nocar": "inc7p",
-        #     "inc56_nocar": "inc56",
-        #     "inc34_nocar": "inc34",
-        #     "inc12_nocar": "inc12",
-        #     "freight": "freight",
-        # }
-
         if self.config.version == 12:
             self.logger.debug("Loading attribute map from V12 plan")
-            self.map = dict(
+            self.attributes = dict(
                 [
                     self.get_attributes_from_plans(elem)
                     for elem in get_elems(path, "person")
@@ -586,16 +550,37 @@ class Attributes(InputTool):
 
         else:
             self.logger.debug("Loading attribute map from V11 personAttributes")
-            self.map = dict(
+            self.attributes = dict(
                 [
                     self.get_attributes(elem)
                     for elem in get_elems(path, "object")
                 ]
             )
 
-        self.idents = sorted(list(self.map))
-        self.attribute_fields = set([k for v in self.map.values() for k in v.keys()])
-        self.attributes_df = pd.DataFrame.from_dict(self.map, orient='index')
+        self.idents = sorted(list(self.attributes))
+        self.attribute_names = set([k for v in self.values() for k in v.keys()])
+        # self.attributes_df = pd.DataFrame.from_dict(self.attributes, orient='index')  # todo: is this needed? - make it lazy
+
+    def get(self, key, default):
+        return self.attributes.get(key, default)
+
+    def __contains__(self, other):
+        return other in self.attributes
+
+    def __getattr__(self, key):
+        return self.attributes[key]
+
+    def items(self):
+        for k, v in self.attributes.items():
+            yield k, v
+
+    def keys(self):
+        for key in self.attributes.keys():
+            yield key
+
+    def values(self):
+        for value in self.attributes.values():
+            yield value
 
     def get_attributes(self, elem):
         ident = elem.xpath("@id")[0]
@@ -610,6 +595,19 @@ class Attributes(InputTool):
         for attr in elem.xpath('./attributes/attribute'):
             attributes[attr.get('name')] = attr.text
         return ident, attributes
+
+    def attribute_values(self, attribute_key):
+        """
+        Get set of all available attribute values for a given attribute key.
+        """
+        return set([attribute_map.get(attribute_key) for attribute_map in self.values()])
+
+    def attribute_key_availability(self, attribute_key):
+        """
+        Get proportion of agents with given attribute key available.
+        """
+        availability = [attribute_key in attribute_map for attribute_map in self.values()]
+        return sum(availability) / len(availability)
 
 
 class Plans(InputTool):
