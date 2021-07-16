@@ -80,7 +80,6 @@ class Config:
                         if 'modes' not in options:
                             self.settings[handler_group][handler]["modes"] = ['all']
 
-
         self.load_required_settings()
 
         if not os.path.exists(self.output_path):
@@ -322,7 +321,8 @@ class Config:
         :param path_override: override the config input and output paths
         "param dump_log: (bool) optionally dump overriden config to disk
         """
-        # Construct a dictionary from the path_overrides str
+        self.logger.warning(f"All input paths and output path being overridden with {path_override}")
+
         for path in self.settings['inputs']:
             if path == "road_pricing":  # assume that road pricing file is not overridden
                 continue
@@ -336,6 +336,33 @@ class Config:
         if dump_log:
             self.dump_settings_to_disk(
                 os.path.join(path_override, "elara_override_log.json")
+            )
+
+    def set_paths_root(self, root, dump_log=True):
+        """
+        Add root path to all configured paths (inputs, output directory and benchmark data paths).
+        :param root: root path
+        "param dump_log: (bool) optionally dump overriden config to disk
+        """
+        self.logger.warning(f"""
+            All input paths, output path and data paths being 'rooted' with {root}.
+            This assumes that all configured paths are relative to the new root.
+            """)
+
+        for path in self.settings['inputs']:
+            self.settings['inputs'][path] = os.path.join(root, self.settings['inputs'][path])
+
+        self.settings['outputs']['path'] = os.path.join(root, self.settings['outputs']['path'])
+        self.output_path = self.settings['outputs']['path']
+
+        for handler, options in self.settings.get("benchmarks", {}).items():
+            if 'benchmark_data_path' in options:
+                self.settings['benchmarks'][handler]['benchmark_data_path'] = os.path.join(root, options['benchmark_data_path'])
+                self.benchmarks[handler]['benchmark_data_path'] = options['benchmark_data_path']
+
+        if dump_log:
+            self.dump_settings_to_disk(
+                os.path.join(root, "elara_override_log.json")
             )
 
 
