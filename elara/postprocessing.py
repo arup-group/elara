@@ -230,7 +230,7 @@ class VKT(PostProcessor):
 
         mode = self.mode
 
-        file_name = f"link_vehicle_counts_{mode}_total.geojson"
+        file_name = f"link_vehicle_counts_{mode}.geojson"
         file_path = os.path.join(self.config.output_path, file_name)
         volumes_gdf = geopandas.read_file(file_path)
 

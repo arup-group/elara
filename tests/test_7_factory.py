@@ -52,7 +52,7 @@ def test_requirements_workstation(test_config):
         'stop_passenger_counts': {'modes':['bus', 'train']},
         'vkt': {'modes':['car']},
         'link_vehicle_counts': {'modes':['car']},
-        'test_town_cordon': {'modes':['car']},
+        'test_link_cordon': {'modes':['car']},
     }
 
 

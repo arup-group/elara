@@ -489,7 +489,7 @@ class LinkVehicleCounts(EventHandlerTool):
 
         del self.counts
 
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -936,7 +936,7 @@ class LinkPassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -1124,7 +1124,7 @@ class RoutePassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         self.result_dfs[key] = totals_df
 
 
@@ -1305,7 +1305,7 @@ class StopPassengerCounts(EventHandlerTool):
 
             del data
 
-            key = f"{self.name}_{direction}_total"
+            key = f"{self.name}_{direction}"
             totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
@@ -1541,7 +1541,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         self.result_dfs[key] = totals_df
 
 
