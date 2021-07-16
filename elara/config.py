@@ -346,7 +346,7 @@ class Config:
         """
         self.logger.warning(f"""
             All input paths, output path and data paths being 'rooted' with {root}.
-            This assumes that all configured paths are relative to the new root.
+            This requires that all configured paths are relative.
             """)
 
         for path in self.settings['inputs']:
