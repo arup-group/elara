@@ -28,7 +28,7 @@ mode_shares = ["all"]
 vkt = ["car"]
 
 [benchmarks]
-test_town_cordon = ["car"]
+test_link_cordon = ["car"]
 
 [outputs]
 path = "./tests/test_intermediate_data"
