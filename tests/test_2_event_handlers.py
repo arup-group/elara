@@ -1067,7 +1067,7 @@ def test_stop_to_stop_finalise_bus(
     if 'subpopulation' in gdf.columns:
         assert set(gdf.loc[:, 'subpopulation']) == {'poor', 'rich', np.nan}
 
-    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_total"]
+    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus"]
     cols = list(range(handler.config.time_periods))
     for c in cols:
         assert c in gdf.columns
@@ -1111,7 +1111,7 @@ def test_stop_to_stop_finalise_bus_simple(
     
     handler.finalise()
     assert len(handler.result_dfs) == 1
-    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_total"]
+    gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus"]
     cols = list(range(handler.config.time_periods))
     for c in cols:
         assert c in gdf.columns

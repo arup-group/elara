@@ -53,6 +53,7 @@ def comparative_column_plots(results):
         x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
     return  plot
 
+
 class BenchmarkTool(Tool):
 
     options_enabled = True
@@ -63,6 +64,7 @@ class BenchmarkTool(Tool):
 
     def __str__(self):
         return f'{self.__class__.__name__}'
+
 
 class CsvComparison(BenchmarkTool):
 
@@ -193,7 +195,7 @@ class LinkCounter(BenchmarkTool):
                 links = counter['links']
                 if not links:      
                     missing_counters += 1
-                    self.logger.debug(
+                    self.logger.warning(
                         f"Benchmark data has no links - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
                         )
 
@@ -205,7 +207,7 @@ class LinkCounter(BenchmarkTool):
                 f"No links found for {self.__str__}"
             )
         if missing > 0.5:
-            self.logger.error(
+            self.logger.warning(
                 f"{self.__str__} has more than 50% ({missing*100}%) BMs with no links."
                 )
 
@@ -237,7 +239,7 @@ class LinkCounter(BenchmarkTool):
 
         # Extract simulation results
         # Build paths and load appropriate volume counts from previous workstation
-        results_name = f"link_vehicle_counts_{self.mode}_total.csv"
+        results_name = f"link_vehicle_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path, index_col=0)
         # results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
@@ -748,7 +750,7 @@ class TransitInteraction(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         model_results = {}
         for direction in ["boardings", "alightings"]:
-            results_name = f"stop_passenger_counts_{self.mode}_{direction}_total.csv"
+            results_name = f"stop_passenger_counts_{self.mode}_{direction}.csv"
             results_path = os.path.join(self.config.output_path, results_name)
             results_df = pd.read_csv(results_path, index_col=0)
             # results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
@@ -1586,7 +1588,7 @@ class HourlyCordonDirectionCount(CordonDirectionCount):
         self.write_csv(model_results, csv_path, write_path=write_path)
 
         # aggregate for each class
-        classes_df = model_results.groupby('class').sum()
+        classes_df = model_results.groupby('subpopulation').sum()  # TODO this is hardcoded - will break for other options
 
         # filter model results for hours
         select_cols = [str(i) for i in self.hours]
@@ -1646,7 +1648,7 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
         self.write_csv(model_results, csv_path, write_path=write_path)
 
         # aggregate for each class
-        classes_df = model_results.groupby('class').sum()
+        classes_df = model_results.groupby('subpopulation').sum()
 
         # filter model results for hours
         select_cols = [str(i) for i in self.hours]
