@@ -195,7 +195,7 @@ test_euclidean_distance_comparison = ["all"]
 
 ```
 
-You can run this config on some toy data: `elara run example_config.toml` (from the project route).
+You can run this config on some toy data: `elara run example_config.toml` (from the project root).
 
 **#** scenario.**name** *string* *(required)*
 
@@ -261,13 +261,15 @@ include:
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
-The associated list attached to each handler allows specification of which transport modes should be processed using that handler. This allows certain handlers to be activated 
+The associated list attached to each handler allows specification of which network modes should be processed using that handler. This allows certain handlers to be activated 
 for public transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, tram, ferry, ...``.
 * note that ``waiting_times`` only supports the option of ``["all"]``.
 
-Options can also be passed in a dictionary format, ie {modes=["car","bus"], path = "./tests/test_outputs", ...}.
+The above format of `HANDLER_NAME = ["car", "bus"]` is a shorthand way of passing options. These pptions can also be passed in a dictionary format, ie `HANDLER_NAMES = {modes=["car","bus"]}`.
+
+This more verbose method allows more options to be passed to handlers. A very common option to add is a subpopulation key. Where possible the handlers will additionally provide an output grouped by this attribute key, eg `link_vehicle_counts = {modes=["car","bus"], attribute="subpopulation"}`.
 
 **#** plan_handlers.**[handler name]** *list of strings* *(optional)*
 
@@ -288,6 +290,8 @@ The associated list attached to each handler allows specification of additional 
 * in most cases ``all``
 * agent_plans support subpopulation selection, eg ``rich, poor``
 * highway_distances only supports ``car``
+
+The mode share handler additionally supports a `subpopulation` option, eg: `mode_shares = {attribute="subpopulation"}`. This adds an additional output breaking down mode counts and shares by the chosen person attribute.
 
 **#** post_processors.**[post-processor name]** *list of strings* *(optional)*
 
@@ -320,9 +324,9 @@ Currently available benchmarks include:
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
-* ``ireland_highways_NI`` 
+* ``ireland_highways_NI``
 * ``ireland_DCC``
-* ``ROI_modeshares`` ^
+* ``ROI_modeshares``
 * ``london_board_alight_subway``
 * ``london_central_cordon_car``
 * ``london_central_cordon_bus``

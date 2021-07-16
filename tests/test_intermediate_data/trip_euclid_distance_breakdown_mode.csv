@@ -1,0 +1,9 @@
+,mode,euclidean_distance,trips
+0,walk,0 to 1 km,1.0
+1,walk,1 to 5 km,
+2,walk,5 to 10 km,
+3,walk,10 to 25 km,
+4,walk,25 to 50 km,2.0
+5,walk,50 to 100 km,1.0
+6,walk,100 to 200 km,
+7,walk,200+ km,

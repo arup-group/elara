@@ -31,5 +31,5 @@ contract = true
 vkt = ["car"]
 
 [benchmarks]
-test_town_cordon = ["car"]
+test_link_cordon = ["car"]
 test_town_modeshare = ["all"]
