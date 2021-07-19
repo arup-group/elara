@@ -37,7 +37,6 @@ plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],a
 plans['relativeDisUtilityToSelected'] = plans['utility'] - plans.groupby(['agent'])['utility'].transform('max')
 plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
 
-
 # version where we get selected score, not maximum score, when calculating relative score
 # m=plans['selected']=="yes"
 # plans.loc[plans['selected']=="yes",'relativeDisUtilityToSelected'] = plans.loc[plans['selected']=="yes",'utility'] - plans[plans['selected']=="yes"].groupby('agent')['utility'].transform('max').values
