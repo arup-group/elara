@@ -398,6 +398,74 @@ def london_central_cordon(
     config = Config(override=override)
     main(config)
 
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def new_zealand_counters(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["new_zealand_counters"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def auckland_counters(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor,version, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    override["benchmarks"]["auckland_counters"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def wellington_counters(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor,version, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    override["benchmarks"]["wellington_counters"] = list(modes)
+    config = Config(override=override)
+    main(config)
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def wellington_pt_interactions(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor,version, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    print("In Main")
+    print(list(modes))
+    override["benchmarks"]["wellington_stop_passenger_counts"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def auckland_pt_interactions(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor,version, epsg, full
+):
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    print(list(modes))
+    override["benchmarks"]["auckland_stop_passenger_counts"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
 
 @benchmarks.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
@@ -418,6 +486,24 @@ def london_modeshares(
     config = Config(override=override)
     main(config)
 
+@benchmarks.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def nz_modeshares(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+):
+    """
+    Create a NZ modeshares benchmark. Example invocation for
+    all modes, name "test" and scale factor at 20% is:
+
+    $ elara benchmarks london-modeshares all -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, epsg, full
+    )
+    override["benchmarks"]["nz_modeshares"] = list(modes)
+    config = Config(override=override)
+    main(config)
 
 @benchmarks.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)

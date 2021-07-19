@@ -241,8 +241,7 @@ class LinkCounter(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = f"link_vehicle_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=0)
-        # results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+        results_df = pd.read_csv(results_path, index_col=0, dtype={0:str})
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         results_df.index = results_df.index.map(str)  # indices converted to strings
         results_df.index.name = 'link_id'
@@ -517,6 +516,40 @@ class LondonInnerCordonBus(LinkCounter):
 
     weight = 1
 
+class NewZealandCounters(LinkCounter):
+
+    name = 'new_zealand_counters'
+    benchmark_data_path = get_benchmark_data(
+    os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
+    )
+
+    requirements = ['volume_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
+
+class AucklandCounters(LinkCounter):
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+    name = 'auckland_counters'
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
+    options_enabled = True
+    
+    weight = 1
+
+class WellingtonCounters(LinkCounter):
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+    name = 'wellington_counters'
+    requirements = ['link_vehicle_counts']
+    valid_options = ['car']
+    options_enabled = True
+
+    weight = 1
 
 # class LondonBoundaryCordonCar(LinkCounter):
 
@@ -752,8 +785,7 @@ class TransitInteraction(BenchmarkTool):
         for direction in ["boardings", "alightings"]:
             results_name = f"stop_passenger_counts_{self.mode}_{direction}.csv"
             results_path = os.path.join(self.config.output_path, results_name)
-            results_df = pd.read_csv(results_path, index_col=0)
-            # results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+            results_df = pd.read_csv(results_path, index_col=0,dtype={0:str})
             results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
             results_df.index = results_df.index.map(str)  # indices converted to strings
             results_df.index.name = 'stop_id'
@@ -792,6 +824,7 @@ class TransitInteraction(BenchmarkTool):
                         f"results.columns: {model_results[direction].columns}")
 
                 # combine mode stop counts
+                  
                 for stop_id in stops:
                     if str(stop_id) not in model_results[direction].index:
                         failed_snaps += 1
@@ -943,6 +976,33 @@ class LondonRODS(TransitInteraction):
 
     weight = 1
 
+class WellingtonPTInteration(TransitInteraction):
+
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+
+    name = 'wellington_stop_passenger_counts'
+
+    requirements = ['stop_passenger_counts']
+    valid_modes = ['bus','pt','train']
+    options_enabled = True
+
+    weight = 1
+    
+class AucklandPTInteraction(TransitInteraction):
+
+    def __init__(self, config, mode, benchmark_data_path=None):
+        self.benchmark_data_path = benchmark_data_path
+        super().__init__(config, mode)
+
+    name = 'auckland_stop_passenger_counts'
+
+    requirements = ['stop_passenger_counts']
+    valid_modes = ['bus','pt','rail', 'ferry']
+    options_enabled = True
+
+    weight = 1
 
 class PassengerStopToStop(BenchmarkTool):
 
@@ -1038,7 +1098,7 @@ class PassengerStopToStop(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = f"stop_to_stop_passenger_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=False)
+        results_df = pd.read_csv(results_path, index_col=False,dtype = {0:str})
         results_df.origin = results_df.origin.map(str)  # indices converted to strings
         results_df.destination = results_df.destination.map(str)  # indices converted to strings
         results_df = results_df.set_index(["origin", "destination"])
@@ -1288,7 +1348,7 @@ class PointsCounter(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = "link_vehicle_counts_{}.csv".format(self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=0)
+        results_df = pd.read_csv(results_path, index_col=0,dtype={0:str})
 
         results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
 
@@ -1729,7 +1789,6 @@ class ModeStats(BenchmarkTool):
 
         return {'counters': score}
 
-
 class LondonModeShare(ModeStats):
 
     requirements = ['mode_shares']
@@ -1740,6 +1799,17 @@ class LondonModeShare(ModeStats):
     benchmark_path = get_benchmark_data(
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
+
+class NZModeShare(ModeStats):
+    
+    requirements = ['mode_shares']
+    def __init__(self, config, mode, benchmark_data_path):
+        self.benchmark_path = benchmark_data_path
+        super().__init__(config, mode)
+    valid_modes = ['all']
+    options_enabled = True
+
+    weight = 2
 
 class ROIModeShare(ModeStats):
 
@@ -1875,6 +1945,7 @@ class IrelandCommuterStats(ModeStats):
     )
 
 
+
 class TestTownHourlyCordon(Cordon):
 
     requirements = ['link_vehicle_counts']
@@ -1966,6 +2037,15 @@ class BenchmarkWorkStation(WorkStation):
         "london_volume_subway": LondonRODSVolume,
         "london_modeshares": LondonModeShare,
         "ROI_modeshares": ROIModeShare,
+        "new_zealand_counters" : NewZealandCounters,
+        "auckland_counters":AucklandCounters,
+        "wellington_counters":WellingtonCounters,
+        "nz_modeshares": NZModeShare,
+        "auckland_counters":AucklandCounters,
+        "wellington_counters":WellingtonCounters,
+        "wellington_stop_passenger_counts": WellingtonPTInteration,
+        "auckland_stop_passenger_counts":AucklandPTInteraction,
+        
         "suffolk_modeshares": SuffolkModeShare,
 
         # old style:
@@ -2002,6 +2082,10 @@ class BenchmarkWorkStation(WorkStation):
         "london_board_alight_subway": 1,
         "london_volume_subway": 1,
         "london_modeshares": 1,
+        "nz_modeshares":1,
+        "auckland_counters":1,
+        "wellington_counters":1,
+        "wellington_stop_passenger_counts":1,
 
         "test_town_highways": 1,
         "squeeze_town_highways": 1,
