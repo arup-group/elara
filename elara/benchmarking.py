@@ -985,7 +985,7 @@ class WellingtonPTInteration(TransitInteraction):
     name = 'wellington_stop_passenger_counts'
 
     requirements = ['stop_passenger_counts']
-    valid_modes = ['bus','pt','train']
+    valid_modes = ['bus','pt','rail']
     options_enabled = True
 
     weight = 1
