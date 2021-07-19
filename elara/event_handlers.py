@@ -1183,6 +1183,7 @@ class StopPassengerCounts(EventHandlerTool):
         self.elem_gdf = resources['transit_schedule'].stop_gdf
         # get stops used by this mode
         viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
+        
         if viable_stops is None:
             self.logger.warning(
                 f"""
@@ -1310,8 +1311,7 @@ class StopPassengerCounts(EventHandlerTool):
                 totals_df, how="left"
             )
             self.result_dfs[key] = totals_df
-
-
+            
 class StopToStopPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts between stops for given mode in mode vehicles.
@@ -1502,6 +1502,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             counts_df = counts_df.join(
                     stop_info, how="left"
                 )
+            
             counts_df.index.name = n
 
         counts_df = counts_df.reset_index().set_index(['origin', 'destination', str(self.attribute_key)])
