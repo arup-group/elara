@@ -58,8 +58,8 @@ class BenchmarkTool(Tool):
 
     options_enabled = True
 
-    def __init__(self, config, mode=None):
-        super().__init__(config, mode)
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
+        super().__init__(config, mode=mode, attribute=attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 
     def __str__(self):
@@ -75,15 +75,14 @@ class CsvComparison(BenchmarkTool):
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
-    def __init__(self, config, mode):
-        super().__init__(config, mode)
+    def __init__(self, config, mode, attribute=None, **kwargs):
+        super().__init__(config, mode=mode, attribute=attribute, **kwargs)
         self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
         Compare two csv files (benchmark vs simulation), calculate and plot their differences
         """
-
         # Read benchmark and simulation csv files
         benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_field)
         simulation_path = os.path.join(self.config.output_path, self.simulation_name)
@@ -114,8 +113,8 @@ class CsvComparison(BenchmarkTool):
             savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
 
 class DurationComparison(CsvComparison):
-    def __init__(self, config, mode, benchmark_data_path=None):
-        super().__init__(config, mode)
+    def __init__(self, config, mode, attribute=None, benchmark_data_path=None):
+        super().__init__(config, mode=mode, attribute=attribute)
         self.benchmark_data_path = benchmark_data_path
 
     requirements = ['trip_duration_breakdown']
@@ -158,13 +157,13 @@ class LinkCounter(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode) -> None:
+    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         
@@ -530,9 +529,9 @@ class NewZealandCounters(LinkCounter):
     weight = 1
 
 class AucklandCounters(LinkCounter):
-    def __init__(self, config, mode, benchmark_data_path=None):
+    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
     name = 'auckland_counters'
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
@@ -541,9 +540,9 @@ class AucklandCounters(LinkCounter):
     weight = 1
 
 class WellingtonCounters(LinkCounter):
-    def __init__(self, config, mode, benchmark_data_path=None):
+    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
     name = 'wellington_counters'
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
@@ -700,14 +699,14 @@ class TransitInteraction(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode) -> None:
+    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
         """
         PT Interaction (boardings and alightings) benchmarker for json formatted {mode: {id: {dir: {
         nodes: [], counts: {}}}}}.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
 
@@ -980,7 +979,7 @@ class WellingtonPTInteration(TransitInteraction):
 
     def __init__(self, config, mode, benchmark_data_path=None):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode)
+        super().__init__(config, mode=mode, **kwargs)
 
     name = 'wellington_stop_passenger_counts'
 
@@ -994,7 +993,7 @@ class AucklandPTInteraction(TransitInteraction):
 
     def __init__(self, config, mode, benchmark_data_path=None):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, **kwargs)
 
     name = 'auckland_stop_passenger_counts'
 
@@ -1013,7 +1012,7 @@ class PassengerStopToStop(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode) -> None:
+    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
         """
         PT Volume count (between stops) benchmarker for json formatted
         {mode: {o: {d: {
@@ -1025,7 +1024,7 @@ class PassengerStopToStop(BenchmarkTool):
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
 
@@ -1300,14 +1299,14 @@ class PointsCounter(BenchmarkTool):
     benchmark_data_path = None
     requirements = ['volume_counts']
 
-    def __init__(self, config, mode) -> None:
+    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
         """
         Points Counter parent object used for highways traffic counter networks (ie 'coils' or
         'loops').
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
 
@@ -1447,14 +1446,14 @@ class Cordon(BenchmarkTool):
     hours = None
     modes = None
 
-    def __init__(self, config, mode) -> None:
+    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.cordon_counts = []
 
@@ -1501,8 +1500,7 @@ class Cordon(BenchmarkTool):
 
 class CordonDirectionCount(BenchmarkTool):
 
-    def __init__(self, parent, direction_name, dir_code, counts_df,
-                 links_df):
+    def __init__(self, parent, direction_name, dir_code, counts_df, links_df, **kwargs):
         """
         Cordon count parent object for counts in or out of a cordon. Includes
         methods for calculating hourly or aggregated period counts.
@@ -1511,7 +1509,7 @@ class CordonDirectionCount(BenchmarkTool):
         :param counts_df: DataFrame of all benchmark counts for cordon
         :param links_df: DataFrame of cordon-count to links
         """
-        super().__init__(config=None, mode=None)
+        super().__init__(config=None, mode=None, attribute=None, **kwargs)
 
         self.cordon_name = parent.name
         self.config = parent.config
@@ -1742,17 +1740,19 @@ class ModeStats(BenchmarkTool):
 
     benchmark_path = None
 
-    def __init__(self, config, mode):
+    def __init__(self, config, mode, attribute=None, **kwargs):
         """
         ModeStat parent object for benchmarking with mode share data.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
-        self.benchmark_df = pd.read_csv(self.benchmark_path,
-                                        header=None,
-                                        names=['mode', 'benchmark'])
+        self.benchmark_df = pd.read_csv(
+            self.benchmark_path,
+            header=None,
+            names=['mode', 'benchmark']
+            )
         self.benchmark_df.set_index('mode', inplace=True)
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:

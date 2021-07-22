@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ,mode,euclidean_distance,trips
 0,walk,0 to 1 km,1
 1,walk,1 to 5 km,0
@@ -7,3 +8,30 @@
 5,walk,50 to 100 km,1
 6,walk,100 to 200 km,0
 7,walk,200+ km,0
+=======
+,mode,euclidean_distance,trips
+0,bike,0 to 1 km,
+1,bike,1 to 5 km,
+2,bike,5 to 10 km,
+3,bike,10 to 25 km,2.0
+4,bike,25 to 50 km,
+5,bike,50 to 100 km,
+6,bike,100 to 200 km,
+7,bike,200+ km,
+8,bus,0 to 1 km,
+9,bus,1 to 5 km,
+10,bus,5 to 10 km,
+11,bus,10 to 25 km,4.0
+12,bus,25 to 50 km,
+13,bus,50 to 100 km,
+14,bus,100 to 200 km,
+15,bus,200+ km,
+16,car,0 to 1 km,
+17,car,1 to 5 km,
+18,car,5 to 10 km,2.0
+19,car,10 to 25 km,2.0
+20,car,25 to 50 km,
+21,car,50 to 100 km,
+22,car,100 to 200 km,
+23,car,200+ km,
+>>>>>>> passing tests

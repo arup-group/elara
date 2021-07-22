@@ -1,11 +1,12 @@
 import sys
 import os
+from attr import attributes
 import pytest
 import logging
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.factory import WorkStation, Tool, equals, build, build_graph_depth
+from elara.factory import WorkStation, Tool, complex_combine_reqs, equals, build, build_graph_depth, combine_reqs, complex_combine_reqs
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -17,14 +18,63 @@ if not os.path.exists(benchmarks_path):
     os.mkdir(benchmarks_path)
 
 
-class Config:
+@pytest.mark.parametrize(
+    "A,B,expected",
+    [
+        ({}, {}, True),
+        ({'req1': {'modes': {'a'}}}, {'req1': {'modes': {'a'}}}, True),
+        ({'req1': {'modes': {'a', 'b'}}}, {'req1': {'modes': {'b', 'a'}}}, True),
+        ({'req1': {'modes': {'a', 'b'}}}, {'req1': {'modes': {'a'}}}, False),
+        ({'req1': {'modes': {'a', 'b'}}}, {'req2': {'modes': {'b', 'a'}}},False),
+    ]
+)
+def test_equals(A, B, expected):
+    assert (A == B) == expected
+
+
+@pytest.mark.parametrize(
+    "test,expected",
+    [
+        ([], {}),
+        ([{'req1': {'modes': ['a']}}, {'req1': {'modes': ['b']}}], {"req1": {"modes": {'a', 'b'}}}),
+        ([{'req1': {'modes': ['a']}}, {'req1': {'modes': ['a']}}], {"req1": {"modes": {'a'}}}),
+        ([{'req1': {'modes': ['a']}}, {'req2': {'modes': ['a']}}], {"req1": {"modes": {'a'}}, "req2": {"modes": {'a'}}}),
+        ([{'req1': {'modes': [None]}}, {'req1': {'modes': [None]}}], {"req1": {"modes": {None}}}),
+        ([{'req1': {'modes': [None]}}, {'req1': {'modes': ['b']}}], {"req1": {"modes": {None,'b'}}}),
+        ([{'req1': {'modes': []}}, {'req1': {'modes': []}}], {"req1": None}),
+    ]
+)
+def test_combine_reqs(test, expected):
+    assert combine_reqs(test) == expected
+
+
+@pytest.mark.parametrize(
+    "test,expected",
+    [
+        ([], {}),
+        ([{'req1': {'modes': ['a']}}, {'req1': {'modes': ['b']}}], {"req1": {"modes": {'a', 'b'}, 'attributes': {None}}}),
+        ([{'req1': {'modes': ['a'], 'attributes': ['A']}}, {'req1': {'modes': ['b'], 'attributes': ['B']}}], {"req1": {"modes": {'a', 'b'}, 'attributes': {'A', 'B'}}}),
+        ([{'req1': {'modes': ['a'], 'attributes': ['A']}}, {'req1': {'modes': ['a'], 'attributes': ['A']}}], {"req1": {"modes": {'a'}, 'attributes': {'A'}}}),
+        ([{'req1': {'modes': ['a'], 'attributes': ['A']}}, {'req2': {'modes': ['a'], 'attributes': ['A']}}], {"req1": {"modes": {'a'}, 'attributes': {'A'}}, "req2": {"modes": {'a'}, 'attributes': {'A'}}}),
+        ([{'req1': {'modes': [None], 'attributes': [None]}}, {'req1': {'modes': [None], 'attributes':[None]}}], {"req1": {"modes": {None}, 'attributes': {None}}}),
+        ([{'req1': {'modes': [None], 'attributes': ['A']}}, {'req1': {'modes': ['b'], 'attributes': ['A']}}], {"req1": {"modes": {None,'b'}, 'attributes': {'A'}}}),
+        ([{'req1': {'modes': ['a'], 'attributes': [None]}}, {'req1': {'modes': ['b'], 'attributes': ['B']}}], {"req1": {"modes": {'a','b'}, 'attributes': {None, 'B'}}}),
+        ([{'req1': {'modes': [], 'attributes': []}}, {'req1': {'modes': [], 'attributes': []}}], {"req1": {"modes": {None}, 'attributes': {None}}}),
+        ([{'req1': None}, {'req1': None}], {"req1": {"modes": {None}, 'attributes': {None}}}),
+    ]
+)
+def test_complex_combine_reqs(test, expected):
+    assert complex_combine_reqs(test) == expected
+
+
+class Config():
     verbose = True
 
     def __init__(self):
         pass
 
     def get_requirements(self):
-        return {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
+        return {'volume_counts': {'modes':{'car'}}, 'vkt': {'modes':{'bus'}}, 'mode_share': {'modes':{'all'}, 'attributes': {'region'}}}
 
 
 class ExampleTool(Tool):
@@ -40,6 +90,7 @@ def test_tool_naming():
     tool = ExampleTool(config=Config(), mode="car")
     assert (str(tool)) == "ExampleToolCar"
     assert tool.name == "example_tool_car"
+    # TODO test naming with other args
 
 
 # Tools
@@ -198,30 +249,29 @@ def test_requirements(
     config_paths.connect([inputs_process], None)
 
     build(start)
-    print('start',start)
     assert equals(
         start.gather_manager_requirements(),
-        {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
+        {'volume_counts': {'modes':{'car'}}, 'vkt': {'modes':{'bus'}}, 'mode_share': {'modes':{'all'}, 'attributes': {'region'}}}
     )
     assert equals(
         post_process.gather_manager_requirements(),
-        {'volume_counts': {'modes':['car']}, 'vkt': {'modes':['bus']}, 'mode_share': {'modes':['all']}}
+        {'volume_counts': {'modes':{'car'}, 'attributes': {None}}, 'vkt': {'modes':{'bus'}, 'attributes': {None}}, 'mode_share': {'modes':{'all'}, 'attributes': {'region'}}}
     )
     assert equals(
         event_handler_process.gather_manager_requirements(),
-        {'vkt': {'modes':['bus']}, 'volume_counts': {'modes':['car', 'bus']}, 'mode_share': {'modes':['all']}}
+        {'vkt': {'modes':{'bus'}, 'attributes': {None}}, 'volume_counts': {'modes':{'car', 'bus'}, 'attributes': {None}}, 'mode_share': {'modes': {'all'}, 'attributes': {'region'}}}
     )
     assert equals(
         plan_handler_process.gather_manager_requirements(),
-        {'vkt': {'modes':['bus']}, 'volume_counts': {'modes':['car', 'bus']}, 'mode_share': {'modes':['all']}}
+        {'vkt': {'modes':{'bus'}, 'attributes': {None}}, 'volume_counts': {'modes': {'car', 'bus'}, 'attributes': {None}}, 'mode_share': {'modes': {'all'}, 'attributes': {'region'}}}
     )
     assert equals(
         inputs_process.gather_manager_requirements(),
-        {'events': None, 'network': None, 'plans': None}
+        {'events': {'attributes': {None}, 'modes': {None}}, 'network': {'attributes': {None}, 'modes': {None}}, 'plans': {'attributes': {None}, 'modes': {None}}}
     )
-    assert equals(
+    assert equals(  
         config_paths.gather_manager_requirements(),
-        {'events_path': None, 'network_path': None, 'plans_path': None}
+        {'events_path': {'attributes': {None}, 'modes': {None}}, 'network_path': {'attributes': {None}, 'modes': {None}}, 'plans_path': {'attributes': {None}, 'modes': {None}}}
     )
 
 
@@ -243,11 +293,11 @@ def test_engage_start_suppliers(
     start.engage()
     assert set(start.resources) == set()
     post_process.engage()
-    assert set(post_process.resources) == {'vkt:bus'}
+    assert set(post_process.resources) == {'vkt:bus:None:'}
     event_handler_process.engage()
-    assert set(event_handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
+    assert set(event_handler_process.resources) == {'volume_counts:car:None:', 'volume_counts:bus:None:'}
     plan_handler_process.engage()
-    assert set(plan_handler_process.resources) == {'mode_share:all'}
+    assert set(plan_handler_process.resources) == {'mode_share:all:region:'}
     inputs_process.engage()
     assert set(inputs_process.resources) == {'events', 'network', 'plans'}
 
@@ -317,8 +367,8 @@ def test_engage_supply_chain(
     build(start)
 
     assert set(start.resources) == set()
-    assert set(post_process.resources) == {'vkt:bus'}
-    assert set(event_handler_process.resources) == {'volume_counts:car', 'volume_counts:bus'}
-    assert set(plan_handler_process.resources) == {'mode_share:all'}
+    assert set(post_process.resources) == {'vkt:bus:None:'}
+    assert set(event_handler_process.resources) == {'volume_counts:car:None:', 'volume_counts:bus:None:'}
+    assert set(plan_handler_process.resources) == {'mode_share:all:region:'}
     assert set(inputs_process.resources) == {'events', 'network', 'plans'}
     assert set(config_paths.resources) == {'events_path', 'network_path', 'plans_path'}

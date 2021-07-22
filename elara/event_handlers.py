@@ -21,9 +21,9 @@ class EventHandlerTool(Tool):
     result_dfs = dict()
     options_enabled = True
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.attribute_key = None
 
@@ -139,14 +139,14 @@ class VehiclePassengerGraph(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, attribute=None) -> None:
+    def __init__(self, config, mode=None, attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         :param attribute: str, atribute key defaults to None
         """
-        super().__init__(config, mode=mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.attribute_key = attribute
         self.veh_occupancy = dict()
@@ -225,13 +225,13 @@ class StopPassengerWaiting(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, attribute=None) -> None:
+    def __init__(self, config, mode=None, attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.attribute_key = attribute
         self.agent_status = dict()
@@ -365,13 +365,13 @@ class LinkVehicleCounts(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, attribute=None) -> None:
+    def __init__(self, config, mode=None, attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.attribute_key = attribute
         self.classes = None
@@ -508,13 +508,13 @@ class LinkVehicleSpeeds(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, attribute=None) -> None:
+    def __init__(self, config, mode=None, attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.attribute_key = attribute
         self.classes = None
@@ -752,13 +752,13 @@ class LinkPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
         self.attribute_key = attribute
         self.classes = None
         self.class_indices = None
@@ -955,13 +955,13 @@ class RoutePassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
         self.attribute_key = attribute
         self.classes = None
         self.class_indices = None
@@ -1141,13 +1141,13 @@ class StopPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
         self.attribute_key = attribute
         self.classes = None
         self.class_indices = None
@@ -1325,13 +1325,13 @@ class StopToStopPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
         self.attribute_key = attribute
         self.classes = None
         self.class_indices = None

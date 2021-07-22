@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ,mode,duration,trips
 0,walk,0 to 5 min,2
 1,walk,5 to 10 min,0
@@ -8,3 +9,33 @@
 6,walk,60 to 90 min,0
 7,walk,90 to 120 min,0
 8,walk,120+ min,2
+=======
+,mode,duration,trips
+0,bike,0 to 5 min,
+1,bike,5 to 10 min,
+2,bike,10 to 15 min,
+3,bike,15 to 30 min,
+4,bike,30 to 45 min,
+5,bike,45 to 60 min,2.0
+6,bike,60 to 90 min,
+7,bike,90 to 120 min,
+8,bike,120+ min,
+9,bus,0 to 5 min,
+10,bus,5 to 10 min,
+11,bus,10 to 15 min,
+12,bus,15 to 30 min,1.0
+13,bus,30 to 45 min,
+14,bus,45 to 60 min,2.0
+15,bus,60 to 90 min,1.0
+16,bus,90 to 120 min,
+17,bus,120+ min,
+18,car,0 to 5 min,1.0
+19,car,5 to 10 min,3.0
+20,car,10 to 15 min,
+21,car,15 to 30 min,
+22,car,30 to 45 min,
+23,car,45 to 60 min,
+24,car,60 to 90 min,
+25,car,90 to 120 min,
+26,car,120+ min,
+>>>>>>> passing tests
