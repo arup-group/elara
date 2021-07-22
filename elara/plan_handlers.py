@@ -15,9 +15,9 @@ class PlanHandlerTool(Tool):
     """
     options_enabled = True
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
     def build(
             self,
@@ -89,13 +89,13 @@ class ModeShares(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, attribute=None) -> None:
+    def __init__(self, config, mode=None, attribute=None, **kwargs) -> None:
         """
         Initiate Handler.
         :param config: Config
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode  # todo options not implemented
         self.attribute_key = attribute
@@ -283,7 +283,7 @@ class LegLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -291,7 +291,7 @@ class LegLogs(PlanHandlerTool):
         :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.attribute_key = attribute
@@ -477,7 +477,7 @@ class TripLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -485,7 +485,7 @@ class TripLogs(PlanHandlerTool):
         :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.attribute_key = attribute
@@ -670,14 +670,14 @@ class UtilityLogs(PlanHandlerTool):
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.utility_log = None
@@ -738,14 +738,14 @@ class PlanLogs(PlanHandlerTool):
 
     requirements = ['plans', 'attributes']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.attribute_key = attribute
@@ -911,14 +911,14 @@ class AgentTollsPaid(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to subpopulation
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.attribute_key = attribute
@@ -1031,13 +1031,13 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.osm_ways = None
@@ -1161,14 +1161,14 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to 'subpopulation'
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
         self.attribute_slicer = attribute

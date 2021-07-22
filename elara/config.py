@@ -72,7 +72,7 @@ class Config:
                 if handler:
                     options = self.settings[handler_group][handler]
                     if not options:
-                        self.settings[handler_group][handler] = {'modes': options} 
+                        self.settings[handler_group][handler] = {'modes': ["all"]}
                     elif isinstance(options, list):
                         self.settings[handler_group][handler] = {'modes': options}
                     elif isinstance(options, dict):
@@ -377,8 +377,8 @@ class Config:
 
 class PathTool(Tool):
 
-    def __init__(self, config, option=None):
-        super().__init__(config, option)
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
+        super().__init__(config=config, mode=None, attribute=None, **kwargs)
         self.logger = logging.getLogger(__name__)
 
 

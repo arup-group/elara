@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ,d_act,euclidean_distance,trips
 0,home_8_p,0 to 1 km,0
 1,home_8_p,1 to 5 km,0
@@ -23,3 +24,22 @@
 21,work_9to5,50 to 100 km,0
 22,work_9to5,100 to 200 km,0
 23,work_9to5,200+ km,0
+=======
+,d_act,euclidean_distance,trips
+0,home,0 to 1 km,
+1,home,1 to 5 km,
+2,home,5 to 10 km,1.0
+3,home,10 to 25 km,4.0
+4,home,25 to 50 km,
+5,home,50 to 100 km,
+6,home,100 to 200 km,
+7,home,200+ km,
+8,work,0 to 1 km,
+9,work,1 to 5 km,
+10,work,5 to 10 km,1.0
+11,work,10 to 25 km,4.0
+12,work,25 to 50 km,
+13,work,50 to 100 km,
+14,work,100 to 200 km,
+15,work,200+ km,
+>>>>>>> passing tests

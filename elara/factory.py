@@ -27,6 +27,9 @@ class Tool:
     options_enabled = False
 
     mode = None
+    attribute_key = None
+    kwargs = None
+
     valid_modes = None
     invalid_modes = None
 
@@ -35,6 +38,7 @@ class Tool:
     def __init__(
             self, config,
             mode: Union[None, str] = None,
+            attribute: Union[None, str] = None,
             **kwargs
     ) -> None:
         """
@@ -43,6 +47,8 @@ class Tool:
         """
         self.config = config
         self.mode = self._validate_mode(mode)
+        self.attribute_key = attribute
+        self.kwargs = kwargs
 
     def __str__(self):
         if self.mode:
@@ -52,9 +58,15 @@ class Tool:
     @property
     def name(self):
         class_name = self.__class__.__name__.split('.')[-1]
+        suffix = ""
         if self.mode:
-            return f"{camel_to_snake(class_name)}_{self.mode}"
-        return camel_to_snake(class_name)
+            suffix += f"_{self.mode}" 
+        if self.kwargs:  # add other options to ensure unique name
+            for value in self.kwargs.values():
+                if os.path.isfile(value):  # if arg is a path then get file name minus extension
+                    value = os.path.basename(value).split(".")[0]
+                suffix += f"_{value}"
+        return f"{camel_to_snake(class_name)}{suffix}"
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
         """
@@ -68,7 +80,7 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: {'modes': [self.mode]} for req in self.requirements}
+            requirements = {req: {'modes': [self.mode], 'attributes': [self.attribute_key]} for req in self.requirements}
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -316,15 +328,36 @@ class WorkStation:
             for tool_name, tool in self.tools.items():
                 for manager_requirement, options in manager_requirements.items():
                     if manager_requirement == tool_name:
+                        print("mmmmmmm", manager_requirement, options)
                         if options:
                             # split options between modes and optional arguments
-                            modes = options['modes']
-                            optional_args = {key : options[key] for key in options if key != 'modes'}
+                            modes = options.get("modes")
+                            attributes = options.get("attributes")
+                            
+                            if len(attributes) > 1 and None in attributes:
+                                # then can remove None as it exits as a default in all cases
+                                attributes.remove(None)
+
+                            optional_args = {
+                                key : options[key] for key in options if key not in ["modes", "attributes"]
+                                }
+                            print("MMMMMMM", optional_args)
+                            
+                            optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
                             
                             for mode in modes:
-                                # build unique key for tool initiated with option
-                                key = str(tool_name) + ':' + str(mode)
-                                self.resources[key] = tool(self.config, mode, **optional_args)
+                                for attribute in attributes:
+                                    # build unique key for tool initiated with option
+                                    if mode is None and attribute is None:
+                                        key = tool_name
+                                    else:
+                                        key = f"{tool_name}:{mode}:{attribute}:{optional_arg_values_string}"
+                                    self.resources[key] = tool(
+                                        config=self.config,
+                                        mode=mode,
+                                        attribute=attribute,
+                                        **optional_args
+                                        )
 
                                 tool_requirements = self.resources[key].get_requirements()
                                 all_requirements.append(tool_requirements)
@@ -335,7 +368,7 @@ class WorkStation:
                             tool_requirements = self.resources[key].get_requirements()
                             all_requirements.append(tool_requirements)
 
-            self.requirements = combine_reqs(all_requirements)
+            self.requirements = complex_combine_reqs(all_requirements)
 
             # Clean out unsupported options for tools that don't support options
             # todo: this sucks...
@@ -369,6 +402,8 @@ class WorkStation:
         missing = set(self.requirements) - set(supplier_tools)
         missing_names = [str(m) for m in missing]
         if missing:
+            for s in self.suppliers:
+                print(s, s.resources)
             raise ValueError(
                 f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {self.suppliers}.'
             )
@@ -385,7 +420,7 @@ class WorkStation:
             for manager in self.managers:
                 reqs.append(manager.requirements)
 
-        return combine_reqs(reqs)
+        return complex_combine_reqs(reqs)
 
     def build(self, write_path=None):
         """
@@ -417,7 +452,7 @@ class WorkStation:
         for name, tool in self.tools.items():
             if mode is None and tool.valid_modes is not None:
                 mode = tool.valid_modes[0]
-            self.resources[name] = tool(self.config, mode)
+            self.resources[name] = tool(self.config, mode=mode, attribute=attribute)
 
     def write_csv(
             self,
@@ -599,6 +634,9 @@ def build(start_node: WorkStation, write_path=None) -> list:
     while queue:
         current = queue.pop(0)
         current.engage()
+        print("||||||||||")
+        print(current)
+        print(current.requirements)
 
         if current.suppliers:
             current.validate_suppliers()
@@ -729,12 +767,52 @@ def order_by_distance(candidates: list) -> list:
     return sorted(candidates, key=lambda x: x.depth, reverse=False)
 
 
+def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
+
+    if not reqs:
+        return {}
+
+    tool_set = set()
+    for req in reqs:
+        if req:
+            tool_set |= set(req)
+
+    combined_reqs = {}
+    for tool in tool_set:
+        combined_reqs[tool] = {}
+        # collect unique mode dependencies
+        modes = set()
+        attributes = set()
+        for req in reqs:
+            if req and req.get(tool):
+                combined_reqs[tool] = req.get(tool)
+
+            if req is None:
+                req = {}
+
+            tool_reqs = req.get(tool, {})
+            if not tool_reqs:
+                tool_reqs = {}  # TODO bit hacky, better to get handlers without requirments to return {}
+            if tool_reqs.get("modes"):
+                modes |= set(tool_reqs.get("modes"))
+            if tool_reqs.get("attributes"):
+                attributes |= set(tool_reqs.get("attributes"))
+        if not modes:
+            modes = {None}
+        if not attributes:
+            attributes = {None}
+        combined_reqs[tool]['modes'] = modes
+        combined_reqs[tool]['attributes'] = attributes
+
+    return combined_reqs
+
+
 def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
     """
     Helper function for combining lists of requirements (dicts of lists) into a single
     requirements dict:
 
-    [{req1:[a,b], req2:[b]}, {req1:[a], req2:[a], req3:None}] -> {req1:[a,b], req2:[a,b], req3:None}
+    [{req1:[a], req2:[b]}, {req1:[a], req2:[a], req3:None}] -> {req1:[a,b], req2:[a,b], req3:None}
 
     Note that no requirements are returned as an empty dict.
 
@@ -763,7 +841,7 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
                     # keep all arguments of current (in the loop) tool, but only pass "modes" argument to dependencies
                     if req and req.get(tool):
                         combined_reqs[tool] = req.get(tool)
-                combined_reqs[tool]['modes'] = list(modes)
+                combined_reqs[tool]['modes'] = modes
             else:
                 combined_reqs[tool] = None
 
@@ -804,6 +882,19 @@ def list_equals(l1, l2):
         if l2 is None:
             return True
         return False
+
+    if l2 is None:
+        if l1 is None:
+            return True
+        return False
+
+    if not len(l1) == len(l2):
+        return False
+    if not sorted(l1) == sorted(l2):
+        return False
+    return True
+
+    
     if not len(l1) == len(l2):
         return False
     if not sorted(l1) == sorted(l2):

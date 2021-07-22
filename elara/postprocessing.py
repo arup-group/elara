@@ -11,9 +11,9 @@ class PostProcessor(Tool):
 
     options_enabled = True
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
     def breakdown(self, data, bins, labels, colnames, write_path, groupby_field = None, groupby_data = None):
         """

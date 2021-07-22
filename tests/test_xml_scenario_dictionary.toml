@@ -19,6 +19,7 @@ road_pricing = "./tests/test_fixtures/road_pricing.xml"
 [event_handlers]
 
 [plan_handlers]
+mode_shares = {attributes=["age"]}
 
 [post_processors]
 

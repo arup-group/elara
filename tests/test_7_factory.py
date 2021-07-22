@@ -37,6 +37,15 @@ def test_config():
 
 # Config
 @pytest.fixture
+def test_complex_config():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_dictionary.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+# Config
+@pytest.fixture
 def test_config_dependencies():
     config_path = os.path.join(test_dir, 'test_xml_scenario_dependencies.toml')
     config = Config(config_path)
@@ -115,7 +124,7 @@ def requirements(test_config):
         suppliers=[event_handlers, plan_handlers],
     )
     postprocessing.connect(
-        managers=[requirements],
+        managers=[requirements, benchmarks],
         suppliers=[event_handlers, plan_handlers]
     )
     event_handlers.connect(
@@ -156,14 +165,108 @@ def test_dfs(requirements):
 def test_bfs(requirements):
     factory.build(requirements, write_path=test_outputs)
     assert requirements.resources == {}
-    assert set(requirements.suppliers[0].resources) == set({'vkt:car': factory.Tool})
+    assert set(requirements.suppliers[0].resources) == set({'vkt:car:None:': factory.Tool})
     assert set(requirements.suppliers[2].resources) == set(
         {
-            'stop_passenger_counts:train': factory.Tool,
-            'stop_passenger_counts:bus': factory.Tool,
-            'link_passenger_counts:train': factory.Tool,
-            'link_passenger_counts:bus': factory.Tool,
-            'link_vehicle_counts:car': factory.Tool,
+            'stop_passenger_counts:train:None:': factory.Tool,
+            'stop_passenger_counts:bus:None:': factory.Tool,
+            'link_passenger_counts:train:None:': factory.Tool,
+            'link_passenger_counts:bus:None:': factory.Tool,
+            'link_vehicle_counts:car:None:': factory.Tool,
+        }
+    )
+
+
+# test complex config
+# Setup
+@pytest.fixture
+def requirements_complex(test_complex_config):
+    requirements = RequirementsWorkStation(test_complex_config)
+    postprocessing = PostProcessWorkStation(test_complex_config)
+    benchmarks = BenchmarkWorkStation(test_complex_config)
+    event_handlers = EventHandlerWorkStation(test_complex_config)
+    plan_handlers = PlanHandlerWorkStation(test_complex_config)
+    input_workstation = InputsWorkStation(test_complex_config)
+    paths = PathFinderWorkStation(test_complex_config)
+
+    requirements.connect(
+        managers=None,
+        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers]
+    )
+    benchmarks.connect(
+        managers=[requirements],
+        suppliers=[event_handlers, plan_handlers, postprocessing],
+    )
+    postprocessing.connect(
+        managers=[requirements, benchmarks],
+        suppliers=[event_handlers, plan_handlers]
+    )
+    event_handlers.connect(
+        managers=[postprocessing, benchmarks, requirements],
+        suppliers=[input_workstation]
+    )
+    plan_handlers.connect(
+        managers=[requirements, benchmarks, postprocessing],
+        suppliers=[input_workstation]
+    )
+    input_workstation.connect(
+        managers=[event_handlers, plan_handlers],
+        suppliers=[paths]
+    )
+    paths.connect(
+        managers=[input_workstation],
+        suppliers=None
+    )
+    return requirements
+
+
+def test_complex_requirements_workstation(test_complex_config):
+    requirements = RequirementsWorkStation(test_complex_config)
+    assert requirements.gather_manager_requirements() == {
+        'mode_shares': {'modes':['all'], 'attributes':["age"]},
+        'test_duration_comparison': {'modes':['all']},
+        'duration_comparison': {'modes':['all'], 'benchmark_data_path': "./tests/test_outputs/trip_duration_breakdown_all.csv"},
+    }
+
+
+def test_dfs_complex(requirements_complex):
+    factory.build_graph_depth(requirements_complex)
+    assert requirements_complex.depth == 0
+
+    assert requirements_complex.suppliers[0].depth == 2
+    assert requirements_complex.suppliers[1].depth == 1
+    assert requirements_complex.suppliers[2].depth == 3
+    assert requirements_complex.suppliers[3].depth == 3
+
+    assert requirements_complex.suppliers[0].suppliers[0].depth == 3
+    assert requirements_complex.suppliers[0].suppliers[1].depth == 3
+
+    assert requirements_complex.suppliers[0].suppliers[0].suppliers[0].depth == 4
+    assert requirements_complex.suppliers[0].suppliers[0].suppliers[0].suppliers[0].depth == 5
+
+
+def test_bfs_complex(requirements_complex):
+    factory.build(requirements_complex, write_path=test_outputs)
+    assert requirements_complex.resources == {}
+    # bms
+    assert set(requirements_complex.suppliers[1].resources) == set(
+        {
+            'test_duration_comparison:all:None:': factory.Tool,
+            'duration_comparison:all:None:./tests/test_outputs/trip_duration_breakdown_all.csv': factory.Tool,
+        }
+    )
+    # post processors
+    assert set(requirements_complex.suppliers[1].resources) == set(
+        {
+            'duration_comparison:all:None:./tests/test_outputs/trip_duration_breakdown_all.csv': factory.Tool,
+            'test_duration_comparison:all:None:': factory.Tool
+        }
+    )
+    # plan handlers
+    assert set(requirements_complex.suppliers[1].suppliers[1].resources) == set(
+        {
+            'mode_shares:all:age:': factory.Tool,
+            'trip_logs:all:None:': factory.Tool
         }
     )
 
@@ -217,18 +320,18 @@ def test_bfs_depends(requirements_depends):
     assert requirements.resources == {}
     assert set(requirements.suppliers[0].resources) == set(
         {
-            'vkt:car': factory.Tool,
-            'vkt:bus': factory.Tool,
+            'vkt:car:None:': factory.Tool,
+            'vkt:bus:None:': factory.Tool,
         }
     )
     assert set(requirements.suppliers[2].resources) == set(
         {
-            'stop_passenger_counts:train': factory.Tool,
-            'stop_passenger_counts:bus': factory.Tool,
-            'link_passenger_counts:train': factory.Tool,
-            'link_passenger_counts:bus': factory.Tool,
-            'link_vehicle_counts:car': factory.Tool,
-            'link_vehicle_counts:bus': factory.Tool,
+            'stop_passenger_counts:train:None:': factory.Tool,
+            'stop_passenger_counts:bus:None:': factory.Tool,
+            'link_passenger_counts:train:None:': factory.Tool,
+            'link_passenger_counts:bus:None:': factory.Tool,
+            'link_vehicle_counts:car:None:': factory.Tool,
+            'link_vehicle_counts:bus:None:': factory.Tool,
         }
     )
 
