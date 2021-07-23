@@ -328,7 +328,6 @@ class WorkStation:
             for tool_name, tool in self.tools.items():
                 for manager_requirement, options in manager_requirements.items():
                     if manager_requirement == tool_name:
-                        print("mmmmmmm", manager_requirement, options)
                         if options:
                             # split options between modes and optional arguments
                             modes = options.get("modes")
@@ -341,7 +340,6 @@ class WorkStation:
                             optional_args = {
                                 key : options[key] for key in options if key not in ["modes", "attributes"]
                                 }
-                            print("MMMMMMM", optional_args)
                             
                             optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
                             
@@ -359,8 +357,8 @@ class WorkStation:
                                         **optional_args
                                         )
 
-                                tool_requirements = self.resources[key].get_requirements()
-                                all_requirements.append(tool_requirements)
+                                    tool_requirements = self.resources[key].get_requirements()
+                                    all_requirements.append(tool_requirements)
                         else:
                             # init
                             key = str(tool_name)
@@ -402,10 +400,9 @@ class WorkStation:
         missing = set(self.requirements) - set(supplier_tools)
         missing_names = [str(m) for m in missing]
         if missing:
-            for s in self.suppliers:
-                print(s, s.resources)
+            supplier_resources_string = " & ".join([f"{s} (has available: {s.resources})" for s in self.suppliers])
             raise ValueError(
-                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {self.suppliers}.'
+                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {supplier_resources_string}.'
             )
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:
@@ -634,9 +631,6 @@ def build(start_node: WorkStation, write_path=None) -> list:
     while queue:
         current = queue.pop(0)
         current.engage()
-        print("||||||||||")
-        print(current)
-        print(current.requirements)
 
         if current.suppliers:
             current.validate_suppliers()

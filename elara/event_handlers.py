@@ -725,7 +725,6 @@ class LinkVehicleSpeeds(EventHandlerTool):
             min_speeds = flatten_subpops(self, min_matrix)
             min_speeds = self.elem_gdf.join(min_speeds, how="left")
             min_speeds = calc_speeds(self, min_speeds)
-            print(min_speeds)
             self.result_dfs[key] = min_speeds
 
         # Calc max at pop level

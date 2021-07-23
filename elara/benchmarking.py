@@ -1,4 +1,4 @@
-from plotnine import * 
+from plotnine import ggplot, aes, geom_point, geom_line, geom_col, labs, theme, element_text
 import pandas as pd
 import os
 import numpy as np
@@ -166,9 +166,11 @@ class LinkCounter(BenchmarkTool):
         super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
 
         self.mode = mode
+        if not self.name:
+            self.name = kwargs.get("name", None)
         
         self.logger.info(
-            f"Initiating {str(self)}"
+            f"Initiating: {str(self)} with name: {self.name}"
             )
 
         with open(self.benchmark_data_path) as json_file:
@@ -260,7 +262,6 @@ class LinkCounter(BenchmarkTool):
 
             for direction, counter in counter_location.items():
 
-                
                 links = counter['links']
                 if links==[]:
                     continue # some links are empty lists, we skip them
@@ -2016,7 +2017,8 @@ class BenchmarkWorkStation(WorkStation):
         "duration_comparison": DurationComparison,
 
         # latest
-        "suffolk_screenlines":SuffolkScreenlinesCounters,
+        "link_counter": LinkCounter,
+        "suffolk_screenlines": SuffolkScreenlinesCounters,
         "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
         "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
         # "suffolk_HGV_screenlines":SuffolkHGVScreenlinesCounters,

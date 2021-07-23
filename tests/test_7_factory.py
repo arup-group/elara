@@ -53,6 +53,7 @@ def test_config_dependencies():
     return config
 
 
+
 def test_requirements_workstation(test_config):
     requirements = RequirementsWorkStation(test_config)
     assert requirements.gather_manager_requirements() == {
@@ -332,6 +333,114 @@ def test_bfs_depends(requirements_depends):
             'link_passenger_counts:bus:None:': factory.Tool,
             'link_vehicle_counts:car:None:': factory.Tool,
             'link_vehicle_counts:bus:None:': factory.Tool,
+        }
+    )
+
+
+# test config passing attribute key
+# Config
+@pytest.fixture
+def test_config_passing_attribute_key():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_passing_attribute_key.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+# Setup
+@pytest.fixture
+def requirements_with_attribute_key(test_config_passing_attribute_key):
+    requirements = RequirementsWorkStation(test_config_passing_attribute_key)
+    postprocessing = PostProcessWorkStation(test_config_passing_attribute_key)
+    benchmarks = BenchmarkWorkStation(test_config_passing_attribute_key)
+    event_handlers = EventHandlerWorkStation(test_config_passing_attribute_key)
+    plan_handlers = PlanHandlerWorkStation(test_config_passing_attribute_key)
+    input_workstation = InputsWorkStation(test_config_passing_attribute_key)
+    paths = PathFinderWorkStation(test_config_passing_attribute_key)
+
+    requirements.connect(
+        managers=None,
+        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers]
+    )
+    benchmarks.connect(
+        managers=[requirements],
+        suppliers=[event_handlers, plan_handlers, postprocessing],
+    )
+    postprocessing.connect(
+        managers=[requirements, benchmarks],
+        suppliers=[event_handlers, plan_handlers]
+    )
+    event_handlers.connect(
+        managers=[postprocessing, benchmarks, requirements],
+        suppliers=[input_workstation]
+    )
+    plan_handlers.connect(
+        managers=[requirements, benchmarks, postprocessing],
+        suppliers=[input_workstation]
+    )
+    input_workstation.connect(
+        managers=[event_handlers, plan_handlers],
+        suppliers=[paths]
+    )
+    paths.connect(
+        managers=[input_workstation],
+        suppliers=None
+    )
+    return requirements
+
+
+def test_passing_attribute_key_requirements_workstation(test_config_passing_attribute_key):
+    requirements = RequirementsWorkStation(test_config_passing_attribute_key)
+    assert requirements.gather_manager_requirements() == {
+        'vkt': {'modes':['car', 'bus'], 'attributes':['subpopulation', 'age']},
+    }
+
+
+def test_dfs_passing_attribute_key(requirements_with_attribute_key):
+    factory.build_graph_depth(requirements_with_attribute_key)
+    assert requirements_with_attribute_key.depth == 0
+
+    assert requirements_with_attribute_key.suppliers[0].depth == 2
+    assert requirements_with_attribute_key.suppliers[1].depth == 1
+    assert requirements_with_attribute_key.suppliers[2].depth == 3
+    assert requirements_with_attribute_key.suppliers[3].depth == 3
+
+    assert requirements_with_attribute_key.suppliers[0].suppliers[0].depth == 3
+    assert requirements_with_attribute_key.suppliers[0].suppliers[1].depth == 3
+
+    assert requirements_with_attribute_key.suppliers[0].suppliers[0].suppliers[0].depth == 4
+    assert requirements_with_attribute_key.suppliers[0].suppliers[0].suppliers[0].suppliers[0].depth == 5
+
+
+def test_bfs_passing_attribute_key(requirements_with_attribute_key):
+    factory.build(requirements_with_attribute_key, write_path=test_outputs)
+    assert requirements_with_attribute_key.resources == {}
+    # post proc
+    assert set(requirements_with_attribute_key.suppliers[0].resources) == set(
+        {
+            'vkt:car:subpopulation:': factory.Tool,
+            'vkt:car:age:': factory.Tool,
+            'vkt:bus:subpopulation:': factory.Tool,
+            'vkt:bus:age:': factory.Tool,
+        }
+    )
+    # bms
+    assert set(requirements_with_attribute_key.suppliers[1].resources) == set(
+        {
+        }
+    )
+    # event handlers
+    assert set(requirements_with_attribute_key.suppliers[1].suppliers[0].resources) == set(
+        {
+            'link_vehicle_counts:car:subpopulation:': factory.Tool,
+            'link_vehicle_counts:car:age:': factory.Tool,
+            'link_vehicle_counts:bus:subpopulation:': factory.Tool,
+            'link_vehicle_counts:bus:age:': factory.Tool,
+        }
+    )
+    # plan handlers
+    assert set(requirements_with_attribute_key.suppliers[1].suppliers[1].resources) == set(
+        {
         }
     )
 

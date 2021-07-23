@@ -228,24 +228,37 @@ class VKT(PostProcessor):
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        mode = self.mode
+        if self.attribute_key:
+            file_name = f"link_vehicle_counts_{self.mode}_{self.attribute_key}.geojson"
+            file_path = os.path.join(self.config.output_path, file_name)
+            volumes_gdf = geopandas.read_file(file_path)
+            vkt_gdf = self.calculate_vkt(volumes_gdf)
 
-        file_name = f"link_vehicle_counts_{mode}.geojson"
+            csv_name = f"{self.name}_{self.attribute_key}.csv"
+            geojson_name = f"{self.name}_{self.attribute_key}.geojson"
+
+            self.write_csv(vkt_gdf, csv_name, write_path=write_path)
+            self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
+
+        file_name = f"link_vehicle_counts_{self.mode}.geojson"
         file_path = os.path.join(self.config.output_path, file_name)
         volumes_gdf = geopandas.read_file(file_path)
-
-        # Calculate VKT
-        period_headers = generate_period_headers(self.config.time_periods)
-        volumes = volumes_gdf[period_headers]
-        link_lengths = volumes_gdf["length"].values / 1000  # Conversion to metres
-        vkt = volumes.multiply(link_lengths, axis=0)
-        vkt_gdf = pd.concat([volumes_gdf.drop(period_headers, axis=1), vkt], axis=1)
+        vkt_gdf = self.calculate_vkt(volumes_gdf)
 
         csv_name = f"{self.name}.csv"
         geojson_name = f"{self.name}.geojson"
-
         self.write_csv(vkt_gdf, csv_name, write_path=write_path)
         self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
+
+    def calculate_vkt(self, link_volume_counts):
+        """
+        Calculate link vehicle kms from link volume counts dataframe.
+        """
+        period_headers = generate_period_headers(self.config.time_periods)
+        volumes = link_volume_counts[period_headers]
+        link_lengths = link_volume_counts["length"].values / 1000  # Conversion to metres
+        vkt = volumes.multiply(link_lengths, axis=0)
+        return pd.concat([link_volume_counts.drop(period_headers, axis=1), vkt], axis=1)
 
 
 def generate_period_headers(time_periods):
