@@ -327,6 +327,10 @@ class WorkStation:
         else:
             for tool_name, tool in self.tools.items():
                 for manager_requirement, options in manager_requirements.items():
+
+                    if len(manager_requirement.split("--")) > 1:
+                        manager_requirement = manager_requirement.split("--")[0]
+
                     if manager_requirement == tool_name:
                         if options:
                             # split options between modes and optional arguments
@@ -395,12 +399,15 @@ class WorkStation:
                 if not supplier.tools:
                     continue
                 supplier_tools.update(supplier.tools)
+        
+        # clean requirments
+        clean_requirements = [r.split("--")[0] for r in self.requirements]
 
         # check for missing requirements
-        missing = set(self.requirements) - set(supplier_tools)
+        missing = set(clean_requirements) - set(supplier_tools)
         missing_names = [str(m) for m in missing]
         if missing:
-            supplier_resources_string = " & ".join([f"{s} (has available: {s.resources})" for s in self.suppliers])
+            supplier_resources_string = " & ".join([f"{s} (has available tools: {list(s.tools)})" for s in self.suppliers])
             raise ValueError(
                 f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {supplier_resources_string}.'
             )
@@ -494,7 +501,6 @@ class WorkStation:
         else:
             path = os.path.join(self.config.output_path, name)
             self.logger.info(f'Writing to {path}')
-
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
             with open(path, "w") as file:

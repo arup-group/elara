@@ -71,6 +71,11 @@ class Config:
             for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]
+
+                    # check for name and add to options
+                    if len(handler.split("--")) > 1:
+                        options["name"] = handler.split("--")[1]
+                    
                     if not options:
                         self.settings[handler_group][handler] = {'modes': ["all"]}
                     elif isinstance(options, list):
@@ -79,6 +84,7 @@ class Config:
                         # if no modes option is specified, assume "all"
                         if 'modes' not in options:
                             self.settings[handler_group][handler]["modes"] = ['all']
+
 
         self.load_required_settings()
 
