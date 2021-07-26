@@ -25,7 +25,7 @@ stop_passenger_counts = ["bus"]
 stop_passenger_waiting = ["all"]
 
 [plan_handlers]
-mode_shares = {attribute="age"}
+mode_shares = {attributes=["age"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
