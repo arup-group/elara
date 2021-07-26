@@ -318,7 +318,7 @@ class Config:
             'mode_share':'mode_shares'
         }
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
-            for handler in self.settings.get(handler_group):
+            for handler in self.settings.get(handler_group, []):
                 if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 

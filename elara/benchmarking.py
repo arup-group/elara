@@ -58,6 +58,7 @@ class BenchmarkTool(Tool):
 
     options_enabled = True
     weight = 1
+    benchmark_data_path = None
 
     def __init__(self, config, mode=None, attribute=None, benchmark_data_path=None, **kwargs):
         super().__init__(config, mode=mode, attribute=attribute, **kwargs)
@@ -116,8 +117,8 @@ class CsvComparison(BenchmarkTool):
             savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
 
 class DurationComparison(CsvComparison):
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None):
-        super().__init__(config, mode=mode, attribute=attribute)
+    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, attribute=attribute, **kwargs)
         self.benchmark_data_path = benchmark_data_path
 
     requirements = ['trip_duration_breakdown']
@@ -1443,7 +1444,6 @@ class PointsCounter(BenchmarkTool):
 class Cordon(BenchmarkTool):
 
     cordon_counter = None
-    benchmark_data_path = None
     cordon_path = None
 
     directions = {'in': 1, 'out': 2}
@@ -1742,8 +1742,6 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
 
 
 class ModeStats(BenchmarkTool):
-
-    benchmark_data_path = None
 
     def __init__(self, config, mode, attribute=None, **kwargs):
         """
