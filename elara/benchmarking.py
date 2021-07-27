@@ -1167,7 +1167,7 @@ class PassengerStopToStop(BenchmarkTool):
                 else:
                     counter_score = 1
                     self.logger.warning(
-                        f"Zero size benchmark: {counter_id} stop: {stop_id}, returning 1"
+                        f"Zero size benchmark: {od}, {o_stops}->{d_stops}, returning 1"
                     )
                 bm_scores.append(counter_score)
 
