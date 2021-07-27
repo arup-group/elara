@@ -983,7 +983,7 @@ class LondonRODS(TransitInteraction):
 
 class WellingtonPTInteration(TransitInteraction):
 
-    def __init__(self, config, mode, benchmark_data_path=None):
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
         super().__init__(config, mode=mode, **kwargs)
 
@@ -997,7 +997,7 @@ class WellingtonPTInteration(TransitInteraction):
     
 class AucklandPTInteraction(TransitInteraction):
 
-    def __init__(self, config, mode, benchmark_data_path=None):
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
         super().__init__(config=config, mode=mode, **kwargs)
 
