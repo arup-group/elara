@@ -205,6 +205,24 @@ def mode_shares(
     config = Config(override=override)
     main(config)
 
+@plan_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def activity_mode_shares(
+        modes, debug, name, inputs_path, outputs_path, activity_list, time_periods, scale_factor, version, epsg, full
+):
+    """
+    Create a mode share output for a given option. Example invocation for option "all" and
+     scale factor at 20% is:
+
+    $ elara plan-handlers mode-shares all -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, activity_list, time_periods, scale_factor, version, epsg, full
+    )
+    override["plan_handlers"]["activity_mode_shares"] = {'modes': list(modes), 'activity_list':activity_list}
+    config = Config(override=override)
+    main(config)
 
 @plan_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
