@@ -1350,7 +1350,7 @@ def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_
     person = etree.fromstring(string)
     handler.process_plans(person)
 
-        string = """
+    string = """
     <person id="george">
         <attributes>
             <attribute name="subpopulation" class="java.lang.String">poor</attribute>
@@ -1400,7 +1400,7 @@ def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_
     handler.process_plans(person)
 
 
-        string = """
+    string = """
     <person id="elizabeth">
         <attributes>
             <attribute name="subpopulation" class="java.lang.String">poor</attribute>
