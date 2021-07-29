@@ -1280,21 +1280,19 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
 ### Activity Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_no_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ModeShares(test_config_v12, mode='all', activity_list = ["work","shop"])
-
-    resources = input_manager.resources
+    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', activity_list = ["work","shop"])
+    
+    resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
 
     periods = 24
 
-    # assert len(handler.modes) == len(handler.resources['output_config'].modes)
     assert list(handler.mode_indices.keys()) == handler.modes
-
     assert len(handler.classes) == 1
     assert list(handler.class_indices.keys()) == [None]
 
-    assert handler.mode_counts.shape == (6, 1, 24)
-
+    assert handler.mode_counts["work"].shape == (6, 1, 24)
+    assert handler.mode_counts["shop"].shape == (6, 1, 24)
     return handler
 
 
@@ -1371,7 +1369,7 @@ def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_
 				<attributes>
 					<attribute name="routingMode" class="java.lang.String">bus</attribute>
 				</attributes>
-				<route type="generic" start_link="1-5" end_link="1-3" trav_time="00:01:18" distance="10300.0"></route>
+				<route type="generic" start_link="1-5" end_link="1-3" trav_time="00:01:18" distance="10100.0"></route>
 			</leg>
             <activity type="pt interaction" link="1-3" x="50.0" y="0.0" max_dur="00:00:00" >
 			</activity>
@@ -1409,7 +1407,7 @@ def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_
         <plan score="129.592238766919" selected="yes">
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
             </activity>
-            <leg mode="rail" dep_time="16:30:00" trav_time="00:07:43">
+            <leg mode="pt" dep_time="16:30:00" trav_time="00:07:43">
 				<attributes>
 					<attribute name="routingMode" class="java.lang.String">car</attribute>
 				</attributes>
@@ -1435,10 +1433,10 @@ def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_
 
     assert np.sum(handler.mode_counts['work'][handler.mode_indices['car']]) == 0
     assert np.sum(handler.mode_counts['work'][handler.mode_indices['bus']]) == 0
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['rail']]) == 1
+    assert np.sum(handler.mode_counts['work'][handler.mode_indices['pt']]) == 1
     assert np.sum(handler.mode_counts['work'][handler.mode_indices['walk']]) == 1
     assert np.sum(handler.mode_counts['shop'][handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['rail']]) == 1
+    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['pt']]) == 1
     assert np.sum(handler.mode_counts['shop'][handler.mode_indices['bus']]) == 0
     assert np.sum(handler.mode_counts['shop'][handler.mode_indices['walk']]) == 0
 

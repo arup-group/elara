@@ -1,10 +1,10 @@
 ,mode,duration,trips
-0,walk,0 to 5 min,2.0
-1,walk,5 to 10 min,
-2,walk,10 to 15 min,
-3,walk,15 to 30 min,
-4,walk,30 to 45 min,
-5,walk,45 to 60 min,
-6,walk,60 to 90 min,
-7,walk,90 to 120 min,
-8,walk,120+ min,2.0
+0,walk,0 to 5 min,2
+1,walk,5 to 10 min,0
+2,walk,10 to 15 min,0
+3,walk,15 to 30 min,0
+4,walk,30 to 45 min,0
+5,walk,45 to 60 min,0
+6,walk,60 to 90 min,0
+7,walk,90 to 120 min,0
+8,walk,120+ min,2
