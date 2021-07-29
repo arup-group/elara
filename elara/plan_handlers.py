@@ -530,7 +530,7 @@ class TripLogs(PlanHandlerTool):
 
             attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
 
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') == 'yes' and len(plan.getchildren()) > 0:
 
                 # check that plan starts with an activity
                 if not plan[0].tag == 'activity':
@@ -708,7 +708,7 @@ class UtilityLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') == 'yes' and len(plan.getchildren()) > 0:
 
                 score = plan.get('score')
                 utilities = [{'agent': ident,'score': score}]
