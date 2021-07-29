@@ -210,7 +210,6 @@ class ModeShares(PlanHandlerTool):
         indexes = [self.modes, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
-
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
         if self.attribute_key:
@@ -266,6 +265,232 @@ class ModeShares(PlanHandlerTool):
         y = self.class_indices[attribute_class]
         z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
         return x, y, z
+
+class ActivityModeShares(PlanHandlerTool):
+    """
+    Extract mode shares for specified activities from plans. This handler takes a list of activities and computes the mode shares for each
+    independant activity trip. 
+    """
+
+    requirements = [
+        'plans',
+        'attributes',
+        'transit_schedule',
+        'output_config',
+        'mode_map',
+    ]
+    valid_modes = ['all']
+
+    def __init__(self, config, mode=None, attribute=None,activity_list=None) -> None:
+        """
+        Initiate Handler.
+        :param config: Config
+        :param mode: str, mode
+        :param attribute: list, attributes
+        :param activity_list: list, activities
+        """
+        super().__init__(config, mode)
+
+        self.mode = mode  # todo options not implemented
+        self.attribute_key = attribute
+        self.activity_list = activity_list
+        self.modes = None
+        self.mode_indices = None
+        self.classes = None
+        self.class_indices = None
+        self.mode_counts = None
+        self.results = None
+
+        # Initialise results storage
+        self.results = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        """
+        super().build(resources, write_path=write_path)
+
+        modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
+        self.logger.debug(f'modes = {modes}')
+
+        # Initialise mode classes
+        self.modes, self.mode_indices = self.generate_id_map(modes)
+
+        if self.attribute_key:
+            self.attributes = self.resources["attributes"]
+            availability = self.attributes.attribute_key_availability(self.attribute_key)
+            self.logger.debug(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            if availability < 1:
+                self.logger.warning(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            found_attributes = self.resources['attributes'].attribute_values(self.attribute_key) | {None}
+        else:
+            self.attributes = {}
+            found_attributes = [None]
+        self.logger.debug(f'attributes = {found_attributes}')
+
+        # Initialise class classes
+        self.classes, self.class_indices = self.generate_id_map(found_attributes)
+
+        # Initialise mode count table, if have list of activities then initiallise as dictionary of tables
+        if self.activity_list:
+            
+            list_of_tables = [np.zeros((
+                len(self.modes),
+                len(self.classes),
+                self.config.time_periods)) for _ in range(len(self.activity_list))]
+            self.mode_counts = dict(zip(self.activity_list, list_of_tables))
+        else:
+            self.mode_counts = np.zeros((
+            len(self.modes),
+            len(self.classes),
+            self.config.time_periods))
+
+        self.results = dict()
+
+    def process_plans(self, elem):
+        """
+        Filter and iterate through only the plans that contain activities of interest and compute the modeshare for those activity trips. 
+        This handler only considers the legs / modes involved between home to the first instance of the specified activity, 
+        e.g. [home]-->[work] and ignores itermediate activities, i.e. [home]-->[shop]-->[work] is seens as [home]-->[work] with all legs in between considered as leg to activity.  
+
+        :param elem: Plan XML element
+        """
+        for plan in elem.xpath(".//plan"):
+            if plan.get('selected') == 'yes':
+
+                ident = elem.get('id')
+                attribute_class = self.attributes.get(ident, {}).get(self.attribute_key)
+
+                end_time = None
+                modes = {}
+                activity_in_plan = False
+                activity_list_in_plan = []
+                # only process plans that have specified activity in there
+                for stage in plan:
+                    if stage.tag == 'activity':
+                        activity = stage.get('type')
+                        if activity in self.activity_list:
+                            activity_in_plan = True
+                            if activity not in activity_list_in_plan: # initiate list of activities of interest in plan
+                                activity_list_in_plan.append(activity)
+
+                if activity_in_plan:
+                    for stage in plan:
+                        if len(activity_list_in_plan) == 0:
+                            break
+                        if stage.tag == 'leg':
+                            leg_mode = stage.get('mode')
+                            route_elem = stage.xpath('route')[0]
+                            mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                            distance = float(route_elem.get("distance", 0))
+                            
+                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                            modes[mode] = modes.get(mode, 0) + distance
+
+                        elif stage.tag == 'activity':
+                            activity = stage.get('type')
+                            if activity == 'pt interaction':  # ignore pt interaction activities
+                                continue
+
+                            # only add activity modes when there has been previous activity
+                            # (ie trip start time) AND the activity is in specified list
+                            if end_time and (activity in activity_list_in_plan):
+                                mode = self.get_furthest_mode(modes)
+                                x, y, z = self.table_position(
+                                    mode,
+                                    attribute_class,
+                                    end_time
+                                )
+                                self.mode_counts[activity][x, y, z] += 1 # add the count to the appropriate activity table
+                                activity_list_in_plan.remove(activity)
+                            # update endtime for next activity
+                            end_time = convert_time_to_seconds(stage.get('end_time'))
+
+                            # reset modes
+                            #modes = {}
+
+    def finalise(self):
+        """
+        Following plan processing, the raw mode share table will contain counts by mode,
+        population attribute class, activity and period (where period is based on departure
+        time).
+        Finalise aggregates these results as required and creates a dataframe for each activity specified.
+        """
+
+        
+        if self.activity_list:
+            # Scale final counts
+            self.mode_counts = {k: v*1.0 / self.config.scale_factor for k, v in self.mode_counts.items()}
+            names = ['mode', 'class', 'hour']
+            indexes = [self.modes, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            
+            # Produce mode share outputs for each activity specified in activity list
+            for activity,mode_counts_table in self.mode_counts.items():
+                
+                counts_df = pd.DataFrame(mode_counts_table.flatten(), index=index)[0]
+                # mode counts breakdown output
+                counts_df = counts_df.unstack(level='mode').sort_index()
+                if self.attribute_key:
+                    key = f"{self.name}_{activity}_{self.attribute_key}_breakdown_counts"
+                    self.results[key] = counts_df
+
+                # mode counts breakdown and sliced output
+                else:
+                    key = f"{self.name}_{activity}_breakdown_counts"
+                    self.results[key] = counts_df
+
+                total_counts_df = counts_df.sum(0)
+                key = f"{self.name}_{activity}_counts"
+                self.results[key] = total_counts_df
+
+                # convert to mode shares
+                total = mode_counts_table.sum()
+
+                # mode shares breakdown output
+                if self.attribute_key:
+                    key = f"{self.name}_{activity}_{self.attribute_key}"
+                    self.results[key] = counts_df / total
+
+                # mode shares totals output
+                key = f"{self.name}_{activity}"
+                self.results[key] = total_counts_df / total
+
+    @staticmethod
+    def generate_id_map(list_in):
+        """
+        Generate element ID list and index dictionary from given list.
+        :param list_in: list
+        :return: (list, list_indices_map)
+        """
+        if not len(set(list_in)) == len(list_in):
+            raise UserWarning("non unique mode list found")
+
+        list_indices_map = {
+            key: value for (key, value) in zip(list_in, range(0, len(list_in)))
+        }
+        return list_in, list_indices_map
+
+    def table_position(
+        self,
+        mode,
+        attribute_class,
+        time
+    ):
+        """
+        Calculate the result table coordinates from given maps.
+        :param mode: String, mode id
+        :param attribute_class: String, class id
+        :param time: Timestamp of event
+        :return: (x, y, z, w) tuple of integers to index results table
+        """
+        x = self.mode_indices[mode]
+        y = self.class_indices[attribute_class]
+        z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
+        return x, y, z
+
 
 
 class LegLogs(PlanHandlerTool):
@@ -1265,6 +1490,7 @@ class PlanHandlerWorkStation(WorkStation):
 
     tools = {
         "mode_shares": ModeShares,
+        "activity_mode_shares": ActivityModeShares,
         "leg_logs": LegLogs,
         "trip_logs": TripLogs,
         "plan_logs": PlanLogs,
