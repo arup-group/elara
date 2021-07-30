@@ -37,8 +37,8 @@ trip_duration_breakdown = ["all"]
 trip_euclid_distance_breakdown = ["all"]
 
 [benchmarks]
-test_pt_interaction_counter = ["bus"]
-test_link_cordon = ["car"]
-test_duration_comparison = ["all"]
+#test_pt_interaction_counter = ["bus"]
+#test_link_cordon = ["car"]
+#test_duration_comparison = ["all"]
 #test_euclidean_distance_comparison = {modes=["all"]}
 #duration_comparison = {modes = ["all"], benchmark_data_path = "./tests/test_outputs/trip_duration_breakdown_all.csv"}
