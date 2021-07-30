@@ -418,7 +418,6 @@ class ActivityModeShares(PlanHandlerTool):
         time).
         Finalise aggregates these results as required and creates a dataframe for each activity specified.
         """
-
         
         if self.activity_list:
             # Scale final counts
@@ -431,15 +430,10 @@ class ActivityModeShares(PlanHandlerTool):
             for activity,mode_counts_table in self.mode_counts.items():
                 
                 counts_df = pd.DataFrame(mode_counts_table.flatten(), index=index)[0]
-                # mode counts breakdown output
+                # mode counts breakdown output and acitivty sliced output
                 counts_df = counts_df.unstack(level='mode').sort_index()
                 if self.attribute_key:
                     key = f"{self.name}_{activity}_{self.attribute_key}_breakdown_counts"
-                    self.results[key] = counts_df
-
-                # mode counts breakdown and sliced output
-                else:
-                    key = f"{self.name}_{activity}_breakdown_counts"
                     self.results[key] = counts_df
 
                 total_counts_df = counts_df.sum(0)

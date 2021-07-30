@@ -1279,7 +1279,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
 
 ### Activity Modeshare Handler No Attribute Slices###
 @pytest.fixture
-def test_plan_activity_modeshare_handler_no_attribute_slice(test_config_v12, input_manager_v12):
+def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
     handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', activity_list = ["work","shop"])
     
     resources = input_manager_v12.resources
@@ -1291,13 +1291,29 @@ def test_plan_activity_modeshare_handler_no_attribute_slice(test_config_v12, inp
     assert len(handler.classes) == 1
     assert list(handler.class_indices.keys()) == [None]
 
-    assert handler.mode_counts["work"].shape == (6, 1, 24)
-    assert handler.mode_counts["shop"].shape == (6, 1, 24)
+    for activity in handler.activity_list:
+        assert handler.mode_counts[activity].shape == (6, 1, 24)
+
     return handler
 
+# test if no activity input
+def test_plan_activity_modeshare_handler_without_attribute_slice_without_activities(test_config_v12, input_manager_v12):
+    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all')
+    
+    resources = input_manager_v12.resources
+    handler.build(resources, write_path=test_outputs)
 
-def test_activity_mode_share_without_attribute_slice_simple(test_plan_activity_modeshare_handler_no_attribute_slice):
-    handler = test_plan_activity_modeshare_handler_no_attribute_slice
+    periods = 24
+
+    assert list(handler.mode_indices.keys()) == handler.modes
+    assert len(handler.classes) == 1
+    assert list(handler.class_indices.keys()) == [None]
+
+    assert handler.mode_counts.shape == (6, 1, 24)
+
+
+def test_activity_mode_share_without_attribute_slice_with_activities_simple(test_plan_activity_modeshare_handler_without_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_without_attribute_slice
     string = """
     <person id="alex">
         <attributes>
@@ -1323,8 +1339,31 @@ def test_activity_mode_share_without_attribute_slice_simple(test_plan_activity_m
     assert np.sum(handler.mode_counts['work'][handler.mode_indices['car']]) == 1
     assert np.sum(handler.mode_counts['shop'][handler.mode_indices['car']]) == 0
 
-def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_modeshare_handler_no_attribute_slice):
-    handler = test_plan_activity_modeshare_handler_no_attribute_slice
+def test_activity_mode_share_without_attribute_slice_with_activities_complex(test_plan_activity_modeshare_handler_without_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_without_attribute_slice
+    string = """
+    <person id="varun">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="recreation" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
     string = """
     <person id="alex">
         <attributes>
@@ -1437,10 +1476,173 @@ def test_activity_mode_share_without_attribute_slice_complex(test_plan_activity_
     assert np.sum(handler.mode_counts['work'][handler.mode_indices['walk']]) == 1
     assert np.sum(handler.mode_counts['shop'][handler.mode_indices['car']]) == 2
     assert np.sum(handler.mode_counts['shop'][handler.mode_indices['pt']]) == 1
-    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['bus']]) == 0
-    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['walk']]) == 0
 
+### ActivityModeshare Handler With Attribute Slices###
+@pytest.fixture
+def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
+    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', activity_list = ["work"], attribute="age")
 
+    resources = input_manager_v12.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    # assert len(handler.modes) == len(handler.resources['output_config'].modes)
+    assert list(handler.mode_indices.keys()) == handler.modes
+
+    assert len(handler.classes) == 3
+    assert set(handler.classes) == {"yes", "no", None}
+
+    for activity in handler.activity_list:
+        assert handler.mode_counts[activity].shape == (6, 3, 24)
+
+    return handler
+
+def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_handler_age_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_age_attribute_slice
+    string = """
+    <person id="nick">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">young</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    string = """
+    <person id="chris">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">old</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    assert np.sum(handler.mode_counts['work'][handler.mode_indices['car']]) == 2
+    assert np.sum(handler.mode_counts['work'][handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+ 
+@pytest.fixture
+def test_activity_modeshare_plan_handler_finalised(test_plan_activity_modeshare_handler_age_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_age_attribute_slice
+    plans = test_plan_activity_modeshare_handler_age_attribute_slice.resources['plans']
+
+    string = """
+    <person id="alex">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">young</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    string = """
+    <person id="george">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">old</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+			<leg mode="bike" dep_time="17:30:00" trav_time="00:52:31">
+				<attributes>
+					<attribute name="routingMode" class="java.lang.String">bike</attribute>
+				</attributes>
+				<route type="generic" start_link="3-4" end_link="1-2" trav_time="00:52:31" distance="13130.0"></route>
+			</leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    handler.finalise()
+    return handler
+
+def test_activity_finalised_mode_counts(test_activity_modeshare_plan_handler_finalised):
+    handler = test_activity_modeshare_plan_handler_finalised
+    for name, result in handler.results.items():
+        if 'counts' in name:
+            cols = handler.modes
+            if isinstance(result, pd.DataFrame):
+                for c in cols:
+                    assert c in result.columns
+                df = result.loc[:, cols]
+                assert np.sum(df.values) == 2 / handler.config.scale_factor
+
+                if 'class' in result.columns:
+                    assert set(result.loc[:, 'class']) == set(handler.classes)
+                if 'hour' in result.columns:
+                    assert set(result.loc[:, 'hour']) == set(range(24))
+            else:
+                for c in cols:
+                    assert c in result.index
+                df = result.loc[cols]
+                assert np.sum(df.values) == 2 / handler.config.scale_factor
+
+def test_activity_finalised_mode_shares(test_activity_modeshare_plan_handler_finalised):
+    handler = test_activity_modeshare_plan_handler_finalised
+
+    for name, result in handler.results.items():
+        if 'counts' not in name:
+            cols = handler.modes
+            if isinstance(result, pd.DataFrame):
+                for c in cols:
+                    assert c in result.columns
+                df = result.loc[:, cols]
+                assert df.sum().sum() == 1
+
+                if 'class' in result.columns:
+                    assert set(result.loc[:, 'class']) == set(handler.classes)
+                if 'hour' in result.columns:
+                    assert set(result.loc[:, 'hour']) == set(range(24))
+            else:
+                for c in cols:
+                    assert c in result.index
+                df = result.loc[cols]
+                assert df.sum().sum() == 1
 
 # Plan Handler Manager
 def test_load_plan_handler_manager(test_config, test_paths):
