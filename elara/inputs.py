@@ -626,8 +626,17 @@ class Plans(InputTool):
         path = resources['plans_path'].path
 
         self.plans = get_elems(path, "plan")
-        self.persons = get_elems(path, "person")
+        # self.persons = get_elems(path, "person")
+        self.persons = self.filter_out_persons_with_empty_plans(get_elems(path, "person")) # skip empty-plan persons
 
+    def filter_out_persons_with_empty_plans(self, iterator):
+        """
+        Skip persons with empty plans. When reading from the `plans_experienced.xml` file,
+            these may be persons with no simulated legs.
+        """
+        for elem in iterator:
+            if len(elem.find('./plan').getchildren()) > 0:
+                yield elem
 
 class OutputConfig(InputTool):
 
