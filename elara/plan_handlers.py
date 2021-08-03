@@ -281,19 +281,19 @@ class ActivityModeShares(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, attribute=None,activity_list=None) -> None:
+    def __init__(self, config, mode=None, attribute=None,destination_activity_filters=None) -> None:
         """
         Initiate Handler.
         :param config: Config
         :param mode: str, mode
         :param attribute: list, attributes
-        :param activity_list: list, activities
+        :param destination_activity_filters: list, activities
         """
         super().__init__(config, mode)
 
         self.mode = mode  # todo options not implemented
         self.attribute_key = attribute
-        self.activity_list = activity_list
+        self.destination_activity_filters = destination_activity_filters
         self.modes = None
         self.mode_indices = None
         self.classes = None
@@ -334,15 +334,8 @@ class ActivityModeShares(PlanHandlerTool):
         self.classes, self.class_indices = self.generate_id_map(found_attributes)
 
         # Initialise mode count table, if have list of activities then initiallise as dictionary of tables
-        if self.activity_list:
-            
-            list_of_tables = [np.zeros((
-                len(self.modes),
-                len(self.classes),
-                self.config.time_periods)) for _ in range(len(self.activity_list))]
-            self.mode_counts = dict(zip(self.activity_list, list_of_tables))
-        else:
-            self.mode_counts = np.zeros((
+ 
+        self.mode_counts = np.zeros((
             len(self.modes),
             len(self.classes),
             self.config.time_periods))
@@ -351,10 +344,11 @@ class ActivityModeShares(PlanHandlerTool):
 
     def process_plans(self, elem):
         """
-        Filter and iterate through only the plans that contain activities of interest and compute the modeshare for those activity trips. 
-        This handler only considers the legs / modes involved between home to the first instance of the specified activity, 
-        e.g. [home]-->[work] and ignores itermediate activities, i.e. [home]-->[shop]-->[work] is seens as [home]-->[work] with all legs in between considered as leg to activity.  
-
+        Iterate through the plans and produce counts / mode shares for trips to the activities specified in the list. 
+        This handler will consider all the legs up until each instance of the activities specified i.e. if the destination acitivity
+        list consists of ['work_a', work_b] and a plan consists of the trips [home] --> (bus,11km) --> [work_a] --> (train, 10km) -->
+        [work_b], the resulting (bus) counts will increase by 2. If the plan includes a trip back home, the mode counts will also be
+        reset. 
         :param elem: Plan XML element
         """
         for plan in elem.xpath(".//plan"):
@@ -365,92 +359,78 @@ class ActivityModeShares(PlanHandlerTool):
 
                 end_time = None
                 modes = {}
-                activity_in_plan = False
-                activity_list_in_plan = []
-                # only process plans that have specified activity in there
+
                 for stage in plan:
-                    if stage.tag == 'activity':
+                    if stage.tag == 'leg':
+                        leg_mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        distance = float(route_elem.get("distance", 0))
+                        
+                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        modes[mode] = modes.get(mode, 0) + distance
+
+                    elif stage.tag == 'activity':
                         activity = stage.get('type')
-                        if activity in self.activity_list:
-                            activity_in_plan = True
-                            if activity not in activity_list_in_plan: # initiate list of activities of interest in plan
-                                activity_list_in_plan.append(activity)
+                        if activity == 'pt interaction':  # ignore pt interaction activities
+                            continue
 
-                if activity_in_plan:
-                    for stage in plan:
-                        if len(activity_list_in_plan) == 0:
-                            break
-                        if stage.tag == 'leg':
-                            leg_mode = stage.get('mode')
-                            route_elem = stage.xpath('route')[0]
-                            mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
-                            distance = float(route_elem.get("distance", 0))
-                            
-                            mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
-                            modes[mode] = modes.get(mode, 0) + distance
+                        elif activity == 'home':
+                            modes = {} # reset modes if agent returns home
 
-                        elif stage.tag == 'activity':
-                            activity = stage.get('type')
-                            if activity == 'pt interaction':  # ignore pt interaction activities
-                                continue
+                        # only add activity modes when there has been previous activity
+                        # (ie trip start time) AND the activity is in specified list
+                        if end_time and (activity in self.destination_activity_filters):
+                            mode = self.get_furthest_mode(modes)
+                            x, y, z = self.table_position(
+                                mode,
+                                attribute_class,
+                                end_time
+                            )
+                            self.mode_counts[x, y, z] += 1 
+                        # update endtime for next activity
+                        end_time = convert_time_to_seconds(stage.get('end_time'))
 
-                            # only add activity modes when there has been previous activity
-                            # (ie trip start time) AND the activity is in specified list
-                            if end_time and (activity in activity_list_in_plan):
-                                mode = self.get_furthest_mode(modes)
-                                x, y, z = self.table_position(
-                                    mode,
-                                    attribute_class,
-                                    end_time
-                                )
-                                self.mode_counts[activity][x, y, z] += 1 # add the count to the appropriate activity table
-                                activity_list_in_plan.remove(activity)
-                            # update endtime for next activity
-                            end_time = convert_time_to_seconds(stage.get('end_time'))
-
-                            # reset modes
-                            #modes = {}
+                        # reset modes
+                        #modes = {}
 
     def finalise(self):
         """
         Following plan processing, the raw mode share table will contain counts by mode,
         population attribute class, activity and period (where period is based on departure
         time).
-        Finalise aggregates these results as required and creates a dataframe for each activity specified.
+        Finalise aggregates these results as required and creates a dataframe.
         """
-        
-        if self.activity_list:
-            # Scale final counts
-            self.mode_counts = {k: v*1.0 / self.config.scale_factor for k, v in self.mode_counts.items()}
-            names = ['mode', 'class', 'hour']
-            indexes = [self.modes, self.classes, range(self.config.time_periods)]
-            index = pd.MultiIndex.from_product(indexes, names=names)
-            
-            # Produce mode share outputs for each activity specified in activity list
-            for activity,mode_counts_table in self.mode_counts.items():
-                
-                counts_df = pd.DataFrame(mode_counts_table.flatten(), index=index)[0]
-                # mode counts breakdown output and acitivty sliced output
-                counts_df = counts_df.unstack(level='mode').sort_index()
-                if self.attribute_key:
-                    key = f"{self.name}_{activity}_{self.attribute_key}_breakdown_counts"
-                    self.results[key] = counts_df
 
-                total_counts_df = counts_df.sum(0)
-                key = f"{self.name}_{activity}_counts"
-                self.results[key] = total_counts_df
+        # Scale final counts
+        self.mode_counts *= 1.0 / self.config.scale_factor
+        activity_filter_name = '_'.join(self.destination_activity_filters)
+        names = ['mode', 'class', 'hour']
+        indexes = [self.modes, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
+        # mode counts breakdown output
+        counts_df = counts_df.unstack(level='mode').sort_index()
+        if self.attribute_key:
+            key = f"{self.name}_{self.attribute_key}_{activity_filter_name}_trip_counts"
+            self.results[key] = counts_df
 
-                # convert to mode shares
-                total = mode_counts_table.sum()
+        # mode counts totals output
+        total_counts_df = counts_df.sum(0)
+        key = f"{self.name}_{activity_filter_name}_trip_counts"
+        self.results[key] = total_counts_df
 
-                # mode shares breakdown output
-                if self.attribute_key:
-                    key = f"{self.name}_{activity}_{self.attribute_key}"
-                    self.results[key] = counts_df / total
+        # convert to mode shares
+        total = self.mode_counts.sum()
 
-                # mode shares totals output
-                key = f"{self.name}_{activity}"
-                self.results[key] = total_counts_df / total
+        # mode shares breakdown output
+        if self.attribute_key:
+            key = f"{self.name}_{self.attribute_key}_{activity_filter_name}"
+            self.results[key] = counts_df / total
+
+        # mode shares totals output
+        key = f"{self.name}_{activity_filter_name}"
+        self.results[key] = total_counts_df / total
 
     @staticmethod
     def generate_id_map(list_in):

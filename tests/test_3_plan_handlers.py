@@ -1280,7 +1280,7 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
 ### Activity Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', activity_list = ["work","shop"])
+    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
     
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1291,8 +1291,7 @@ def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12
     assert len(handler.classes) == 1
     assert list(handler.class_indices.keys()) == [None]
 
-    for activity in handler.activity_list:
-        assert handler.mode_counts[activity].shape == (6, 1, 24)
+    assert handler.mode_counts.shape == (6, 1, 24)
 
     return handler
 
@@ -1329,15 +1328,14 @@ def test_activity_mode_share_without_attribute_slice_with_activities_simple(test
                 </attributes>
                 <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
-            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
     </person>
     """
     person = etree.fromstring(string)
     handler.process_plans(person)
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['car']]) == 1
-    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['car']]) == 0
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 1
 
 def test_activity_mode_share_without_attribute_slice_with_activities_complex(test_plan_activity_modeshare_handler_without_attribute_slice):
     handler = test_plan_activity_modeshare_handler_without_attribute_slice
@@ -1356,7 +1354,15 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
                 </attributes>
                 <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
-            <activity type="recreation" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+            <leg mode="walk" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10200.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="18:00:00" >
             </activity>
         </plan>
     </person>
@@ -1377,10 +1383,27 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
                 <attributes>
                     <attribute name="routingMode" class="java.lang.String">car</attribute>
                 </attributes>
-                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10200.0">1-2 2-1 1-5</route>
             </leg>
             <activity type="shop" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="home" link="1-5" x="0.0" y="10000.0" end_time="17:40:00" >
+            </activity>
+            <leg mode="walk" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="18:30:00" >
+            </activity>
+
         </plan>
     </person>
     """
@@ -1402,7 +1425,7 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
                 </attributes>
                 <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
-            <activity type="shop" link="1-5" x="0.0" y="10000.0" end_time="12:30:00" >
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="12:30:00" >
             </activity>
             <leg mode="walk" trav_time="00:01:18">
 				<attributes>
@@ -1428,7 +1451,7 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
 				</attributes>
 				<route type="generic" start_link="3-4" end_link="4-3" trav_time="00:01:18" distance="10100.0"></route>
 			</leg>            
-            <activity type="work" link="4-3" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_b" link="4-3" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
     </person>
@@ -1450,18 +1473,18 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
 				<attributes>
 					<attribute name="routingMode" class="java.lang.String">car</attribute>
 				</attributes>
-				<route type="links" start_link="3-4" end_link="1-2" trav_time="00:07:43" distance="10400.0" vehicleRefId="chris">3-4 4-3 3-2 2-1 1-2</route>
+				<route type="links" start_link="3-4" end_link="1-2" trav_time="00:07:43" distance="10300.0" vehicleRefId="chris">3-4 4-3 3-2 2-1 1-2</route>
 			</leg>
-            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="11:30:00" >
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="11:30:00" >
             </activity>
 			<leg mode="bus" dep_time="11:30:00" trav_time="00:07:43">
 				<attributes>
 					<attribute name="routingMode" class="java.lang.String">car</attribute>
 				</attributes>
-				<route type="links" start_link="3-4" end_link="1-2" trav_time="00:07:43" distance="10300.0" vehicleRefId="chris">3-4 4-3 3-2 2-1 1-2</route>
+				<route type="links" start_link="3-4" end_link="1-2" trav_time="00:07:43" distance="10400.0" vehicleRefId="chris">3-4 4-3 3-2 2-1 1-2</route>
 			</leg>
 
-            <activity type="shop" link="3-4" x="10100.0" y="0.0" end_time="16:30:00" >
+            <activity type="work_b" link="3-4" x="10100.0" y="0.0" end_time="16:30:00" >
 			</activity>
 
         </plan>
@@ -1469,18 +1492,16 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
     """
     person = etree.fromstring(string)
     handler.process_plans(person)
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
+    assert np.sum(handler.mode_counts[handler.mode_indices['bus']]) == 1
+    assert np.sum(handler.mode_counts[handler.mode_indices['pt']]) == 1
+    assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 3
 
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['car']]) == 0
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['bus']]) == 0
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['pt']]) == 1
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['walk']]) == 1
-    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts['shop'][handler.mode_indices['pt']]) == 1
 
 ### ActivityModeshare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', activity_list = ["work"], attribute="age")
+    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"], attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1492,9 +1513,8 @@ def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
 
     assert len(handler.classes) == 3
     assert set(handler.classes) == {"yes", "no", None}
-
-    for activity in handler.activity_list:
-        assert handler.mode_counts[activity].shape == (6, 3, 24)
+    
+    assert handler.mode_counts.shape == (6, 3, 24)
 
     return handler
 
@@ -1504,7 +1524,7 @@ def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_h
     <person id="nick">
         <attributes>
             <attribute name="subpopulation" class="java.lang.String">poor</attribute>
-            <attribute name="age" class="java.lang.String">young</attribute>
+            <attribute name="age" class="java.lang.String">yes</attribute>
         </attributes>
         <plan score="129.592238766919" selected="yes">
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
@@ -1515,7 +1535,7 @@ def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_h
                 </attributes>
                 <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
-            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
     </person>
@@ -1526,7 +1546,7 @@ def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_h
     <person id="chris">
         <attributes>
             <attribute name="subpopulation" class="java.lang.String">poor</attribute>
-            <attribute name="age" class="java.lang.String">old</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
         </attributes>
         <plan score="129.592238766919" selected="yes">
             <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
@@ -1537,16 +1557,21 @@ def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_h
                 </attributes>
                 <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
-            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
     </person>
     """
     person = etree.fromstring(string)
     handler.process_plans(person)
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts['work'][handler.mode_indices['car'], handler.class_indices['yes']]) == 1
- 
+    # mode
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
+    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+
+    # class
+    assert np.sum(handler.mode_counts[:, handler.class_indices['yes'], :]) == 1
+    assert np.sum(handler.mode_counts[:, handler.class_indices['no'], :]) == 1
+
 @pytest.fixture
 def test_activity_modeshare_plan_handler_finalised(test_plan_activity_modeshare_handler_age_attribute_slice):
     handler = test_plan_activity_modeshare_handler_age_attribute_slice
@@ -1567,7 +1592,7 @@ def test_activity_modeshare_plan_handler_finalised(test_plan_activity_modeshare_
                 </attributes>
                 <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
             </leg>
-            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
     </person>
@@ -1590,7 +1615,7 @@ def test_activity_modeshare_plan_handler_finalised(test_plan_activity_modeshare_
 				</attributes>
 				<route type="generic" start_link="3-4" end_link="1-2" trav_time="00:52:31" distance="13130.0"></route>
 			</leg>
-            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
     </person>
