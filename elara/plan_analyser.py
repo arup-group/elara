@@ -4,13 +4,24 @@ import pandas as pd
 import sys
 import geopandas
 import numpy as np
+import argparse
+import os
 
-trips = pd.read_csv("./elara/20210609_10p/experiment3_no_car_100times_cost/trip_logs_all_trips.csv")
+parser = argparse.ArgumentParser(description='SEE')
 
-# simplify for now
-# trips = trips[:20000]
+# Add the arguments
+parser.add_argument('--input',type=str,help='the path to the input trips_logs_all_trips.csv')
+parser.add_argument('--output',type=str,help='the path to the desired output folder')
 
-print("{} trips loaded".format(len(trips)))
+args = parser.parse_args()
+
+trips = pd.read_csv(args.input)[0:5000]
+
+print("{} trips loaded from {}".format(len(trips),input))
+
+if not os.path.exists(args.output):
+    print("Specified output director didn't exist: {}, creating...")
+    os.makedirs(args.output)
 
 # for each agent and each innovation, we want to define the dominantMode (by longest trip)
 # this is crude, it's only picking mode of the longest trip. Should probably be cumulative, good enough for now
@@ -26,7 +37,8 @@ trips = trips.groupby(['agent',"innovation_hash"]).apply(get_dominant)
 trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
 trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
 
-trips.to_csv("./out/allTrips.csv")
+print("Writing all trips csv to {} ".format(args.output))
+trips.to_csv(args.output + "./allTrips.csv")
 
 # we use the innovation_hash to identify a summary, per agent
 plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
@@ -88,7 +100,8 @@ unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','mode'], keep='last')
 gdf = pd.concat([selectedPlans,unSelectedPlans])
 
 # kepler'able geojson
-gdf.to_file("./out/AllPlans.geojson", driver="GeoJSON")
+print("Writing all plans GeoJSON to {} ".format(args.output))
+gdf.to_file(args.output + "./AllPlans.geojson", driver="GeoJSON")
 
 # creation of a df where car is selected
 # but PT exists in their unchosen plans
@@ -98,10 +111,5 @@ carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
 
 unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
 unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.dominantTripMode.isin(['bus','rail'])]
-unSelectedPlansCarSelected.to_file("./out/CarModeShiftOpportunities.geojson",driver='GeoJSON')
-
-# next steps:
-# aggregate all innovations
-# per lsoa?
-# per income group?
-# per mosaic data?
+print("Writing CarModeShiftOpportunities GeoJSON to {} ".format(args.output))
+unSelectedPlansCarSelected.to_file(args.output +  "./CarModeShiftOpportunities.geojson",driver='GeoJSON')

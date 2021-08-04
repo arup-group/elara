@@ -458,6 +458,20 @@ trip_logs = ["all"]
 
 Under the hood, this branch of Elara extracts the unchosen plans and labels them. This generates a dataset that the `elara/plan_analyser.py` may use to generate outputs. 
 
+
+
+Example invocation:
+
+``` 
+python3 plan_analyser.py --input "./test/trip_logs_all_trips.csv" --output "./test/"
+```
+
+```5000 trips loaded from <built-in function input>
+Writing all trips csv to ./test/
+Writing all plans GeoJSON to ./test/
+Writing CarModeShiftOpportunities GeoJSON to ./test/
+```
+
 An example output is shown below:
 
 ![Screenshot 2021-08-04 at 12.02.50](/Users/gerard.casey/Library/Application Support/typora-user-images/Screenshot 2021-08-04 at 12.02.50.png)
