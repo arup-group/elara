@@ -52,15 +52,15 @@ def test_combine_reqs(test, expected):
     "test,expected",
     [
         ([], {}),
-        ([{'req1': {'modes': ['a']}}, {'req1': {'modes': ['b']}}], {"req1": {"modes": {'a', 'b'}, 'attributes': {None}}}),
-        ([{'req1': {'modes': ['a'], 'attributes': ['A']}}, {'req1': {'modes': ['b'], 'attributes': ['B']}}], {"req1": {"modes": {'a', 'b'}, 'attributes': {'A', 'B'}}}),
-        ([{'req1': {'modes': ['a'], 'attributes': ['A']}}, {'req1': {'modes': ['a'], 'attributes': ['A']}}], {"req1": {"modes": {'a'}, 'attributes': {'A'}}}),
-        ([{'req1': {'modes': ['a'], 'attributes': ['A']}}, {'req2': {'modes': ['a'], 'attributes': ['A']}}], {"req1": {"modes": {'a'}, 'attributes': {'A'}}, "req2": {"modes": {'a'}, 'attributes': {'A'}}}),
-        ([{'req1': {'modes': [None], 'attributes': [None]}}, {'req1': {'modes': [None], 'attributes':[None]}}], {"req1": {"modes": {None}, 'attributes': {None}}}),
-        ([{'req1': {'modes': [None], 'attributes': ['A']}}, {'req1': {'modes': ['b'], 'attributes': ['A']}}], {"req1": {"modes": {None,'b'}, 'attributes': {'A'}}}),
-        ([{'req1': {'modes': ['a'], 'attributes': [None]}}, {'req1': {'modes': ['b'], 'attributes': ['B']}}], {"req1": {"modes": {'a','b'}, 'attributes': {None, 'B'}}}),
-        ([{'req1': {'modes': [], 'attributes': []}}, {'req1': {'modes': [], 'attributes': []}}], {"req1": {"modes": {None}, 'attributes': {None}}}),
-        ([{'req1': None}, {'req1': None}], {"req1": {"modes": {None}, 'attributes': {None}}}),
+        ([{'req1': {'modes': ['a']}}, {'req1': {'modes': ['b']}}], {"req1": {"modes": {'a', 'b'}, 'groupby_person_attributes': {None}}}),
+        ([{'req1': {'modes': ['a'], 'groupby_person_attributes': ['A']}}, {'req1': {'modes': ['b'], 'groupby_person_attributes': ['B']}}], {"req1": {"modes": {'a', 'b'}, 'groupby_person_attributes': {'A', 'B'}}}),
+        ([{'req1': {'modes': ['a'], 'groupby_person_attributes': ['A']}}, {'req1': {'modes': ['a'], 'groupby_person_attributes': ['A']}}], {"req1": {"modes": {'a'}, 'groupby_person_attributes': {'A'}}}),
+        ([{'req1': {'modes': ['a'], 'groupby_person_attributes': ['A']}}, {'req2': {'modes': ['a'], 'groupby_person_attributes': ['A']}}], {"req1": {"modes": {'a'}, 'groupby_person_attributes': {'A'}}, "req2": {"modes": {'a'}, 'groupby_person_attributes': {'A'}}}),
+        ([{'req1': {'modes': [None], 'groupby_person_attributes': [None]}}, {'req1': {'modes': [None], 'groupby_person_attributes':[None]}}], {"req1": {"modes": {None}, 'groupby_person_attributes': {None}}}),
+        ([{'req1': {'modes': [None], 'groupby_person_attributes': ['A']}}, {'req1': {'modes': ['b'], 'groupby_person_attributes': ['A']}}], {"req1": {"modes": {None,'b'}, 'groupby_person_attributes': {'A'}}}),
+        ([{'req1': {'modes': ['a'], 'groupby_person_attributes': [None]}}, {'req1': {'modes': ['b'], 'groupby_person_attributes': ['B']}}], {"req1": {"modes": {'a','b'}, 'groupby_person_attributes': {None, 'B'}}}),
+        ([{'req1': {'modes': [], 'groupby_person_attributes': []}}, {'req1': {'modes': [], 'groupby_person_attributes': []}}], {"req1": {"modes": {None}, 'groupby_person_attributes': {None}}}),
+        ([{'req1': None}, {'req1': None}], {"req1": {"modes": {None}, 'groupby_person_attributes': {None}}}),
     ]
 )
 def test_complex_combine_reqs(test, expected):
@@ -74,7 +74,7 @@ class Config():
         pass
 
     def get_requirements(self):
-        return {'volume_counts': {'modes':{'car'}}, 'vkt': {'modes':{'bus'}}, 'mode_share': {'modes':{'all'}, 'attributes': {'region'}}}
+        return {'volume_counts': {'modes':{'car'}}, 'vkt': {'modes':{'bus'}}, 'mode_share': {'modes':{'all'}, 'groupby_person_attributes': {'region'}}}
 
 
 class ExampleTool(Tool):
@@ -251,27 +251,27 @@ def test_requirements(
     build(start)
     assert equals(
         start.gather_manager_requirements(),
-        {'volume_counts': {'modes':{'car'}}, 'vkt': {'modes':{'bus'}}, 'mode_share': {'modes':{'all'}, 'attributes': {'region'}}}
+        {'volume_counts': {'modes':{'car'}}, 'vkt': {'modes':{'bus'}}, 'mode_share': {'modes':{'all'}, 'groupby_person_attributes': {'region'}}}
     )
     assert equals(
         post_process.gather_manager_requirements(),
-        {'volume_counts': {'modes':{'car'}, 'attributes': {None}}, 'vkt': {'modes':{'bus'}, 'attributes': {None}}, 'mode_share': {'modes':{'all'}, 'attributes': {'region'}}}
+        {'volume_counts': {'modes':{'car'}, 'groupby_person_attributes': {None}}, 'vkt': {'modes':{'bus'}, 'groupby_person_attributes': {None}}, 'mode_share': {'modes':{'all'}, 'groupby_person_attributes': {'region'}}}
     )
     assert equals(
         event_handler_process.gather_manager_requirements(),
-        {'vkt': {'modes':{'bus'}, 'attributes': {None}}, 'volume_counts': {'modes':{'car', 'bus'}, 'attributes': {None}}, 'mode_share': {'modes': {'all'}, 'attributes': {'region'}}}
+        {'vkt': {'modes':{'bus'}, 'groupby_person_attributes': {None}}, 'volume_counts': {'modes':{'car', 'bus'}, 'groupby_person_attributes': {None}}, 'mode_share': {'modes': {'all'}, 'groupby_person_attributes': {'region'}}}
     )
     assert equals(
         plan_handler_process.gather_manager_requirements(),
-        {'vkt': {'modes':{'bus'}, 'attributes': {None}}, 'volume_counts': {'modes': {'car', 'bus'}, 'attributes': {None}}, 'mode_share': {'modes': {'all'}, 'attributes': {'region'}}}
+        {'vkt': {'modes':{'bus'}, 'groupby_person_attributes': {None}}, 'volume_counts': {'modes': {'car', 'bus'}, 'groupby_person_attributes': {None}}, 'mode_share': {'modes': {'all'}, 'groupby_person_attributes': {'region'}}}
     )
     assert equals(
         inputs_process.gather_manager_requirements(),
-        {'events': {'attributes': {None}, 'modes': {None}}, 'network': {'attributes': {None}, 'modes': {None}}, 'plans': {'attributes': {None}, 'modes': {None}}}
+        {'events': {'groupby_person_attributes': {None}, 'modes': {None}}, 'network': {'groupby_person_attributes': {None}, 'modes': {None}}, 'plans': {'groupby_person_attributes': {None}, 'modes': {None}}}
     )
     assert equals(  
         config_paths.gather_manager_requirements(),
-        {'events_path': {'attributes': {None}, 'modes': {None}}, 'network_path': {'attributes': {None}, 'modes': {None}}, 'plans_path': {'attributes': {None}, 'modes': {None}}}
+        {'events_path': {'groupby_person_attributes': {None}, 'modes': {None}}, 'network_path': {'groupby_person_attributes': {None}, 'modes': {None}}, 'plans_path': {'groupby_person_attributes': {None}, 'modes': {None}}}
     )
 
 

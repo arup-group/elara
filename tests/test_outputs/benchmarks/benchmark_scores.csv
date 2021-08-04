@@ -1,7 +1,2 @@
-<<<<<<< HEAD
-,benchmark,type,score
-0,test_link_cordon:car,counters,0.0
-=======
 ,benchmark,type,score
 0,test_link_cordon:car:None:,counters,0.0
->>>>>>> passing tests

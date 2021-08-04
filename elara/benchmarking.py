@@ -60,8 +60,8 @@ class BenchmarkTool(Tool):
     weight = 1
     benchmark_data_path = None
 
-    def __init__(self, config, mode=None, attribute=None, benchmark_data_path=None, **kwargs):
-        super().__init__(config, mode=mode, attribute=attribute, **kwargs)
+    def __init__(self, config, mode=None, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
         if not self.benchmark_data_path:
             self.benchmark_data_path = benchmark_data_path
@@ -79,8 +79,8 @@ class CsvComparison(BenchmarkTool):
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
-    def __init__(self, config, mode, attribute=None, **kwargs):
-        super().__init__(config, mode=mode, attribute=attribute, **kwargs)
+    def __init__(self, config, mode, groupby_person_attribute=None, **kwargs):
+        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
@@ -117,8 +117,9 @@ class CsvComparison(BenchmarkTool):
             savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
 
 class DurationComparison(CsvComparison):
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
-        super().__init__(config, mode=mode, attribute=attribute, **kwargs)
+
+    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.benchmark_data_path = benchmark_data_path
 
     requirements = ['trip_duration_breakdown']
@@ -159,7 +160,7 @@ class LinkCounter(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs) -> None:
+    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
         :param config: Config object
@@ -168,7 +169,7 @@ class LinkCounter(BenchmarkTool):
         super().__init__(
             config=config,
             mode=mode,
-            attribute=attribute,
+            groupby_person_attribute=groupby_person_attribute,
             benchmark_data_path=benchmark_data_path,
             **kwargs
             )

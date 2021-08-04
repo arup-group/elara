@@ -27,7 +27,7 @@ class Tool:
     options_enabled = False
 
     mode = None
-    attribute_key = None
+    groupby_person_attribute = None
     kwargs = None
 
     valid_modes = None
@@ -38,16 +38,17 @@ class Tool:
     def __init__(
             self, config,
             mode: Union[None, str] = None,
-            attribute: Union[None, str] = None,
+            groupby_person_attribute: Union[None, str] = None,
             **kwargs
     ) -> None:
         """
         Initiate a tool instance with optional option (ie: 'bus').
         :param mode: optional mode, typically assumed to be str
+        :param groupby_person_attribute: optional key for person attribute, str
         """
         self.config = config
         self.mode = self._validate_mode(mode)
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
         self.kwargs = kwargs
 
     def __str__(self):
@@ -80,7 +81,7 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: {'modes': [self.mode], 'attributes': [self.attribute_key]} for req in self.requirements}
+            requirements = {req: {'modes': [self.mode], 'groupby_person_attributes': [self.groupby_person_attribute]} for req in self.requirements}
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -335,29 +336,29 @@ class WorkStation:
                         if options:
                             # split options between modes and optional arguments
                             modes = options.get("modes")
-                            attributes = options.get("attributes")
+                            groupby_person_attributes = options.get("groupby_person_attributes")
                             
-                            if len(attributes) > 1 and None in attributes:
+                            if len(groupby_person_attributes) > 1 and None in groupby_person_attributes:
                                 # then can remove None as it exits as a default in all cases
-                                attributes.remove(None)
+                                groupby_person_attributes.remove(None)
 
                             optional_args = {
-                                key : options[key] for key in options if key not in ["modes", "attributes"]
+                                key : options[key] for key in options if key not in ["modes", "groupby_person_attributes"]
                                 }
                             
                             optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
                             
                             for mode in modes:
-                                for attribute in attributes:
+                                for groupby_person_attribute in groupby_person_attributes:
                                     # build unique key for tool initiated with option
-                                    if mode is None and attribute is None:
+                                    if mode is None and groupby_person_attribute is None:
                                         key = tool_name
                                     else:
-                                        key = f"{tool_name}:{mode}:{attribute}:{optional_arg_values_string}"
+                                        key = f"{tool_name}:{mode}:{groupby_person_attribute}:{optional_arg_values_string}"
                                     self.resources[key] = tool(
                                         config=self.config,
                                         mode=mode,
-                                        attribute=attribute,
+                                        groupby_person_attribute=groupby_person_attribute,
                                         **optional_args
                                         )
 
@@ -445,18 +446,19 @@ class WorkStation:
 
                 tool.build(self.supplier_resources, write_path)
 
-    def load_all_tools(self, mode=None, attribute=None) -> None:
+    def load_all_tools(self, mode=None, groupby_person_attribute=None) -> None:
         """
         Method used for testing.
         Load all available tools into resources with given option.
-        :param option: option, default None, must be valid for tools
-        :return: NOne
+        :param : mode, default None, must be valid for tools
+        :param : groupby_person_attribute, default None, must be valid for tools
+        :return: None
         """
         self.logger.info(f"Loading all tools for {self.__str__()}")
         for name, tool in self.tools.items():
             if mode is None and tool.valid_modes is not None:
                 mode = tool.valid_modes[0]
-            self.resources[name] = tool(self.config, mode=mode, attribute=attribute)
+            self.resources[name] = tool(self.config, mode=mode, groupby_person_attribute=groupby_person_attribute)
 
     def write_csv(
             self,
@@ -782,7 +784,7 @@ def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
         combined_reqs[tool] = {}
         # collect unique mode dependencies
         modes = set()
-        attributes = set()
+        groupby_person_attributes = set()
         for req in reqs:
             if req and req.get(tool):
                 combined_reqs[tool] = req.get(tool)
@@ -795,14 +797,14 @@ def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
                 tool_reqs = {}  # TODO bit hacky, better to get handlers without requirments to return {}
             if tool_reqs.get("modes"):
                 modes |= set(tool_reqs.get("modes"))
-            if tool_reqs.get("attributes"):
-                attributes |= set(tool_reqs.get("attributes"))
+            if tool_reqs.get("groupby_person_attributes"):
+                groupby_person_attributes |= set(tool_reqs.get("groupby_person_attributes"))
         if not modes:
             modes = {None}
-        if not attributes:
-            attributes = {None}
+        if not groupby_person_attributes:
+            groupby_person_attributes = {None}
         combined_reqs[tool]['modes'] = modes
-        combined_reqs[tool]['attributes'] = attributes
+        combined_reqs[tool]['groupby_person_attributes'] = groupby_person_attributes
 
     return combined_reqs
 
@@ -888,13 +890,6 @@ def list_equals(l1, l2):
             return True
         return False
 
-    if not len(l1) == len(l2):
-        return False
-    if not sorted(l1) == sorted(l2):
-        return False
-    return True
-
-    
     if not len(l1) == len(l2):
         return False
     if not sorted(l1) == sorted(l2):
