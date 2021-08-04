@@ -1371,6 +1371,14 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
             </leg>
             <activity type="shop" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
+            <leg mode="walk" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:40:00" >
+            </activity>
 
         </plan>
     </person>
@@ -1427,43 +1435,8 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
     person = etree.fromstring(string)
     handler.process_plans(person)
 
-
-    string = """
-    <person id="elizabeth">
-        <attributes>
-            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
-            <attribute name="age" class="java.lang.String">no</attribute>
-        </attributes>
-        <plan score="129.592238766919" selected="yes">
-            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
-            </activity>
-            <leg mode="pt" dep_time="16:30:00" trav_time="00:07:43">
-				<attributes>
-					<attribute name="routingMode" class="java.lang.String">car</attribute>
-				</attributes>
-				<route type="links" start_link="3-4" end_link="1-2" trav_time="00:07:43" distance="10300.0" vehicleRefId="chris">3-4 4-3 3-2 2-1 1-2</route>
-			</leg>
-            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="11:30:00" >
-            </activity>
-			<leg mode="bus" dep_time="11:30:00" trav_time="00:07:43">
-				<attributes>
-					<attribute name="routingMode" class="java.lang.String">car</attribute>
-				</attributes>
-				<route type="links" start_link="3-4" end_link="1-2" trav_time="00:07:43" distance="10400.0" vehicleRefId="chris">3-4 4-3 3-2 2-1 1-2</route>
-			</leg>
-
-            <activity type="work_b" link="3-4" x="10100.0" y="0.0" end_time="16:30:00" >
-			</activity>
-
-        </plan>
-    </person>
-    """
-    person = etree.fromstring(string)
-    handler.process_plans(person)
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts[handler.mode_indices['bus']]) == 1
-    assert np.sum(handler.mode_counts[handler.mode_indices['pt']]) == 1
-    assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 2
+    assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 3
 
 
 ### TripDestinationModeShare Handler With Attribute Slices###

@@ -388,7 +388,7 @@ class TripDestinationModeShare(PlanHandlerTool):
                         end_time = convert_time_to_seconds(stage.get('end_time'))
 
                         # reset modes
-                        #modes = {}
+                        modes = {}
 
     def finalise(self):
         """
