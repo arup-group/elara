@@ -347,8 +347,7 @@ class ActivityModeShares(PlanHandlerTool):
         Iterate through the plans and produce counts / mode shares for trips to the activities specified in the list. 
         This handler will consider all the legs up until each instance of the activities specified i.e. if the destination acitivity
         list consists of ['work_a', work_b] and a plan consists of the trips [home] --> (bus,11km) --> [work_a] --> (train, 10km) -->
-        [work_b], the resulting (bus) counts will increase by 2. If the plan includes a trip back home, the mode counts will also be
-        reset. 
+        [work_b], the resulting (bus) counts will increase by 2. 
         :param elem: Plan XML element
         """
         for plan in elem.xpath(".//plan"):
@@ -374,9 +373,6 @@ class ActivityModeShares(PlanHandlerTool):
                         activity = stage.get('type')
                         if activity == 'pt interaction':  # ignore pt interaction activities
                             continue
-
-                        elif activity == 'home':
-                            modes = {} # reset modes if agent returns home
 
                         # only add activity modes when there has been previous activity
                         # (ie trip start time) AND the activity is in specified list
