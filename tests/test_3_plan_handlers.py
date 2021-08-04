@@ -1277,10 +1277,10 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                 df = result.loc[cols]
                 assert df.sum().sum() == 1
 
-### Activity Modeshare Handler No Attribute Slices###
+### TripDestinationModeShare Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
+    handler = plan_handlers.TripDestinationModeShare(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
     
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1466,10 +1466,10 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
     assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 2
 
 
-### ActivityModeshare Handler With Attribute Slices###
+### TripDestinationModeShare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"], attribute="age")
+    handler = plan_handlers.TripDestinationModeShare(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"], attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
