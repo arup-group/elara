@@ -922,7 +922,7 @@ def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
 ### Modeshare Handler ###
 @pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.ModeShares(test_config, mode='all', attribute="subpopulation")
+    handler = plan_handlers.ModeShares(test_config, mode='all', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1123,7 +1123,7 @@ def test_mode_share_without_attribute_slice(test_plan_modeshare_handler_no_attri
 ### Modeshare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ModeShares(test_config_v12, mode='all', attribute="age")
+    handler = plan_handlers.ModeShares(test_config_v12, mode='all', groupby_person_attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
