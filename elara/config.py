@@ -71,14 +71,20 @@ class Config:
             for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]
+
+                    # check for name and add to options
+                    if len(handler.split("--")) > 1:
+                        options["name"] = handler.split("--")[1]
+                    
                     if not options:
-                        self.settings[handler_group][handler] = {'modes': options} 
+                        self.settings[handler_group][handler] = {'modes': ["all"]}
                     elif isinstance(options, list):
                         self.settings[handler_group][handler] = {'modes': options}
                     elif isinstance(options, dict):
                         # if no modes option is specified, assume "all"
                         if 'modes' not in options:
                             self.settings[handler_group][handler]["modes"] = ['all']
+
 
         self.load_required_settings()
 
@@ -312,7 +318,7 @@ class Config:
             'mode_share':'mode_shares'
         }
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
-            for handler in self.settings.get(handler_group):
+            for handler in self.settings.get(handler_group, []):
                 if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
@@ -377,8 +383,8 @@ class Config:
 
 class PathTool(Tool):
 
-    def __init__(self, config, option=None):
-        super().__init__(config, option)
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config=config, mode=None, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 
 
