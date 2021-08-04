@@ -62,10 +62,10 @@ These are outputs produced through additional post-processing of the above outpu
   * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 
 * **Benchmarking Handlers**:
-Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
- Elara will compare and present simulation results from the above outputs to the available benchmarks, it will aditionally output a
- distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
- again that benchmarks are project specific**.
+  Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
+   Elara will compare and present simulation results from the above outputs to the available benchmarks, it will aditionally output a
+   distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
+   again that benchmarks are project specific**.
   * ``ireland_highways``
   * ``ireland_highways_NI`` 
   * ``ireland_DCC``
@@ -279,7 +279,7 @@ include:
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
   * ``agent_highway_distance_logs``: Produce agent distances by car on different road 
-  types. Requires network to have `osm:way:highways` attribute.
+    types. Requires network to have `osm:way:highways` attribute.
   * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
   * ``toll_logs`` : Produces summaries of tolls paid by agents. Requires ``roadpricing.xml`` as input parameter. 
 
@@ -443,6 +443,36 @@ Note that we are assuming that all other option defaults are correct. ie:
 - --time_periods = 24
 - etc
 
+## Simulated Experience Extactor (SEE) - *WIP*
+
+SEE (aka Near Miss Analyser) is a new extension to Elara which analyses the plans that agents *didn't* selected in order to understand the choices available to different types of agents in different locations. It is helpful for understanding mode shift potential and gives both tabular and spatial outputs for visualisation. *It is very much work in progress.*
+
+SEE is currently a stand alone script, run against a standard elara output, the `trip_logs_all_trips.csv`. 
+
+In order to generate the required `trip_logs_all_trips.csv` input file, a standard Elara plan handler is used:
+
+```
+[plan_handlers]
+trip_logs = ["all"]
+```
+
+Under the hood, this branch of Elara extracts the unchosen plans and labels them. This generates a dataset that the `elara/plan_analyser.py` may use to generate outputs. 
+
+An example output is shown below:
+
+![Screenshot 2021-08-04 at 12.02.50](/Users/gerard.casey/Library/Application Support/typora-user-images/Screenshot 2021-08-04 at 12.02.50.png)
+
+
+This documents SEE, as is. 
+
+Next steps:
+
+1. Make the output of unselected plans for `trip_logs` togglable on/off. E.g. something like ```trip_logs = {modes=["all"], unselected=true}```
+2. Embed the script in a further Elara handler so it may be invoked in the normal Elara way.
+3. Tests
+
+
+
 ## Tests
 
 ### Run the tests (from the elara root dir)
@@ -454,7 +484,7 @@ Note that we are assuming that all other option defaults are correct. ie:
 To generate XML & HTML coverage reports to `reports/coverage`:
 
     ./scripts/code-coverage.sh
-    
+
 ## Debug
 
 Logging level can be set in the config or via the cli, or otherwise defaults to False (INFO). We 
@@ -463,18 +493,18 @@ currently support the following levels: DEBUG, INFO, WARNING.
 Note that the configured or default logging level can be overwritten to debug using an env variable:
 
     export ELARA_LOGGINGLEVEL='True'
-    
+
 ## About
 
 Elara is designed to undertake arbitrarily complex pipelines of output processing, postprocessing
  and benchmarking as defined by a configuration file or via the CLI.
- 
+
 Elara defines a graph of connected `WorkStations`, each responsible for building certain types of
  output or intermediate data requirements (`Tools`). These workstations are connected to their 
  respective dependees and dependencies (managers and suppliers) to form a **DAG**.
- 
+
  ![dag](images/dag.png)
- 
+
 Elara uses this **DAG** to provide:
 
 * **Minimal** dependency processing
@@ -499,14 +529,14 @@ relevant workstations 'roster' of tools (ie `.tools`).
 
 New tool classes must correctly inherit and implement a number of values and methods so that they 
 play well with their respective workstation:
- 
+
 * ``.__init__(self, config, mode)``: Used for early validation of mode and 
 subsequent requirements.
 * ``.build(self, resource=None)``: Used to process required output (assumes required resources are 
 available).
 
 `tool_templates` provides some templates and notes for adding new tools.
- 
+
  It may also be required to add or connect new workstations, where new workstations are new types
   of process that might contain a new or multiple new tools. New workstations must be defined and
    connected to their respective suppliers and managers in `main`.
@@ -531,7 +561,7 @@ simply numbers mapped to the particular time slice during the modelled day.
 **Is it fast/sensible?**
 
  Sometimes - 
- 
+
  ![dag](images/design.png)
 
 ## What does the name mean?
