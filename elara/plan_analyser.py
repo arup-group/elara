@@ -44,7 +44,7 @@ trips.to_csv(args.output + "./allTrips.csv")
 plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
 
 # add relative score to selected score, gives indication of relative proximity
-# This is naive - we assume max score is selected, which it often isn't.
+# This is naive - we assume max score is selected, which sometimes it isn't
 # good enough for now
 plans['relativeDisUtilityToSelected'] = plans['utility'] - plans.groupby(['agent'])['utility'].transform('max')
 plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
