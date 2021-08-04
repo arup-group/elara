@@ -208,7 +208,7 @@ def mode_shares(
 @plan_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
-def activity_mode_shares(
+def trip_destination_mode_share(
         modes, debug, name, inputs_path, outputs_path, attribute, destination_activity_filters, time_periods, scale_factor, version, epsg, full
 ):
     """
@@ -220,7 +220,7 @@ def activity_mode_shares(
     override = common_override(
         debug, name, inputs_path, outputs_path, attribute, destination_activity_filters, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["activity_mode_shares"] = {'modes': list(modes), 'destination_activity_filters':destination_activity_filters, 'attribute':attribute}
+    override["plan_handlers"]["trip_destination_mode_share"] = {'modes': list(modes), 'destination_activity_filters':destination_activity_filters, 'attribute':attribute}
     config = Config(override=override)
     main(config)
 
