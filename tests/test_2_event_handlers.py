@@ -260,7 +260,7 @@ def bus_leaves_link_event():
 # subpopulation breakdown
 @pytest.fixture
 def test_car_volume_count_handler_with_subpopulations(test_config, input_manager):
-    handler = event_handlers.LinkVehicleCounts(test_config, mode='car', attribute="subpopulation")
+    handler = event_handlers.LinkVehicleCounts(test_config, mode='car', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -361,7 +361,7 @@ def test_volume_count_finalise_car_simple(test_car_volume_count_handler_simple, 
 # bus
 @pytest.fixture
 def test_bus_volume_count_handler(test_config, input_manager):
-    handler = event_handlers.LinkVehicleCounts(test_config, mode='bus', attribute="subpopulation")
+    handler = event_handlers.LinkVehicleCounts(test_config, mode='bus', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -438,7 +438,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
 # With subpopulation attribute groups
 @pytest.fixture
 def test_car_link_speed_handler(test_config, input_manager):
-    handler = event_handlers.LinkVehicleSpeeds(test_config, mode='car', attribute="subpopulation")
+    handler = event_handlers.LinkVehicleSpeeds(test_config, mode='car', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -513,7 +513,7 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
 # With no attribute groups
 @pytest.fixture
 def test_car_link_speed_handler_simple(test_config, input_manager):
-    handler = event_handlers.LinkVehicleSpeeds(test_config, mode='car', attribute=None)
+    handler = event_handlers.LinkVehicleSpeeds(test_config, mode='car', groupby_person_attribute=None)
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -552,7 +552,7 @@ def test_link_speed_finalise_car_simple(test_car_link_speed_handler_simple, car_
 # with subpopulation attribute grouping
 @pytest.fixture
 def bus_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.LinkPassengerCounts(test_config, mode='bus', attribute="subpopulation")
+    handler = event_handlers.LinkPassengerCounts(test_config, mode='bus', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -692,7 +692,7 @@ def test_route_passenger_count_handler_rejects_car_as_mode():
 # with subpopulation attribute grouping
 @pytest.fixture
 def bus_route_passenger_count_handler(test_config, input_manager):
-    handler = event_handlers.RoutePassengerCounts(test_config, mode='bus', attribute="subpopulation")
+    handler = event_handlers.RoutePassengerCounts(test_config, mode='bus', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -726,7 +726,7 @@ def test_route_passenger_count_finalise_bus(bus_route_passenger_count_handler, e
 # simple case no attribute breakdown
 @pytest.fixture
 def bus_route_passenger_count_handler_simple(test_config, input_manager):
-    handler = event_handlers.RoutePassengerCounts(test_config, mode='bus', attribute=None)
+    handler = event_handlers.RoutePassengerCounts(test_config, mode='bus', groupby_person_attribute=None)
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -761,7 +761,7 @@ def test_route_passenger_count_finalise_bus_simple(bus_route_passenger_count_han
 # with subpopulation attribute grouping
 @pytest.fixture
 def test_bus_passenger_interaction_handler(test_config, input_manager):
-    handler = event_handlers.StopPassengerCounts(test_config, mode='bus', attribute="subpopulation")
+    handler = event_handlers.StopPassengerCounts(test_config, mode='bus', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -883,7 +883,7 @@ def test_stop_interaction_finalise_bus(
 # simple case no attribute breakdown
 @pytest.fixture
 def test_bus_passenger_interaction_handler_simple(test_config, input_manager):
-    handler = event_handlers.StopPassengerCounts(test_config, mode='bus', attribute=None)
+    handler = event_handlers.StopPassengerCounts(test_config, mode='bus', groupby_person_attribute=None)
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -923,7 +923,7 @@ def test_stop_interaction_finalise_bus_simple(
 # with subpopulation attribute groups
 @pytest.fixture
 def bus_stop_to_stop_handler(test_config, input_manager):
-    handler = event_handlers.StopToStopPassengerCounts(test_config, mode='bus', attribute="subpopulation")
+    handler = event_handlers.StopToStopPassengerCounts(test_config, mode='bus', groupby_person_attribute="subpopulation")
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     return handler
@@ -1082,7 +1082,7 @@ def test_stop_to_stop_finalise_bus(
 # simple case no attributes
 @pytest.fixture
 def bus_stop_to_stop_handler_simple(test_config, input_manager):
-    handler = event_handlers.StopToStopPassengerCounts(test_config, mode='bus', attribute=None)
+    handler = event_handlers.StopToStopPassengerCounts(test_config, mode='bus', groupby_person_attribute=None)
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     return handler

@@ -21,7 +21,7 @@ road_pricing = "./tests/test_fixtures/road_pricing.xml"
 [plan_handlers]
 
 [post_processors]
-vkt = {modes=["car","bus"], attributes=["subpopulation","age"]}
+vkt = {modes=["car","bus"], groupby_person_attributes=["subpopulation","age"]}
 
 [benchmarks]
 

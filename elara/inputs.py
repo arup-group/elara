@@ -18,8 +18,8 @@ WGS_84 = pyproj.Proj("epsg:4326")
 
 class InputTool(Tool):
 
-    def __init__(self, config, mode=None, attribute=None, **kwargs):
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 
     def set_and_change_crs(self, target: gdp.GeoDataFrame, set_crs=None, to_crs='epsg:4326'):

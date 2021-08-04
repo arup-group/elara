@@ -383,8 +383,8 @@ class Config:
 
 class PathTool(Tool):
 
-    def __init__(self, config, mode=None, attribute=None, **kwargs):
-        super().__init__(config=config, mode=None, attribute=None, **kwargs)
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config=config, mode=None, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 
 

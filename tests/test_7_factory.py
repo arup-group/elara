@@ -224,7 +224,7 @@ def requirements_complex(test_complex_config):
 def test_complex_requirements_workstation(test_complex_config):
     requirements = RequirementsWorkStation(test_complex_config)
     assert requirements.gather_manager_requirements() == {
-        'mode_shares': {'modes':['all'], 'attributes':["age"]},
+        'mode_shares': {'modes':['all'], 'groupby_person_attributes':["age"]},
         'test_duration_comparison': {'modes':['all']},
         'duration_comparison': {'modes':['all'], 'benchmark_data_path': "./tests/test_outputs/trip_duration_breakdown_all.csv"},
     }
@@ -392,7 +392,7 @@ def requirements_with_attribute_key(test_config_passing_attribute_key):
 def test_passing_attribute_key_requirements_workstation(test_config_passing_attribute_key):
     requirements = RequirementsWorkStation(test_config_passing_attribute_key)
     assert requirements.gather_manager_requirements() == {
-        'vkt': {'modes':['car', 'bus'], 'attributes':['subpopulation', 'age']},
+        'vkt': {'modes':['car', 'bus'], 'groupby_person_attributes':['subpopulation', 'age']},
     }
 
 

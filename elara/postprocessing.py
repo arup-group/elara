@@ -11,9 +11,9 @@ class PostProcessor(Tool):
 
     options_enabled = True
 
-    def __init__(self, config, mode=None, attribute=None, **kwargs):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
     def breakdown(self, data, bins, labels, colnames, write_path, groupby_field = None, groupby_data = None):
         """
@@ -228,14 +228,14 @@ class VKT(PostProcessor):
     def build(self, resource: dict, write_path=None):
         super().build(resource, write_path=write_path)
 
-        if self.attribute_key:
-            file_name = f"link_vehicle_counts_{self.mode}_{self.attribute_key}.geojson"
+        if self.groupby_person_attribute:
+            file_name = f"link_vehicle_counts_{self.mode}_{self.groupby_person_attribute}.geojson"
             file_path = os.path.join(self.config.output_path, file_name)
             volumes_gdf = geopandas.read_file(file_path)
             vkt_gdf = self.calculate_vkt(volumes_gdf)
 
-            csv_name = f"{self.name}_{self.attribute_key}.csv"
-            geojson_name = f"{self.name}_{self.attribute_key}.geojson"
+            csv_name = f"{self.name}_{self.groupby_person_attribute}.csv"
+            geojson_name = f"{self.name}_{self.groupby_person_attribute}.geojson"
 
             self.write_csv(vkt_gdf, csv_name, write_path=write_path)
             self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
