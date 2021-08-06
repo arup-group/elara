@@ -9,7 +9,7 @@ import networkx as nx
 from shapely.geometry import LineString
 
 
-from elara.factory import WorkStation, Tool
+from elara.factory import WorkStation, Tool, build
 
 logger = logging.getLogger(__name__)
 
@@ -1546,6 +1546,67 @@ class StopToStopPassengerCounts(EventHandlerTool):
         self.result_dfs[key] = totals_df
 
 
+class VehicleDepartureLog(EventHandlerTool):
+    """
+    Extract vehicle depart times at stops.
+    """
+
+    #TODO add 'transit_schedule' and 'transit_vehicles'??
+    requirements = ['events']
+
+    def __init__(self, config, mode=None, **kwargs):
+        super().__init__(config, mode)
+        self.vehicle_departure_log = None
+
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        
+        super().build(resources, write_path=write_path)
+
+        pt_csv_name = f"{self.name}.csv" 
+
+        self.vehicle_departure_log = self.start_chunk_writer(
+            pt_csv_name, write_path = write_path
+            )
+
+    def process_event(self, elem) -> None:
+        """
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+
+        if event_type == 'VehicleDepartsAtFacility':
+            veh_id = elem.get("vehicle")
+            stop_id = elem.get("facility")
+            departure_time = int(float(elem.get("time")))
+            delay = int(float(elem.get("delay")))
+
+            # TODO add dict with above to a pt_departures list
+
+            pt_departures = [
+                {
+                    'veh_id': veh_id,
+                    'stop_id': stop_id,
+                    'departure_time': departure_time,
+                    'delay': delay
+                }   
+            ]
+            
+            self.vehicle_departure_log.add(pt_departures)
+
+        return None
+    
+    def finalise(self):
+        self.vehicle_departure_log.finish()
+
+    
+
 class EventHandlerWorkStation(WorkStation):
 
     """
@@ -1560,7 +1621,8 @@ class EventHandlerWorkStation(WorkStation):
         "stop_passenger_counts": StopPassengerCounts,
         "stop_passenger_waiting": StopPassengerWaiting,
         "vehicle_passenger_graph": VehiclePassengerGraph,
-        "stop_to_stop_passenger_counts": StopToStopPassengerCounts
+        "stop_to_stop_passenger_counts": StopToStopPassengerCounts,
+        "vehicle_departure_log": VehicleDepartureLog
     }
 
     def __init__(self, config):

@@ -1120,6 +1120,40 @@ def test_stop_to_stop_finalise_bus_simple(
     assert np.sum(df.values) == 3 / handler.config.scale_factor
     assert np.sum(df.values) == gdf.total.sum()
 
+# Vehicle departs stop test
+@pytest.fixture
+def vehicle_departs_facility_events():
+    string = """
+        <events>
+            <event time="66900.0" type="VehicleDepartsAtFacility" vehicle="bus4" facility="stop0" delay="0.0"/>
+            <event time="23400.0" type="VehicleArrivesAtFacility" vehicle="bus4" facility="stop0" delay="0.0"/>
+            <event time="40000.0" type="VehicleDepartsAtFacility" vehicle="bus4" facility="stop2" delay="90.0"/>
+        </events>
+    """
+
+    return etree.fromstring(string)
+
+def test_vehicle_departs_facility(
+    test_config,
+    input_manager,
+    vehicle_departs_facility_events
+):
+    handler = event_handlers.VehicleDepartureLog(test_config)
+    handler.build(input_manager.resources)
+
+    for elem in vehicle_departs_facility_events:
+        handler.process_event(elem)
+
+    log_length = len(handler.vehicle_departure_log.chunk)
+    chunk_two = handler.vehicle_departure_log.chunk[1]
+
+    assert log_length == 2
+    assert chunk_two == {
+        'veh_id': 'bus4',
+        'stop_id': 'stop2',
+        'departure_time': 40000,
+        'delay': 90
+    }
 
 # Event Handler Manager
 def test_load_event_handler_manager(test_config, test_paths):
