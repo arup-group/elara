@@ -1552,7 +1552,7 @@ class VehicleDepartureLog(EventHandlerTool):
     """
 
     #TODO add 'transit_schedule' and 'transit_vehicles'??
-    requirements = ['events']
+    requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode=None, **kwargs):
         super().__init__(config, mode)
@@ -1592,6 +1592,8 @@ class VehicleDepartureLog(EventHandlerTool):
             pt_departures = [
                 {
                     'veh_id': veh_id,
+                    'veh_mode': self.vehicle_mode(veh_id),
+                    'veh_route': self.vehicle_route(veh_id),
                     'stop_id': stop_id,
                     'departure_time': departure_time,
                     'delay': delay

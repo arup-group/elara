@@ -1121,38 +1121,24 @@ def test_stop_to_stop_finalise_bus_simple(
     assert np.sum(df.values) == gdf.total.sum()
 
 # Vehicle departs stop test
-@pytest.fixture
-def vehicle_departs_facility_events():
-    string = """
-        <events>
-            <event time="66900.0" type="VehicleDepartsAtFacility" vehicle="bus4" facility="stop0" delay="0.0"/>
-            <event time="23400.0" type="VehicleArrivesAtFacility" vehicle="bus4" facility="stop0" delay="0.0"/>
-            <event time="40000.0" type="VehicleDepartsAtFacility" vehicle="bus4" facility="stop2" delay="90.0"/>
-        </events>
-    """
-
-    return etree.fromstring(string)
-
-def test_vehicle_departs_facility(
-    test_config,
-    input_manager,
-    vehicle_departs_facility_events
-):
+def test_vehicle_departs_facility(test_config, input_manager):
     handler = event_handlers.VehicleDepartureLog(test_config)
     handler.build(input_manager.resources)
-
-    for elem in vehicle_departs_facility_events:
+            
+    for elem in handler.resources['events'].elems:
         handler.process_event(elem)
 
     log_length = len(handler.vehicle_departure_log.chunk)
-    chunk_two = handler.vehicle_departure_log.chunk[1]
+    chunk_four = handler.vehicle_departure_log.chunk[3]
 
-    assert log_length == 2
-    assert chunk_two == {
-        'veh_id': 'bus4',
-        'stop_id': 'stop2',
-        'departure_time': 40000,
-        'delay': 90
+    assert log_length == 8
+    assert chunk_four == {
+        'veh_id': 'bus2',
+        'veh_mode': 'bus',
+        'veh_route': 'work_bound',
+        'stop_id': 'work_stop_in',
+        'departure_time': 31363,
+        'delay': -137
     }
 
 # Event Handler Manager
