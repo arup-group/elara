@@ -18,8 +18,8 @@ WGS_84 = pyproj.Proj("epsg:4326")
 
 class InputTool(Tool):
 
-    def __init__(self, config, option=None):
-        super().__init__(config, option)
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 
     def set_and_change_crs(self, target: gdp.GeoDataFrame, set_crs=None, to_crs='epsg:4326'):
@@ -626,8 +626,17 @@ class Plans(InputTool):
         path = resources['plans_path'].path
 
         self.plans = get_elems(path, "plan")
-        self.persons = get_elems(path, "person")
+        # self.persons = get_elems(path, "person")
+        self.persons = self.filter_out_persons_with_empty_plans(get_elems(path, "person")) # skip empty-plan persons
 
+    def filter_out_persons_with_empty_plans(self, iterator):
+        """
+        Skip persons with empty plans. When reading from the `plans_experienced.xml` file,
+            these may be persons with no simulated legs.
+        """
+        for elem in iterator:
+            if len(elem.find('./plan').getchildren()) > 0:
+                yield elem
 
 class OutputConfig(InputTool):
 
@@ -802,7 +811,7 @@ class InputsWorkStation(WorkStation):
     }
 
     def __init__(self, config):
-        super().__init__(config)
+        super().__init__(config=config)
         self.logger = logging.getLogger(__name__)
 
 

@@ -19,13 +19,11 @@ road_pricing = "./tests/test_fixtures/road_pricing.xml"
 [event_handlers]
 
 [plan_handlers]
-mode_shares = {groupby_person_attributes=["age"]}
 
 [post_processors]
+vkt = {modes=["car","bus"], groupby_person_attributes=["subpopulation","age"]}
 
 [benchmarks]
-test_duration_comparison = ["all"]
-duration_comparison = {modes = ["all"], benchmark_data_path = "./tests/test_outputs/trip_duration_breakdown_all.csv"}
 
 [outputs]
 path = "./tests/test_intermediate_data"

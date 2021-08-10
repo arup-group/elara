@@ -1,28 +1,19 @@
 ,d_act,duration,trips
-0,home_8_p,0 to 5 min,1
-1,home_8_p,5 to 10 min,0
-2,home_8_p,10 to 15 min,0
-3,home_8_p,15 to 30 min,0
-4,home_8_p,30 to 45 min,0
-5,home_8_p,45 to 60 min,0
-6,home_8_p,60 to 90 min,0
-7,home_8_p,90 to 120 min,0
-8,home_8_p,120+ min,0
-9,shop,0 to 5 min,1
-10,shop,5 to 10 min,0
-11,shop,10 to 15 min,0
-12,shop,15 to 30 min,0
-13,shop,30 to 45 min,0
-14,shop,45 to 60 min,0
-15,shop,60 to 90 min,0
-16,shop,90 to 120 min,0
-17,shop,120+ min,1
-18,work_9to5,0 to 5 min,0
-19,work_9to5,5 to 10 min,0
-20,work_9to5,10 to 15 min,0
-21,work_9to5,15 to 30 min,0
-22,work_9to5,30 to 45 min,0
-23,work_9to5,45 to 60 min,0
-24,work_9to5,60 to 90 min,0
-25,work_9to5,90 to 120 min,0
-26,work_9to5,120+ min,1
+0,home,0 to 5 min,
+1,home,5 to 10 min,2.0
+2,home,10 to 15 min,
+3,home,15 to 30 min,1.0
+4,home,30 to 45 min,
+5,home,45 to 60 min,1.0
+6,home,60 to 90 min,1.0
+7,home,90 to 120 min,
+8,home,120+ min,
+9,work,0 to 5 min,1.0
+10,work,5 to 10 min,1.0
+11,work,10 to 15 min,
+12,work,15 to 30 min,
+13,work,30 to 45 min,
+14,work,45 to 60 min,3.0
+15,work,60 to 90 min,
+16,work,90 to 120 min,
+17,work,120+ min,
