@@ -15,9 +15,9 @@ class PlanHandlerTool(Tool):
     """
     options_enabled = True
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
     def build(
             self,
@@ -89,16 +89,16 @@ class ModeShares(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, attribute=None) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate Handler.
         :param config: Config
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode  # todo options not implemented
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
 
         self.modes = None
         self.mode_indices = None
@@ -124,13 +124,13 @@ class ModeShares(PlanHandlerTool):
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(modes)
 
-        if self.attribute_key:
+        if self.groupby_person_attribute:
             self.attributes = self.resources["attributes"]
-            availability = self.attributes.attribute_key_availability(self.attribute_key)
-            self.logger.debug(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            availability = self.attributes.attribute_key_availability(self.groupby_person_attribute)
+            self.logger.debug(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
             if availability < 1:
-                self.logger.warning(f'availability of attribute {self.attribute_key} = {availability*100}%')
-            found_attributes = self.resources['attributes'].attribute_values(self.attribute_key) | {None}
+                self.logger.warning(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
+            found_attributes = self.resources['attributes'].attribute_values(self.groupby_person_attribute) | {None}
         else:
             self.attributes = {}
             found_attributes = [None]
@@ -157,7 +157,7 @@ class ModeShares(PlanHandlerTool):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
-                attribute_class = self.attributes.get(ident, {}).get(self.attribute_key)
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
                 modes = {}
@@ -212,8 +212,8 @@ class ModeShares(PlanHandlerTool):
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        if self.attribute_key:
-            key = f"{self.name}_{self.attribute_key}_counts"
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}_counts"
             self.results[key] = counts_df
 
         # mode counts totals output
@@ -225,8 +225,8 @@ class ModeShares(PlanHandlerTool):
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        if self.attribute_key:
-            key = f"{self.name}_{self.attribute_key}"
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}"
             self.results[key] = counts_df / total
 
         # mode shares totals output
@@ -478,7 +478,7 @@ class LegLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -486,10 +486,10 @@ class LegLogs(PlanHandlerTool):
         :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
@@ -533,7 +533,7 @@ class LegLogs(PlanHandlerTool):
                 activities = []
                 legs = []
                 
-                attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
+                attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
                 leg_seq_idx = 0
                 trip_seq_idx = 0
@@ -672,7 +672,7 @@ class TripLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -680,10 +680,10 @@ class TripLogs(PlanHandlerTool):
         :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
@@ -723,7 +723,7 @@ class TripLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
+            attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
             if plan.get('selected') == 'yes':
 
@@ -865,14 +865,14 @@ class UtilityLogs(PlanHandlerTool):
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.utility_log = None
@@ -933,17 +933,17 @@ class PlanLogs(PlanHandlerTool):
 
     requirements = ['plans', 'attributes']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         """
 
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
 
         self.plans_log = None
 
@@ -976,7 +976,7 @@ class PlanLogs(PlanHandlerTool):
         """
 
         ident = elem.get('id')
-        attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
+        attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
         if not self.mode == "all" and not attribute == self.mode:
             return None
@@ -1106,17 +1106,17 @@ class AgentTollsPaid(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to subpopulation
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
         self.roadpricing = None
         self.agents_ids = None
         self.results = dict()  # Result dataframes ready to export
@@ -1140,7 +1140,7 @@ class AgentTollsPaid(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
-        attribute = self.attributes.get(ident, {}).get(self.attribute_key, None)
+        attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
         agent_in_tolled_space = [0,0] # {trip marker, whether last link was tolled}
 
         def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
@@ -1226,13 +1226,13 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.osm_ways = None
@@ -1356,17 +1356,17 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, attribute="subpopulation"):
+    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to 'subpopulation'
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
-        self.attribute_slicer = attribute
+        self.groupby_person_attribute = groupby_person_attribute
         self.osm_ways = None
         self.ways = None
 
@@ -1399,7 +1399,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
-        attribute = self.attributes.get(ident, {}).get(self.attribute_slicer, None)
+        attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
         for plan in elem.xpath(".//plan"):
             if plan.get('selected') == 'yes':
