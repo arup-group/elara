@@ -1,3 +1,27 @@
+# click==7.0
+# geojson==2.5.0
+# geopandas==0.7.0
+# halo==0.0.28
+# lxml==4.6.3 
+# networkx==2.4
+# numpy==1.18.5
+# pandas==1.2.1
+# <<<<<<< HEAD
+# pytest==3.7.1
+# pytest-cov==2.5.1
+# shapely==1.7.1
+# tqdm==4.40.2
+# =======
+# plotnine==0.7.1
+# polyline==1.4.0
+# pyproj==2.6.1.post1
+# pytest-cov==2.5.1
+# pytest==3.7.1
+# shapely==1.7.1
+# >>>>>>> 7db6c9caf8ea70d352487e00991c16b1171f116f
+# toml==0.10.0
+# tqdm==4.40.2
+
 click==7.0
 geojson==2.5.0
 geopandas==0.7.0
@@ -6,11 +30,11 @@ lxml==4.6.3
 networkx==2.4
 numpy==1.18.5
 pandas==1.2.1
-pytest==3.7.1
-pytest-cov==2.5.1
-shapely==1.7.1
-tqdm==4.40.2
-toml==0.10.0
-pyproj==2.6.1.post1
 plotnine==0.7.1
 polyline==1.4.0
+pyproj==2.6.1.post1
+pytest-cov==2.5.1
+pytest==3.7.1
+shapely==1.7.1
+toml==0.10.0
+tqdm==4.40.2

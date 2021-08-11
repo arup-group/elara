@@ -21,9 +21,11 @@ class EventHandlerTool(Tool):
     result_dfs = dict()
     options_enabled = True
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+
+        self.groupby_person_attribute = None
 
     def build(
             self,
@@ -41,7 +43,7 @@ class EventHandlerTool(Tool):
         :param elems_in: elements
         :return: (element IDs, element indices)
         """
-        if not isinstance(elems_in, list):
+        if isinstance(elems_in, pd.DataFrame) or isinstance(elems_in, pd.Series):
             elems_in = elems_in.index.tolist()
 
         elem_indices = {
@@ -96,6 +98,35 @@ class EventHandlerTool(Tool):
             k: self.remove_empty_rows(df) for (k, df) in self.result_dfs.items()
         }
 
+    def extract_attribute_values(self, attributes, attribute_key) -> set:
+        """
+        For given attributes input (elara.inputs.Attributes) and attributes key, eg "subpopulations".
+        Return available set of attribute values, inclusing None, eg {"old", "young", None}.
+        """
+        availability = attributes.attribute_key_availability(attribute_key)
+        self.logger.debug(f'availability of attribute {attribute_key} = {availability*100}%')
+        if availability < 1:
+            self.logger.warning(f'availability of attribute {attribute_key} = {availability*100}%')
+        return attributes.attribute_values(attribute_key) | {None}
+    
+    def extract_attributes(self) -> Tuple:
+        """
+        Get attributes input and find available attribute values based on self.attribute_key.
+        If key is None, return empty attribute dictionary and {None}.
+
+        Returns:
+            Tuple: (elara.inputs.Attributes, found_attributes)
+        """
+        if self.groupby_person_attribute:
+            attributes = self.resources['attributes']
+            found_attributes = self.extract_attribute_values(attributes, self.groupby_person_attribute)
+        else:
+            attributes = {}
+            found_attributes = {None}
+        self.logger.debug(f'found attributes = {found_attributes}')
+
+        return attributes, found_attributes
+
 
 class VehiclePassengerGraph(EventHandlerTool):
     """
@@ -105,17 +136,19 @@ class VehiclePassengerGraph(EventHandlerTool):
     requirements = [
         'events',
         'transit_vehicles',
-        'subpopulations',
+        'attributes',
     ]
 
-    def __init__(self, config, mode=None) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
+        :param attribute: str, atribute key defaults to None
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
+        self.groupby_person_attribute = groupby_person_attribute
         self.veh_occupancy = dict()
 
         # Initialise results storage
@@ -130,8 +163,14 @@ class VehiclePassengerGraph(EventHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        for person, subpopulation in self.resources['subpopulations'].map.items():
-            self.graph.add_node(person, subpop=subpopulation)
+        self.agent_attributes = self.resources["attributes"]
+
+        if self.groupby_person_attribute:
+            for person, attribs in self.agent_attributes.items():
+                self.graph.add_node(person, attribute=attribs.get(self.groupby_person_attribute, None))
+        else:
+            for person in self.agent_attributes.keys():
+                self.graph.add_node(person)
 
     def process_event(self, elem) -> None:
         """
@@ -142,7 +181,7 @@ class VehiclePassengerGraph(EventHandlerTool):
         if event_type == "PersonEntersVehicle":
             agent_id = elem.get("person")
 
-            if agent_id not in self.resources['subpopulations'].map:
+            if agent_id not in self.agent_attributes:
                 return None
 
             veh_ident = elem.get("vehicle")
@@ -183,17 +222,18 @@ class StopPassengerWaiting(EventHandlerTool):
     requirements = [
         'events',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
 
-    def __init__(self, config, mode=None) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
+        self.groupby_person_attribute = groupby_person_attribute
         self.agent_status = dict()
         self.veh_waiting_occupancy = dict()
         self.waiting_time_log = None
@@ -209,6 +249,8 @@ class StopPassengerWaiting(EventHandlerTool):
         :return: None
         """
         super().build(resources, write_path=write_path)
+
+        self.agent_attributes, _ = self.extract_attributes()
 
         csv_name = f"{str(self)}.csv"
         self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
@@ -266,8 +308,7 @@ class StopPassengerWaiting(EventHandlerTool):
                 if agent_id not in self.agent_status:  # ignore (ie driver)
                     continue
 
-                # get subpop
-                subpop = self.resources['subpopulations'].map.get(agent_id)
+                agent_attribute = self.agent_attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 start_time, previous_mode = self.agent_status[agent_id]
 
@@ -284,7 +325,7 @@ class StopPassengerWaiting(EventHandlerTool):
                         'y': y,
                         'duration': waiting_time,
                         'departure': time,
-                        'subpop': subpop
+                        self.groupby_person_attribute: agent_attribute
                     }
                 )
 
@@ -321,17 +362,18 @@ class LinkVehicleCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
 
-    def __init__(self, config, mode=None) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
+        self.groupby_person_attribute = groupby_person_attribute
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -352,9 +394,9 @@ class LinkVehicleCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(
-            self.resources['subpopulations'].classes)
-        self.logger.debug(f'sub_populations = {self.classes}')
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
@@ -391,7 +433,7 @@ class LinkVehicleCounts(EventHandlerTool):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
                 # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
                 link = elem.get("link")
                 time = float(elem.get("time"))
                 x, y, z = table_position(
@@ -420,22 +462,22 @@ class LinkVehicleCounts(EventHandlerTool):
         # Scale final counts
         self.counts *= 1.0 / scale_factor
 
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index(['elem','class'])
+        if self.groupby_person_attribute:
+            names = ['elem', self.groupby_person_attribute, 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+            counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
 
-        counts_df['total'] = counts_df.sum(1)
-        counts_df = counts_df.reset_index().set_index('elem')
+            counts_df['total'] = counts_df.sum(1)
+            counts_df = counts_df.reset_index().set_index('elem')
 
-        # Create volume counts output
-        key = self.name
-        counts_df = self.elem_gdf.join(
-            counts_df, how="left"
-        )
-        self.result_dfs[key] = counts_df
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            counts_df = self.elem_gdf.join(
+                counts_df, how="left"
+            )
+            self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
         self.counts = self.counts.sum(1)
@@ -447,11 +489,12 @@ class LinkVehicleCounts(EventHandlerTool):
 
         del self.counts
 
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
         self.result_dfs[key] = totals_df
+
 
 class LinkVehicleSpeeds(EventHandlerTool):
     """
@@ -462,17 +505,18 @@ class LinkVehicleSpeeds(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
 
-    def __init__(self, config, mode=None) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
+        self.groupby_person_attribute = groupby_person_attribute
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -493,9 +537,9 @@ class LinkVehicleSpeeds(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(
-            self.resources['subpopulations'].classes)
-        self.logger.debug(f'sub_populations = {self.classes}')
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
@@ -565,12 +609,12 @@ class LinkVehicleSpeeds(EventHandlerTool):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
             # look for attribute_class, if not found assume pt and use mode
-                attribute_class = self.resources['subpopulations'].map.get(ident, 'not_applicable')
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
                 if ident in self.link_tracker: #if person not in link tracker, this means they've entered link via "vehicle enters traffic event" and should be ignored.
                     start_time = self.link_tracker[ident][1]
-                    start_event_type = self.link_tracker[ident][0]
+                    # start_event_type = self.link_tracker[ident][0]
                     x, y, z = table_position(
                         self.elem_indices,
                         self.class_indices,
@@ -593,12 +637,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                         self.duration_min[x, y, z] = duration
                     else:
                         self.duration_min[x, y, z] = min(duration, self.duration_min[x, y, z])
-                    
-                else:
-                    pass
 
-        
-    
     def finalise(self) -> None:
         """
         Following event processing, the raw events table will contain counts by link
@@ -612,7 +651,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             av_pop = np.divide(duration_pop, counts_pop, out=np.zeros_like(counts_pop), where=duration_pop != 0)
             return av_pop
         
-        def calc_max_matrices(self):            
+        def calc_max_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
             max_subpop = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
             max_pop = max_subpop.max(1)
@@ -622,13 +661,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
             min_subpop = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
             min_pop = min_subpop
-            min_pop[min_pop == 0] = 9999999
+            min_pop[min_pop == 0] = np.inf
             min_pop = min_pop.min(1)
-            min_pop[min_pop == 9999999] = 0  # finding minimum speed that is greater than zero. Else function would just return all zeros. 
+            min_subpop[min_subpop == np.inf] = 0
+            min_pop[min_pop == np.inf] = 0
             return [min_subpop, min_pop]
 
         def flatten_subpops(self, subpop_matrix):
-            names = ['elem', 'class', 'hour']
+            names = ['elem', self.groupby_person_attribute, 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
             index = pd.MultiIndex.from_product(indexes, names=names)
             df = pd.DataFrame(subpop_matrix.flatten(), index=index)[0]
@@ -640,13 +680,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
             for i in range(self.config.time_periods):
                 df[i] = df[i] * df["length"]
             return df
-        
-        # Calc average at subpop level
-        key = f"{self.name}_average_subpops"
-        average_speeds = flatten_subpops(self, self.inverseduration_sum)
-        average_speeds = self.elem_gdf.join(average_speeds, how="left")
-        average_speeds = calc_speeds(self, average_speeds)
-        self.result_dfs[key] = average_speeds
+
+        if self.groupby_person_attribute:
+            # Calc average at subpop level
+            key = f"{self.name}_average_{self.groupby_person_attribute}"
+            average_speeds = flatten_subpops(self, self.inverseduration_sum)
+            average_speeds = self.elem_gdf.join(average_speeds, how="left")
+            average_speeds = calc_speeds(self, average_speeds)
+            self.result_dfs[key] = average_speeds
         
         # Calc average at pop level
         key = f"{self.name}_average"
@@ -657,13 +698,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
         average_speeds = self.elem_gdf.join(average_speeds, how="left")
         average_speeds = calc_speeds(self, average_speeds)
         self.result_dfs[key] = average_speeds
-        
-        # Calc max at subpop level
-        key = f"{self.name}_max_subpops"
-        max_speeds = flatten_subpops(self, calc_max_matrices(self)[0])
-        max_speeds = self.elem_gdf.join(max_speeds, how="left")
-        max_speeds = calc_speeds(self, max_speeds)
-        self.result_dfs[key] = max_speeds
+
+        if self.groupby_person_attribute:
+            # Calc max at subpop level
+            key = f"{self.name}_max_{self.groupby_person_attribute}"
+            max_speeds = flatten_subpops(self, calc_max_matrices(self)[0])
+            max_speeds = self.elem_gdf.join(max_speeds, how="left")
+            max_speeds = calc_speeds(self, max_speeds)
+            self.result_dfs[key] = max_speeds
 
         # Calc max at pop level
         key = f"{self.name}_max"
@@ -675,12 +717,15 @@ class LinkVehicleSpeeds(EventHandlerTool):
         max_speeds = calc_speeds(self, max_speeds)
         self.result_dfs[key] = max_speeds
 
-        # Calc min at subpop level
-        key = f"{self.name}_min_subpops"
-        min_speeds = flatten_subpops(self, calc_min_matrices(self)[0])
-        min_speeds = self.elem_gdf.join(min_speeds, how="left")
-        min_speeds = calc_speeds(self, min_speeds)
-        self.result_dfs[key] = min_speeds
+
+        if self.groupby_person_attribute:
+            # Calc min at subpop level
+            key = f"{self.name}_min_{self.groupby_person_attribute}"
+            min_matrix = calc_min_matrices(self)[0]
+            min_speeds = flatten_subpops(self, min_matrix)
+            min_speeds = self.elem_gdf.join(min_speeds, how="left")
+            min_speeds = calc_speeds(self, min_speeds)
+            self.result_dfs[key] = min_speeds
 
         # Calc max at pop level
         key = f"{self.name}_min"
@@ -692,6 +737,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         min_speeds = calc_speeds(self, min_speeds)
         self.result_dfs[key] = min_speeds  
 
+
 class LinkPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts on links for given mode in mode vehicles.
@@ -701,17 +747,18 @@ class LinkPassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        self.groupby_person_attribute = groupby_person_attribute
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -738,8 +785,9 @@ class LinkPassengerCounts(EventHandlerTool):
             raise ValueError("Passenger Counts Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
-        self.logger.debug(f'sub_populations = {self.classes}')
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['network'].link_gdf
@@ -766,7 +814,6 @@ class LinkPassengerCounts(EventHandlerTool):
 
         # Initialise vehicle occupancy mapping
         self.veh_occupancy = dict()  # vehicle_id : occupancy
-
         self.total_counts = None
 
     def process_event(self, elem):
@@ -805,7 +852,7 @@ class LinkPassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.mode:
-                attribute_class = self.resources['subpopulations'].map[agent_id]
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
@@ -813,6 +860,7 @@ class LinkPassengerCounts(EventHandlerTool):
                     self.veh_occupancy[veh_id][attribute_class] = 1
                 else:
                     self.veh_occupancy[veh_id][attribute_class] += 1
+
         elif event_type == "PersonLeavesVehicle":
             agent_id = elem.get("person")
             veh_id = elem.get("vehicle")
@@ -820,7 +868,7 @@ class LinkPassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.mode:
-                attribute_class = self.resources['subpopulations'].map[agent_id]
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 if not self.veh_occupancy[veh_id][attribute_class]:
                     pass
@@ -860,22 +908,22 @@ class LinkPassengerCounts(EventHandlerTool):
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index(['elem','class'])
-        counts_df['total'] = counts_df.sum(1)
-        counts_df = counts_df.reset_index().set_index('elem')
 
-        # Create volume counts output
-        key = self.name
-        counts_df = self.elem_gdf.join(
-            counts_df, how="left"
-        )
-        self.result_dfs[key] = counts_df
-        
+
+        if self.groupby_person_attribute:
+            names = ['elem', self.groupby_person_attribute, 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+            counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
+            counts_df['total'] = counts_df.sum(1)
+            counts_df = counts_df.reset_index().set_index('elem')
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            counts_df = self.elem_gdf.join(
+                counts_df, how="left"
+            )
+            self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
         self.counts = self.counts.sum(1)
@@ -887,7 +935,7 @@ class LinkPassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
@@ -902,17 +950,18 @@ class RoutePassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        self.groupby_person_attribute = groupby_person_attribute
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -935,8 +984,9 @@ class RoutePassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
-        self.logger.debug(f'sub_populations = {self.classes}')
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
 
         # # Initialise element attributes
         # all_routes = set(resources['transit_schedule'].veh_to_route_map.values())
@@ -998,7 +1048,7 @@ class RoutePassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.mode:
-                attribute_class = self.resources['subpopulations'].map[agent_id]
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 if self.route_occupancy.get(veh_route, None) is None:
                     self.route_occupancy[veh_route] = {attribute_class: 1}
@@ -1014,7 +1064,7 @@ class RoutePassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.mode:
-                attribute_class = self.resources['subpopulations'].map[agent_id]
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 if self.route_occupancy[veh_route][attribute_class]:
                     self.route_occupancy[veh_route][attribute_class] -= 1
@@ -1052,16 +1102,17 @@ class RoutePassengerCounts(EventHandlerTool):
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
-        names = ['elem', 'class', 'hour']
-        indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        counts_df = counts_df.unstack(level='hour').sort_index()
-        counts_df = counts_df.reset_index().set_index('elem')
+        if self.groupby_person_attribute:
+            names = ['elem', self.groupby_person_attribute, 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+            counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index('elem')
 
-        # Create volume counts output
-        key = self.name
-        self.result_dfs[key] = counts_df
+            # Create volume counts output
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
         self.counts = self.counts.sum(1)
@@ -1072,7 +1123,7 @@ class RoutePassengerCounts(EventHandlerTool):
 
         del self.counts
 
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         self.result_dfs[key] = totals_df
 
 
@@ -1085,17 +1136,18 @@ class StopPassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        self.groupby_person_attribute = groupby_person_attribute
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -1122,13 +1174,15 @@ class StopPassengerCounts(EventHandlerTool):
             raise ValueError("Stop Interaction Handlers not intended for use with mode type = car")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
-        self.logger.debug(f'sub_populations = {self.classes}')
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
         # get stops used by this mode
         viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
+        
         if viable_stops is None:
             self.logger.warning(
                 f"""
@@ -1176,7 +1230,7 @@ class StopPassengerCounts(EventHandlerTool):
 
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['subpopulations'].map[agent_id]
+                    attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
                     origin_stop = self.agent_status[agent_id][0]
                     x, y, z = table_position(
                         self.elem_indices,
@@ -1196,7 +1250,7 @@ class StopPassengerCounts(EventHandlerTool):
 
                 if self.agent_status.get(agent_id, None) is not None:
                     time = float(elem.get("time"))
-                    attribute_class = self.resources['subpopulations'].map[agent_id]
+                    attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
                     destination_stop = self.agent_status[agent_id][1]
                     x, y, z = table_position(
                         self.elem_indices,
@@ -1224,21 +1278,22 @@ class StopPassengerCounts(EventHandlerTool):
         # Create passenger counts output
         for data, direction in zip([self.boardings, self.alightings], ['boardings', 'alightings']):
 
-            names = ['elem', 'class', 'hour']
-            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
-            index = pd.MultiIndex.from_product(indexes, names=names)
-            counts_df = pd.DataFrame(data.flatten(), index=index)[0]
-            counts_df = counts_df.unstack(level='hour').sort_index()
-            counts_df = counts_df.reset_index().set_index(['elem','class'])
-            counts_df['total'] = counts_df.sum(1)
-            counts_df = counts_df.reset_index().set_index('elem')
+            if self.groupby_person_attribute:
+                names = ['elem', self.groupby_person_attribute, 'hour']
+                indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+                index = pd.MultiIndex.from_product(indexes, names=names)
+                counts_df = pd.DataFrame(data.flatten(), index=index)[0]
+                counts_df = counts_df.unstack(level='hour').sort_index()
+                counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
+                counts_df['total'] = counts_df.sum(1)
+                counts_df = counts_df.reset_index().set_index('elem')
 
-            # Create volume counts output
-            key = f"{self.name}_{direction}"
-            counts_df = self.elem_gdf.join(
-                counts_df, how="left"
-            )
-            self.result_dfs[key] = counts_df
+                # Create volume counts output
+                key = f"{self.name}_{direction}_{self.groupby_person_attribute}"
+                counts_df = self.elem_gdf.join(
+                    counts_df, how="left"
+                )
+                self.result_dfs[key] = counts_df
 
             # calc sum across all recorded attribute classes
             data = data.sum(1)
@@ -1250,13 +1305,12 @@ class StopPassengerCounts(EventHandlerTool):
 
             del data
 
-            key = f"{self.name}_{direction}_total"
+            key = f"{self.name}_{direction}"
             totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
             self.result_dfs[key] = totals_df
-
-
+            
 class StopToStopPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts between stops for given mode in mode vehicles.
@@ -1266,17 +1320,18 @@ class StopToStopPassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'subpopulations',
+        'attributes',
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        self.groupby_person_attribute = groupby_person_attribute
         self.classes = None
         self.class_indices = None
         self.elem_gdf = None
@@ -1302,8 +1357,9 @@ class StopToStopPassengerCounts(EventHandlerTool):
             raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.mode}")
 
         # Initialise class attributes
-        self.classes, self.class_indices = self.generate_elem_ids(resources['subpopulations'].classes)
-        self.logger.debug(f'sub_populations = {self.classes}')
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
 
         # Initialise element attributes
         self.elem_gdf = resources['transit_schedule'].stop_gdf
@@ -1366,7 +1422,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.mode:
-                attribute_class = self.resources['subpopulations'].map[agent_id]
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 if self.veh_occupancy.get(veh_id, None) is None:
                     self.veh_occupancy[veh_id] = {attribute_class: 1}
@@ -1382,7 +1438,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
 
             # Filter out PT drivers from transit volume statistics
             if agent_id[:2] != "pt" and veh_mode == self.mode:
-                attribute_class = self.resources['subpopulations'].map[agent_id]
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
 
                 if self.veh_occupancy[veh_id][attribute_class]:
                     self.veh_occupancy[veh_id][attribute_class] -= 1
@@ -1421,12 +1477,14 @@ class StopToStopPassengerCounts(EventHandlerTool):
         counts by od pair, attribute class and time slice. The only thing left to do is scale by the
         sample size and create dataframes.
         """
+        # TODO this is a mess. requires some forcing to string hacks for None. The pd ops are forcing None to np.nan
         del self.veh_occupancy
 
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
-        names = ['origin', 'destination', 'class', 'hour']
+        names = ['origin', 'destination', str(self.groupby_person_attribute), 'hour']
+        self.classes = [str(c) for c in self.classes]
         indexes = [self.elem_ids, self.elem_ids, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
@@ -1443,9 +1501,10 @@ class StopToStopPassengerCounts(EventHandlerTool):
             counts_df = counts_df.join(
                     stop_info, how="left"
                 )
+            
             counts_df.index.name = n
 
-        counts_df = counts_df.reset_index().set_index(['origin', 'destination', 'class'])
+        counts_df = counts_df.reset_index().set_index(['origin', 'destination', str(self.groupby_person_attribute)])
         counts_df['total'] = counts_df.sum(1)
 
         counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.origin_geometry, counts_df.destination_geometry)]
@@ -1453,9 +1512,11 @@ class StopToStopPassengerCounts(EventHandlerTool):
         counts_df.drop('destination_geometry', axis=1, inplace=True)
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
-        # Create volume counts output
-        key = self.name
-        self.result_dfs[key] = counts_df
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            self.result_dfs[key] = counts_df
+
+        # TODO make below pandas ops more efficient
 
         # calc sum across all recorded attribute classes
         totals_df = counts_df.reset_index().groupby(
@@ -1480,7 +1541,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
-        key = f"{self.name}_total"
+        key = f"{self.name}"
         self.result_dfs[key] = totals_df
 
 
