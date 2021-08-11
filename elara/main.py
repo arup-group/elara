@@ -220,7 +220,7 @@ def trip_destination_mode_share(
     override = common_override(
         debug, name, inputs_path, outputs_path, destination_activity_filters, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["trip_destination_mode_share"] = {'modes': list(modes), 'destination_activity_filters':destination_activity_filters, 'groupby_person_attribute':groupby_person_attribute}
+    override["plan_handlers"]["trip_destination_mode_share"] = {'modes': list(modes), 'destination_activity_filters':destination_activity_filters}
     config = Config(override=override)
     main(config)
 
