@@ -27,6 +27,9 @@ class Tool:
     options_enabled = False
 
     mode = None
+    groupby_person_attribute = None
+    kwargs = None
+
     valid_modes = None
     invalid_modes = None
 
@@ -35,14 +38,18 @@ class Tool:
     def __init__(
             self, config,
             mode: Union[None, str] = None,
+            groupby_person_attribute: Union[None, str] = None,
             **kwargs
     ) -> None:
         """
         Initiate a tool instance with optional option (ie: 'bus').
         :param mode: optional mode, typically assumed to be str
+        :param groupby_person_attribute: optional key for person attribute, str
         """
         self.config = config
         self.mode = self._validate_mode(mode)
+        self.groupby_person_attribute = groupby_person_attribute
+        self.kwargs = kwargs
 
     def __str__(self):
         if self.mode:
@@ -52,9 +59,15 @@ class Tool:
     @property
     def name(self):
         class_name = self.__class__.__name__.split('.')[-1]
+        suffix = ""
         if self.mode:
-            return f"{camel_to_snake(class_name)}_{self.mode}"
-        return camel_to_snake(class_name)
+            suffix += f"_{self.mode}" 
+        if self.kwargs:  # add other options to ensure unique name
+            for value in self.kwargs.values():
+                if os.path.isfile(value):  # if arg is a path then get file name minus extension
+                    value = os.path.basename(value).split(".")[0]
+                suffix += f"_{value}"
+        return f"{camel_to_snake(class_name)}{suffix}"
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
         """
@@ -68,7 +81,7 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: {'modes': [self.mode]} for req in self.requirements}
+            requirements = {req: {'modes': [self.mode], 'groupby_person_attributes': [self.groupby_person_attribute]} for req in self.requirements}
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -315,19 +328,42 @@ class WorkStation:
         else:
             for tool_name, tool in self.tools.items():
                 for manager_requirement, options in manager_requirements.items():
+
+                    if len(manager_requirement.split("--")) > 1:
+                        manager_requirement = manager_requirement.split("--")[0]
+
                     if manager_requirement == tool_name:
                         if options:
                             # split options between modes and optional arguments
-                            modes = options['modes']
-                            optional_args = {key : options[key] for key in options if key != 'modes'}
+                            modes = options.get("modes")
+                            groupby_person_attributes = options.get("groupby_person_attributes")
+                            
+                            if len(groupby_person_attributes) > 1 and None in groupby_person_attributes:
+                                # then can remove None as it exits as a default in all cases
+                                groupby_person_attributes.remove(None)
+
+                            optional_args = {
+                                key : options[key] for key in options if key not in ["modes", "groupby_person_attributes"]
+                                }
+                            
+                            optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
                             
                             for mode in modes:
-                                # build unique key for tool initiated with option
-                                key = str(tool_name) + ':' + str(mode)
-                                self.resources[key] = tool(self.config, mode, **optional_args)
+                                for groupby_person_attribute in groupby_person_attributes:
+                                    # build unique key for tool initiated with option
+                                    if mode is None and groupby_person_attribute is None:
+                                        key = tool_name
+                                    else:
+                                        key = f"{tool_name}:{mode}:{groupby_person_attribute}:{optional_arg_values_string}"
+                                    self.resources[key] = tool(
+                                        config=self.config,
+                                        mode=mode,
+                                        groupby_person_attribute=groupby_person_attribute,
+                                        **optional_args
+                                        )
 
-                                tool_requirements = self.resources[key].get_requirements()
-                                all_requirements.append(tool_requirements)
+                                    tool_requirements = self.resources[key].get_requirements()
+                                    all_requirements.append(tool_requirements)
                         else:
                             # init
                             key = str(tool_name)
@@ -335,7 +371,7 @@ class WorkStation:
                             tool_requirements = self.resources[key].get_requirements()
                             all_requirements.append(tool_requirements)
 
-            self.requirements = combine_reqs(all_requirements)
+            self.requirements = complex_combine_reqs(all_requirements)
 
             # Clean out unsupported options for tools that don't support options
             # todo: this sucks...
@@ -364,13 +400,17 @@ class WorkStation:
                 if not supplier.tools:
                     continue
                 supplier_tools.update(supplier.tools)
+        
+        # clean requirments
+        clean_requirements = [r.split("--")[0] for r in self.requirements]
 
         # check for missing requirements
-        missing = set(self.requirements) - set(supplier_tools)
+        missing = set(clean_requirements) - set(supplier_tools)
         missing_names = [str(m) for m in missing]
         if missing:
+            supplier_resources_string = " & ".join([f"{s} (has available tools: {list(s.tools)})" for s in self.suppliers])
             raise ValueError(
-                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {self.suppliers}.'
+                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {supplier_resources_string}.'
             )
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:
@@ -385,7 +425,7 @@ class WorkStation:
             for manager in self.managers:
                 reqs.append(manager.requirements)
 
-        return combine_reqs(reqs)
+        return complex_combine_reqs(reqs)
 
     def build(self, write_path=None):
         """
@@ -406,18 +446,19 @@ class WorkStation:
 
                 tool.build(self.supplier_resources, write_path)
 
-    def load_all_tools(self, mode=None, attribute=None) -> None:
+    def load_all_tools(self, mode=None, groupby_person_attribute=None) -> None:
         """
         Method used for testing.
         Load all available tools into resources with given option.
-        :param option: option, default None, must be valid for tools
-        :return: NOne
+        :param : mode, default None, must be valid for tools
+        :param : groupby_person_attribute, default None, must be valid for tools
+        :return: None
         """
         self.logger.info(f"Loading all tools for {self.__str__()}")
         for name, tool in self.tools.items():
             if mode is None and tool.valid_modes is not None:
                 mode = tool.valid_modes[0]
-            self.resources[name] = tool(self.config, mode)
+            self.resources[name] = tool(self.config, mode=mode, groupby_person_attribute=groupby_person_attribute)
 
     def write_csv(
             self,
@@ -462,7 +503,6 @@ class WorkStation:
         else:
             path = os.path.join(self.config.output_path, name)
             self.logger.info(f'Writing to {path}')
-
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
             with open(path, "w") as file:
@@ -729,12 +769,52 @@ def order_by_distance(candidates: list) -> list:
     return sorted(candidates, key=lambda x: x.depth, reverse=False)
 
 
+def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
+
+    if not reqs:
+        return {}
+
+    tool_set = set()
+    for req in reqs:
+        if req:
+            tool_set |= set(req)
+
+    combined_reqs = {}
+    for tool in tool_set:
+        combined_reqs[tool] = {}
+        # collect unique mode dependencies
+        modes = set()
+        groupby_person_attributes = set()
+        for req in reqs:
+            if req and req.get(tool):
+                combined_reqs[tool] = req.get(tool)
+
+            if req is None:
+                req = {}
+
+            tool_reqs = req.get(tool, {})
+            if not tool_reqs:
+                tool_reqs = {}  # TODO bit hacky, better to get handlers without requirments to return {}
+            if tool_reqs.get("modes"):
+                modes |= set(tool_reqs.get("modes"))
+            if tool_reqs.get("groupby_person_attributes"):
+                groupby_person_attributes |= set(tool_reqs.get("groupby_person_attributes"))
+        if not modes:
+            modes = {None}
+        if not groupby_person_attributes:
+            groupby_person_attributes = {None}
+        combined_reqs[tool]['modes'] = modes
+        combined_reqs[tool]['groupby_person_attributes'] = groupby_person_attributes
+
+    return combined_reqs
+
+
 def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
     """
     Helper function for combining lists of requirements (dicts of lists) into a single
     requirements dict:
 
-    [{req1:[a,b], req2:[b]}, {req1:[a], req2:[a], req3:None}] -> {req1:[a,b], req2:[a,b], req3:None}
+    [{req1:[a], req2:[b]}, {req1:[a], req2:[a], req3:None}] -> {req1:[a,b], req2:[a,b], req3:None}
 
     Note that no requirements are returned as an empty dict.
 
@@ -763,7 +843,7 @@ def combine_reqs(reqs: List[dict]) -> Dict[str, list]:
                     # keep all arguments of current (in the loop) tool, but only pass "modes" argument to dependencies
                     if req and req.get(tool):
                         combined_reqs[tool] = req.get(tool)
-                combined_reqs[tool]['modes'] = list(modes)
+                combined_reqs[tool]['modes'] = modes
             else:
                 combined_reqs[tool] = None
 
@@ -804,6 +884,12 @@ def list_equals(l1, l2):
         if l2 is None:
             return True
         return False
+
+    if l2 is None:
+        if l1 is None:
+            return True
+        return False
+
     if not len(l1) == len(l2):
         return False
     if not sorted(l1) == sorted(l2):

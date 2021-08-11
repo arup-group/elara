@@ -26,10 +26,10 @@ path = "./outputs"
 vehicle_departure_log = ["all"]
 
 [plan_handlers]
-#mode_shares = ["all"]
-#trip_logs = ["all"]
-#agent_highway_distance_logs = ["car"]
-#trip_highway_distance_logs = ["car"]
+mode_shares = {attributes=["age"]}
+trip_logs = ["all"]
+agent_highway_distance_logs = ["car"]
+trip_highway_distance_logs = ["car"]
 
 [post_processors]
 #plan_summary = ["all"]
