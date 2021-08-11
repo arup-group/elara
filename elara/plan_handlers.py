@@ -85,7 +85,6 @@ class ModeShares(PlanHandlerTool):
         'attributes',
         'transit_schedule',
         'output_config',
-        'mode_map',
     ]
     valid_modes = ['all']
 
@@ -277,7 +276,6 @@ class TripDestinationModeShare(PlanHandlerTool):
         'attributes',
         'transit_schedule',
         'output_config',
-        'mode_map',
     ]
     valid_modes = ['all']
 
@@ -290,7 +288,6 @@ class TripDestinationModeShare(PlanHandlerTool):
         :param destination_activity_filters: list, activities
         """
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
-
 
         self.mode = mode  # todo options not implemented
         self.groupby_person_attribute = groupby_person_attribute
@@ -348,7 +345,7 @@ class TripDestinationModeShare(PlanHandlerTool):
         Iterate through the plans and produce counts / mode shares for trips to the activities specified in the list. 
         This handler will consider all the legs up until each instance of the activities specified i.e. if the destination acitivity
         list consists of ['work_a', work_b] and a plan consists of the trips [home] --> (bus,11km) --> [work_a] --> (train, 10km) -->
-        [work_b], the resulting (bus) counts will increase by 2. 
+        [work_b], the resulting (bus) counts will increase by 2.
         :param elem: Plan XML element
         """
         for plan in elem.xpath(".//plan"):
@@ -408,13 +405,17 @@ class TripDestinationModeShare(PlanHandlerTool):
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
+        counts_df = counts_df.reset_index().drop("hour", axis=1)
+        counts_df = counts_df.groupby(counts_df["class"]).sum()
+        # this removes the breakdown by hour which no one has been using
+
         if self.groupby_person_attribute:
-            key = f"{self.name}_{self.groupby_person_attribute}_{activity_filter_name}_trip_counts"
+            key = f"{self.name}_{self.groupby_person_attribute}_{activity_filter_name}_counts"
             self.results[key] = counts_df
 
         # mode counts totals output
         total_counts_df = counts_df.sum(0)
-        key = f"{self.name}_{activity_filter_name}_trip_counts"
+        key = f"{self.name}_{activity_filter_name}_counts"
         self.results[key] = total_counts_df
 
         # convert to mode shares

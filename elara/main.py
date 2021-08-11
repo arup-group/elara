@@ -206,21 +206,21 @@ def mode_shares(
     main(config)
 
 @plan_handlers.command()
-@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@click.argument('destination_activity_filters', nargs=-1, type=click.STRING, required=True)
 @common_options
 def trip_destination_mode_share(
-        modes, debug, name, inputs_path, outputs_path, destination_activity_filters, time_periods, scale_factor, version, epsg, full
+        debug, name, inputs_path, outputs_path, destination_activity_filters, time_periods, scale_factor, version, epsg, full
 ):
     """
-    Create a mode share output for a given option. Example invocation for option "all" and
+    Create a mode share output for a given option. Example invocation for option "work" and
      scale factor at 20% is:
 
-    $ elara plan-handlers activity-mode-shares all -s .2
+    $ elara plan-handlers activity-mode-shares work -s .2
     """
     override = common_override(
-        debug, name, inputs_path, outputs_path, destination_activity_filters, time_periods, scale_factor, version, epsg, full
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
-    override["plan_handlers"]["trip_destination_mode_share"] = {'modes': list(modes), 'destination_activity_filters':destination_activity_filters}
+    override["plan_handlers"]["trip_destination_mode_share"] = {'modes': ['all'], 'destination_activity_filters':destination_activity_filters}
     config = Config(override=override)
     main(config)
 
