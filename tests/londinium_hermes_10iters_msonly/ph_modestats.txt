@@ -1,0 +1,12 @@
+Iteration	bike_travel	bike_wait	bus_travel	bus_wait	car_travel	car_wait	pt_travel	pt_wait	rail_travel	rail_wait	stageActivity_travel	stageActivity_wait	subway_travel	subway_wait	walk_travel	walk_wait
+0	17	0	40	12	6	0	0	0	5	2	0	0	10	3	138	0
+1	17	0	40	12	6	0	0	0	5	3	0	0	10	4	138	0
+2	17	0	40	12	6	0	1	0	6	2	0	0	10	4	138	0
+3	17	0	40	12	6	0	1	0	5	2	0	0	10	3	138	0
+4	17	0	40	12	6	0	1	0	5	3	0	0	10	4	138	0
+5	16	0	40	12	5	0	2	0	5	2	0	0	10	3	137	0
+6	16	0	40	12	5	0	2	0	5	2	0	0	10	3	137	0
+7	16	0	40	12	5	0	1	0	5	2	0	0	10	3	137	0
+8	16	0	40	10	5	0	2	0	5	2	0	0	10	3	137	0
+9	16	0	40	12	5	0	2	0	5	2	0	0	9	3	137	0
+10	16	0	39	12	5	0	2	0	5	2	0	0	10	3	137	0

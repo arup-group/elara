@@ -1,0 +1,75 @@
+pattern	0+	5+	10+	15+	20+	25+	30+	35+	40+	45+	50+	55+	60+
+education---gym	0	1	0	0	0	0	0	0	0	0	0	0	1
+education---home	0	1	0	0	0	0	0	0	0	0	0	0	0
+education---leisure	0	1	1	0	0	0	0	0	0	0	0	0	0
+education---park	0	1	0	0	0	1	0	0	0	0	0	0	0
+education---pt interaction	7	3	1	1	0	0	0	0	0	0	0	0	0
+education---shop_food	1	1	0	0	0	0	0	0	0	0	0	0	0
+gym---gym	1	0	0	0	0	0	0	0	0	0	0	0	1
+gym---home	0	2	1	0	1	0	0	0	0	0	0	1	2
+gym---leisure	0	1	0	0	0	0	0	0	0	0	0	0	0
+gym---park	0	0	0	0	0	0	1	0	0	0	0	0	2
+gym---pt interaction	8	9	2	0	1	0	0	0	0	0	0	0	0
+gym---pub	0	0	0	0	1	0	0	0	0	0	1	0	1
+gym---shop	1	1	0	0	1	0	0	0	0	0	0	0	0
+home---education	0	4	2	0	0	0	0	0	0	0	0	0	2
+home---gym	1	1	0	0	2	0	0	0	0	0	0	0	2
+home---leisure	4	4	2	1	0	0	0	0	0	0	0	0	2
+home---park	0	0	1	1	0	0	1	0	0	0	0	0	1
+home---pt interaction	15	22	9	1	0	0	0	0	0	0	0	0	0
+home---pub	2	0	0	0	0	1	0	1	0	0	0	0	3
+home---shop	0	2	1	1	0	0	0	1	0	0	0	0	1
+home---shop_food	0	0	1	0	0	1	0	0	0	0	0	0	1
+home---work	0	2	0	1	0	2	0	0	0	0	0	0	1
+leisure---education	0	0	0	1	0	0	0	0	0	0	0	0	0
+leisure---gym	0	1	1	0	0	0	0	0	0	0	0	0	2
+leisure---home	1	0	1	0	0	0	2	0	0	0	1	0	1
+leisure---park	0	0	0	1	1	0	0	0	0	0	0	0	2
+leisure---pt interaction	6	4	0	3	0	0	0	0	0	0	0	0	0
+leisure---shop	1	0	1	1	0	0	0	0	0	0	0	0	0
+park---home	1	1	1	0	0	0	0	0	0	0	0	0	2
+park---leisure	0	1	0	0	0	0	0	0	0	0	0	0	0
+park---park	0	0	1	0	0	0	0	0	0	0	0	0	0
+park---pt interaction	11	7	3	2	0	0	0	0	0	0	0	0	0
+park---shop	0	2	1	0	0	0	0	0	0	0	0	0	1
+park---shop_food	0	3	0	1	0	0	0	0	0	0	0	0	0
+pt interaction---education	4	7	1	0	0	0	0	0	0	0	0	0	0
+pt interaction---gym	8	9	1	0	0	0	0	0	0	0	0	0	0
+pt interaction---home	26	24	6	1	0	0	0	0	0	0	0	0	0
+pt interaction---leisure	7	3	1	0	0	0	0	0	0	0	0	0	0
+pt interaction---park	10	5	3	1	0	0	0	0	0	0	0	0	0
+pt interaction---pt interaction	209	118	70	47	23	16	8	6	2	0	1	0	2
+pt interaction---pub	6	8	3	0	0	0	0	0	0	0	0	0	0
+pt interaction---shop	10	12	1	0	0	0	0	0	0	0	0	0	0
+pt interaction---shop_food	13	12	1	1	0	0	0	0	0	0	0	0	0
+pt interaction---work	2	2	2	0	0	0	0	0	0	0	0	0	0
+pub---gym	0	1	0	1	0	0	0	0	0	0	0	0	0
+pub---home	0	0	0	0	0	1	0	0	0	0	0	0	4
+pub---leisure	0	0	0	0	0	0	1	0	0	0	0	0	0
+pub---park	0	0	0	1	0	0	0	0	0	0	0	0	0
+pub---pt interaction	3	7	4	1	0	0	0	0	0	0	0	0	0
+pub---pub	0	0	1	0	0	0	0	0	0	0	0	0	0
+pub---shop	0	0	0	0	1	0	0	0	0	0	0	0	0
+pub---shop_food	0	0	1	1	0	0	0	0	0	0	0	0	0
+pub---work	0	0	0	0	1	0	0	0	0	0	0	0	0
+shop---gym	0	0	0	0	0	0	0	0	0	0	0	0	2
+shop---home	1	2	1	1	0	0	0	0	0	0	0	0	3
+shop---leisure	1	0	0	0	0	0	0	0	0	0	0	0	0
+shop---park	1	0	0	0	0	1	0	0	0	0	0	0	2
+shop---pt interaction	14	8	1	0	0	0	0	0	0	0	0	0	0
+shop---pub	0	1	0	0	0	0	0	0	0	0	0	0	0
+shop---shop	0	0	0	0	0	0	0	0	1	0	0	0	1
+shop---shop_food	1	0	0	1	0	0	0	0	0	0	0	0	1
+shop_food---gym	0	0	0	1	1	0	0	0	0	0	0	0	0
+shop_food---home	0	2	0	0	0	2	1	0	0	0	0	0	4
+shop_food---leisure	0	0	1	0	0	0	0	0	0	0	0	0	0
+shop_food---pt interaction	9	13	5	1	0	0	0	0	0	0	0	0	0
+shop_food---shop	0	0	0	1	0	0	0	0	0	0	0	0	0
+shop_food---work	0	0	1	0	0	0	0	0	0	0	0	0	0
+work---gym	0	0	0	0	0	0	0	0	1	0	0	0	0
+work---home	1	0	0	0	0	0	0	0	0	0	0	0	1
+work---pt interaction	4	4	1	0	0	0	0	0	0	0	0	0	0
+work---shop	1	0	0	0	0	0	0	0	0	0	0	0	0
+work---shop_food	1	0	0	0	0	0	0	0	0	0	0	0	0
+
+average trip duration: 802.1895238095238 seconds = 00:13:22
