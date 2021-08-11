@@ -281,18 +281,19 @@ class TripDestinationModeShare(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, attribute=None,destination_activity_filters=None) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None,destination_activity_filters=None, **kwargs) -> None:
         """
         Initiate Handler.
         :param config: Config
         :param mode: str, mode
-        :param attribute: list, attributes
+        :param groupby_person_attribute: list, attributes
         :param destination_activity_filters: list, activities
         """
-        super().__init__(config, mode)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+
 
         self.mode = mode  # todo options not implemented
-        self.attribute_key = attribute
+        self.groupby_person_attribute = groupby_person_attribute
         self.destination_activity_filters = destination_activity_filters
         self.modes = None
         self.mode_indices = None
@@ -318,13 +319,13 @@ class TripDestinationModeShare(PlanHandlerTool):
         # Initialise mode classes
         self.modes, self.mode_indices = self.generate_id_map(modes)
 
-        if self.attribute_key:
+        if self.groupby_person_attribute:
             self.attributes = self.resources["attributes"]
-            availability = self.attributes.attribute_key_availability(self.attribute_key)
-            self.logger.debug(f'availability of attribute {self.attribute_key} = {availability*100}%')
+            availability = self.attributes.attribute_key_availability(self.groupby_person_attribute)
+            self.logger.debug(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
             if availability < 1:
-                self.logger.warning(f'availability of attribute {self.attribute_key} = {availability*100}%')
-            found_attributes = self.resources['attributes'].attribute_values(self.attribute_key) | {None}
+                self.logger.warning(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
+            found_attributes = self.resources['attributes'].attribute_values(self.groupby_person_attribute) | {None}
         else:
             self.attributes = {}
             found_attributes = [None]
@@ -354,7 +355,7 @@ class TripDestinationModeShare(PlanHandlerTool):
             if plan.get('selected') == 'yes':
 
                 ident = elem.get('id')
-                attribute_class = self.attributes.get(ident, {}).get(self.attribute_key)
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
                 modes = {}
@@ -407,8 +408,8 @@ class TripDestinationModeShare(PlanHandlerTool):
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
-        if self.attribute_key:
-            key = f"{self.name}_{self.attribute_key}_{activity_filter_name}_trip_counts"
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}_{activity_filter_name}_trip_counts"
             self.results[key] = counts_df
 
         # mode counts totals output
@@ -420,8 +421,8 @@ class TripDestinationModeShare(PlanHandlerTool):
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        if self.attribute_key:
-            key = f"{self.name}_{self.attribute_key}_{activity_filter_name}"
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}_{activity_filter_name}"
             self.results[key] = counts_df / total
 
         # mode shares totals output

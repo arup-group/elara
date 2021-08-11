@@ -1442,7 +1442,7 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
 ### TripDestinationModeShare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripDestinationModeShare(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"], attribute="age")
+    handler = plan_handlers.TripDestinationModeShare(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"], groupby_person_attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
