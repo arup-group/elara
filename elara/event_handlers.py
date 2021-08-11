@@ -108,7 +108,7 @@ class EventHandlerTool(Tool):
         if availability < 1:
             self.logger.warning(f'availability of attribute {attribute_key} = {availability*100}%')
         return attributes.attribute_values(attribute_key) | {None}
-    
+
     def extract_attributes(self) -> Tuple:
         """
         Get attributes input and find available attribute values based on self.attribute_key.
@@ -400,13 +400,13 @@ class LinkVehicleCounts(EventHandlerTool):
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
-        
+
         links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
                 f"""
-                No viable links found for mode:{self.mode} in Network, 
-                this may be because the Network modes do not match the configured 
+                No viable links found for mode:{self.mode} in Network,
+                this may be because the Network modes do not match the configured
                 modes. Elara will continue with all links found in network.
                 """
                 )
@@ -543,13 +543,13 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
         # generate index and map for network link dimension
         self.elem_gdf = self.resources['network'].link_gdf
-        
+
         links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
                 f"""
-                No viable links found for mode:{self.mode} in Network, 
-                this may be because the Network modes do not match the configured 
+                No viable links found for mode:{self.mode} in Network,
+                this may be because the Network modes do not match the configured
                 modes. Elara will continue with all links found in network.
                 """
                 )
@@ -568,7 +568,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         self.inverseduration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
-        
+
         self.link_tracker = dict() #{(agent,link):start_time}
 
     def process_event(self, elem) -> None:
@@ -627,11 +627,11 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     duration = end_time - start_time
 
                     self.counts[x, y, z] += 1
-                    
+
                     if duration != 0:
                         self.inverseduration_sum[x, y, z] += 1/duration
-                    
-                    self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z]) 
+
+                    self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z])
 
                     if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
                         self.duration_min[x, y, z] = duration
@@ -650,13 +650,13 @@ class LinkVehicleSpeeds(EventHandlerTool):
             duration_pop = self.inverseduration_sum.sum(1)
             av_pop = np.divide(duration_pop, counts_pop, out=np.zeros_like(counts_pop), where=duration_pop != 0)
             return av_pop
-        
+
         def calc_max_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
             max_subpop = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
             max_pop = max_subpop.max(1)
             return [max_subpop, max_pop]
-        
+
         def calc_min_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
             min_subpop = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
@@ -675,8 +675,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
             df = df.unstack(level='hour').sort_index()
             df = df.reset_index().set_index('elem')
             return df
-        
-        def calc_speeds(self, df): #converts 1/duration matrix into speeds by multiplying through by length
+
+        def calc_speeds(self, df):  # converts 1/duration matrix into speeds by multiplying through by length
             for i in range(self.config.time_periods):
                 df[i] = df[i] * df["length"]
             return df
@@ -688,7 +688,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             average_speeds = self.elem_gdf.join(average_speeds, how="left")
             average_speeds = calc_speeds(self, average_speeds)
             self.result_dfs[key] = average_speeds
-        
+
         # Calc average at pop level
         key = f"{self.name}_average"
         average_speeds = calc_av_matrices(self)
@@ -735,7 +735,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             ).sort_index()
         min_speeds = self.elem_gdf.join(min_speeds, how="left")
         min_speeds = calc_speeds(self, min_speeds)
-        self.result_dfs[key] = min_speeds  
+        self.result_dfs[key] = min_speeds
 
 
 class LinkPassengerCounts(EventHandlerTool):
@@ -796,8 +796,8 @@ class LinkPassengerCounts(EventHandlerTool):
         if links is None:
             self.logger.warning(
                 f"""
-                No viable links found for mode:{self.mode} in Network, 
-                this may be because the Network modes do not match the configured 
+                No viable links found for mode:{self.mode} in Network,
+                this may be because the Network modes do not match the configured
                 modes. Elara will continue with all links found in network.
                 """
                 )
@@ -996,11 +996,11 @@ class RoutePassengerCounts(EventHandlerTool):
         if routes is None:
             self.logger.warning(
                 f"""
-                No viable routes found for mode:{self.mode} in TransitSchedule, 
-                this may be because the Schedule modes do not match the configured 
+                No viable routes found for mode:{self.mode} in TransitSchedule,
+                this may be because the Schedule modes do not match the configured
                 modes. Elara will continue with all routes found in schedule.
                 """
-                )            
+                )
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(list(routes))
 
@@ -1182,12 +1182,12 @@ class StopPassengerCounts(EventHandlerTool):
         self.elem_gdf = resources['transit_schedule'].stop_gdf
         # get stops used by this mode
         viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
-        
+
         if viable_stops is None:
             self.logger.warning(
                 f"""
-                No viable stops found for mode:{self.mode} in TransitSchedule, 
-                this may be because the Schedule modes do not match the configured 
+                No viable stops found for mode:{self.mode} in TransitSchedule,
+                this may be because the Schedule modes do not match the configured
                 modes. Elara will continue with all stops found in schedule.
                 """
                 )
@@ -1310,7 +1310,7 @@ class StopPassengerCounts(EventHandlerTool):
                 totals_df, how="left"
             )
             self.result_dfs[key] = totals_df
-            
+
 class StopToStopPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts between stops for given mode in mode vehicles.
@@ -1368,8 +1368,8 @@ class StopToStopPassengerCounts(EventHandlerTool):
         if viable_stops is None:
             self.logger.warning(
                 f"""
-                No viable stops found for mode:{self.mode} in TransitSchedule, 
-                this may be because the Schedule modes do not match the configured 
+                No viable stops found for mode:{self.mode} in TransitSchedule,
+                this may be because the Schedule modes do not match the configured
                 modes. Elara will continue with all stops found in schedule.
                 """
                 )
@@ -1501,7 +1501,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
             counts_df = counts_df.join(
                     stop_info, how="left"
                 )
-            
+
             counts_df.index.name = n
 
         counts_df = counts_df.reset_index().set_index(['origin', 'destination', str(self.groupby_person_attribute)])
@@ -1545,6 +1545,70 @@ class StopToStopPassengerCounts(EventHandlerTool):
         self.result_dfs[key] = totals_df
 
 
+class VehicleDepartureLog(EventHandlerTool):
+    """
+    Extract vehicle depart times at stops.
+    """
+
+    requirements = ['events', 'transit_schedule']
+
+    def __init__(self, config, mode=None, **kwargs):
+        super().__init__(config, mode)
+        self.vehicle_departure_log = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+
+        super().build(resources, write_path=write_path)
+
+        pt_csv_name = f"{self.name}.csv"
+
+        self.vehicle_departure_log = self.start_chunk_writer(
+            pt_csv_name, write_path = write_path
+            )
+
+    def process_event(self, elem) -> None:
+        """
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+
+        if event_type == 'VehicleDepartsAtFacility':
+
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)            
+            veh_route = self.vehicle_route(veh_id)
+            stop_id = elem.get("facility")
+            departure_time = int(float(elem.get("time")))
+            delay = int(float(elem.get("delay")))
+
+            if veh_mode == self.mode or self.mode == None:  # None = all modes
+
+                pt_departures = [
+
+                    {
+                        'veh_id': veh_id,
+                        'veh_mode': veh_mode,
+                        'veh_route': veh_route,
+                        'stop_id': stop_id,
+                        'departure_time': departure_time,
+                        'delay': delay
+                    }
+                ]
+
+                self.vehicle_departure_log.add(pt_departures)
+
+        return None
+
+    def finalise(self):
+        self.vehicle_departure_log.finish()
+
+
 class EventHandlerWorkStation(WorkStation):
 
     """
@@ -1559,7 +1623,8 @@ class EventHandlerWorkStation(WorkStation):
         "stop_passenger_counts": StopPassengerCounts,
         "stop_passenger_waiting": StopPassengerWaiting,
         "vehicle_passenger_graph": VehiclePassengerGraph,
-        "stop_to_stop_passenger_counts": StopToStopPassengerCounts
+        "stop_to_stop_passenger_counts": StopToStopPassengerCounts,
+        "vehicle_departure_log": VehicleDepartureLog
     }
 
     def __init__(self, config):
