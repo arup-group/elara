@@ -214,8 +214,9 @@ class ModeShares(PlanHandlerTool):
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
         if self.groupby_person_attribute:
+            group_counts_df = counts_df.sum(level='class').T.unstack()
             key = f"{self.name}_{self.groupby_person_attribute}_counts"
-            self.results[key] = counts_df
+            self.results[key] = group_counts_df
 
         # mode counts totals output
         total_counts_df = counts_df.sum(0)
@@ -227,8 +228,9 @@ class ModeShares(PlanHandlerTool):
 
         # mode shares breakdown output
         if self.groupby_person_attribute:
+            group_totals = group_counts_df.sum(level=0)
             key = f"{self.name}_{self.groupby_person_attribute}"
-            self.results[key] = counts_df / total
+            self.results[key] = group_counts_df / group_totals
 
         # mode shares totals output
         key = f"{self.name}"
