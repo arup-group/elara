@@ -838,14 +838,11 @@ class TransitInteraction(BenchmarkTool):
                             f" Missing model stop: {stop_id}, zero filling count for benchmark: "
                             f"{counter_id}"
                         )
+                        found = False
                     else:
                         snaps += 1
                         sim_result += np.array(model_results[direction].loc[str(stop_id), bm_hours])
-
-                if not sum(sim_result):
-                    stop_used_sim = False
-                else:
-                    stop_used_sim = True
+                        found = True
 
                 # calc score
                 counter_diff = (sim_result - counts_array) ** 2
@@ -864,7 +861,7 @@ class TransitInteraction(BenchmarkTool):
                 # build result lines for df
                 result_line = {
                     'mode': self.mode,
-                    'stop_used_sim': stop_used_sim,
+                    'found': found,
                     'counter_id': counter_id,
                     'direction': direction,
                     'stops': ','.join(stops),
