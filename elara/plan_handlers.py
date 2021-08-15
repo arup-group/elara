@@ -342,10 +342,10 @@ class TripDestinationModeShare(PlanHandlerTool):
 
     def process_plans(self, elem):
         """
-        Iterate through the plans and produce counts / mode shares for trips to the activities specified in the list. 
-        This handler will consider all the legs up until each instance of the activities specified i.e. if the destination acitivity
-        list consists of ['work_a', work_b] and a plan consists of the trips [home] --> (bus,11km) --> [work_a] --> (train, 10km) -->
-        [work_b], the resulting (bus) counts will increase by 2.
+        Iterate through the plans and produce counts / mode shares for trips to the destination activities specified in the list. 
+        This handler counts the longest travelling mode of the trip leg leading to each instance of the destination activity(ies) specified 
+        e.g. if the destination acitivity list consists of ['work_a', work_b] and a plan consists of the trips 
+        [home] --> (bus,11km) --> [work_a] --> (train, 10km) --> [work_b], the resulting counts will see (bus) +1 & (train) + 1.
         :param elem: Plan XML element
         """
         for plan in elem.xpath(".//plan"):
