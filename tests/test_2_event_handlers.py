@@ -1120,6 +1120,26 @@ def test_stop_to_stop_finalise_bus_simple(
     assert np.sum(df.values) == 3 / handler.config.scale_factor
     assert np.sum(df.values) == gdf.total.sum()
 
+# Vehicle departs stop test
+def test_vehicle_departs_facility(test_config, input_manager):
+    handler = event_handlers.VehicleDepartureLog(test_config)
+    handler.build(input_manager.resources)
+            
+    for elem in handler.resources['events'].elems:
+        handler.process_event(elem)
+
+    log_length = len(handler.vehicle_departure_log.chunk)
+    chunk_four = handler.vehicle_departure_log.chunk[3]
+
+    assert log_length == 8
+    assert chunk_four == {
+        'veh_id': 'bus2',
+        'veh_mode': 'bus',
+        'veh_route': 'work_bound',
+        'stop_id': 'work_stop_in',
+        'departure_time': 31363,
+        'delay': -137
+    }
 
 # Event Handler Manager
 def test_load_event_handler_manager(test_config, test_paths):

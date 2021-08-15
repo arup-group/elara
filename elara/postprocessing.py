@@ -256,7 +256,7 @@ class VKT(PostProcessor):
         """
         period_headers = generate_period_headers(self.config.time_periods)
         volumes = link_volume_counts[period_headers]
-        link_lengths = link_volume_counts["length"].values / 1000  # Conversion to metres
+        link_lengths = link_volume_counts["length"].values / 1000  # Conversion to kilometres
         vkt = volumes.multiply(link_lengths, axis=0)
         return pd.concat([link_volume_counts.drop(period_headers, axis=1), vkt], axis=1)
 

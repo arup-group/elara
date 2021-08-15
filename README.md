@@ -37,6 +37,7 @@ These are processed by streaming (in order) through all output events from simul
   * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
   * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_departure_log``: Vehicle departures and delays from facilities (stops in the case of PT).
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 * **Plan Based Handlers/Outputs**:
@@ -247,6 +248,7 @@ include:
   * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
   * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_departure_log``: Vehicle departure times and delays from facilities (stops in the case of PT).
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 The associated list attached to each handler allows specification of which network modes should be processed using that handler. This allows certain handlers to be activated 
@@ -254,6 +256,7 @@ for public transport modes but not private vehicles for example. Possible modes 
 
 * eg ``car, bus, train, tram, ferry, ...``.
 * note that ``waiting_times`` only supports the option of ``["all"]``.
+* note that ``vehicle_departure_log`` supports any valid mode options, but will produce empty csv outputs for modes without events of type ``VehicleDepartsAtFacility``.
 
 The above format of `HANDLER_NAME = ["car", "bus"]` is a shorthand way of passing options. These pptions can also be passed in a dictionary format, ie `HANDLER_NAMES = {modes=["car","bus"]}`.
 
