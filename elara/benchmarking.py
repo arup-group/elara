@@ -79,8 +79,8 @@ class CsvComparison(BenchmarkTool):
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
-    def __init__(self, config, mode, groupby_person_attribute=None, **kwargs):
-        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+    def __init__(self, config, mode, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
         self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
@@ -118,8 +118,8 @@ class CsvComparison(BenchmarkTool):
 
 class DurationComparison(CsvComparison):
 
-    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
-        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
         self.benchmark_data_path = benchmark_data_path
 
     requirements = ['trip_duration_breakdown']
@@ -160,7 +160,7 @@ class LinkCounter(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs) -> None:
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
         :param config: Config object
@@ -169,7 +169,6 @@ class LinkCounter(BenchmarkTool):
         super().__init__(
             config=config,
             mode=mode,
-            groupby_person_attribute=groupby_person_attribute,
             benchmark_data_path=benchmark_data_path,
             **kwargs
             )
@@ -536,9 +535,9 @@ class NewZealandCounters(LinkCounter):
     weight = 1
 
 class AucklandCounters(LinkCounter):
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, **kwargs)
     name = 'auckland_counters'
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
@@ -547,9 +546,9 @@ class AucklandCounters(LinkCounter):
     weight = 1
 
 class WellingtonCounters(LinkCounter):
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, **kwargs)
     name = 'wellington_counters'
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
@@ -706,14 +705,14 @@ class TransitInteraction(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode, **kwargs) -> None:
         """
         PT Interaction (boardings and alightings) benchmarker for json formatted {mode: {id: {dir: {
         nodes: [], counts: {}}}}}.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, **kwargs)
 
         self.mode = mode
 
