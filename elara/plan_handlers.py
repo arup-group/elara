@@ -85,7 +85,6 @@ class ModeShares(PlanHandlerTool):
         'attributes',
         'transit_schedule',
         'output_config',
-        'mode_map',
     ]
     valid_modes = ['all']
 
@@ -210,7 +209,6 @@ class ModeShares(PlanHandlerTool):
         indexes = [self.modes, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
-
         # mode counts breakdown output
         counts_df = counts_df.unstack(level='mode').sort_index()
         if self.groupby_person_attribute:
@@ -266,6 +264,205 @@ class ModeShares(PlanHandlerTool):
         y = self.class_indices[attribute_class]
         z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
         return x, y, z
+
+class TripDestinationModeShare(PlanHandlerTool):
+    """
+    Extract mode shares for specified activities from plans. This handler takes a list of activities and computes the mode shares for each
+    independant activity trip. 
+    """
+
+    requirements = [
+        'plans',
+        'attributes',
+        'transit_schedule',
+        'output_config',
+    ]
+    valid_modes = ['all']
+
+    def __init__(self, config, mode=None, groupby_person_attribute=None,destination_activity_filters=None, **kwargs) -> None:
+        """
+        Initiate Handler.
+        :param config: Config
+        :param mode: str, mode
+        :param groupby_person_attribute: list, attributes
+        :param destination_activity_filters: list, activities
+        """
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+
+        self.mode = mode  # todo options not implemented
+        self.groupby_person_attribute = groupby_person_attribute
+        self.destination_activity_filters = destination_activity_filters
+        self.modes = None
+        self.mode_indices = None
+        self.classes = None
+        self.class_indices = None
+        self.mode_counts = None
+        self.results = None
+
+        # Initialise results storage
+        self.results = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        """
+        super().build(resources, write_path=write_path)
+
+        modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
+        self.logger.debug(f'modes = {modes}')
+
+        # Initialise mode classes
+        self.modes, self.mode_indices = self.generate_id_map(modes)
+
+        if self.groupby_person_attribute:
+            self.attributes = self.resources["attributes"]
+            availability = self.attributes.attribute_key_availability(self.groupby_person_attribute)
+            self.logger.debug(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
+            if availability < 1:
+                self.logger.warning(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
+            found_attributes = self.resources['attributes'].attribute_values(self.groupby_person_attribute) | {None}
+        else:
+            self.attributes = {}
+            found_attributes = [None]
+        self.logger.debug(f'attributes = {found_attributes}')
+
+        # Initialise class classes
+        self.classes, self.class_indices = self.generate_id_map(found_attributes)
+
+        # Initialise mode count table, if have list of activities then initiallise as dictionary of tables
+ 
+        self.mode_counts = np.zeros((
+            len(self.modes),
+            len(self.classes),
+            self.config.time_periods))
+
+        self.results = dict()
+
+    def process_plans(self, elem):
+        """
+        Iterate through the plans and produce counts / mode shares for trips to the destination activities specified in the list. 
+        This handler counts the longest travelling mode of the trip leg leading to each instance of the destination activity(ies) specified 
+        e.g. if the destination acitivity list consists of ['work_a', work_b] and a plan consists of the trips 
+        [home] --> (bus,11km) --> [work_a] --> (train, 10km) --> [work_b], the resulting counts will see (bus) +1 & (train) + 1.
+        :param elem: Plan XML element
+        """
+        for plan in elem.xpath(".//plan"):
+            if plan.get('selected') == 'yes':
+
+                ident = elem.get('id')
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+
+                end_time = None
+                modes = {}
+
+                for stage in plan:
+                    if stage.tag == 'leg':
+                        leg_mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        distance = float(route_elem.get("distance", 0))
+                        
+                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        modes[mode] = modes.get(mode, 0) + distance
+
+                    elif stage.tag == 'activity':
+                        activity = stage.get('type')
+                        if activity == 'pt interaction':  # ignore pt interaction activities
+                            continue
+
+                        # only add activity modes when there has been previous activity
+                        # (ie trip start time) AND the activity is in specified list
+                        if end_time and (activity in self.destination_activity_filters):
+                            mode = self.get_furthest_mode(modes)
+                            x, y, z = self.table_position(
+                                mode,
+                                attribute_class,
+                                end_time
+                            )
+                            self.mode_counts[x, y, z] += 1 
+                        # update endtime for next activity
+                        end_time = convert_time_to_seconds(stage.get('end_time'))
+
+                        # reset modes
+                        modes = {}
+
+    def finalise(self):
+        """
+        Following plan processing, the raw mode share table will contain counts by mode,
+        population attribute class, activity and period (where period is based on departure
+        time).
+        Finalise aggregates these results as required and creates a dataframe.
+        """
+
+        # Scale final counts
+        self.mode_counts *= 1.0 / self.config.scale_factor
+        activity_filter_name = '_'.join(self.destination_activity_filters)
+        names = ['mode', 'class', 'hour']
+        indexes = [self.modes, self.classes, range(self.config.time_periods)]
+        index = pd.MultiIndex.from_product(indexes, names=names)
+        counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)[0]
+        # mode counts breakdown output
+        counts_df = counts_df.unstack(level='mode').sort_index()
+        counts_df = counts_df.reset_index().drop("hour", axis=1)
+        counts_df = counts_df.groupby(counts_df["class"]).sum()
+        # this removes the breakdown by hour which no one has been using
+
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}_{activity_filter_name}_counts"
+            self.results[key] = counts_df
+
+        # mode counts totals output
+        total_counts_df = counts_df.sum(0)
+        key = f"{self.name}_{activity_filter_name}_counts"
+        self.results[key] = total_counts_df
+
+        # convert to mode shares
+        total = self.mode_counts.sum()
+
+        # mode shares breakdown output
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}_{activity_filter_name}"
+            self.results[key] = counts_df / total
+
+        # mode shares totals output
+        key = f"{self.name}_{activity_filter_name}"
+        self.results[key] = total_counts_df / total
+
+    @staticmethod
+    def generate_id_map(list_in):
+        """
+        Generate element ID list and index dictionary from given list.
+        :param list_in: list
+        :return: (list, list_indices_map)
+        """
+        if not len(set(list_in)) == len(list_in):
+            raise UserWarning("non unique mode list found")
+
+        list_indices_map = {
+            key: value for (key, value) in zip(list_in, range(0, len(list_in)))
+        }
+        return list_in, list_indices_map
+
+    def table_position(
+        self,
+        mode,
+        attribute_class,
+        time
+    ):
+        """
+        Calculate the result table coordinates from given maps.
+        :param mode: String, mode id
+        :param attribute_class: String, class id
+        :param time: Timestamp of event
+        :return: (x, y, z, w) tuple of integers to index results table
+        """
+        x = self.mode_indices[mode]
+        y = self.class_indices[attribute_class]
+        z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
+        return x, y, z
+
 
 
 class LegLogs(PlanHandlerTool):
@@ -1265,6 +1462,7 @@ class PlanHandlerWorkStation(WorkStation):
 
     tools = {
         "mode_shares": ModeShares,
+        "trip_destination_mode_share": TripDestinationModeShare,
         "leg_logs": LegLogs,
         "trip_logs": TripLogs,
         "plan_logs": PlanLogs,
