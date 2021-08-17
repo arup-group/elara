@@ -45,6 +45,7 @@ These are processed by streaming through all output plans from simulation. Compa
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
   * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy.
   * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -163,6 +164,7 @@ stop_passenger_waiting = ["all"]
 
 [plan_handlers]
 mode_shares = ["all"]
+trip_destination_mode_share = {destination_activity_filters = ["work"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
@@ -264,6 +266,7 @@ Specification of the plan handlers to be run during processing. Currently availa
 include:
 
   * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy. Requires ``destination_activity_filters`` - a list of destination activities as a parameter, eg: ``trip_destination_mode_share = {destination_activity_filters = ["work"]``. 
   * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -278,7 +281,7 @@ The associated list attached to each handler allows specification of additional 
 * agent_plans support subpopulation selection, eg ``rich, poor``
 * highway_distances only supports ``car``
 
-The mode share handler additionally supports a `subpopulation` option, eg: `mode_shares = {attribute="subpopulation"}`. This adds an additional output breaking down mode counts and shares by the chosen person attribute.
+The mode share handler as well as the trip destination mode share handler additionally support a `subpopulation` option, eg: `mode_shares = {attribute="subpopulation"}`. This adds an additional output breaking down mode counts and shares by the chosen person attribute.
 
 **#** post_processors.**[post-processor name]** *list of strings* *(optional)*
 
