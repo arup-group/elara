@@ -1627,6 +1627,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
             len(self.elem_indices),
             len(self.elem_indices),
             len(self.veh_ids_indices),
+            len(self.class_indices),
             self.config.time_periods
             ))
 
@@ -1701,18 +1702,19 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
                     time = float(elem.get("time"))
                     occupancy_dict = self.veh_occupancy.get(veh_id, {})
 
+                    v = self.veh_ids_indices[veh_id] # vehicle index
                     for attribute_class, occupancy in occupancy_dict.items():
                         o, d, y, z = table_position_4d(
                             self.elem_indices,
                             self.elem_indices,
-                            self.veh_ids_indices,
+                            self.class_indices,
                             self.config.time_periods,
                             prev_stop_id,
                             stop_id,
-                            veh_id,
+                            attribute_class,
                             time
                         )
-                        self.counts[o, d, y, z] += occupancy
+                        self.counts[o, d, v, y, z] += occupancy
 
     def finalise(self):
         """
@@ -1726,9 +1728,9 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
-        names = ['from_stop', 'to_stop', 'veh_id', 'to_stop_arrival_hour']
+        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute), 'to_stop_arrival_hour']
         self.classes = [str(c) for c in self.classes]
-        indexes = [self.elem_ids, self.elem_ids, self.veh_ids, range(self.config.time_periods)]
+        indexes = [self.elem_ids, self.elem_ids, self.veh_ids, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.counts.flatten(), index=index)[[0]].rename(columns={0:'counts'})
         
@@ -1736,7 +1738,6 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         counts_df = counts_df[counts_df['counts']>0]
 
         del self.counts
-        # print('--counts df:', counts_df)
         # counts_df = counts_df.unstack(level='hour').sort_index()
 
         # Join stop data and build geometry
@@ -1770,7 +1771,6 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         totals_df = counts_df.reset_index().groupby(
             names+['route']
             ).sum().reset_index().set_index(names+['route'])
-        # totals_df = counts_df.copy()
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
