@@ -24,8 +24,8 @@ path = "./outputs"
 #stop_passenger_waiting = ["all"]
 #link_passenger_counts = ["bus"]
 #vehicle_departure_log = ["all"]
-stop_to_stop_passenger_counts = ["bus"]
-#vehicle_stop_to_stop_passenger_counts = ["bus"]
+#stop_to_stop_passenger_counts = ["bus"]
+vehicle_stop_to_stop_passenger_counts = ["bus"]
 #vehicle_stop_to_stop_passenger_counts = {modes = ["bus"], groupby_person_attributes=["subpopulation"]}
 
 [plan_handlers]
