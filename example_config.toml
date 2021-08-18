@@ -23,13 +23,14 @@ path = "./outputs"
 #stop_passenger_counts = ["bus"]
 #stop_passenger_waiting = ["all"]
 #link_passenger_counts = ["bus"]
-vehicle_departure_log = ["all"]
+#vehicle_departure_log = ["all"]
+vehicle_stop_to_stop_passenger_counts = ["bus"]
 
 [plan_handlers]
-mode_shares = {attributes=["age"]}
-trip_logs = ["all"]
-agent_highway_distance_logs = ["car"]
-trip_highway_distance_logs = ["car"]
+#mode_shares = {attributes=["age"]}
+#trip_logs = ["all"]
+#agent_highway_distance_logs = ["car"]
+#trip_highway_distance_logs = ["car"]
 
 [post_processors]
 #plan_summary = ["all"]
