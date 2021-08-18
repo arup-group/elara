@@ -1728,17 +1728,14 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
 
-        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute), 'to_stop_arrival_hour']
+        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
         self.classes = [str(c) for c in self.classes]
         indexes = [self.elem_ids, self.elem_ids, self.veh_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[[0]].rename(columns={0:'counts'})
+        index = pd.MultiIndex.from_product(indexes, names=names+['to_stop_arrival_hour'])
+        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
         
-        # remove empty counts
-        counts_df = counts_df[counts_df['counts']>0]
-
         del self.counts
-        # counts_df = counts_df.unstack(level='hour').sort_index()
+        counts_df = counts_df.unstack(level='to_stop_arrival_hour').sort_index()
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
@@ -1752,9 +1749,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
             counts_df.index.name = n
 
         counts_df = counts_df.reset_index().set_index(names)
-        # counts_df['total'] = counts_df.sum(1)
         counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
-        # print('--counts df:', counts_df)
 
         counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
         counts_df.drop('from_stop_geometry', axis=1, inplace=True)
@@ -1769,8 +1764,8 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
 
         # # calc sum across all recorded attribute classes
         totals_df = counts_df.reset_index().groupby(
-            names+['route']
-            ).sum().reset_index().set_index(names+['route'])
+            ['from_stop', 'to_stop', 'veh_id','route']
+            ).sum().reset_index().set_index(['from_stop', 'to_stop', 'veh_id','route'])
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
@@ -1782,8 +1777,9 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
                 )
             totals_df.index.name = n
 
-        totals_df = totals_df.reset_index().set_index(names + ['route'])
-
+        totals_df = totals_df.reset_index().set_index(['from_stop', 'to_stop', 'veh_id','route'])
+        counts_df['total'] = counts_df.sum(1)
+        
         totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)]
         totals_df.drop('from_stop_geometry', axis=1, inplace=True)
         totals_df.drop('to_stop_geometry', axis=1, inplace=True)
@@ -1792,6 +1788,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
         key = f"{self.name}"
         self.result_dfs[key] = totals_df
+        print(totals_df)
 
 
 
