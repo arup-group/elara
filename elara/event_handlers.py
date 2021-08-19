@@ -1555,7 +1555,6 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         'events',
         'network',
         'transit_schedule',
-        'transit_vehicles',
         'attributes',
     ]
     invalid_modes = ['car']
@@ -1750,6 +1749,8 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
 
         counts_df = counts_df.reset_index().set_index(names)
         counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
+        counts_df['total'] = counts_df.sum(1)
+        counts_df = counts_df[counts_df['total']>0] # remove zero-count entries
 
         counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
         counts_df.drop('from_stop_geometry', axis=1, inplace=True)
@@ -1778,7 +1779,6 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
             totals_df.index.name = n
 
         totals_df = totals_df.reset_index().set_index(['from_stop', 'to_stop', 'veh_id','route'])
-        counts_df['total'] = counts_df.sum(1)
         
         totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)]
         totals_df.drop('from_stop_geometry', axis=1, inplace=True)
@@ -1788,8 +1788,6 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
         key = f"{self.name}"
         self.result_dfs[key] = totals_df
-        print(totals_df)
-
 
 
 class VehicleDepartureLog(EventHandlerTool):
