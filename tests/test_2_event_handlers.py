@@ -610,6 +610,21 @@ def person2_leaves_veh_event():
         """
     return etree.fromstring(string)
 
+@pytest.fixture
+def person_enters_veh2_event():
+    string = """
+        <event time="23501.0" type="PersonEntersVehicle" person="gerry" vehicle="bus2"  />
+        """
+    return etree.fromstring(string)
+
+def person_leaves_veh2_event():
+    string = """
+        <event time="24501.0" type="PersonLeavesVehicle" person="gerry" vehicle="bus2"  />
+        """
+    return etree.fromstring(string)
+
+
+
 
 def test_passenger_count_process_single_event_driver(
         bus_passenger_count_handler,
@@ -928,6 +943,13 @@ def bus_stop_to_stop_handler(test_config, input_manager):
     handler.build(resources, write_path=test_outputs)
     return handler
 
+@pytest.fixture
+def bus_vehicle_stop_to_stop_handler(test_config, input_manager):
+    handler = event_handlers.VehicleStopToStopPassengerCounts(test_config, mode='bus', groupby_person_attribute="subpopulation")
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    return handler
+
 
 @pytest.fixture
 def test_bus_stop_to_stop_handler(bus_stop_to_stop_handler, input_manager):
@@ -968,6 +990,32 @@ def veh_arrives_facilty_event3():
     time = 8.5 * 60 * 60
     string = f"""
         <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus1" facility="home_stop_out" delay="Infinity"/>
+        """
+    return etree.fromstring(string)
+
+@pytest.fixture
+def veh2_arrives_facilty_event1():
+    time = 6.5 * 60 * 60
+    string = f"""
+        <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus2" facility="home_stop_out" delay="Infinity"/>
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def veh2_arrives_facilty_event2():
+    time = 7.5 * 60 * 60
+    string = f"""
+        <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus2" facility="work_stop_in" delay="Infinity"/>
+        """
+    return etree.fromstring(string)
+
+
+@pytest.fixture
+def veh2_arrives_facilty_event3():
+    time = 8.5 * 60 * 60
+    string = f"""
+        <event time="{time}" type="VehicleArrivesAtFacility" vehicle="bus2" facility="home_stop_out" delay="Infinity"/>
         """
     return etree.fromstring(string)
 
@@ -1035,6 +1083,105 @@ def test_stop_to_stop_process_events(
     assert np.sum(handler.counts[:, :, class_index, :]) == 2
     assert np.sum(handler.counts[:, :, :, period]) == 1
 
+def test_vehicle_stop_to_stop_process_events(
+        bus_vehicle_stop_to_stop_handler,
+        veh_arrives_facilty_event1,
+        veh2_arrives_facilty_event1,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        veh_arrives_facilty_event2,
+        veh2_arrives_facilty_event2,
+        person_leaves_veh_event,
+        veh_arrives_facilty_event3,
+        veh2_arrives_facilty_event3,
+        person_enters_veh2_event
+        ):
+    handler = bus_vehicle_stop_to_stop_handler
+    handler.process_event(veh_arrives_facilty_event1)
+    handler.process_event(veh2_arrives_facilty_event1)
+    handler.process_event(person_enters_veh_event)
+    handler.process_event(person2_enters_veh_event)
+    handler.process_event(veh_arrives_facilty_event2)
+    handler.process_event(veh2_arrives_facilty_event2)
+
+    veh_index = handler.veh_ids_indices['bus1']
+    veh2_index = handler.veh_ids_indices['bus2']
+    assert handler.veh_occupancy == {'bus1': {'poor': 1, 'rich': 1}}
+    assert np.sum(handler.counts) == 2
+
+    handler.process_event(person_leaves_veh_event)
+    handler.process_event(person_enters_veh2_event) # person 1 interchanges from bus1 to bus2
+    handler.process_event(veh_arrives_facilty_event3)
+    handler.process_event(veh2_arrives_facilty_event3)
+
+    assert handler.veh_occupancy == {'bus1': {'poor': 0, 'rich': 1}, 'bus2': {'poor': 1}}
+    assert np.sum(handler.counts) == 4
+
+    stop_index1 = handler.elem_indices['home_stop_out']
+    stop_index2 = handler.elem_indices['work_stop_in']
+    stop_index3 = handler.elem_indices['home_stop_in']
+    class_index = handler.class_indices['rich']
+    period = 7
+
+    assert np.sum(handler.counts[stop_index1, stop_index2, veh_index, :, :]) == 2
+    assert np.sum(handler.counts[stop_index1, stop_index2, veh_index, class_index, :]) == 1
+    assert np.sum(handler.counts[:, :, veh_index, :, period]) == 2
+
+    period = 8
+
+    assert np.sum(handler.counts[stop_index2, stop_index1, veh_index, :, :]) == 1
+    assert np.sum(handler.counts[stop_index2, stop_index1, veh2_index, :, :]) == 1
+    assert np.sum(handler.counts[:, :, veh_index, class_index, :]) == 2
+    assert np.sum(handler.counts[:, :, veh_index, :, period]) == 1
+    assert np.sum(handler.counts[:, :, :, :, period]) == 2
+
+    period = 9
+    assert np.sum(handler.counts[:, :, :, :, period]) == 0
+
+def test_vehicle_stop_to_stop_finalise_bus(
+        bus_vehicle_stop_to_stop_handler,
+        veh_arrives_facilty_event1,
+        veh2_arrives_facilty_event1,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        veh_arrives_facilty_event2,
+        veh2_arrives_facilty_event2,
+        person_leaves_veh_event,
+        person_enters_veh2_event,
+        veh_arrives_facilty_event3,
+        veh2_arrives_facilty_event3
+):
+    handler = bus_vehicle_stop_to_stop_handler
+    events = [
+        veh_arrives_facilty_event1,
+        veh2_arrives_facilty_event1,
+        person_enters_veh_event,
+        person2_enters_veh_event,
+        veh_arrives_facilty_event2,
+        veh2_arrives_facilty_event2,
+        person_leaves_veh_event,
+        person_enters_veh2_event,
+        veh_arrives_facilty_event3,
+        veh2_arrives_facilty_event3
+    ]
+    for elem in events:
+        handler.process_event(elem)
+    
+    handler.finalise()
+
+    gdf = handler.result_dfs["vehicle_stop_to_stop_passenger_counts_bus"]
+    assert set(gdf.index.get_level_values('veh_id').unique()) == {'bus1','bus2'}
+
+    cols = list(range(handler.config.time_periods))
+    for c in cols:
+        assert c in gdf.columns
+        assert 'total' in gdf.columns
+    df = gdf.loc[:, cols]
+    assert np.sum(df.values) == 4 / handler.config.scale_factor
+    assert np.sum(df.values) == gdf.total.sum()
+    if 'subpopulation' in gdf.columns:
+        assert set(gdf.loc[:, 'subpopulation']) == {'poor', 'rich', np.nan}
+
 
 def test_stop_to_stop_finalise_bus(
         bus_stop_to_stop_handler,
@@ -1083,6 +1230,13 @@ def test_stop_to_stop_finalise_bus(
 @pytest.fixture
 def bus_stop_to_stop_handler_simple(test_config, input_manager):
     handler = event_handlers.StopToStopPassengerCounts(test_config, mode='bus', groupby_person_attribute=None)
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    return handler
+
+@pytest.fixture
+def bus_vehicle_stop_to_stop_handler_simple(test_config, input_manager):
+    handler = event_handlers.VehicleStopToStopPassengerCounts(test_config, mode='bus', groupby_person_attribute=None)
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
     return handler
