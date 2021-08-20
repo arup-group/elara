@@ -272,7 +272,7 @@ class LinkCounterComparison(BenchmarkTool):
                 links = counter['links']
                 if links==[]:
                     continue # some links are empty lists, we skip them
-                bm_hours = list(counter['counts'])
+                bm_hours = [str(h) for h in list(counter['counts'])]
                 counts_array = np.array(list(counter['counts'].values()))
 
                 sim_result = np.array([0.0 for _ in range(len(bm_hours))])
@@ -280,7 +280,10 @@ class LinkCounterComparison(BenchmarkTool):
                 # check if count times are available
                 if not set(bm_hours) <= set(results_df.columns):
                     raise UserWarning(
-                        f"Hours: {bm_hours} not available in results.columns: {results_df.columns}")
+                        f"""Counter: {counter_id}, direction: {direction}:
+                        {bm_hours} not available in results.columns:
+                        {results_df.columns}"""
+                    )
 
                 # combine mode link counts
                 for link_id in links:
@@ -812,7 +815,7 @@ class TransitInteractionComparison(BenchmarkTool):
             for direction, counter in counter_location.items():
 
                 stops = counter['stop_ids']
-                bm_hours = list(counter['counts'])
+                bm_hours = [str(h) for h in list(counter['counts'])]
                 counts_array = np.array(list(counter['counts'].values()))
 
                 sim_result = np.array([0.0 for _ in range(len(bm_hours))])
@@ -826,7 +829,7 @@ class TransitInteractionComparison(BenchmarkTool):
                 # check if count times are available
                 if not set(bm_hours) <= set(model_results[direction].columns):
                     raise UserWarning(
-                        f"Hours: {bm_hours} not available in "
+                        f"Counter: {counter_id}, direction: {direction}: {bm_hours} not available in "
                         f"results.columns: {model_results[direction].columns}")
 
                 # combine mode stop counts
