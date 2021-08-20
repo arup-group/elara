@@ -226,7 +226,7 @@ class Config:
     def valid_scale_factor(inp):
         """
         Raise exception if specified scale factor is outside an acceptable range, i.e.
-        beyond (0, ], otherwise return scale factor.
+        beyond (0, 1], otherwise return scale factor.
         :param inp: Scale factor
         :return: Pass through scale factor if valid
         """

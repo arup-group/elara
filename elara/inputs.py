@@ -518,9 +518,11 @@ class Subpopulations(InputTool):
 
     def get_person_attribute_from_plans(self, elem, tag):
         ident = elem.xpath("@id")[0]
-        attribute = elem.find(f'./attributes/attribute[@name="{tag}"]').text
+        attribute = elem.find(f'./attributes/attribute[@name="{tag}"]')
+        if attribute is not None:
+            return ident, attribute.text
         # attribute = self.final_attribute_map.get(attribute.text, attribute.text)
-        return ident, attribute
+        return ident, None
 
 
 class Attributes(InputTool):
@@ -593,7 +595,8 @@ class Attributes(InputTool):
         ident = elem.xpath("@id")[0]
         attributes = {}
         for attr in elem.xpath('./attributes/attribute'):
-            attributes[attr.get('name')] = attr.text
+            if attr is not None:
+                attributes[attr.get('name')] = attr.text
         return ident, attributes
 
     def attribute_values(self, attribute_key):
