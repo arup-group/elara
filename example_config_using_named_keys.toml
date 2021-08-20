@@ -16,7 +16,7 @@ plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [outputs]
-path = "./outputs"
+path = "./outputs_new"
 
 [benchmarks]
 link_counter--A = {modes = ["car"], benchmark_data_path = "./elara/benchmark_data/test_town/test_town_cordon/test_link_counter.json"}

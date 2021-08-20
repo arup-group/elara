@@ -16,7 +16,7 @@ plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [outputs]
-path = "./outputs"
+path = "./outputs_new"
 
 [plan_handlers]
 mode_shares = {groupby_person_attributes=["age", "subpopulation"]}

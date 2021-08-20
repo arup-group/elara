@@ -63,6 +63,7 @@ def test_requirements_workstation(test_config):
         'vkt': {'modes':['car']},
         'link_vehicle_counts': {'modes':['car']},
         'test_link_cordon': {'modes':['car']},
+        'vehicle_departure_log': {'modes':['all']},
     }
 
 
@@ -174,6 +175,7 @@ def test_bfs(requirements):
             'link_passenger_counts:train:None:': factory.Tool,
             'link_passenger_counts:bus:None:': factory.Tool,
             'link_vehicle_counts:car:None:': factory.Tool,
+            'vehicle_departure_log:all:None:': factory.Tool,
         }
     )
 

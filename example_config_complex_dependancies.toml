@@ -16,10 +16,10 @@ plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 
 [outputs]
-path = "./outputs"
+path = "./outputs_new_1"
 
 [event_handlers]
 link_vehicle_counts = {modes=["car","bus","train"], groupby_person_attributes=["subpopulation"]}
 
 [post_processors]
-vkt = {modes=["car"], attributes=["age"]}
+vkt = {modes=["car"], groupby_person_attributes=["age"]}
