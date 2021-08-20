@@ -353,7 +353,7 @@ def test_loading_gzip_subpops(test_gzip_config, test_zip_paths):
 def test_loading_v12_subpops(test_xml_config_v12, test_paths_v12):
     attribute = inputs.Subpopulations(test_xml_config_v12)
     attribute.build(test_paths_v12.resources)
-    assert attribute.map == {'chris': 'rich', 'fatema': 'poor', 'gerry': 'poor', 'fred': 'poor', 'nick': 'poor'}
+    assert attribute.map == {'chris': 'rich', 'empty_plan': None, 'fatema': 'poor', 'gerry': 'poor', 'fred': 'poor', 'nick': 'poor'}
 
 
 # Attributes
@@ -362,6 +362,14 @@ def test_loading_xml_attributes(test_xml_config, test_paths):
     attribute.build(test_paths.resources)
     assert len(attribute.attributes) == 5
     assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
+
+
+# test loading experienced plans
+def test_loading_v12_attributes_from_experienced_plans(test_xml_config_v12, test_paths_v12):
+    attribute = inputs.Attributes(test_xml_config_v12)
+    attribute.build(test_paths_v12.resources)
+    assert len(attribute.attributes) == 6
+    assert attribute.attributes['empty_plan'] == {}
 
 
 def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
@@ -374,8 +382,20 @@ def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
 def test_loading_v12_attributes(test_xml_config_v12, test_paths_v12):
     attribute = inputs.Attributes(test_xml_config_v12)
     attribute.build(test_paths_v12.resources)
-    assert len(attribute.attributes) == 5
+    assert len(attribute.attributes) == 6
     assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
+
+
+def test_get_attribute_values(test_xml_config_v12, test_paths_v12):
+    attribute = inputs.Attributes(test_xml_config_v12)
+    attribute.build(test_paths_v12.resources)
+    assert attribute.attribute_values("age") == {"yes", "no", None}
+
+
+def test_get_attribute_key_availability(test_xml_config_v12, test_paths_v12):
+    attribute = inputs.Attributes(test_xml_config_v12)
+    attribute.build(test_paths_v12.resources)
+    assert attribute.attribute_key_availability("age") == 5/6
 
 
 # Output Config

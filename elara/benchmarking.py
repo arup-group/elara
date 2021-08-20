@@ -79,8 +79,8 @@ class CsvComparison(BenchmarkTool):
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
-    def __init__(self, config, mode, groupby_person_attribute=None, **kwargs):
-        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+    def __init__(self, config, mode, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
         self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
@@ -118,8 +118,8 @@ class CsvComparison(BenchmarkTool):
 
 class DurationComparison(CsvComparison):
 
-    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
-        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
         self.benchmark_data_path = benchmark_data_path
 
     requirements = ['trip_duration_breakdown']
@@ -153,14 +153,16 @@ class TestEuclideanDistanceComparison(CsvComparison):
     weight = 1
 
 
-class LinkCounter(BenchmarkTool):
+class LinkCounterComparison(BenchmarkTool):
 
     requirements = ['link_vehicle_counts']
+    options_enabled = True
+    weight = 1
 
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs) -> None:
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs) -> None:
         """
         Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
         :param config: Config object
@@ -169,8 +171,7 @@ class LinkCounter(BenchmarkTool):
         super().__init__(
             config=config,
             mode=mode,
-            groupby_person_attribute=groupby_person_attribute,
-            benchmark_data_path=benchmark_data_path,
+            benchmark_data_path = benchmark_data_path,
             **kwargs
             )
 
@@ -410,7 +411,7 @@ class LinkCounter(BenchmarkTool):
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
-class TestCordon(LinkCounter):
+class TestCordon(LinkCounterComparison):
 
     name = 'test_link_counter'
     benchmark_data_path = get_benchmark_data(
@@ -424,7 +425,7 @@ class TestCordon(LinkCounter):
     weight = 1
 
 
-class IrelandHighwayCounters(LinkCounter):
+class IrelandHighwayCounters(LinkCounterComparison):
 
     name = 'ireland_highways_counters'
     benchmark_data_path = get_benchmark_data(
@@ -438,7 +439,7 @@ class IrelandHighwayCounters(LinkCounter):
 
     weight = 1
 
-class IrelandHighwayCounters_DCC(LinkCounter):
+class IrelandHighwayCounters_DCC(LinkCounterComparison):
 
     name = 'ireland_highways_counters_DCC'
     benchmark_data_path = get_benchmark_data(
@@ -452,7 +453,7 @@ class IrelandHighwayCounters_DCC(LinkCounter):
 
     weight = 1
 
-class NIHighwayCounters(LinkCounter):
+class NIHighwayCounters(LinkCounterComparison):
 
     name = 'ireland_highways_counters_NI'
     benchmark_data_path = get_benchmark_data(
@@ -465,7 +466,7 @@ class NIHighwayCounters(LinkCounter):
 
     weight = 1
     
-class LondonCentralCordonCar(LinkCounter):
+class LondonCentralCordonCar(LinkCounterComparison):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
@@ -481,7 +482,7 @@ class LondonCentralCordonCar(LinkCounter):
     weight = 1
 
 
-class LondonCentralCordonBus(LinkCounter):
+class LondonCentralCordonBus(LinkCounterComparison):
 
     name = 'london_central_cordon'
     benchmark_data_path = get_benchmark_data(
@@ -495,7 +496,7 @@ class LondonCentralCordonBus(LinkCounter):
     weight = 1
 
 
-class LondonInnerCordonCar(LinkCounter):
+class LondonInnerCordonCar(LinkCounterComparison):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
@@ -509,7 +510,7 @@ class LondonInnerCordonCar(LinkCounter):
     weight = 1
 
 
-class LondonInnerCordonBus(LinkCounter):
+class LondonInnerCordonBus(LinkCounterComparison):
 
     name = 'london_inner_cordon'
     benchmark_data_path = get_benchmark_data(
@@ -522,7 +523,7 @@ class LondonInnerCordonBus(LinkCounter):
 
     weight = 1
 
-class NewZealandCounters(LinkCounter):
+class NewZealandCounters(LinkCounterComparison):
 
     name = 'new_zealand_counters'
     benchmark_data_path = get_benchmark_data(
@@ -535,10 +536,10 @@ class NewZealandCounters(LinkCounter):
 
     weight = 1
 
-class AucklandCounters(LinkCounter):
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
+class AucklandCounters(LinkCounterComparison):
+    def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode)
     name = 'auckland_counters'
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
@@ -546,10 +547,10 @@ class AucklandCounters(LinkCounter):
     
     weight = 1
 
-class WellingtonCounters(LinkCounter):
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
+class WellingtonCounters(LinkCounterComparison):
+    def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode)
     name = 'wellington_counters'
     requirements = ['link_vehicle_counts']
     valid_options = ['car']
@@ -585,7 +586,7 @@ class WellingtonCounters(LinkCounter):
 #     weight = 1
 
 
-class LondonThamesScreenCar(LinkCounter):
+class LondonThamesScreenCar(LinkCounterComparison):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
@@ -599,7 +600,7 @@ class LondonThamesScreenCar(LinkCounter):
     weight = 1
 
 
-class LondonThamesScreenBus(LinkCounter):
+class LondonThamesScreenBus(LinkCounterComparison):
 
     name = 'london_thames_screen'
     benchmark_data_path = get_benchmark_data(
@@ -612,7 +613,7 @@ class LondonThamesScreenBus(LinkCounter):
 
     weight = 1
 
-class SuffolkScreenlinesCounters(LinkCounter):
+class SuffolkScreenlinesCounters(LinkCounterComparison):
 
     name = 'suffolk_screenlines_counters'
     benchmark_data_path = get_benchmark_data(
@@ -627,7 +628,7 @@ class SuffolkScreenlinesCounters(LinkCounter):
     weight = 1
 
 
-class SuffolkDisaggregatedScreenlinesCounters(LinkCounter):
+class SuffolkDisaggregatedScreenlinesCounters(LinkCounterComparison):
 
     name = 'suffolk_disaggregated_screenlines_counters'
     benchmark_data_path = get_benchmark_data(
@@ -641,7 +642,7 @@ class SuffolkDisaggregatedScreenlinesCounters(LinkCounter):
 
     weight = 1
 
-class SuffolkCarScreenlinesCounters(LinkCounter):
+class SuffolkCarScreenlinesCounters(LinkCounterComparison):
 
     name = 'suffolk_car_screenlines_counters'
     benchmark_data_path = get_benchmark_data(
@@ -697,23 +698,22 @@ class SuffolkCarScreenlinesCounters(LinkCounter):
 #     weight = 1
 
 
-class TransitInteraction(BenchmarkTool):
+class TransitInteractionComparison(BenchmarkTool):
 
-    name = None
-    benchmark_data_path = None
     requirements = ['stop_passenger_counts']
+    options_enabled = True
 
     def __str__(self):
         return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs) -> None:
         """
         PT Interaction (boardings and alightings) benchmarker for json formatted {mode: {id: {dir: {
         nodes: [], counts: {}}}}}.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, benchmark_data_path=benchmark_data_path, **kwargs)
 
         self.mode = mode
 
@@ -955,7 +955,7 @@ class TransitInteraction(BenchmarkTool):
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
-class TestPTInteraction(TransitInteraction):
+class TestPTInteraction(TransitInteractionComparison):
 
     name = 'test_pt_interaction_counter'
     benchmark_data_path = get_benchmark_data(
@@ -969,7 +969,7 @@ class TestPTInteraction(TransitInteraction):
     weight = 1
 
 
-class LondonRODS(TransitInteraction):
+class LondonRODS(TransitInteractionComparison):
 
     name = 'london_rods'
     benchmark_data_path = get_benchmark_data(
@@ -982,7 +982,7 @@ class LondonRODS(TransitInteraction):
 
     weight = 1
 
-class WellingtonPTInteration(TransitInteraction):
+class WellingtonPTInteration(TransitInteractionComparison):
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
@@ -996,7 +996,7 @@ class WellingtonPTInteration(TransitInteraction):
 
     weight = 1
     
-class AucklandPTInteraction(TransitInteraction):
+class AucklandPTInteraction(TransitInteractionComparison):
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         self.benchmark_data_path = benchmark_data_path
@@ -1742,15 +1742,25 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
         return np.absolute(result - count) / count
 
 
-class ModeStats(BenchmarkTool):
+class ModeSharesComparison(BenchmarkTool):
 
-    def __init__(self, config, mode, attribute=None, **kwargs):
+    requirements = ["mode_shares"]
+    valid_modes = ['all']
+    options_enabled = True
+    
+    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
         """
         ModeStat parent object for benchmarking with mode share data.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(
+            config=config,
+            mode=mode,
+            attribute=attribute,
+            benchmark_data_path=benchmark_data_path,
+            **kwargs
+        )
 
         self.benchmark_df = pd.read_csv(
             self.benchmark_data_path,
@@ -1793,7 +1803,7 @@ class ModeStats(BenchmarkTool):
 
         return {'counters': score}
 
-class LondonModeShare(ModeStats):
+class LondonModeShare(ModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1804,7 +1814,7 @@ class LondonModeShare(ModeStats):
         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
     )
 
-class NZModeShare(ModeStats):
+class NZModeShare(ModeSharesComparison):
     
     requirements = ['mode_shares']
     def __init__(self, config, mode, benchmark_data_path):
@@ -1815,7 +1825,7 @@ class NZModeShare(ModeStats):
 
     weight = 2
 
-class ROIModeShare(ModeStats):
+class ROIModeShare(ModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1826,7 +1836,7 @@ class ROIModeShare(ModeStats):
         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
     )
 
-class SuffolkModeShare(ModeStats):
+class SuffolkModeShare(ModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1867,7 +1877,7 @@ class SqueezeTownHighwayCounters(PointsCounter):
 
 # Multimodal Test Scenario
 
-class MultimodalTownModeShare(ModeStats):
+class MultimodalTownModeShare(ModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1937,7 +1947,7 @@ class DublinCanalCordonCar(Cordon):
     modes = ['car']
 
 
-class IrelandCommuterStats(ModeStats):
+class IrelandCommuterStats(ModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1992,7 +2002,7 @@ class TestTownPeakIn(Cordon):
     modes = ['car', 'bus']
 
 
-class TestTownCommuterStats(ModeStats):
+class TestTownCommuterStats(ModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -2020,7 +2030,9 @@ class BenchmarkWorkStation(WorkStation):
         "duration_comparison": DurationComparison,
 
         # latest
-        "link_counter": LinkCounter,
+        "mode_shares_comparison": ModeSharesComparison,
+        "link_counter_comparison": LinkCounterComparison,
+        "transit_interaction_comparison": TransitInteractionComparison,
         "suffolk_screenlines": SuffolkScreenlinesCounters,
         "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
         "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
@@ -2044,9 +2056,7 @@ class BenchmarkWorkStation(WorkStation):
         "ROI_modeshares": ROIModeShare,
         "new_zealand_counters" : NewZealandCounters,
         "auckland_counters":AucklandCounters,
-        "wellington_counters":WellingtonCounters,
         "nz_modeshares": NZModeShare,
-        "auckland_counters":AucklandCounters,
         "wellington_counters":WellingtonCounters,
         "wellington_stop_passenger_counts": WellingtonPTInteration,
         "auckland_stop_passenger_counts":AucklandPTInteraction,

@@ -52,6 +52,13 @@ def test_config_v12():
     assert config
     return config
 
+@pytest.fixture
+def test_config_v13():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_v13.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
 
 def test_v12_config(test_config_v12):
     assert test_config_v12.version == 12
@@ -1270,6 +1277,338 @@ def test_finalised_mode_shares(test_plan_handler_finalised):
                 df = result.loc[cols]
                 assert df.sum().sum() == 1
 
+### TripDestinationModeShare Modeshare Handler No Attribute Slices###
+@pytest.fixture
+def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
+    handler = plan_handlers.TripDestinationModeShare(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
+    
+    resources = input_manager_v12.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert list(handler.mode_indices.keys()) == handler.modes
+    assert len(handler.classes) == 1
+    assert list(handler.class_indices.keys()) == [None]
+
+    assert handler.mode_counts.shape == (6, 1, 24)
+
+    return handler
+
+def test_activity_mode_share_without_attribute_slice_with_activities_simple(test_plan_activity_modeshare_handler_without_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_without_attribute_slice
+    string = """
+    <person id="alex">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 1
+
+def test_activity_mode_share_without_attribute_slice_with_activities_complex(test_plan_activity_modeshare_handler_without_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_without_attribute_slice
+    string = """
+    <person id="varun">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+            <leg mode="walk" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10200.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="18:00:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    string = """
+    <person id="alex">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10200.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="shop" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+            <leg mode="walk" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:40:00" >
+            </activity>
+
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    string = """
+    <person id="george">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="12:30:00" >
+            </activity>
+            <leg mode="walk" trav_time="00:01:18">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bus</attribute>
+                </attributes>
+                <route type="generic" start_link="1-5" end_link="1-3" trav_time="00:01:18" distance="10100.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-3" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="bus" trav_time="00:43:42">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bus</attribute>
+                </attributes>
+                <route type="default_pt" start_link="1-3" end_link="3-4" trav_time="00:43:42" distance="10200.0">
+                {"transitRouteId":"work_bound","boardingTime":"08:30:00","transitLineId":"city_line","accessFacilityId":"home_stop_out","egressFacilityId":"work_stop_in"}
+                </route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="130.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+           <leg mode="walk" trav_time="00:01:18">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bus</attribute>
+                </attributes>
+                <route type="generic" start_link="3-4" end_link="4-3" trav_time="00:01:18" distance="10100.0"></route>
+            </leg>            
+            <activity type="work_b" link="4-3" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
+    assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 3
+
+
+### TripDestinationModeShare Handler With Attribute Slices###
+@pytest.fixture
+def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
+    handler = plan_handlers.TripDestinationModeShare(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"], groupby_person_attribute="age")
+
+    resources = input_manager_v12.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    # assert len(handler.modes) == len(handler.resources['output_config'].modes)
+    assert list(handler.mode_indices.keys()) == handler.modes
+
+    assert len(handler.classes) == 3
+    assert set(handler.classes) == {"yes", "no", None}
+    
+    assert handler.mode_counts.shape == (6, 3, 24)
+
+    return handler
+
+def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_handler_age_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_age_attribute_slice
+    string = """
+    <person id="nick">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">yes</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    string = """
+    <person id="chris">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+    # mode
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
+    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+
+    # class
+    assert np.sum(handler.mode_counts[:, handler.class_indices['yes'], :]) == 1
+    assert np.sum(handler.mode_counts[:, handler.class_indices['no'], :]) == 1
+
+@pytest.fixture
+def test_activity_modeshare_plan_handler_finalised(test_plan_activity_modeshare_handler_age_attribute_slice):
+    handler = test_plan_activity_modeshare_handler_age_attribute_slice
+    # plans = test_plan_activity_modeshare_handler_age_attribute_slice.resources['plans']
+
+    string = """
+    <person id="nick">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">yes</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    string = """
+    <person id="chris">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="bike" dep_time="17:30:00" trav_time="00:52:31">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bike</attribute>
+                </attributes>
+                <route type="generic" start_link="3-4" end_link="1-2" trav_time="00:52:31" distance="13130.0"></route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    handler.finalise()
+    return handler
+
+def test_activity_finalised_mode_counts(test_activity_modeshare_plan_handler_finalised):
+    handler = test_activity_modeshare_plan_handler_finalised
+    for name, result in handler.results.items():
+        if 'counts' in name:
+            cols = handler.modes
+            if isinstance(result, pd.DataFrame):
+                for c in cols:
+                    assert c in result.columns
+                df = result.loc[:, cols]
+                assert np.sum(df.values) == 2 / handler.config.scale_factor
+
+                if 'class' in result.columns:
+                    assert set(result.loc[:, 'class']) == set(handler.classes)
+                if 'hour' in result.columns:
+                    assert set(result.loc[:, 'hour']) == set(range(24))
+            else:
+                for c in cols:
+                    assert c in result.index
+                df = result.loc[cols]
+                assert np.sum(df.values) == 2 / handler.config.scale_factor
+
+def test_activity_finalised_mode_shares(test_activity_modeshare_plan_handler_finalised):
+    handler = test_activity_modeshare_plan_handler_finalised
+
+    for name, result in handler.results.items():
+        if 'counts' not in name:
+            cols = handler.modes
+            if isinstance(result, pd.DataFrame):
+                for c in cols:
+                    assert c in result.columns
+                df = result.loc[:, cols]
+                assert df.sum().sum() == 1
+
+                if 'class' in result.columns:
+                    assert set(result.loc[:, 'class']) == set(handler.classes)
+                if 'hour' in result.columns:
+                    assert set(result.loc[:, 'hour']) == set(range(24))
+            else:
+                for c in cols:
+                    assert c in result.index
+                df = result.loc[cols]
+                assert df.sum().sum() == 1
 
 # Plan Handler Manager
 def test_load_plan_handler_manager(test_config, test_paths):
