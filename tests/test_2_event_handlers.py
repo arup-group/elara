@@ -1169,6 +1169,8 @@ def test_vehicle_stop_to_stop_finalise_bus(
         assert c in gdf.columns
         assert 'total' in gdf.columns
     df = gdf.loc[:, cols]
+    print(df.values.sum())
+    print(gdf.total)
     assert np.sum(df.values) == 4 / handler.config.scale_factor
     assert np.sum(df.values) == gdf.total.sum()
     if 'subpopulation' in gdf.columns:

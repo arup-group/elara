@@ -1622,7 +1622,8 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise results dictionary
-        self.counts = dict()
+        self.counts = dict() # passenger counts
+        self.veh_counts = dict() # vehicle counts
 
         # Initialise agent status mapping
         self.veh_occupancy = dict()  # {veh_id : {attribute_class: COUNT}}
@@ -1700,9 +1701,11 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
                         midx = (prev_stop_id, stop_id, veh_id, attribute_class, hour)
                         if self.counts.get(midx) is None:
                             self.counts[midx] = occupancy
+                            self.veh_counts[midx] = 1
                         else:
-                            self.logger.warning(f'Vehicle {veh_id} arrives at stop {stop_id} more than once.')
+                            # self.logger.warning(f'Vehicle {veh_id} arrives at stop {stop_id} more than once.')
                             self.counts[midx] += occupancy
+                            self.veh_counts[midx] += 1
 
     def finalise(self):
         """
@@ -1714,7 +1717,14 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         del self.veh_occupancy
         names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
         counts_df = pd.Series(self.counts)
+
+        # include vehicle counts (in case a vehicle arrives at a stop more than once)
+        counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
         counts_df.index.names = names + ['to_stop_arrival_hour']
+        counts_df.columns = ['pax_counts', 'veh_counts']
+        counts_df = counts_df.reset_index().set_index(names + ['to_stop_arrival_hour','veh_counts'])['pax_counts'] # move vehicle counts to the series index
+
+        # scale 
         counts_df *= 1.0 / self.config.scale_factor
 
         del self.counts
@@ -1731,7 +1741,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
 
             counts_df.index.name = n
 
-        counts_df = counts_df.reset_index().set_index(names)
+        counts_df = counts_df.reset_index().set_index(names+['veh_counts'])
         counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
         counts_df['total'] = counts_df.sum(1)
         
@@ -1753,7 +1763,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
             self.result_dfs[key] = counts_df
 
         # # calc sum across all recorded attribute classes
-        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id','route']).sum()
+        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id','route','veh_counts']).sum()
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
