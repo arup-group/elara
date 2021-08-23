@@ -1107,36 +1107,28 @@ def test_vehicle_stop_to_stop_process_events(
     veh_index = handler.veh_ids_indices['bus1']
     veh2_index = handler.veh_ids_indices['bus2']
     assert handler.veh_occupancy == {'bus1': {'poor': 1, 'rich': 1}}
-    assert np.sum(handler.counts) == 2
+    assert sum(handler.counts.values()) == 2
 
     handler.process_event(person_leaves_veh_event)
     handler.process_event(person_enters_veh2_event) # person 1 interchanges from bus1 to bus2
     handler.process_event(veh_arrives_facilty_event3)
     handler.process_event(veh2_arrives_facilty_event3)
+    counts_ser = pd.Series(handler.counts)
 
     assert handler.veh_occupancy == {'bus1': {'poor': 0, 'rich': 1}, 'bus2': {'poor': 1}}
-    assert np.sum(handler.counts) == 4
+    assert sum(handler.counts.values()) == 4
 
-    stop_index1 = handler.elem_indices['home_stop_out']
-    stop_index2 = handler.elem_indices['work_stop_in']
-    stop_index3 = handler.elem_indices['home_stop_in']
-    class_index = handler.class_indices['rich']
     period = 7
-
-    assert np.sum(handler.counts[stop_index1, stop_index2, veh_index, :, :]) == 2
-    assert np.sum(handler.counts[stop_index1, stop_index2, veh_index, class_index, :]) == 1
-    assert np.sum(handler.counts[:, :, veh_index, :, period]) == 2
+    assert np.sum(counts_ser.loc['home_stop_out', 'work_stop_in', 'bus1', :, :]) == 2
+    assert np.sum(counts_ser.loc['home_stop_out', 'work_stop_in', 'bus1', 'rich', :]) == 1
+    assert np.sum(counts_ser.loc[:, :, 'bus1', :, period]) == 2
 
     period = 8
-
-    assert np.sum(handler.counts[stop_index2, stop_index1, veh_index, :, :]) == 1
-    assert np.sum(handler.counts[stop_index2, stop_index1, veh2_index, :, :]) == 1
-    assert np.sum(handler.counts[:, :, veh_index, class_index, :]) == 2
-    assert np.sum(handler.counts[:, :, veh_index, :, period]) == 1
-    assert np.sum(handler.counts[:, :, :, :, period]) == 2
-
-    period = 9
-    assert np.sum(handler.counts[:, :, :, :, period]) == 0
+    assert np.sum(counts_ser.loc['work_stop_in', 'home_stop_out', 'bus1', :, :]) == 1
+    assert np.sum(counts_ser.loc['work_stop_in', 'home_stop_out', 'bus2', :, :]) == 1
+    assert np.sum(counts_ser.loc[:, :, 'bus1', 'rich', :]) == 2
+    assert np.sum(counts_ser.loc[:, :, 'bus1', :, period]) == 1
+    assert np.sum(counts_ser.loc[:, :, :, :, period]) == 2
 
 def test_vehicle_stop_to_stop_finalise_bus(
         bus_vehicle_stop_to_stop_handler,
@@ -1170,7 +1162,7 @@ def test_vehicle_stop_to_stop_finalise_bus(
     handler.finalise()
 
     gdf = handler.result_dfs["vehicle_stop_to_stop_passenger_counts_bus"]
-    assert set(gdf.index.get_level_values('veh_id').unique()) == {'bus1','bus2'}
+    assert set(gdf['veh_id'].unique()) == {'bus1','bus2'}
 
     cols = list(range(handler.config.time_periods))
     for c in cols:
