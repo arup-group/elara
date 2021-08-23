@@ -1621,14 +1621,8 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
-        # Initialise results tablescd
-        self.counts = np.zeros((
-            len(self.elem_indices),
-            len(self.elem_indices),
-            len(self.veh_ids_indices),
-            len(self.class_indices),
-            self.config.time_periods
-            ))
+        # Initialise results dictionary
+        self.counts = dict()
 
         # Initialise agent status mapping
         self.veh_occupancy = dict()  # {veh_id : {attribute_class: COUNT}}
@@ -1699,21 +1693,16 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
 
                 if prev_stop_id is not None:
                     time = float(elem.get("time"))
+                    hour = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
                     occupancy_dict = self.veh_occupancy.get(veh_id, {})
 
-                    v = self.veh_ids_indices[veh_id] # vehicle index
                     for attribute_class, occupancy in occupancy_dict.items():
-                        o, d, y, z = table_position_4d(
-                            self.elem_indices,
-                            self.elem_indices,
-                            self.class_indices,
-                            self.config.time_periods,
-                            prev_stop_id,
-                            stop_id,
-                            attribute_class,
-                            time
-                        )
-                        self.counts[o, d, v, y, z] += occupancy
+                        midx = (prev_stop_id, stop_id, veh_id, attribute_class, hour)
+                        if self.counts.get(midx) is None:
+                            self.counts[midx] = occupancy
+                        else:
+                            self.logger.warning(f'Vehicle {veh_id} arrives at stop {stop_id} more than once.')
+                            self.counts[midx] += occupancy
 
     def finalise(self):
         """
@@ -1723,18 +1712,13 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         """
         # TODO this is a mess. requires some forcing to string hacks for None. The pd ops are forcing None to np.nan
         del self.veh_occupancy
-
-        # Scale final counts
-        self.counts *= 1.0 / self.config.scale_factor
-
         names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
-        self.classes = [str(c) for c in self.classes]
-        indexes = [self.elem_ids, self.elem_ids, self.veh_ids, self.classes, range(self.config.time_periods)]
-        index = pd.MultiIndex.from_product(indexes, names=names+['to_stop_arrival_hour'])
-        counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
-        
+        counts_df = pd.Series(self.counts)
+        counts_df.index.names = names + ['to_stop_arrival_hour']
+        counts_df *= 1.0 / self.config.scale_factor
+
         del self.counts
-        counts_df = counts_df.unstack(level='to_stop_arrival_hour').sort_index()
+        counts_df = counts_df.unstack(level='to_stop_arrival_hour').sort_index().fillna(0)
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
@@ -1750,23 +1734,26 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index(names)
         counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
         counts_df['total'] = counts_df.sum(1)
-        counts_df = counts_df[counts_df['total']>0] # remove zero-count entries
-
+        
         counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
         counts_df.drop('from_stop_geometry', axis=1, inplace=True)
         counts_df.drop('to_stop_geometry', axis=1, inplace=True)
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
+        #################
+        # temp: unit tests currently require all hours of the day as columns
+        # TODO: planning to remove this requirement - then delete this code block
+        for h in range(0,24):
+            if h not in counts_df.columns:
+                counts_df[h] = 0
+        #################
+
         if self.groupby_person_attribute:
             key = f"{self.name}_{self.groupby_person_attribute}"
             self.result_dfs[key] = counts_df
 
-        # TODO make below pandas ops more efficient
-
         # # calc sum across all recorded attribute classes
-        totals_df = counts_df.reset_index().groupby(
-            ['from_stop', 'to_stop', 'veh_id','route']
-            ).sum().reset_index().set_index(['from_stop', 'to_stop', 'veh_id','route'])
+        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id','route']).sum()
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
@@ -1777,15 +1764,12 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
                     stop_info, how="left"
                 )
             totals_df.index.name = n
-
-        totals_df = totals_df.reset_index().set_index(['from_stop', 'to_stop', 'veh_id','route'])
         
         totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)]
         totals_df.drop('from_stop_geometry', axis=1, inplace=True)
         totals_df.drop('to_stop_geometry', axis=1, inplace=True)
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
 
-        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
         key = f"{self.name}"
         self.result_dfs[key] = totals_df
 
