@@ -19,11 +19,11 @@ output_config_path = "./tests/test_fixtures/output_config.xml"
 path = "./outputs"
 
 [event_handlers]
-#link_vehicle_counts = ["car", "bus"]
-#stop_passenger_counts = ["bus"]
-#stop_passenger_waiting = ["all"]
-#link_passenger_counts = ["bus"]
-#vehicle_departure_log = ["all"]
+link_vehicle_counts = ["car", "bus"]
+stop_passenger_counts = ["bus"]
+stop_passenger_waiting = ["all"]
+link_passenger_counts = ["bus"]
+vehicle_departure_log = ["all"]
 #stop_to_stop_passenger_counts = ["bus"]
 vehicle_stop_to_stop_passenger_counts = ["bus"]
 
