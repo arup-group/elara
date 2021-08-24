@@ -40,6 +40,13 @@
 
 <!-- ====================================================================== -->
 
+	<person id="empty_plan">
+		<plan score="0.0" selected="yes">
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
 	<person id="fatema">
 		<attributes>
 			<attribute name="subpopulation" class="java.lang.String">poor</attribute>

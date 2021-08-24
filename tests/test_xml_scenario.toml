@@ -20,6 +20,7 @@ road_pricing = "./tests/test_fixtures/road_pricing.xml"
 link_vehicle_counts = ["car"]
 link_passenger_counts = ["bus", "train"]
 stop_passenger_counts = ["bus", "train"]
+vehicle_departure_log = ["all"]
 
 [plan_handlers]
 mode_shares = ["all"]
@@ -28,7 +29,7 @@ mode_shares = ["all"]
 vkt = ["car"]
 
 [benchmarks]
-test_town_cordon = ["car"]
+test_link_cordon = ["car"]
 
 [outputs]
 path = "./tests/test_intermediate_data"

@@ -1,0 +1,23 @@
+[scenario]
+name = "test_town"
+time_periods = 24
+scale_factor = 0.0001
+crs = "EPSG:27700"
+verbose = false
+version = 11
+
+[inputs]
+events = "./tests/test_fixtures/output_events.xml"
+network = "./tests/test_fixtures/output_network.xml"
+transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
+transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
+attributes = "./tests/test_fixtures/output_personAttributes.xml"
+plans= "./tests/test_fixtures/output_plans.xml"
+output_config_path = "./tests/test_fixtures/output_config.xml"
+
+[outputs]
+path = "./outputs"
+
+[benchmarks]
+link_counter--A = {modes = ["car"], benchmark_data_path = "./elara/benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
+link_counter--B = {modes = ["car"], benchmark_data_path = "./elara/benchmark_data/test_town/test_town_cordon/test_link_counter_duplicate.json"}

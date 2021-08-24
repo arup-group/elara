@@ -1,4 +1,4 @@
-import ast
+import json
 import os.path
 import toml
 from elara.factory import WorkStation, Tool
@@ -68,15 +68,22 @@ class Config:
 
         # convert list-format handler arguments to dictionary
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
-            for handler in self.settings.get(handler_group):
+            for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]
-                    if isinstance(options, list):
+
+                    # check for name and add to options
+                    if len(handler.split("--")) > 1:
+                        options["name"] = handler.split("--")[1]
+                    
+                    if not options:
+                        self.settings[handler_group][handler] = {'modes': ["all"]}
+                    elif isinstance(options, list):
                         self.settings[handler_group][handler] = {'modes': options}
                     elif isinstance(options, dict):
                         # if no modes option is specified, assume "all"
                         if 'modes' not in options:
-                            self.settings[handler_group][handler] = {'modes': ['all']}
+                            self.settings[handler_group][handler]["modes"] = ['all']
 
 
         self.load_required_settings()
@@ -100,7 +107,7 @@ class Config:
         self.logger.debug(f'Required Post Processors = {self.post_processors}')
         self.logger.debug(f'Required Benchmarks = {self.benchmarks}')
         self.logger.debug(f'Contract = {self.contract}')
-        self.check_handler_renamed()                      
+        self.check_handler_renamed()
 
     def load_required_settings(self):
 
@@ -219,7 +226,7 @@ class Config:
     def valid_scale_factor(inp):
         """
         Raise exception if specified scale factor is outside an acceptable range, i.e.
-        beyond (0, ], otherwise return scale factor.
+        beyond (0, 1], otherwise return scale factor.
         :param inp: Scale factor
         :return: Pass through scale factor if valid
         """
@@ -311,28 +318,73 @@ class Config:
             'mode_share':'mode_shares'
         }
         for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
-            for handler in self.settings.get(handler_group):
-                if handler in renaming_dict.keys():                      
+            for handler in self.settings.get(handler_group, []):
+                if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
-    def override(self, path_override):
+    def override(self, path_override, dump_log=True):
         """
         :param path_override: override the config input and output paths
+        "param dump_log: (bool) optionally dump overriden config to disk
         """
-        # Construct a dictionary from the path_overrides str
+        self.logger.warning(f"All input paths and output path being overridden with {path_override}")
+
         for path in self.settings['inputs']:
+            if path == "road_pricing":  # assume that road pricing file is not overridden
+                continue
             file_name = self.settings['inputs'][path].split('/')[-1]
-            self.settings['inputs'][path] = "{}/{}".format(path_override, file_name)
+            self.settings['inputs'][path] = os.path.join(path_override, file_name)
 
         output_dir = self.settings['outputs']['path'].split('/')[-1]
-        self.settings['outputs']['path'] = f"{path_override}/{output_dir}"
-        self.output_path = f"{path_override}/{output_dir}"
+        self.settings['outputs']['path'] = os.path.join(path_override, output_dir)
+        self.output_path = os.path.join(path_override, output_dir)
+
+        if dump_log:
+            self.dump_settings_to_disk(
+                os.path.join(path_override, "elara_override_log.json")
+            )
+
+    def set_paths_root(self, root, dump_log=True):
+        """
+        Add root path to all configured paths (inputs, output directory and benchmark data paths).
+        :param root: root path
+        "param dump_log: (bool) optionally dump overriden config to disk
+        """
+        self.logger.warning(f"""
+            All input paths, output path and data paths being 'rooted' with {root}.
+            This requires that all configured paths are relative.
+            """)
+
+        for path in self.settings['inputs']:
+            self.settings['inputs'][path] = os.path.join(root, self.settings['inputs'][path])
+
+        self.settings['outputs']['path'] = os.path.join(root, self.settings['outputs']['path'])
+        self.output_path = self.settings['outputs']['path']
+
+        for handler, options in self.settings.get("benchmarks", {}).items():
+            if 'benchmark_data_path' in options:
+                self.settings['benchmarks'][handler]['benchmark_data_path'] = os.path.join(root, options['benchmark_data_path'])
+                self.benchmarks[handler]['benchmark_data_path'] = options['benchmark_data_path']
+
+        if dump_log:
+            self.dump_settings_to_disk(
+                os.path.join(root, "elara_override_log.json")
+            )
+
+
+    def dump_settings_to_disk(self, path):
+        """
+        Dump json of self.settings to path.
+        path (str): path.json
+        """
+        with open(path, "w") as fp:
+            json.dump(self.settings , fp) 
 
 
 class PathTool(Tool):
 
-    def __init__(self, config, option=None):
-        super().__init__(config, option)
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config=config, mode=None, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 
 
