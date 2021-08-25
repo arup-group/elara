@@ -12,10 +12,16 @@ parser = argparse.ArgumentParser(description='SEE')
 # Add the arguments
 parser.add_argument('--input',type=str,help='the path to the input trips_logs_all_trips.csv')
 parser.add_argument('--output',type=str,help='the path to the desired output folder')
+parser.add_argument('--testing',type=bool,default=False,help='Run on a smaller subset of the data')
 
 args = parser.parse_args()
 
-trips = pd.read_csv(args.input)[0:5000]
+trips = pd.read_csv(args.input)
+
+if args.testing == True:
+    print("TESTING MODE")
+    print("Running on subset of 5000")
+    trips = trips[5000]
 
 print("{} trips loaded from {}".format(len(trips),args.input))
 
