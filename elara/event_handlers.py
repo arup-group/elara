@@ -1545,6 +1545,245 @@ class StopToStopPassengerCounts(EventHandlerTool):
         self.result_dfs[key] = totals_df
 
 
+
+class VehicleStopToStopPassengerCounts(EventHandlerTool):
+    """
+    Build Passenger Counts between stops for given mode in mode vehicles.
+    """
+
+    requirements = [
+        'events',
+        'network',
+        'transit_schedule',
+        'attributes',
+    ]
+    invalid_modes = ['car']
+
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param mode: str, mode
+        """
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        self.groupby_person_attribute = groupby_person_attribute
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+        self.veh_occupancy = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build Handler.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Check for car
+        if self.mode in ['car','walk','bike']:
+            raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.mode}")
+
+        # Initialise class attributes
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
+
+        # Get vehicle IDs and generate vehicle indices
+        veh_ids_list = resources['transit_schedule'].mode_to_veh_map.get(self.mode)
+        self.veh_ids, self.veh_ids_indices = self.generate_elem_ids(veh_ids_list)
+
+        # Vehicle --> route map
+        self.veh_route = resources['transit_schedule'].veh_to_route_map
+
+        # Initialise element attributes
+        self.elem_gdf = resources['transit_schedule'].stop_gdf
+        # get stops used by this mode
+        viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
+        if viable_stops is None:
+            self.logger.warning(
+                f"""
+                No viable stops found for mode:{self.mode} in TransitSchedule,
+                this may be because the Schedule modes do not match the configured
+                modes. Elara will continue with all stops found in schedule.
+                """
+                )
+        else:
+            self.logger.debug(f'Filtering stops for mode:{self.mode}.')
+            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise results dictionary
+        self.counts = dict() # passenger counts
+        self.veh_counts = dict() # vehicle counts
+
+        # Initialise agent status mapping
+        self.veh_occupancy = dict()  # {veh_id : {attribute_class: COUNT}}
+        self.veh_tracker = dict()  # {veh_id: last_stop}
+
+    def process_event(self, elem):
+        """
+        Iteratively aggregate 'PersonEntersVehicle' and 'PersonLeavesVehicle'
+        events to determine passenger volumes by stop interactions.
+        :param elem: Event XML element
+
+        The events of interest to this handler look like:
+
+            <event time="300.0"
+                type="PersonEntersVehicle"
+                person="pt_veh_41173_bus_Bus"
+                vehicle="veh_41173_bus"/>
+            <event time="600.0"
+                type="PersonLeavesVehicle"
+                person="pt_veh_41173_bus_Bus"
+                vehicle="veh_41173_bus"/>
+            <event time="27000.0"
+                type="VehicleArrivesAtFacility"
+                vehicle="bus1"
+                facility="home_stop_out"
+                delay="Infinity"/>
+        """
+        event_type = elem.get("type")
+
+        if event_type == "PersonEntersVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
+
+                if self.veh_occupancy.get(veh_id, None) is None:
+                    self.veh_occupancy[veh_id] = {attribute_class: 1}
+                elif not self.veh_occupancy[veh_id].get(attribute_class, None):
+                    self.veh_occupancy[veh_id][attribute_class] = 1
+                else:
+                    self.veh_occupancy[veh_id][attribute_class] += 1
+
+        elif event_type == "PersonLeavesVehicle":
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            # Filter out PT drivers from transit volume statistics
+            if agent_id[:2] != "pt" and veh_mode == self.mode:
+                attribute_class = self.attributes.get(agent_id, {}).get(self.groupby_person_attribute, None)
+
+                if self.veh_occupancy[veh_id][attribute_class]:
+                    self.veh_occupancy[veh_id][attribute_class] -= 1
+                    if not self.veh_occupancy[veh_id]:
+                        self.veh_occupancy.pop(veh_id, None)
+
+        elif event_type == "VehicleArrivesAtFacility":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+
+            if veh_mode == self.mode:
+                stop_id = elem.get('facility')
+                prev_stop_id = self.veh_tracker.get(veh_id, None)
+                self.veh_tracker[veh_id] = stop_id
+
+                if prev_stop_id is not None:
+                    time = float(elem.get("time"))
+                    hour = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
+                    occupancy_dict = self.veh_occupancy.get(veh_id, {})
+
+                    for attribute_class, occupancy in occupancy_dict.items():
+                        midx = (prev_stop_id, stop_id, veh_id, attribute_class, hour)
+                        if self.counts.get(midx) is None:
+                            self.counts[midx] = occupancy
+                            self.veh_counts[midx] = 1
+                        else:
+                            # self.logger.warning(f'Vehicle {veh_id} arrives at stop {stop_id} more than once.')
+                            self.counts[midx] += occupancy
+                            self.veh_counts[midx] += 1
+
+    def finalise(self):
+        """
+        Following event processing, the raw events table will contain passenger
+        counts by od pair, attribute class and time slice. The only thing left to do is scale by the
+        sample size and create dataframes.
+        """
+        # TODO this is a mess. requires some forcing to string hacks for None. The pd ops are forcing None to np.nan
+        del self.veh_occupancy
+        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
+        counts_df = pd.Series(self.counts)
+
+        # include vehicle counts (in case a vehicle arrives at a stop more than once)
+        counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
+        counts_df.index.names = names + ['to_stop_arrival_hour']
+        counts_df.columns = ['pax_counts', 'veh_counts']
+        counts_df = counts_df.reset_index().set_index(names + ['to_stop_arrival_hour','veh_counts'])['pax_counts'] # move vehicle counts to the series index
+
+        # scale 
+        counts_df *= 1.0 / self.config.scale_factor
+
+        del self.counts
+        counts_df = counts_df.unstack(level='to_stop_arrival_hour').sort_index().fillna(0)
+
+        # Join stop data and build geometry
+        for n in ("from_stop", "to_stop"):
+            counts_df = counts_df.reset_index().set_index(n)
+            stop_info = self.elem_gdf.copy()
+            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+            counts_df = counts_df.join(
+                    stop_info, how="left"
+                )
+
+            counts_df.index.name = n
+
+        counts_df = counts_df.reset_index().set_index(names+['veh_counts'])
+        counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
+        counts_df['total'] = counts_df.sum(1)
+        
+        counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
+        counts_df.drop('from_stop_geometry', axis=1, inplace=True)
+        counts_df.drop('to_stop_geometry', axis=1, inplace=True)
+        counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
+
+        #################
+        # temp: unit tests currently require all hours of the day as columns
+        # TODO: planning to remove this requirement - then delete this code block
+        for h in range(0,24):
+            if h not in counts_df.columns:
+                counts_df[h] = 0
+        #################
+
+        if self.groupby_person_attribute:
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            self.result_dfs[key] = counts_df
+
+        # # calc sum across all recorded attribute classes
+        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id','route','veh_counts']).sum()
+
+        # Join stop data and build geometry
+        for n in ("from_stop", "to_stop"):
+            totals_df = totals_df.reset_index().set_index(n)
+            stop_info = self.elem_gdf.copy()
+            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+            totals_df = totals_df.join(
+                    stop_info, how="left"
+                )
+            totals_df.index.name = n
+        
+        totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)]
+        totals_df.drop('from_stop_geometry', axis=1, inplace=True)
+        totals_df.drop('to_stop_geometry', axis=1, inplace=True)
+        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
+
+        key = f"{self.name}"
+        self.result_dfs[key] = totals_df
+
+
 class VehicleDepartureLog(EventHandlerTool):
     """
     Extract vehicle depart times at stops.
@@ -1624,6 +1863,7 @@ class EventHandlerWorkStation(WorkStation):
         "stop_passenger_waiting": StopPassengerWaiting,
         "vehicle_passenger_graph": VehiclePassengerGraph,
         "stop_to_stop_passenger_counts": StopToStopPassengerCounts,
+        "vehicle_stop_to_stop_passenger_counts": VehicleStopToStopPassengerCounts,
         "vehicle_departure_log": VehicleDepartureLog
     }
 
