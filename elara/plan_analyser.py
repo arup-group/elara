@@ -21,7 +21,7 @@ trips = pd.read_csv(args.input)
 if args.testing == True:
     print("TESTING MODE")
     print("Running on subset of 5000")
-    trips = trips[5000]
+    trips = trips[:5000]
 
 print("{} trips loaded from {}".format(len(trips),args.input))
 
