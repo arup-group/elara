@@ -38,7 +38,7 @@ trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].t
 trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
 
 print("Writing all trips csv to {} ".format(args.output))
-trips.to_csv(args.output + "./allTrips.csv")
+trips.to_csv(args.output + "/allTrips.csv")
 
 # we use the innovation_hash to identify a summary, per agent
 plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
@@ -101,7 +101,7 @@ gdf = pd.concat([selectedPlans,unSelectedPlans])
 
 # kepler'able geojson
 print("Writing all plans GeoJSON to {} ".format(args.output))
-gdf.to_file(args.output + "./AllPlans.geojson", driver="GeoJSON")
+gdf.to_file(args.output + "/AllPlans.geojson", driver="GeoJSON")
 
 # creation of a df where car is selected
 # but PT exists in their unchosen plans
@@ -112,4 +112,4 @@ carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
 unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
 unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.dominantTripMode.isin(['bus','rail'])]
 print("Writing CarModeShiftOpportunities GeoJSON to {} ".format(args.output))
-unSelectedPlansCarSelected.to_file(args.output +  "./CarModeShiftOpportunities.geojson",driver='GeoJSON')
+unSelectedPlansCarSelected.to_file(args.output +  "/CarModeShiftOpportunities.geojson",driver='GeoJSON')
