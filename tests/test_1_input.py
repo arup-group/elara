@@ -365,13 +365,33 @@ def test_loading_xml_attributes(test_xml_config, test_paths):
 
 
 # test loading experienced plans
-def test_loading_v12_attributes_from_experienced_plans(test_xml_config_v12, test_paths_v12):
-    attribute = inputs.Attributes(test_xml_config_v12)
-    attribute.build(test_paths_v12.resources)
+@pytest.fixture
+def test_experienced_plans_config():
+    config_path = os.path.join(test_dir, 'test_experienced_plans_scenario.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
+
+@pytest.fixture
+def test_paths_experienced(test_experienced_plans_config):
+    paths = PathFinderWorkStation(test_experienced_plans_config)
+    paths.connect(managers=None, suppliers=None)
+    paths.load_all_tools()
+    paths.build()
+    assert set(paths.resources) == set(paths.tools)
+    return paths
+
+
+def test_loading_v12_attributes_from_experienced_plans(test_experienced_plans_config, test_paths_experienced):
+    attribute = inputs.Attributes(test_experienced_plans_config)
+    attribute.build(test_paths_experienced.resources)
     assert len(attribute.attributes) == 6
     assert attribute.attributes['empty_plan'] == {}
+    assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
 
 
+# gzipped plans
 def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):
     attribute = inputs.Attributes(test_gzip_config)
     attribute.build(test_zip_paths.resources)
