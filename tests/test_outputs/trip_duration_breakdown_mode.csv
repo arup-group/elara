@@ -1,0 +1,28 @@
+,mode,duration,trips
+0,bike,0 to 5 min,0
+1,bike,5 to 10 min,0
+2,bike,10 to 15 min,0
+3,bike,15 to 30 min,0
+4,bike,30 to 45 min,0
+5,bike,45 to 60 min,2
+6,bike,60 to 90 min,0
+7,bike,90 to 120 min,0
+8,bike,120+ min,0
+9,bus,0 to 5 min,0
+10,bus,5 to 10 min,0
+11,bus,10 to 15 min,0
+12,bus,15 to 30 min,1
+13,bus,30 to 45 min,0
+14,bus,45 to 60 min,2
+15,bus,60 to 90 min,1
+16,bus,90 to 120 min,0
+17,bus,120+ min,0
+18,car,0 to 5 min,1
+19,car,5 to 10 min,3
+20,car,10 to 15 min,0
+21,car,15 to 30 min,0
+22,car,30 to 45 min,0
+23,car,45 to 60 min,0
+24,car,60 to 90 min,0
+25,car,90 to 120 min,0
+26,car,120+ min,0
