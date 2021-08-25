@@ -1844,7 +1844,7 @@ class SuffolkModeShare(ModeSharesComparison):
 
     weight = 2
     benchmark_data_path = get_benchmark_data(
-        os.path.join('suffolk', 'mode_share_validation', 'combined_pop_mode_share_20210601_10pct.csv')
+        os.path.join('suffolk', 'mode_share_validation', 'combined_pop_mode_share_20210816_10pct.csv')
     )
 # Highway Counters
 
