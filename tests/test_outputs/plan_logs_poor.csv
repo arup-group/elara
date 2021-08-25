@@ -1,0 +1,9 @@
+,pid,subpop,plan,seq,start,distance,mode,prev_mode,origin_activity,destination_activity,act_duration,selected,score,total_trips,total_duration,total_distance
+0,fatema,poor,0,1,28800,10100.0,bike,NA,home,work,31049,yes,111.87873939522729,2,51297,20200.0
+1,fatema,poor,0,2,63000,10100.0,bike,bike,work,home,20248,yes,111.87873939522729,2,51297,20200.0
+2,fred,poor,0,1,28800,10100.0,pt,NA,home,work,34122,yes,113.01188458431385,2,57443,20200.0
+3,fred,poor,0,2,63000,10100.0,pt,pt,work,home,23321,yes,113.01188458431385,2,57443,20200.0
+4,gerry,poor,0,1,25200,10100.0,pt,NA,home,work,34122,yes,105.5293475373047,2,61043,20200.0
+5,gerry,poor,0,2,59400,10100.0,pt,pt,work,home,26921,yes,105.5293475373047,2,61043,20200.0
+6,nick,poor,0,1,28800,10000.0,car,NA,home,work,34196,yes,129.592238766919,2,57141,20000.0
+7,nick,poor,0,2,63000,10000.0,car,car,work,home,22945,yes,129.592238766919,2,57141,20000.0

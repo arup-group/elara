@@ -19,26 +19,27 @@ output_config_path = "./tests/test_fixtures/output_config.xml"
 path = "./outputs"
 
 [event_handlers]
-link_vehicle_counts = ["car", "bus"]
-link_passenger_counts = ["bus"]
-stop_passenger_counts = ["bus"]
-stop_passenger_waiting = ["all"]
+#link_vehicle_counts = ["car", "bus"]
+#stop_passenger_counts = ["bus"]
+#stop_passenger_waiting = ["all"]
+#link_passenger_counts = ["bus"]
+vehicle_departure_log = ["all"]
 
 [plan_handlers]
-mode_shares = ["all"]
+mode_shares = {attributes=["age"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
 
 [post_processors]
-vkt = ["car"]
-plan_summary = ["all"]
-trip_duration_breakdown = ["all"]
-trip_euclid_distance_breakdown = ["all"]
+#plan_summary = ["all"]
+#vkt = ["car"]
+#trip_duration_breakdown = ["all"]
+#trip_euclid_distance_breakdown = ["all"]
 
 [benchmarks]
-test_pt_interaction_counter = ["bus"]
-test_link_cordon = ["car"]
-test_duration_comparison = ["all"]
+#test_pt_interaction_counter = ["bus"]
+#test_link_cordon = ["car"]
+#test_duration_comparison = ["all"]
 #test_euclidean_distance_comparison = {modes=["all"]}
-duration_comparison = {modes = ["all"], benchmark_data_path = "./tests/test_outputs/trip_duration_breakdown_all.csv"}
+#duration_comparison = {modes = ["all"], benchmark_data_path = "./tests/test_outputs/trip_duration_breakdown_all.csv"}

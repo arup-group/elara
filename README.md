@@ -6,7 +6,7 @@ MATSim model runs output a variety of `xml` and `xml.gz` formatted data. Some of
 
 Elara allows processing of these outputs into more easilly useable forms and formats. For example extracting hourly flows of vehicles for all links in a network (`volume_counts`). Elara outputs are typically some form of aggregation of simulation outputs. Elara outputs are typically made available in tabular (`csv`) and spatial (`geojson`) formats. Spatial representations are converted to EPSG:4326, which works in kepler.
 
-### Required Inputs
+## Inputs
 
 Inputs to Elara are MATSim format output files, eg:
 
@@ -17,21 +17,19 @@ Inputs to Elara are MATSim format output files, eg:
 * **attributes** = "./tests/test_fixtures/output_personAttributes.xml"
 * **plans** = "./tests/test_fixtures/output_plans.xml"
 * **output_config_path** = "./tests/test_fixtures/output_config.xml"
-
-In most cases these Elara inputs may be zipped (`xml.gz`).
-
-### Optional Inputs
-
-If you are running a scenario with road pricing, it will be needed to calculate toll log outputs. 
-
 * **road pricing config** = "./tests/test_fixtures/roadpricing.xml"
 
+Depending on what outputs you require from elara, some of these inputs may not be required, but it is often conveneient to have them all available as a default. In most cases these Elara inputs may be zipped (`xml.gz`).
+
+If you are running a scenario with road pricing, it will be needed to calculate toll log outputs.
+
 ### Outputs
+
 Elara supports and can be selectively configured to output a growing number of outputs. The units responsible
 for each output are referred to as 'handlers'. There are four main types of output/handler:
 
 * **Event Based Handlers/Outputs**:
-These are processed by streaming (in order) through all output events from simulation. 
+These are processed by streaming (in order) through all output events from simulation.
   * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice. Counts **vehicles** entering link (PT vehicles counted once).
   * ``link_passenger_counts``: Produce link passenger counts by time slice. Counts **agents** entering link.
   * ``link_vehicle_speeds``: Produce average vehicle speeds across link.
@@ -39,6 +37,7 @@ These are processed by streaming (in order) through all output events from simul
   * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
   * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_departure_log``: Vehicle departures and delays from facilities (stops in the case of PT).
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 * **Plan Based Handlers/Outputs**:
@@ -46,6 +45,7 @@ These are processed by streaming through all output plans from simulation. Compa
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
   * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy.
   * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -62,30 +62,16 @@ These are outputs produced through additional post-processing of the above outpu
   * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 
 * **Benchmarking Handlers**:
-  Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
-   Elara will compare and present simulation results from the above outputs to the available benchmarks, it will aditionally output a
-   distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. **Note
-   again that benchmarks are project specific**.
-  * ``ireland_highways``
-  * ``ireland_highways_NI`` 
-  * ``ireland_DCC``
-  * ``ROI_modeshares``
-  * ``london_board_alight_subway``
-  * ``london_central_cordon_car``
-  * ``london_central_cordon_bus``
-  * ``london_inner_cordon_car``
-  * ``london_inner_cordon_bus``
-  * ``london_boundary_cordon_car``
-  * ``london_boundary_cordon_bus``
-  * ``london_thames_screen_car``
-  * ``london_thames_screen_bus``
-  * ``test_pt_interaction_counter``
-  * ``test_link_cordon``
+Where correctly formatted project specific observed data has been made available, Elara can also assist with validation or 'benchmarking'.
+ Elara will compare and present simulation results from the above outputs to the available benchmarks, it will aditionally output a
+ distance based score for the model. Where distance is some measure of how different the simulation is from the observed data.
 
 ## Contents
+
 * [Introduction](https://github.com/arup-group/elara#introduction)
 * [Installation](https://github.com/arup-group/elara#installation)
 * [Configuration](https://github.com/arup-group/elara#configuration)
+* [Advanced Configuration](https://github.com/arup-group/elara#advanced-configuration)
 * [Command Line Reference](https://github.com/arup-group/elara#command-line-reference)
 * [Example CLI Commands](https://github.com/arup-group/elara#example-cli-commands)
 * [Tests](https://github.com/arup-group/elara#tests)
@@ -96,6 +82,7 @@ These are outputs produced through additional post-processing of the above outpu
 * [What does the name mean?](https://github.com/arup-group/elara#what-does-the-name-mean)
 
 ## Introduction
+
 Elara uses a Command Line Interface (CLI), within this interface you can choose to run elara 
 via a [config](https://github.com/arup-group/elara#configuration) or purely through the 
 [CLI](https://github.com/arup-group/elara#command-line-reference). The CLI is preferred for 
@@ -109,6 +96,7 @@ Also note that elara is often used within simulation pipelines
 [ie BitSim](https://github.com/arup-group/bitsim). In which case it is typically run using a config. 
 
 ## Installation
+
 Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to
 install the libraries in. Assuming Python >=3.7 and using git:
 ```
@@ -141,12 +129,12 @@ processing efficient way to use Elara.
 
 Configuration is accessed via the CLI:
 
-`elara run <CONFIG PATH>` 
+`elara run <CONFIG PATH>`
 
 Config files must be `.toml` format and be roughly formatted as follows. The various fields are 
 detailed further below and an [example config](https://github.com/arup-group/elara/blob/master/example_config.toml) is also included in the repo:
 
-```
+```{.toml}
 [scenario]
 name = "test_town"
 time_periods = 24
@@ -176,6 +164,7 @@ stop_passenger_waiting = ["all"]
 
 [plan_handlers]
 mode_shares = ["all"]
+trip_destination_mode_share = {destination_activity_filters = ["work"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
@@ -195,7 +184,7 @@ test_euclidean_distance_comparison = ["all"]
 
 ```
 
-You can run this config on some toy data: `elara run example_config.toml` (from the project route).
+You can run this config on some toy data: `elara run example_config.toml` (from the project root).
 
 **#** scenario.**name** *string* *(required)*
 
@@ -259,15 +248,17 @@ include:
   * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
   * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
+  * ``vehicle_departure_log``: Vehicle departure times and delays from facilities (stops in the case of PT).
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
-The associated list attached to each handler allows specification of which transport modes should be processed using that handler. This allows certain handlers to be activated 
+The associated list attached to each handler allows specification of which network modes should be processed using that handler. This allows certain handlers to be activated 
 for public transport modes but not private vehicles for example. Possible modes currently include:
 
 * eg ``car, bus, train, tram, ferry, ...``.
 * note that ``waiting_times`` only supports the option of ``["all"]``.
+* note that ``vehicle_departure_log`` supports any valid mode options, but will produce empty csv outputs for modes without events of type ``VehicleDepartsAtFacility``.
 
-Options can also be passed in a dictionary format, ie {modes=["car","bus"], path = "./tests/test_outputs", ...}.
+The above format of `HANDLER_NAME = ["car", "bus"]` is a shorthand way of passing options. These pptions can also be passed in a dictionary format, ie `HANDLER_NAMES = {modes=["car","bus"]}`.
 
 **#** plan_handlers.**[handler name]** *list of strings* *(optional)*
 
@@ -275,6 +266,7 @@ Specification of the plan handlers to be run during processing. Currently availa
 include:
 
   * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
+  * ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy. Requires ``destination_activity_filters`` - a list of destination activities as a parameter, eg: ``trip_destination_mode_share = {destination_activity_filters = ["work"]``. 
   * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -288,6 +280,8 @@ The associated list attached to each handler allows specification of additional 
 * in most cases ``all``
 * agent_plans support subpopulation selection, eg ``rich, poor``
 * highway_distances only supports ``car``
+
+The mode share handler as well as the trip destination mode share handler additionally support a `subpopulation` option, eg: `mode_shares = {attribute="subpopulation"}`. This adds an additional output breaking down mode counts and shares by the chosen person attribute.
 
 **#** post_processors.**[post-processor name]** *list of strings* *(optional)*
 
@@ -305,6 +299,71 @@ transport modes but not private vehicles for example. Possible modes currently i
 * eg ``car, bus, train, ...``
 * note that ``plan_summary`` only support the option of ``["all"]``.
 
+## Advanced Configuration
+
+### Additional Options
+
+The above configurations typically pass a modes option, eg:
+
+```{.toml}
+[event_handlers]
+link_vehicle_counts = ["car", "bus"]
+```
+
+This is equivalent to passing a dictionary with the `modes` option as a key, eg:
+
+```{.toml}
+[event_handlers]
+link_vehicle_counts = {modes=["car", "bus"]}
+```
+
+This more verbose method allows more options to be passed to handlers. Allowing them to have more complex functionality.
+
+Most handlers support a groupby operation that groups outputs such as counts based on person attribute. This can be enabled by passing the `groupby_person_attributes` option as follows:
+
+```{.toml}
+[event_handlers]
+link_vehicle_counts = {modes = ["car","bus"], groupby_person_attributes = ["income", "age"]}
+```
+
+The above config will produce a number of link counts for car and bus with breakdowns by the person attributes named 'income' and 'age'. Note that cross tabulations are not supported and that specifying an unavailable attribute key will result in a warning and outputs being assigned to the 'None' group.
+
+An example config using the `groupby_person_attributes` option is included: `./example_config_complex_options.toml`.
+
+### Letting Elara Deal With Dependancies
+
+The `modes` and `groupby_person_attributes` options are understood by elara as dependancies. Therefore if you ask for a postprocessor such as VKT (or a benchmark - described later below), elara will make sure that any handlers required to produce these outputs will also be created and given the correct options.
+
+This means that a config can be very minimal. As an example, the following configurations are equivalent:
+
+```{.toml}
+...
+[event_handlers]
+link_vehicle_counts = ["bus"]
+
+[post_processors]
+vkt = {modes=["car"], groupby_person_attributes=["age"]}
+...
+```
+
+```{.toml}
+...
+[event_handlers]
+link_vehicle_counts = {modes=["car","bus"], groupby_person_attributes=["age"]}
+
+[post_processors]
+vkt = {modes=["car"], groupby_person_attributes=["age"]}
+...
+```
+
+Care should be taken not to specify unnecesary options as they can add significant compute time. An example configuration that passes complex dependancies is included: `./example_configcomplex_dependancies.toml`
+
+### Benchmarks
+
+Benchmarks provide functionality to compare standard elara outputs to observed data. Benchmarks require passing of the observed data as an additional option. This data must be formatted as the benchmark handler expects. Examples can be found in `elara.benchmark_data`.
+
+Benchmarks are added to the config as follows:
+
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
 Specification of the benchmarks to be run. These include a variety of highway counters, 
@@ -320,9 +379,9 @@ Currently available benchmarks include:
 _newer formats (produced using `bench`):_
 
 * ``ireland_highways``
-* ``ireland_highways_NI`` 
+* ``ireland_highways_NI``
 * ``ireland_DCC``
-* ``ROI_modeshares`` ^
+* ``ROI_modeshares``
 * ``london_board_alight_subway``
 * ``london_central_cordon_car``
 * ``london_central_cordon_bus``
@@ -357,6 +416,28 @@ transport modes but not private vehicles for example. Possible modes currently i
 However please note that benchmarks are often mode specific and should be configured as such, eg:
 
 * ``london_central_cordon_car = ["car"]``
+
+### Naming Handlers
+
+The toml config format prevents duplicating keys, such that it is not possible to use the same handler twice, eg:
+
+```{.toml}
+[benchmarks]
+duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
+duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all_ALTERNATE.csv"}
+```
+
+Will throw an error due to the duplicated key `duration_comparison`.
+
+Instead Elara allows us to use an additional syntax to name the handlers: `{HANDLER_KEY}--{UNIQUE_IDENTIFIER}`, eg:
+
+```{.toml}
+[benchmarks]
+duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
+duration_comparison--ALTERNATE = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all_ALTERNATE.csv"}
+```
+
+Outputs from the named handlers will be similalry named. An example config using naming is included: `./example_config_using_named_keys.toml`.
 
 ## Command Line Reference
 

@@ -1,0 +1,32 @@
+[scenario]
+name = "test_town"
+time_periods = 24
+scale_factor = 0.0001
+crs = "EPSG:27700"
+verbose = true
+version = 11
+
+[inputs]
+events = "./tests/test_fixtures/output_events.xml.gz"
+network = "./tests/test_fixtures/output_network.xml.gz"
+transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml.gz"
+transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml.gz"
+attributes = "./tests/test_fixtures/output_personAttributes.xml.gz"
+plans= "./tests/test_fixtures/output_plans.xml.gz"
+output_config_path = "./tests/test_fixtures/output_config.xml"
+road_pricing = "./tests/test_fixtures/road_pricing.xml"
+
+[event_handlers]
+
+[plan_handlers]
+
+[post_processors]
+vkt = {modes=["car","bus"], groupby_person_attributes=["subpopulation","age"]}
+
+[benchmarks]
+
+[outputs]
+path = "./tests/test_intermediate_data"
+contract = true
+
+
