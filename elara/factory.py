@@ -355,6 +355,7 @@ class WorkStation:
                                         key = tool_name
                                     else:
                                         key = f"{tool_name}:{mode}:{groupby_person_attribute}:{optional_arg_values_string}"
+
                                     self.resources[key] = tool(
                                         config=self.config,
                                         mode=mode,
