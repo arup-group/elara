@@ -17,7 +17,7 @@ args = parser.parse_args()
 
 trips = pd.read_csv(args.input)[0:5000]
 
-print("{} trips loaded from {}".format(len(trips),arg.input))
+print("{} trips loaded from {}".format(len(trips),args.input))
 
 if not os.path.exists(args.output):
     print("Specified output director didn't exist: {}, creating...")
