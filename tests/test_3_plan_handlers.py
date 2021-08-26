@@ -698,8 +698,8 @@ def test_agent_trip_log_handler(agent_trip_handler):
     for person in plans.persons:
         handler.process_plans(person)
 
-    assert len(handler.activities_log.chunk) == 15
-    assert len(handler.trips_log.chunk) == 10
+    assert len(handler.activities_log.chunk) == 30
+    assert len(handler.trips_log.chunk) == 20
 
 
 @pytest.fixture
@@ -768,7 +768,7 @@ def test_agent_plans_handler(agent_plan_handler):
     for person in plans.persons:
         handler.process_plans(person)
 
-    assert len(handler.plans_log.chunk) == 8
+    assert len(handler.plans_log.chunk) == 16
 
 
 @pytest.fixture

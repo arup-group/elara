@@ -230,14 +230,14 @@ def test_loading_xml_plans(test_xml_config, test_paths):
     plans = inputs.Plans(test_xml_config)
     plans.build(test_paths.resources)
     num_plans = sum(1 for person in plans.persons for plan in person.xpath(".//plan"))
-    assert num_plans == 5
+    assert num_plans == 10
 
 
 def test_loading_gzip_plans(test_gzip_config, test_zip_paths):
     plans = inputs.Plans(test_gzip_config)
     plans.build(test_zip_paths.resources)
     num_plans = sum(1 for person in plans.persons for plan in person.xpath(".//plan"))
-    assert num_plans == 5
+    assert num_plans == 10
 
 
 # ModeHierarchy
