@@ -18,6 +18,7 @@ class Config:
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
                 "version": 11,
+                "using_experienced_plans": False,
                 "verbose": False,
             },
         "inputs":
@@ -48,6 +49,7 @@ class Config:
         self.time_periods = None
         self.scale_factor = None
         self.version = None
+        self.using_experienced_plans = None
         self.logging = None
         self.event_handlers = None
         self.plan_handlers = None
@@ -101,6 +103,8 @@ class Config:
         self.logger.debug(f'Output Path = {self.output_path}')
         self.logger.debug(f'Scenario time periods = {self.time_periods}')
         self.logger.debug(f'Scale factor = {self.scale_factor}')
+        self.logger.debug(f'Version = {self.version}')
+        self.logger.debug(f'Using experienced plans = {self.using_experienced_plans}')
         self.logger.debug(f'Verbosity/logging = {self.logging}')
         self.logger.debug(f'Required Event Handlers = {self.event_handlers}')
         self.logger.debug(f'Required Plan Handlers = {self.plan_handlers}')
@@ -124,6 +128,9 @@ class Config:
         self.version = self.valid_version(
             self.settings["scenario"].get("version", 11)
         )
+        self.using_experienced_plans = self.valid_bool(
+            self.settings["scenario"].get("using_experienced_plans", False)
+        )
         self.logging = self.valid_verbosity(
             self.settings["scenario"].get("verbose", False)
         )
@@ -138,7 +145,9 @@ class Config:
         # Output settings
         self.logger.debug(f'Loading output settings')
         self.output_path = self.settings["outputs"]["path"]
-        self.contract = self.settings["outputs"].get("contract", False)
+        self.contract = self.valid_bool(
+            self.settings["outputs"].get("contract", False)
+        )
 
     """
     Property methods used for config dependant requirements.
@@ -175,7 +184,7 @@ class Config:
 
     @property
     def attributes_path(self):
-        if self.version == 12:
+        if self.version == 12 and not self.using_experienced_plans:
             return self.valid_path(
                 self.settings["inputs"]["plans"], "plans(MATSimV12)"
             )
@@ -206,6 +215,23 @@ class Config:
     def road_pricing_path(self):
         return self.valid_path(
             self.settings["inputs"]["road_pricing"], "output_config"
+        )
+
+    @staticmethod
+    def valid_bool(inp):
+        """
+        Raise exception if input cannot be parsed as bool
+        Returns:
+            bool
+        """
+        if isinstance(inp, bool):
+            return inp
+        if inp.lower().strip() == "true":
+            return True
+        if inp.lower().strip() == "false":
+            return False
+        raise ConfigError(
+            f"Configured: {inp}, cannot be parsed as a boolian. Please use 'true' or 'false'"
         )
 
     @staticmethod
