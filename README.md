@@ -139,7 +139,8 @@ detailed further below and an [example config](https://github.com/arup-group/ela
 name = "test_town"
 time_periods = 24
 scale_factor = 0.01
-version = 11
+version = 12
+using_experienced_plans = false
 crs = "EPSG:27700"
 verbose = true
 
@@ -205,6 +206,10 @@ as volume counts. For example, if the underlying scenario was run with a 25% sam
  **#** scenario.**version** *int {11,12}* *(default 11)*
 
 Set `version = 12` if using MATSim version 12 outputs (in which case there will be no output personAttributes file).
+
+**#** scenario.**using_experienced_plans** *boolean* *(default false)*
+
+If using MATSim "experienced_plans" you should set this flag to 'true'.
 
 **#** scenario.**crs** *string* *(required)*
 
@@ -357,6 +362,25 @@ vkt = {modes=["car"], groupby_person_attributes=["age"]}
 ```
 
 Care should be taken not to specify unnecesary options as they can add significant compute time. An example configuration that passes complex dependancies is included: `./example_configcomplex_dependancies.toml`
+
+### Experienced Plans
+
+If using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. Which will prevent elara from providing outputs grouped by person attributes. If such outputs are required set the 'using_experienced_plans' option to 'true' and provide the standard MATSim 'output_plans' as the attributes input:
+
+```{.toml}
+[scenario]
+...
+version = 12
+using_experienced_plans = true
+
+[inputs]
+...
+attributes = "./tests/test_fixtures/output_plans.xml"
+plans= "./tests/test_fixtures/output_experienced_plans.xml"
+...
+```
+
+This allows elara to access person attributes from the standard output_plans, while taking plans from the output_experienced_plans. This is not necessary if groupby_person_attributes are not required or if using MATSim version 11 and below.
 
 ### Benchmarks
 
