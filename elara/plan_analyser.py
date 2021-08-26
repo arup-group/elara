@@ -49,16 +49,17 @@ trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
 # we use the innovation_hash to identify a summary, per agent
 plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
 
-# add relative score to selected score, gives indication of relative proximity
-# This is naive - we assume max score is selected, which sometimes it isn't
-# good enough for now
-plans['relativeDisUtilityToSelected'] = plans['utility'] - plans.groupby(['agent'])['utility'].transform('max')
-plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
+# calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
+# Remember, the chosen plan may not always be the top score
+# in the case of the selected plan, the relative disutility is 0
 
-# version where we get selected score, not maximum score, when calculating relative score
-# m=plans['selected']=="yes"
-# plans.loc[plans['selected']=="yes",'relativeDisUtilityToSelected'] = plans.loc[plans['selected']=="yes",'utility'] - plans[plans['selected']=="yes"].groupby('agent')['utility'].transform('max').values
-# plans.loc[m,'relativeDisUtilityToSelected'] = plans.loc[m,'utility']- plans[m].groupby('agent')['utility'].transform('max')
+def get_relativeUtilityToSelected(group):
+    selected_utility = group[group['selected']=='yes']['utility'].values[0]
+    group['relativeDisUtilityToSelected'] = group['utility'] - selected_utility
+    return group
+
+plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
+plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
 
 # We find the home locations, based on the origin activity (home)
 # we use home locations for visulisation purposes
