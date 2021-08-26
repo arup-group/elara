@@ -1235,6 +1235,13 @@ def bus_vehicle_stop_to_stop_handler_simple(test_config, input_manager):
     handler.build(resources, write_path=test_outputs)
     return handler
 
+@pytest.fixture
+def bus_vehicle_passenger_log_handler_simple(test_config, input_manager):
+    handler = event_handlers.VehiclePassengerLog(test_config, mode='bus', groupby_person_attribute=None)
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    return handler
+
 
 def test_stop_to_stop_finalise_bus_simple(
         bus_stop_to_stop_handler_simple,
