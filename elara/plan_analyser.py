@@ -39,12 +39,12 @@ def get_dominant(group):
 
 trips = trips.groupby(['agent',"innovation_hash"]).apply(get_dominant)
 
+print("Writing all trips csv to {} ".format(args.output))
+trips.to_csv(args.output + "/allTrips.csv")
+
 # for each agent and each innovation, we want to define the dominantMode (by frequency)
 trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
 trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
-
-print("Writing all trips csv to {} ".format(args.output))
-trips.to_csv(args.output + "/allTrips.csv")
 
 # we use the innovation_hash to identify a summary, per agent
 plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
