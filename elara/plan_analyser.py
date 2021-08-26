@@ -69,8 +69,17 @@ homes.drop_duplicates(subset=['agent'],keep='first')
 # merge this table into the plans, giving us the ox and oy
 plans = plans.merge(homes,on='agent',how='left')
 
+# todo. Add a warning if many home locations are not found
+
 # geopandas the df
 gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
+
+# dropping some columns
+# we've used ox/oy to build geometry
+# we remove mode as it is not used, we now use the dominantMode
+
+gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
+print(gdf.dtypes)
 
 # British east/northing
 gdf.crs = {'init': 'epsg:27700'}
@@ -101,7 +110,7 @@ unSelectedPlans = gdf[gdf.selected==False]
 # since we have sorted based on utility, we can remove duplicates 
 
 unSelectedPlans = unSelectedPlans.sort_values("utility")
-unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','mode'], keep='last')
+unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
 
 # zip them back together again
 gdf = pd.concat([selectedPlans,unSelectedPlans])
@@ -113,10 +122,16 @@ gdf.to_file(args.output + "/AllPlans.geojson", driver="GeoJSON")
 # creation of a df where car is selected
 # but PT exists in their unchosen plans
 # "mode shift opportunity" gdf
+
 PlanAgentsSel = gdf[gdf.selected==True]
 carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
 
 unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
-unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.dominantTripMode.isin(['bus','rail'])]
+
+# Made this general, so it selects all modes (except car)
+# this method being more general, not assuming which modes exist in the input plans
+
+unSelectedPlansCarSelected = unSelectedPlans[~unSelectedPlans.dominantTripMode.isin(['car'])]
 print("Writing CarModeShiftOpportunities GeoJSON to {} ".format(args.output))
-unSelectedPlansCarSelected.to_file(args.output +  "/CarModeShiftOpportunities.geojson",driver='GeoJSON')
+unSelectedPlansCarSelected.to_file(args.output +  "/ModeShiftOpportunities.geojson",driver='GeoJSON')
+
