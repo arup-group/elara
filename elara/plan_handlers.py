@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import logging
 import json
+import os
 import uuid
 
 from elara.factory import Tool, WorkStation
@@ -712,6 +713,116 @@ class TripLogs(PlanHandlerTool):
 
         self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
         self.trips_log = self.start_chunk_writer(trips_csv_name, write_path=write_path)
+        self.see_analyser(self,trips)
+
+    def see_analyser(self, trips):
+
+        print("SEE analyser starting")
+
+        def get_dominant(group):
+            group['dominantModeDistance'] = group['distance'].max()
+            group['dominantTripMode'] = group.loc[group['distance'].idxmax(), 'mode'] # this might return a series if multiple same max values ?
+            return group
+
+        def get_relativeUtilityToSelected(group):
+            selected_utility = group[group['selected']=='yes']['utility'].values[0]
+            group['relativeDisUtilityToSelected'] = group['utility'] - selected_utility
+            return group
+
+        trips = pd.DataFrame(trips).groupby(['agent',"innovation_hash"]).apply(get_dominant)
+
+        # this is the first of 3 results I wish to write (csv + geojson later...)
+        # here I am using the factory "write_csv" method
+        # the main issue is that I don't have the write_path available to me here...
+        csv_name = "/see/allTrips.csv"
+        self.write_csv(trips, csv_name, write_path=write_path)
+
+        # for each agent and each innovation, we want to define the dominantMode (by frequency)
+        trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
+        trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
+
+        # we use the innovation_hash to identify a summary, per agent
+        plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
+
+        # calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
+        # Remember, the chosen plan may not always be the top score
+        # in the case of the selected plan, the relative disutility is 0
+
+        plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
+        plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
+
+        # We find the home locations, based on the origin activity (home)
+        # we use home locations for visulisation purposes
+        homes = trips[trips.o_act=="home"][['ox','oy','agent']]
+        homes.drop_duplicates(subset=['agent'],keep='first')
+
+        # merge this table into the plans, giving us the ox and oy
+        plans = plans.merge(homes,on='agent',how='left')
+
+        # todo. Add a warning if many home locations are not found
+
+        # geopandas the df
+        gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
+
+        # dropping some columns
+        # we've used ox/oy to build geometry
+        # we remove mode as it is not used, we now use the dominantMode
+        gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
+        print(gdf.dtypes)
+
+        # British east/northing
+        gdf.crs = {'init': 'epsg:27700'}
+
+        # re-project to 4326
+        gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
+
+        # sort by utility
+        gdf = gdf.sort_values("utility")
+        # flatten, one row per innovation (removes duplicates from lazy processes above)
+        gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
+
+        # Kepler weirdness. Moving from yes/no (matsim lingo) to a bool for whether or not it was selected
+        # enables this to be toggled on/off on kepler
+        gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
+
+        # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
+        gdf = gdf.sort_values('utility')
+        gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
+
+        # subselecting them into 2 different dfs
+        selectedPlans = gdf[gdf.selected==True]
+        unSelectedPlans = gdf[gdf.selected==False]
+
+        # Often we will have time/route innovations across n innovation strategies
+        # Since we care about mode shift, we can pick the best innovation per mode. 
+        # this is the 'best' option for a given mode
+        # since we have sorted based on utility, we can remove duplicates 
+
+        unSelectedPlans = unSelectedPlans.sort_values("utility")
+        unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
+
+        # zip them back together again
+        gdf = pd.concat([selectedPlans,unSelectedPlans])
+
+        # kepler'able geojson
+        print("Writing all plans GeoJSON to {} ".format(args.output))
+        gdf.to_file(self.write_path + "/see/AllPlans.geojson", driver="GeoJSON")
+
+        # creation of a df where car is selected
+        # but PT exists in their unchosen plans
+        # "mode shift opportunity" gdf
+
+        PlanAgentsSel = gdf[gdf.selected==True]
+        carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
+
+        unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
+
+        # this method being more general, not assuming which modes exist in the input plans
+
+        unSelectedPlansCarSelected = unSelectedPlans[~unSelectedPlans.dominantTripMode.isin(['car'])]
+        print("Writing CarModeShiftOpportunities GeoJSON to {} ".format(args.output))
+        unSelectedPlansCarSelected.to_file(self.write_path +  "/see/ModeShiftOpportunities.geojson",driver='GeoJSON')
+
 
     def process_plans(self, elem):
 
@@ -860,6 +971,10 @@ class TripLogs(PlanHandlerTool):
 
                 self.activities_log.add(activities)
                 self.trips_log.add(trips)
+
+        # when complete, if SEE is toggled on, calls SEE function
+        if self.see:
+            self.see_analyser(trips)
 
     def finalise(self):
         """
