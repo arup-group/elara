@@ -99,6 +99,7 @@ Also note that elara is often used within simulation pipelines
 
 Clone or download this repository. Once available locally, navigate to the folder and create a virtual environment to
 install the libraries in. Assuming Python >=3.7 and using git:
+
 ```
 git clone git@github.com:arup-group/elara.git
 cd elara
@@ -547,7 +548,8 @@ Example invocation:
 python3 plan_analyser.py --input "./test/trip_logs_all_trips.csv" --output "./test/"
 ```
 
-```5000 trips loaded from <built-in function input>
+```
+5000 trips loaded from ./data/trip_logs_all_trips.csv
 Writing all trips csv to ./test/
 Writing all plans GeoJSON to ./test/
 Writing CarModeShiftOpportunities GeoJSON to ./test/
@@ -555,7 +557,7 @@ Writing CarModeShiftOpportunities GeoJSON to ./test/
 
 An example output is shown below:
 
-![Screenshot 2021-08-04 at 12.02.50](/Users/gerard.casey/Library/Application Support/typora-user-images/Screenshot 2021-08-04 at 12.02.50.png)
+![Example SEE output](./images/see.png)
 
 
 This documents SEE, as is. 
