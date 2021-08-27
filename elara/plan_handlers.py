@@ -675,7 +675,7 @@ class TripLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
+    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", see=None, **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -691,6 +691,7 @@ class TripLogs(PlanHandlerTool):
 
         self.activities_log = None
         self.trips_log = None
+        self.see = see
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
@@ -724,11 +725,18 @@ class TripLogs(PlanHandlerTool):
         """
         ident = elem.get('id')
 
+        # this toggles on the keeping of unselected plans
+        if self.see:
+            plans_to_keep = ['yes','no']
+        
+        else:
+            plans_to_keep = ['yes']
+
         for plan in elem.xpath(".//plan"):
 
             attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
-            if plan.get('selected') == 'yes' or plan.get("selected") == "no":
+            if plan.get('selected') in plans_to_keep:
 
                 # check that plan starts with an activity
                 if not plan[0].tag == 'activity':
@@ -775,8 +783,7 @@ class TripLogs(PlanHandlerTool):
 
                             if modes:  # add to trips log
 
-                                trips.append(
-                                    {
+                                trip_record = {
                                         'agent': ident,
                                         'attribute': attribute,
                                         'seq': act_seq_idx-1,
@@ -796,11 +803,16 @@ class TripLogs(PlanHandlerTool):
                                         'duration': trip_duration,
                                         'duration_s': trip_duration.total_seconds(),
                                         'distance': trip_distance,
-                                        "utility": plan.get("score"),
-                                        "selected": plan.get('selected'),
-                                        "innovation_hash" : innovation_hash,
+                                        "utility" : plan.get("score")
                                     }
-                                )
+                                
+                                if self.see:
+                                    
+                                    # add the extra required SEE fields
+                                    trip_record["selected"] = plan.get('selected')
+                                    trip_record['innovation_hash'] = innovation_hash
+
+                                trips.append(trip_record)
 
                                 modes = {}  # reset for next trip
                                 trip_distance = 0  # reset for next trip
@@ -821,9 +833,9 @@ class TripLogs(PlanHandlerTool):
                                     'end_s': self.get_seconds(activity_end_dt),
                                     'duration': activity_duration,
                                     'duration_s': activity_duration.total_seconds(),
-                                    "utility": plan.get("score"),
-                                    "selected": plan.get('selected'),
-                                    "innovation_hash" : innovation_hash,
+                                    # "utility": plan.get("score"),
+                                    # "selected": plan.get('selected'),
+                                    # "innovation_hash" : innovation_hash,
                                 }
                             )
 
