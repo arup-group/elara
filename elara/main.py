@@ -247,7 +247,7 @@ def leg_logs(
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
 def trip_logs(
-        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full, see
 ):
     """
     Create an agent trip logs output. Example invocation for option "all" is:
@@ -255,7 +255,7 @@ def trip_logs(
     $ elara plan-handlers trip-logs all
     """
     override = common_override(
-        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full, see
     )
     override["plan_handlers"]["trip_logs"] = {'modes': list(modes)}
     config = Config(override=override)
