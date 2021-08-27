@@ -21,6 +21,7 @@ link_vehicle_counts = ["car"]
 link_passenger_counts = ["bus", "train"]
 stop_passenger_counts = ["bus", "train"]
 vehicle_departure_log = ["all"]
+vehicle_passenger_log = ["all"]
 
 [plan_handlers]
 mode_shares = ["all"]

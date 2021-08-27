@@ -38,6 +38,7 @@ These are processed by streaming (in order) through all output events from simul
   * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
   * ``vehicle_departure_log``: Vehicle departures and delays from facilities (stops in the case of PT).
+  * ``vehicle_passenger_log``: A log of every passenger boarding and alighting to/from a transit vehicle.
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 * **Plan Based Handlers/Outputs**:
@@ -254,6 +255,7 @@ include:
   * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
   * ``stop_passenger_waiting``: Agent waiting times for unique pt interaction events.
   * ``vehicle_departure_log``: Vehicle departure times and delays from facilities (stops in the case of PT).
+  * ``vehicle_passenger_log``: A log of every passenger boarding and alighting to/from a transit vehicle.
   * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 The associated list attached to each handler allows specification of which network modes should be processed using that handler. This allows certain handlers to be activated 

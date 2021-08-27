@@ -1847,6 +1847,76 @@ class VehicleDepartureLog(EventHandlerTool):
     def finalise(self):
         self.vehicle_departure_log.finish()
 
+class VehiclePassengerLog(EventHandlerTool):
+    """
+    Extract a log of passenger boardings and alightings to a PT vehicle.
+    """
+
+    requirements = ['events', 'transit_schedule']
+
+    def __init__(self, config, mode=None, **kwargs):
+        super().__init__(config, mode)
+        self.vehicle_passenger_log = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        pt_csv_name = f"{self.name}.csv"
+        self.veh_tracker = dict() # {veh_id: last_stop}
+
+        self.vehicle_passenger_log = self.start_chunk_writer(
+            pt_csv_name, write_path = write_path
+            )
+
+    def process_event(self, elem) -> None:
+        """
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+
+        # keep track of the last vehicle stop
+        if event_type == 'VehicleArrivesAtFacility':
+            veh_id = elem.get("vehicle")            
+            # veh_mode = self.vehicle_mode(veh_id)    
+            stop_id = elem.get("facility")
+            self.veh_tracker[veh_id] = stop_id
+
+        # add boardings/alightings to the log
+        if event_type in ['PersonEntersVehicle', 'PersonLeavesVehicle']:
+            agent_id = elem.get("person")
+            veh_id = elem.get("vehicle")            
+            veh_route = self.vehicle_route(veh_id)
+            event_time = elem.get("time")
+            veh_mode = self.vehicle_mode(veh_id)
+            stop_id = self.veh_tracker.get(veh_id, None)
+            
+            if veh_mode == self.mode or self.mode == None:
+                if agent_id[:2] != "pt": # Filter out PT drivers from transit volume statistics
+
+                    boardings = [
+                        {
+                            'agent_id': agent_id,
+                            'event_type': event_type,
+                            'veh_id': veh_id,
+                            'stop_id': stop_id,
+                            'time': event_time,
+                            'veh_mode': veh_mode,
+                            'veh_route': veh_route,
+                        }
+                    ]
+                    self.vehicle_passenger_log.add(boardings)
+
+        return None
+
+    def finalise(self):
+        self.vehicle_passenger_log.finish()
+
 
 class EventHandlerWorkStation(WorkStation):
 
@@ -1864,7 +1934,8 @@ class EventHandlerWorkStation(WorkStation):
         "vehicle_passenger_graph": VehiclePassengerGraph,
         "stop_to_stop_passenger_counts": StopToStopPassengerCounts,
         "vehicle_stop_to_stop_passenger_counts": VehicleStopToStopPassengerCounts,
-        "vehicle_departure_log": VehicleDepartureLog
+        "vehicle_departure_log": VehicleDepartureLog,
+        "vehicle_passenger_log": VehiclePassengerLog
     }
 
     def __init__(self, config):

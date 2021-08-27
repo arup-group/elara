@@ -1235,6 +1235,13 @@ def bus_vehicle_stop_to_stop_handler_simple(test_config, input_manager):
     handler.build(resources, write_path=test_outputs)
     return handler
 
+@pytest.fixture
+def bus_vehicle_passenger_log_handler_simple(test_config, input_manager):
+    handler = event_handlers.VehiclePassengerLog(test_config, mode='bus', groupby_person_attribute=None)
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    return handler
+
 
 def test_stop_to_stop_finalise_bus_simple(
         bus_stop_to_stop_handler_simple,
@@ -1289,6 +1296,36 @@ def test_vehicle_departs_facility(test_config, input_manager):
         'delay': -137
     }
 
+# Vehicle passenger boardings/alightings test
+def test_vehicle_passenger_boarding(test_config, input_manager):
+    handler = event_handlers.VehiclePassengerLog(test_config)
+    handler.build(input_manager.resources)
+
+    for elem in handler.resources['events'].elems:
+        handler.process_event(elem)
+
+    # there are 8 boardings (and 8 alightings) in the test outputs 
+    n_boardings = 0
+    n_alightings = 0
+    for i in handler.vehicle_passenger_log.chunk:
+        if i.get('event_type') == 'PersonEntersVehicle':
+            n_boardings += 1
+        elif i.get('event_type') == 'PersonLeavesVehicle':
+            n_alightings += 1
+
+    assert n_boardings == 8
+    assert n_alightings == 8
+
+    assert handler.vehicle_passenger_log.chunk[6] == {
+        'agent_id': 'fred', 
+        'event_type': 'PersonEntersVehicle', 
+        'veh_id': 'bus2', 
+        'stop_id': 'home_stop_out', 
+        'time': '30601.0', 
+        'veh_mode': 'bus', 
+        'veh_route': 'work_bound'
+    }
+    
 # Event Handler Manager
 def test_load_event_handler_manager(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)
