@@ -531,14 +531,17 @@ SEE (aka Near Miss Analyser) is a new extension to Elara which analyses the plan
 
 SEE is currently a stand alone script, run against a standard elara output, the `trip_logs_all_trips.csv`. 
 
-In order to generate the required `trip_logs_all_trips.csv` input file, a standard Elara plan handler is used:
+In order to generate the required `trip_logs_all_trips.csv` input file, a standard Elara plan handler is used, and a `see` is toggled on. In this case we use the standard `all` modes handle with it.
 
 ```
 [plan_handlers]
-trip_logs = ["all"]
+trip_logs = {modes=["all"],see=true}
 ```
 
-Under the hood, this branch of Elara extracts the unchosen plans and labels them. This generates a dataset that the `elara/plan_analyser.py` may use to generate outputs. 
+Under the hood, this branch of Elara extracts the unchosen plans and labels them. 
+
+
+This generates a dataset that the `elara/plan_analyser.py` may use to generate outputs. 
 
 
 
