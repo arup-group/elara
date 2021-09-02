@@ -79,8 +79,8 @@ class CsvComparison(BenchmarkTool):
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
-    def __init__(self, config, mode, **kwargs):
-        super().__init__(config, mode=mode, **kwargs)
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, benchmark_data_path=benchmark_data_path, **kwargs)
         self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
@@ -116,6 +116,21 @@ class CsvComparison(BenchmarkTool):
         df.plot(kind="bar", figsize=(17,12)).get_figure().\
             savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
 
+
+class ModeSharesComparison(CsvComparison):
+
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    index_field = ['mode']
+    value_field = 'trip_share'
+    name = 'test'
+    simulation_name = 'mode_shares_all.csv'
+    weight = 1
+
+
 class DurationComparison(CsvComparison):
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
@@ -129,6 +144,7 @@ class DurationComparison(CsvComparison):
     name = 'test'
     simulation_name = 'trip_duration_breakdown_all.csv'
     weight = 1
+
 
 class TestDurationComparison(CsvComparison):
     requirements = ['trip_duration_breakdown']
@@ -1742,7 +1758,7 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
         return np.absolute(result - count) / count
 
 
-class ModeSharesComparison(BenchmarkTool):
+class OldModeSharesComparison(BenchmarkTool):
 
     requirements = ["mode_shares"]
     valid_modes = ['all']
@@ -2010,7 +2026,7 @@ class TestTownCommuterStats(ModeSharesComparison):
 
     weight = 1
     benchmark_data_path = get_benchmark_data(
-        os.path.join('test_town', 'census_modestats', 'test_town_modestats.csv')
+        os.path.join('test_fixtures', 'mode_shares.csv')
     )
 
 
