@@ -178,7 +178,6 @@ def test_extract_mode_from_route_elem_v12(base_handler_v12):
     class Resource:
         route_to_mode_map = {"a":"bus"}
     base_handler_v12.resources['transit_schedule'] = Resource()
-    print(base_handler_v12.config.version)
     string = """
     <route type="default_pt" start_link="1" 
     end_link="2" trav_time="00:33:03" distance="2772.854305426653">
@@ -478,7 +477,6 @@ def test_toll_consecutivelinks(toll_log_handler):
     """
     person = etree.fromstring(person)
     handler.process_plans(person)
-    print(handler.toll_log)
     assert len(handler.toll_log) == 1
     assert handler.toll_log.iloc[0]['toll']=='10.0'
 
@@ -531,10 +529,8 @@ def test_toll_tagged(toll_log_handler):
     for plan in plans.persons:
         handler.process_plans(plan)
     handler.finalise()
-    print(handler.results['tolls_paid_log'])
     assert handler.results['tolls_paid_log'].iloc[1]['tollname'] == "Toll Road 3"
     assert handler.results['tolls_paid_log'].iloc[3]['tollname'] == "missing"
-    
     return handler
 
 
@@ -1236,46 +1232,18 @@ def test_finalised_mode_counts(test_plan_handler_finalised):
     handler = test_plan_handler_finalised
 
     for name, result in handler.results.items():
-        if 'count' in name:
-            cols = handler.modes
+        if 'counts' in name:
             if isinstance(result, pd.DataFrame):
-                for c in cols:
-                    assert c in result.columns
-                df = result.loc[:, cols]
-                assert np.sum(df.values) == 10 / handler.config.scale_factor
-
-                if 'class' in result.columns:
-                    assert set(result.loc[:, 'class']) == set(handler.classes)
-                if 'hour' in result.columns:
-                    assert set(result.loc[:, 'hour']) == set(range(24))
+                assert result.trip_count.sum() == 10 / handler.config.scale_factor
             else:
-                for c in cols:
-                    assert c in result.index
-                df = result.loc[cols]
-                assert np.sum(df.values) == 10 / handler.config.scale_factor
+                assert result.sum() == 10 / handler.config.scale_factor 
 
-
-def test_finalised_mode_shares(test_plan_handler_finalised):
-    handler = test_plan_handler_finalised
-
-    for name, result in handler.results.items():
-        if 'counts' not in name:
-            cols = handler.modes
+        else:
             if isinstance(result, pd.DataFrame):
-                for c in cols:
-                    assert c in result.columns
-                df = result.loc[:, cols]
-                assert df.sum().sum() == 1
-
-                if 'class' in result.columns:
-                    assert set(result.loc[:, 'class']) == set(handler.classes)
-                if 'hour' in result.columns:
-                    assert set(result.loc[:, 'hour']) == set(range(24))
+                assert result.trip_share.sum() == 1
             else:
-                for c in cols:
-                    assert c in result.index
-                df = result.loc[cols]
-                assert df.sum().sum() == 1
+                assert result.sum() == 1
+
 
 ### TripDestinationModeShare Modeshare Handler No Attribute Slices###
 @pytest.fixture
@@ -1571,44 +1539,16 @@ def test_activity_finalised_mode_counts(test_activity_modeshare_plan_handler_fin
     handler = test_activity_modeshare_plan_handler_finalised
     for name, result in handler.results.items():
         if 'counts' in name:
-            cols = handler.modes
             if isinstance(result, pd.DataFrame):
-                for c in cols:
-                    assert c in result.columns
-                df = result.loc[:, cols]
-                assert np.sum(df.values) == 2 / handler.config.scale_factor
-
-                if 'class' in result.columns:
-                    assert set(result.loc[:, 'class']) == set(handler.classes)
-                if 'hour' in result.columns:
-                    assert set(result.loc[:, 'hour']) == set(range(24))
+                assert result.trip_count.sum() == 2 / handler.config.scale_factor
             else:
-                for c in cols:
-                    assert c in result.index
-                df = result.loc[cols]
-                assert np.sum(df.values) == 2 / handler.config.scale_factor
+                assert result.sum() == 2 / handler.config.scale_factor 
 
-def test_activity_finalised_mode_shares(test_activity_modeshare_plan_handler_finalised):
-    handler = test_activity_modeshare_plan_handler_finalised
-
-    for name, result in handler.results.items():
-        if 'counts' not in name:
-            cols = handler.modes
+        else:
             if isinstance(result, pd.DataFrame):
-                for c in cols:
-                    assert c in result.columns
-                df = result.loc[:, cols]
-                assert df.sum().sum() == 1
-
-                if 'class' in result.columns:
-                    assert set(result.loc[:, 'class']) == set(handler.classes)
-                if 'hour' in result.columns:
-                    assert set(result.loc[:, 'hour']) == set(range(24))
+                assert result.trip_share.sum() == 1
             else:
-                for c in cols:
-                    assert c in result.index
-                df = result.loc[cols]
-                assert df.sum().sum() == 1
+                assert result.sum() == 1
 
 # Plan Handler Manager
 def test_load_plan_handler_manager(test_config, test_paths):
@@ -1627,20 +1567,14 @@ def test_load_plan_handler_manager(test_config, test_paths):
 
     for handler in plan_workstation.resources.values():
         for name, result in handler.results.items():
-            if 'count' not in name:
-                cols = handler.modes
+            if 'counts' in name:
                 if isinstance(result, pd.DataFrame):
-                    for c in cols:
-                        assert c in result.columns
-                    df = result.loc[:, cols]
-                    assert np.sum(df.values) == 1
-
-                    if 'class' in result.columns:
-                        assert set(result.loc[:, 'class']) == set(handler.classes)
-                    if 'hour' in result.columns:
-                        assert set(result.loc[:, 'hour']) == set(range(24))
+                    assert result.trip_count.sum() == 10 / handler.config.scale_factor
                 else:
-                    for c in cols:
-                        assert c in result.index
-                    df = result.loc[cols]
-                    assert np.sum(df.values) == 1
+                    assert result.sum() == 10 / handler.config.scale_factor 
+
+            else:
+                if isinstance(result, pd.DataFrame):
+                    assert result.trip_share.sum() == 1
+                else:
+                    assert result.sum() == 1

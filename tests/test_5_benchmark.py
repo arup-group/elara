@@ -114,7 +114,7 @@ def test_town_mode_share_score_zero():
         'all',
     )
     score = test_bm.build({}, write_path=test_outputs)
-    assert score['counters'] == 0
+    assert score['mse'] == 0
 
 def test_duration_comparison_score_zero():
     benchmark = benchmarking.TestDurationComparison
