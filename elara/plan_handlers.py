@@ -209,15 +209,21 @@ class ModeShares(PlanHandlerTool):
         indexes = [self.modes, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
         counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)
+        counts_df.index = pd.MultiIndex.from_frame(
+            counts_df.index.to_frame().fillna("None")
+        )
         counts_df.columns = ["trip_count"]
-        key = f"{self.name}_{self.groupby_person_attribute}_counts"
+        key = f"{self.name}_detailed_counts"
         self.results[key] = counts_df
 
+        # mode counts totals by attribute
+        if self.groupby_person_attribute:
+            total_grouped_counts_df = counts_df.groupby(["mode", "class"]).sum()
+            key = f"{self.name}_{self.groupby_person_attribute}_counts"
+            self.results[key] = total_grouped_counts_df
+
         # mode counts totals output
-        total_counts_series = counts_df.unstack(level="mode").sum(0)
-        total_counts_df = total_counts_series.to_frame()
-        # total_counts_df.index.name = "mode"
-        total_counts_df.columns = ["trip_count"]
+        total_counts_df = counts_df.groupby(["mode"]).sum()
         key = f"{self.name}_counts"
         self.results[key] = total_counts_df
 
@@ -225,17 +231,20 @@ class ModeShares(PlanHandlerTool):
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        key = f"{self.name}_{self.groupby_person_attribute}"
+        key = f"{self.name}_detailed"
         shares_df = counts_df / total
         shares_df.columns = ["trip_share"]
         self.results[key] = shares_df
 
+        # mode shares totals by attribute
+        if self.groupby_person_attribute:
+            total_grouped_shares_df = shares_df.groupby(["mode", "class"]).sum()
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            self.results[key] = total_grouped_shares_df
+
         # mode shares totals output
         key = f"{self.name}"
-        total_shares_series = total_counts_series / total
-        total_shares_df = total_shares_series.to_frame()
-        # total_shares_df.index.name = "mode"
-        total_shares_df.columns = ["trip_share"]
+        total_shares_df = shares_df.groupby(["mode"]).sum()
         self.results[key] = total_shares_df
 
     @staticmethod
@@ -285,7 +294,7 @@ class TripDestinationModeShare(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None,destination_activity_filters=None, **kwargs) -> None:
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate Handler.
         :param config: Config
@@ -297,7 +306,7 @@ class TripDestinationModeShare(PlanHandlerTool):
 
         self.mode = mode  # todo options not implemented
         self.groupby_person_attribute = groupby_person_attribute
-        self.destination_activity_filters = destination_activity_filters
+        self.destination_activity_filters = kwargs.get("destination_activity_filters")
         self.modes = None
         self.mode_indices = None
         self.classes = None
@@ -401,26 +410,29 @@ class TripDestinationModeShare(PlanHandlerTool):
         time).
         Finalise aggregates these results as required and creates a dataframe.
         """
+
         # Scale final counts
         self.mode_counts *= 1.0 / self.config.scale_factor
 
         names = ['mode', 'class', 'hour']
         indexes = [self.modes, self.classes, range(self.config.time_periods)]
         index = pd.MultiIndex.from_product(indexes, names=names)
-        counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)#[0]
+        counts_df = pd.DataFrame(self.mode_counts.flatten(), index=index)
+        counts_df.index = pd.MultiIndex.from_frame(
+            counts_df.index.to_frame().fillna("None")
+        )
         counts_df.columns = ["trip_count"]
-        # mode counts breakdown output
-        # counts_df = counts_df.unstack(level='mode').sort_index()
-        # if self.groupby_person_attribute:
-        key = f"{self.name}_{self.groupby_person_attribute}_counts"
+        key = f"{self.name}_detailed_counts"
         self.results[key] = counts_df
 
+        # mode counts totals by attribute
+        if self.groupby_person_attribute:
+            total_grouped_counts_df = counts_df.groupby(["mode", "class"]).sum()
+            key = f"{self.name}_{self.groupby_person_attribute}_counts"
+            self.results[key] = total_grouped_counts_df
+
         # mode counts totals output
-        total_counts_series = counts_df.unstack(level="mode").sum(0)
-        
-        total_counts_df = total_counts_series.to_frame()
-        total_counts_df.index.name = "mode"
-        total_counts_df.columns = ["trip_count"]
+        total_counts_df = counts_df.groupby(["mode"]).sum()
         key = f"{self.name}_counts"
         self.results[key] = total_counts_df
 
@@ -428,20 +440,21 @@ class TripDestinationModeShare(PlanHandlerTool):
         total = self.mode_counts.sum()
 
         # mode shares breakdown output
-        # if self.groupby_person_attribute:
-        key = f"{self.name}_{self.groupby_person_attribute}"
+        key = f"{self.name}_detailed"
         shares_df = counts_df / total
         shares_df.columns = ["trip_share"]
         self.results[key] = shares_df
 
+        # mode shares totals by attribute
+        if self.groupby_person_attribute:
+            total_grouped_shares_df = shares_df.groupby(["mode", "class"]).sum()
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            self.results[key] = total_grouped_shares_df
+
         # mode shares totals output
         key = f"{self.name}"
-        total_shares_series = total_counts_series / total
-        total_shares_df = total_shares_series.to_frame()
-        total_shares_df.index.name = "mode"
-        total_shares_df.columns = ["trip_share"]
+        total_shares_df = shares_df.groupby(["mode"]).sum()
         self.results[key] = total_shares_df
-
 
     @staticmethod
     def generate_id_map(list_in):

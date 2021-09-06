@@ -28,6 +28,7 @@ class Tool:
 
     mode = None
     groupby_person_attribute = None
+    destination_activity_filters = None
     kwargs = None
 
     valid_modes = None
@@ -64,9 +65,13 @@ class Tool:
             suffix += f"_{self.mode}" 
         if self.kwargs:  # add other options to ensure unique name
             for value in self.kwargs.values():
-                if os.path.isfile(value):  # if arg is a path then get file name minus extension
-                    value = os.path.basename(value).split(".")[0]
-                suffix += f"_{value}"
+                if isinstance(value, str) and os.path.isfile(value):  # if arg is a path then get file name minus extension
+                    # value = os.path.basename(value).split(".")[0]
+                    continue
+                if not isinstance(value, list):
+                    value = [value]
+                for v in value:
+                    suffix += f"_{v}"
         return f"{camel_to_snake(class_name)}{suffix}"
 
     def get_requirements(self) -> Union[None, Dict[str, list]]:
@@ -81,7 +86,15 @@ class Tool:
             return None
 
         if self.options_enabled:
-            requirements = {req: {'modes': [self.mode], 'groupby_person_attributes': [self.groupby_person_attribute]} for req in self.requirements}
+            requirements = {}
+            for req in self.requirements:
+                requirements[req] = {
+                    'modes': [self.mode],
+                    'groupby_person_attributes': [self.groupby_person_attribute],
+                }
+                requirements[req].update(self.kwargs)
+                requirements[req].pop("name", None)
+                requirements[req].pop("benchmark_data_path", None)
         else:
             requirements = {req: None for req in self.requirements}
 
@@ -327,6 +340,7 @@ class WorkStation:
         # loop tool first looking for matches so that tool order is preserved
         else:
             for tool_name, tool in self.tools.items():
+                
                 for manager_requirement, options in manager_requirements.items():
 
                     if len(manager_requirement.split("--")) > 1:
@@ -355,7 +369,7 @@ class WorkStation:
                                         key = tool_name
                                     else:
                                         key = f"{tool_name}:{mode}:{groupby_person_attribute}:{optional_arg_values_string}"
-
+                                    
                                     self.resources[key] = tool(
                                         config=self.config,
                                         mode=mode,
@@ -786,6 +800,7 @@ def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
         # collect unique mode dependencies
         modes = set()
         groupby_person_attributes = set()
+        kwargs = {}
         for req in reqs:
             if req and req.get(tool):
                 combined_reqs[tool] = req.get(tool)
@@ -800,12 +815,16 @@ def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
                 modes |= set(tool_reqs.get("modes"))
             if tool_reqs.get("groupby_person_attributes"):
                 groupby_person_attributes |= set(tool_reqs.get("groupby_person_attributes"))
+            remaining_args = {k:v for k,v in tool_reqs.items() if k not in ["modes","groupby_person_attributes"]}
+            kwargs.update(remaining_args)
+
         if not modes:
             modes = {None}
         if not groupby_person_attributes:
             groupby_person_attributes = {None}
         combined_reqs[tool]['modes'] = modes
         combined_reqs[tool]['groupby_person_attributes'] = groupby_person_attributes
+        combined_reqs[tool].update(kwargs)
 
     return combined_reqs
 
