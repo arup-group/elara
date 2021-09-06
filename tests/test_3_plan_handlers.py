@@ -1584,7 +1584,7 @@ def test_load_plan_handler_manager(test_config, test_paths):
     assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_detailed.csv"))
     assert os.path.exists(os.path.join(test_outputs, "mode_shares_all.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_detailed.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_work_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_work_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_work.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_work_detailed.csv"))
