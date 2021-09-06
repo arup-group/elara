@@ -1481,6 +1481,7 @@ def test_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_h
     assert np.sum(handler.mode_counts[:, handler.class_indices['yes'], :]) == 1
     assert np.sum(handler.mode_counts[:, handler.class_indices['no'], :]) == 1
 
+
 @pytest.fixture
 def test_activity_modeshare_plan_handler_finalised(test_plan_activity_modeshare_handler_age_attribute_slice):
     handler = test_plan_activity_modeshare_handler_age_attribute_slice
@@ -1560,21 +1561,30 @@ def test_load_plan_handler_manager(test_config, test_paths):
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
 
+    # mode_share
     tool = plan_workstation.tools['mode_shares']
-    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
+    plan_workstation.resources['mode_shares'] = tool(
+        test_config,
+        mode='all',
+        groupby_person_attribute="subpopulation"
+        )
+
+    # detination based mode_share
+    tool = plan_workstation.tools['trip_destination_mode_share']
+    plan_workstation.resources['trip_destination_mode_share'] = tool(
+        test_config,
+        'all',
+        destination_activity_filters=["work"]
+    )
 
     plan_workstation.build(write_path=test_outputs)
 
-    for handler in plan_workstation.resources.values():
-        for name, result in handler.results.items():
-            if 'counts' in name:
-                if isinstance(result, pd.DataFrame):
-                    assert result.trip_count.sum() == 10 / handler.config.scale_factor
-                else:
-                    assert result.sum() == 10 / handler.config.scale_factor 
+    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_detailed.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all.csv"))
 
-            else:
-                if isinstance(result, pd.DataFrame):
-                    assert result.trip_share.sum() == 1
-                else:
-                    assert result.sum() == 1
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_destination_mode_share_all_detailed.csv"))

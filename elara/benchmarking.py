@@ -12,48 +12,6 @@ from elara import get_benchmark_data
 
 logger = logging.getLogger(__name__)
 
-def merge_summary_stats(bm_results_summary):
-
-    bm_results_summary = bm_results_summary.reset_index()
-
-    data = json.loads(bm_results_summary.to_json(orient='records'))
-
-    results = []
-
-    for record in data:
-        record_type = record['source']
-        
-        record.pop("score")
-        record.pop("source")
-        
-        if record_type != "difference":
-            for measurement in list(record):
-                results.append(
-                    {
-                    "hour" : int(measurement),
-                    "volume" : record[measurement],
-                    "type" : record_type
-                    })
-
-    return pd.DataFrame(results)
-
-
-def comparative_plots(results):
-
-    return ggplot(
-        aes(y="volume", x="hour", color="type"),
-        data=results) + geom_point() + geom_line() + labs(y="Volume",
-        x="Time (hour)"
-        )
-
-def comparative_column_plots(results):
-    plot = ggplot(
-        aes(y="modeshare", x="mode", fill="type"),
-        data=results) + geom_col(position="dodge") + labs(y="Mode Share", 
-        x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
-    return  plot
-
-
 class BenchmarkTool(Tool):
 
     options_enabled = True
@@ -74,7 +32,7 @@ class CsvComparison(BenchmarkTool):
 
     index_field = None # index column(s) in the csv files
     value_field = None # value column in the csv files to compare
-    name = None # suffix to add to the output file names
+    # name = None # suffix to add to the output file names
     benchmark_data_path = None # filepath to the benchmark csv file
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
@@ -88,6 +46,7 @@ class CsvComparison(BenchmarkTool):
         Compare two csv files (benchmark vs simulation), calculate and plot their differences
         """
         # Read benchmark and simulation csv files
+        self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
         benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_field)
         simulation_path = os.path.join(self.config.output_path, self.simulation_name)
         simulation_df = pd.read_csv(simulation_path, index_col=self.index_field)
@@ -99,7 +58,7 @@ class CsvComparison(BenchmarkTool):
         bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
 
         # write results
-        csv_name = '{}_{}_{}.csv'.format(str(self), self.name, self.mode)
+        csv_name = f'{self.name}.csv'
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_df, csv_path, write_path=write_path)
 
@@ -114,21 +73,84 @@ class CsvComparison(BenchmarkTool):
         Bar comparison plot
         """
         df.plot(kind="bar", figsize=(17,12)).get_figure().\
-            savefig(os.path.join(self.config.output_path,'benchmarks', '{}_{}_{}.png'.format(str(self), self.name, self.mode)))
+            savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}.png'))
 
 
 class ModeSharesComparison(CsvComparison):
 
-    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+    def __init__(self, config, mode, **kwargs):
         super().__init__(config, mode=mode, **kwargs)
 
     requirements = ['mode_shares']
     valid_modes = ['all']
     index_field = ['mode']
     value_field = 'trip_share'
-    name = 'test'
+    # name = 'test'
     simulation_name = 'mode_shares_all.csv'
     weight = 1
+
+
+class TestModeSharesComparison(ModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_shares.csv')
+    )
+
+
+class ModeSharesByAttributeComparison(CsvComparison):
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.groupby_person_attribute = groupby_person_attribute
+        self.index_field = ['mode', 'class']
+        self.simulation_name = f'mode_shares_all_{groupby_person_attribute}.csv'
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    value_field = 'trip_share'
+    # name = 'test'
+    weight = 1
+
+
+class TestModeSharesByAttributeComparison(ModeSharesByAttributeComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
+    )
+
+
+class DestinationModeSharesComparison(CsvComparison):
+
+    def __init__(self, config, mode, **kwargs):
+        destination_activities = kwargs.get("destination_activity_filters", [])
+        self.simulation_name = f"trip_destination_mode_share_all"
+        for act in destination_activities:
+            self.simulation_name += f"_{act}"
+        self.simulation_name += ".csv"
+        super().__init__(config, mode=mode, **kwargs)
+
+    requirements = ['trip_destination_mode_share']
+    valid_modes = ['all']
+    index_field = ['mode']
+    value_field = 'trip_share'
+    # name = 'test'
+    simulation_name = 'trip_destination_mode_share_all.csv'
+    weight = 1
+
+
+class TestDestinationModeSharesComparison(DestinationModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_shares.csv')
+    )
 
 
 class DurationComparison(CsvComparison):
@@ -141,7 +163,7 @@ class DurationComparison(CsvComparison):
     valid_modes = ['all']
     index_field = ['duration']
     value_field = 'trips'
-    name = 'test'
+    # name = 'test'
     simulation_name = 'trip_duration_breakdown_all.csv'
     weight = 1
 
@@ -151,7 +173,7 @@ class TestDurationComparison(CsvComparison):
     valid_modes = ['all']
     index_field = ['duration']
     value_field = 'trips'
-    name = 'test'
+    # name = 'test'
     benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv'))
     simulation_name = 'trip_duration_breakdown_all.csv'
     weight = 1
@@ -163,7 +185,7 @@ class TestEuclideanDistanceComparison(CsvComparison):
 
     index_field = ['euclidean_distance']
     value_field = 'trips'
-    name = 'test'
+    # name = 'test'
     benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv'))
     simulation_name = 'trip_euclid_distance_breakdown_all.csv'
     weight = 1
@@ -444,138 +466,138 @@ class TestCordon(LinkCounterComparison):
     weight = 1
 
 
-class IrelandHighwayCounters(LinkCounterComparison):
+# class IrelandHighwayCounters(LinkCounterComparison):
 
-    name = 'ireland_highways_counters'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'car_highways_counters_20210302.json')
-    )
+#     name = 'ireland_highways_counters'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('ireland', 'highways', 'car_highways_counters_20210302.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
 
-    options_enabled = True
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
-class IrelandHighwayCounters_DCC(LinkCounterComparison):
+# class IrelandHighwayCounters_DCC(LinkCounterComparison):
 
-    name = 'ireland_highways_counters_DCC'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', 'allvehicle_highways_counters_DCC_20210304.json')
-    )
+#     name = 'ireland_highways_counters_DCC'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('ireland', 'dublin_cordon', 'allvehicle_highways_counters_DCC_20210304.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
 
-    options_enabled = True
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
-class NIHighwayCounters(LinkCounterComparison):
+# class NIHighwayCounters(LinkCounterComparison):
 
-    name = 'ireland_highways_counters_NI'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'highways', 'NI_car_20210302.json')
-    )
+#     name = 'ireland_highways_counters_NI'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('ireland', 'highways', 'NI_car_20210302.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-    options_enabled = True
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
     
-class LondonCentralCordonCar(LinkCounterComparison):
+# class LondonCentralCordonCar(LinkCounterComparison):
 
-    name = 'london_central_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_car_2017.json')
-    )
-
-
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-
-    options_enabled = True
-
-    weight = 1
+#     name = 'london_central_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_car_2017.json')
+#     )
 
 
-class LondonCentralCordonBus(LinkCounterComparison):
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
 
-    name = 'london_central_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_bus_2017.json')
-    )
+#     options_enabled = True
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['bus']
-    options_enabled = True
-
-    weight = 1
+#     weight = 1
 
 
-class LondonInnerCordonCar(LinkCounterComparison):
+# class LondonCentralCordonBus(LinkCounterComparison):
 
-    name = 'london_inner_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_car_2016.json')
-    )
+#     name = 'london_central_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_bus_2017.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-    options_enabled = True
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['bus']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
-class LondonInnerCordonBus(LinkCounterComparison):
+# class LondonInnerCordonCar(LinkCounterComparison):
 
-    name = 'london_inner_cordon'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_bus_2016.json')
-    )
+#     name = 'london_inner_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_car_2016.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['bus']
-    options_enabled = True
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
-class NewZealandCounters(LinkCounterComparison):
 
-    name = 'new_zealand_counters'
-    benchmark_data_path = get_benchmark_data(
-    os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
-    )
+# class LondonInnerCordonBus(LinkCounterComparison):
 
-    requirements = ['volume_counts']
-    valid_options = ['car']
-    options_enabled = True
+#     name = 'london_inner_cordon'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_bus_2016.json')
+#     )
 
-    weight = 1
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['bus']
+#     options_enabled = True
 
-class AucklandCounters(LinkCounterComparison):
-    def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
-        self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode)
-    name = 'auckland_counters'
-    requirements = ['link_vehicle_counts']
-    valid_options = ['car']
-    options_enabled = True
+#     weight = 1
+
+# class NewZealandCounters(LinkCounterComparison):
+
+#     name = 'new_zealand_counters'
+#     benchmark_data_path = get_benchmark_data(
+#     os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
+#     )
+
+#     requirements = ['volume_counts']
+#     valid_options = ['car']
+#     options_enabled = True
+
+#     weight = 1
+
+# class AucklandCounters(LinkCounterComparison):
+#     def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
+#         self.benchmark_data_path = benchmark_data_path
+#         super().__init__(config=config, mode=mode)
+#     name = 'auckland_counters'
+#     requirements = ['link_vehicle_counts']
+#     valid_options = ['car']
+#     options_enabled = True
     
-    weight = 1
+#     weight = 1
 
-class WellingtonCounters(LinkCounterComparison):
-    def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
-        self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode)
-    name = 'wellington_counters'
-    requirements = ['link_vehicle_counts']
-    valid_options = ['car']
-    options_enabled = True
+# class WellingtonCounters(LinkCounterComparison):
+#     def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
+#         self.benchmark_data_path = benchmark_data_path
+#         super().__init__(config=config, mode=mode)
+#     name = 'wellington_counters'
+#     requirements = ['link_vehicle_counts']
+#     valid_options = ['car']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 # class LondonBoundaryCordonCar(LinkCounter):
 
@@ -605,75 +627,75 @@ class WellingtonCounters(LinkCounterComparison):
 #     weight = 1
 
 
-class LondonThamesScreenCar(LinkCounterComparison):
+# class LondonThamesScreenCar(LinkCounterComparison):
 
-    name = 'london_thames_screen'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_car_2016.json')
-    )
+#     name = 'london_thames_screen'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_car_2016.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-    options_enabled = True
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
+#     options_enabled = True
 
-    weight = 1
-
-
-class LondonThamesScreenBus(LinkCounterComparison):
-
-    name = 'london_thames_screen'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_bus_2016.json')
-    )
-
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['bus']
-    options_enabled = True
-
-    weight = 1
-
-class SuffolkScreenlinesCounters(LinkCounterComparison):
-
-    name = 'suffolk_screenlines_counters'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('suffolk', 'screenlines', 'combined_car_benchmarks.json')
-    )
-
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-
-    options_enabled = True
-
-    weight = 1
+#     weight = 1
 
 
-class SuffolkDisaggregatedScreenlinesCounters(LinkCounterComparison):
+# class LondonThamesScreenBus(LinkCounterComparison):
 
-    name = 'suffolk_disaggregated_screenlines_counters'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('suffolk', 'screenlines', 'benchmarks.json')
-    )
+#     name = 'london_thames_screen'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_bus_2016.json')
+#     )
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['bus']
+#     options_enabled = True
 
-    options_enabled = True
+#     weight = 1
 
-    weight = 1
+# class SuffolkScreenlinesCounters(LinkCounterComparison):
 
-class SuffolkCarScreenlinesCounters(LinkCounterComparison):
+#     name = 'suffolk_screenlines_counters'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('suffolk', 'screenlines', 'combined_car_benchmarks.json')
+#     )
 
-    name = 'suffolk_car_screenlines_counters'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('suffolk', 'screenlines', 'screenlines_car.json')
-    )
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
+#     options_enabled = True
 
-    options_enabled = True
+#     weight = 1
 
-    weight = 1
+
+# class SuffolkDisaggregatedScreenlinesCounters(LinkCounterComparison):
+
+#     name = 'suffolk_disaggregated_screenlines_counters'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('suffolk', 'screenlines', 'benchmarks.json')
+#     )
+
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
+
+#     options_enabled = True
+
+#     weight = 1
+
+# class SuffolkCarScreenlinesCounters(LinkCounterComparison):
+
+#     name = 'suffolk_car_screenlines_counters'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('suffolk', 'screenlines', 'screenlines_car.json')
+#     )
+
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
+
+#     options_enabled = True
+
+#     weight = 1
 
 # class SuffolkHGVScreenlinesCounters(LinkCounter):
 
@@ -985,46 +1007,46 @@ class TestPTInteraction(TransitInteractionComparison):
     weight = 1
 
 
-class LondonRODS(TransitInteractionComparison):
+# class LondonRODS(TransitInteractionComparison):
 
-    name = 'london_rods'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_board_alight_subway_2017.json')
-    )
+#     name = 'london_rods'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_board_alight_subway_2017.json')
+#     )
 
-    requirements = ['stop_passenger_counts']
-    valid_modes = ['subway']
-    options_enabled = True
+#     requirements = ['stop_passenger_counts']
+#     valid_modes = ['subway']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
-class WellingtonPTInteration(TransitInteractionComparison):
+# class WellingtonPTInteration(TransitInteractionComparison):
 
-    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
-        self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode=mode, **kwargs)
+#     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+#         self.benchmark_data_path = benchmark_data_path
+#         super().__init__(config, mode=mode, **kwargs)
 
-    name = 'wellington_stop_passenger_counts'
+#     name = 'wellington_stop_passenger_counts'
 
-    requirements = ['stop_passenger_counts']
-    valid_modes = ['bus','pt','rail']
-    options_enabled = True
+#     requirements = ['stop_passenger_counts']
+#     valid_modes = ['bus','pt','rail']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
     
-class AucklandPTInteraction(TransitInteractionComparison):
+# class AucklandPTInteraction(TransitInteractionComparison):
 
-    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
-        self.benchmark_data_path = benchmark_data_path
-        super().__init__(config=config, mode=mode, **kwargs)
+#     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+#         self.benchmark_data_path = benchmark_data_path
+#         super().__init__(config=config, mode=mode, **kwargs)
 
-    name = 'auckland_stop_passenger_counts'
+#     name = 'auckland_stop_passenger_counts'
 
-    requirements = ['stop_passenger_counts']
-    valid_modes = ['bus','pt','rail', 'ferry']
-    options_enabled = True
+#     requirements = ['stop_passenger_counts']
+#     valid_modes = ['bus','pt','rail', 'ferry']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 class PassengerStopToStop(BenchmarkTool):
 
@@ -1299,18 +1321,18 @@ class TestPTVolume(PassengerStopToStop):
     weight = 1
 
 
-class LondonRODSVolume(PassengerStopToStop):
+# class LondonRODSVolume(PassengerStopToStop):
 
-    name = 'london_rods_volume'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'london-GLA-UK-puma', 'puma_volumes_subway_2017.json')
-    )
+#     name = 'london_rods_volume'
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'london-GLA-UK-puma', 'puma_volumes_subway_2017.json')
+#     )
 
-    requirements = ['stop_to_stop_passenger_counts']
-    valid_modes = ['subway']
-    options_enabled = True
+#     requirements = ['stop_to_stop_passenger_counts']
+#     valid_modes = ['subway']
+#     options_enabled = True
 
-    weight = 1
+#     weight = 1
 
 
 # ========================== Old style BMs below ==========================
@@ -1819,49 +1841,49 @@ class OldModeSharesComparison(BenchmarkTool):
 
         return {'counters': score}
 
-class LondonModeShare(ModeSharesComparison):
+# class LondonModeShare(ModeSharesComparison):
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
+#     requirements = ['mode_shares']
+#     valid_modes = ['all']
+#     options_enabled = True
 
-    weight = 2
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('london', 'travel-in-london-11', 'modestats.csv')
-    )
+#     weight = 2
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
+#     )
 
-class NZModeShare(ModeSharesComparison):
+# class NZModeShare(ModeSharesComparison):
     
-    requirements = ['mode_shares']
-    def __init__(self, config, mode, benchmark_data_path):
-        self.benchmark_data_path = benchmark_data_path
-        super().__init__(config, mode)
-    valid_modes = ['all']
-    options_enabled = True
+#     requirements = ['mode_shares']
+#     def __init__(self, config, mode, benchmark_data_path):
+#         self.benchmark_data_path = benchmark_data_path
+#         super().__init__(config, mode)
+#     valid_modes = ['all']
+#     options_enabled = True
 
-    weight = 2
+#     weight = 2
 
-class ROIModeShare(ModeSharesComparison):
+# class ROIModeShare(ModeSharesComparison):
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
+#     requirements = ['mode_shares']
+#     valid_modes = ['all']
+#     options_enabled = True
 
-    weight = 2
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
-    )
+#     weight = 2
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
+#     )
 
-class SuffolkModeShare(ModeSharesComparison):
+# class SuffolkModeShare(ModeSharesComparison):
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
+#     requirements = ['mode_shares']
+#     valid_modes = ['all']
+#     options_enabled = True
 
-    weight = 2
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('suffolk', 'mode_share_validation', 'combined_pop_mode_share_20210601_10pct.csv')
-    )
+#     weight = 2
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('suffolk', 'mode_share_validation', 'combined_pop_mode_share_20210601_10pct.csv')
+#     )
 # Highway Counters
 
 class TestHighwayCounters(PointsCounter):
@@ -1942,37 +1964,37 @@ class MultimodalTownCarCounters(PointsCounter):
 #     modes = ['car']
 
 
-class DublinCanalCordonCar(Cordon):
+# class DublinCanalCordonCar(Cordon):
 
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car']
-    options_enabled = True
+#     requirements = ['link_vehicle_counts']
+#     valid_modes = ['car']
+#     options_enabled = True
 
-    weight = 1
-    cordon_counter = PeriodCordonDirectionCount
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
-    )
-    cordon_path = get_benchmark_data(
-        os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
-    )
+#     weight = 1
+#     cordon_counter = PeriodCordonDirectionCount
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
+#     )
+#     cordon_path = get_benchmark_data(
+#         os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
+#     )
 
-    directions = {'in': 1}
-    year = 2016
-    hours = [7, 8, 9]
-    modes = ['car']
+#     directions = {'in': 1}
+#     year = 2016
+#     hours = [7, 8, 9]
+#     modes = ['car']
 
 
-class IrelandCommuterStats(ModeSharesComparison):
+# class IrelandCommuterStats(ModeSharesComparison):
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
+#     requirements = ['mode_shares']
+#     valid_modes = ['all']
+#     options_enabled = True
 
-    weight = 1
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
-    )
+#     weight = 1
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
+#     )
 
 
 
@@ -2018,16 +2040,6 @@ class TestTownPeakIn(Cordon):
     modes = ['car', 'bus']
 
 
-class TestTownCommuterStats(ModeSharesComparison):
-
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    options_enabled = True
-
-    weight = 1
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_shares.csv')
-    )
 
 
 class BenchmarkWorkStation(WorkStation):
@@ -2036,97 +2048,60 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
-        # tests
+        "mode_shares_comparison": ModeSharesComparison,
+        "destination_mode_shares_comparison": DestinationModeSharesComparison,
+        "attribute_mode_shares_comparison": ModeSharesByAttributeComparison,
+        "duration_comparison": DurationComparison,
+        "link_counter_comparison": LinkCounterComparison,
+        "transit_interaction_comparison": TransitInteractionComparison,
+
+        "test_mode_shares_comparison": TestModeSharesComparison,
+        "test_destination_mode_shares_comparison": TestDestinationModeSharesComparison,
+        "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
+        "test_duration_comparison": TestDurationComparison,
         "test_link_cordon": TestCordon,
         "test_pt_interaction_counter": TestPTInteraction,
         "test_pt_volumes": TestPTVolume,
-        "test_town_modeshare": TestTownCommuterStats,
-        "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
-        "test_duration_comparison": TestDurationComparison,
-        "duration_comparison": DurationComparison,
-
-        # latest
-        "mode_shares_comparison": ModeSharesComparison,
-        "link_counter_comparison": LinkCounterComparison,
-        "transit_interaction_comparison": TransitInteractionComparison,
-        "suffolk_screenlines": SuffolkScreenlinesCounters,
-        "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
-        "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
+        # "suffolk_screenlines": SuffolkScreenlinesCounters,
+        # "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
+        # "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
         # "suffolk_HGV_screenlines":SuffolkHGVScreenlinesCounters,
-        "ireland_highways": IrelandHighwayCounters,
-        "ireland_highways_NI": NIHighwayCounters,
-        "ireland_DCC": IrelandHighwayCounters_DCC,
+        # "ireland_highways": IrelandHighwayCounters,
+        # "ireland_highways_NI": NIHighwayCounters,
+        # "ireland_DCC": IrelandHighwayCounters_DCC,
         # "london_boundary_cordon_car": LondonBoundaryCordonCar,
         # "london_boundary_cordon_bus": LondonBoundaryCordonBus,
-        "london_central_cordon_car": LondonCentralCordonCar,
-        "london_central_cordon_bus": LondonCentralCordonBus,
-        "london_inner_cordon_car": LondonInnerCordonCar,
-        "london_inner_cordon_bus": LondonInnerCordonBus,
-        "london_thames_screen_car": LondonThamesScreenCar,
-        "london_thames_screen_bus": LondonThamesScreenBus,
+        # "london_central_cordon_car": LondonCentralCordonCar,
+        # "london_central_cordon_bus": LondonCentralCordonBus,
+        # "london_inner_cordon_car": LondonInnerCordonCar,
+        # "london_inner_cordon_bus": LondonInnerCordonBus,
+        # "london_thames_screen_car": LondonThamesScreenCar,
+        # "london_thames_screen_bus": LondonThamesScreenBus,
         # "london_northern_screen": LondonNorthScreen,
         # "london_peripheral_screen": LondonPeriphScreen,
-        "london_board_alight_subway": LondonRODS,
-        "london_volume_subway": LondonRODSVolume,
-        "london_modeshares": LondonModeShare,
-        "ROI_modeshares": ROIModeShare,
-        "new_zealand_counters" : NewZealandCounters,
-        "auckland_counters":AucklandCounters,
-        "nz_modeshares": NZModeShare,
-        "wellington_counters":WellingtonCounters,
-        "wellington_stop_passenger_counts": WellingtonPTInteration,
-        "auckland_stop_passenger_counts":AucklandPTInteraction,
+        # "london_board_alight_subway": LondonRODS,
+        # "london_volume_subway": LondonRODSVolume,
+        # "london_modeshares": LondonModeShare,
+        # "ROI_modeshares": ROIModeShare,
+        # "new_zealand_counters" : NewZealandCounters,
+        # "auckland_counters":AucklandCounters,
+        # "nz_modeshares": NZModeShare,
+        # "wellington_counters":WellingtonCounters,
+        # "wellington_stop_passenger_counts": WellingtonPTInteration,
+        # "auckland_stop_passenger_counts":AucklandPTInteraction,
         
-        "suffolk_modeshares": SuffolkModeShare,
+        # "suffolk_modeshares": SuffolkModeShare,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        "dublin_canal_cordon_car": DublinCanalCordonCar,
-        "ireland_commuter_modeshare": IrelandCommuterStats,
+        # "dublin_canal_cordon_car": DublinCanalCordonCar,
+        # "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
     }
-
-    # BENCHMARK_WEIGHTS = {
-    #     "test_link_cordon": 1,
-    #     "test_pt_interaction_counter": 1,
-    #     "test_pt_volumes": 1,
-    #     "test_town_modeshare": 1,
-    #     "csv_comparison": 1,
-        
-    #     "suffolk_screenlines": 1,
-    #     "suffolk_disaggregated_screenlines": 1,
-    #     "suffolk_car_screenlines":1,
-    #     # "suffolk_HGV_screenlines":1,
-    #     "ireland_highways": 1,
-    #     "london_boundary_cordon_car": 1,
-    #     "london_boundary_cordon_bus": 1,
-    #     "london_central_cordon_car": 1,
-    #     "london_central_cordon_bus": 1,
-    #     "london_inner_cordon_car": 1,
-    #     "london_inner_cordon_bus": 1,
-    #     "london_thames_screen_car": 1,
-    #     "london_thames_screen_bus": 1,
-    #     "london_board_alight_subway": 1,
-    #     "london_volume_subway": 1,
-    #     "london_modeshares": 1,
-    #     "nz_modeshares":1,
-    #     "auckland_counters":1,
-    #     "wellington_counters":1,
-    #     "wellington_stop_passenger_counts":1,
-
-    #     "test_town_highways": 1,
-    #     "squeeze_town_highways": 1,
-    #     "multimodal_town_modeshare": 1,
-    #     "multimodal_town_cars_counts": 1,
-    #     "dublin_canal_cordon_car": 1,
-    #     "ireland_commuter_modeshare": 1,
-    #     "test_town_cordon": 1,
-    #     "test_town_peak_cordon": 1,
-    # }
 
     benchmarks = {}
     scores_df = None
@@ -2176,3 +2151,45 @@ class BenchmarkWorkStation(WorkStation):
         json_name = 'benchmark_scores.json'
         json_path = os.path.join('benchmarks', json_name)
         self.write_json(summary, json_path, write_path=write_path)
+
+
+def merge_summary_stats(bm_results_summary):
+
+    bm_results_summary = bm_results_summary.reset_index()
+
+    data = json.loads(bm_results_summary.to_json(orient='records'))
+
+    results = []
+
+    for record in data:
+        record_type = record['source']
+        
+        record.pop("score")
+        record.pop("source")
+        
+        if record_type != "difference":
+            for measurement in list(record):
+                results.append(
+                    {
+                    "hour" : int(measurement),
+                    "volume" : record[measurement],
+                    "type" : record_type
+                    })
+
+    return pd.DataFrame(results)
+
+
+def comparative_plots(results):
+
+    return ggplot(
+        aes(y="volume", x="hour", color="type"),
+        data=results) + geom_point() + geom_line() + labs(y="Volume",
+        x="Time (hour)"
+        )
+
+def comparative_column_plots(results):
+    plot = ggplot(
+        aes(y="modeshare", x="mode", fill="type"),
+        data=results) + geom_col(position="dodge") + labs(y="Mode Share", 
+        x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
+    return  plot
