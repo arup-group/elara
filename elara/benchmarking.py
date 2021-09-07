@@ -54,8 +54,10 @@ class CsvComparison(BenchmarkTool):
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
         bm_df.columns = ['trips_benchmark', 'trips_simulation']
+        bm_df.fillna(0, inplace=True)
         self.plot_comparison(bm_df)
         bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
+        bm_df['abs_difference'] = bm_df.difference.abs()
 
         # write results
         csv_name = f'{self.name}.csv'
@@ -63,8 +65,10 @@ class CsvComparison(BenchmarkTool):
         self.write_csv(bm_df, csv_path, write_path=write_path)
 
         # evaluation metrics
-        bm_mse = np.mean(bm_df['difference'] ** 2) # mean squared error
-        scores = {'mse':bm_mse}
+        scores = {
+            'mse':np.mean(bm_df['difference'] ** 2), # mean squared error
+            'mae': np.mean(bm_df.abs_difference)
+            }
 
         return scores
 
