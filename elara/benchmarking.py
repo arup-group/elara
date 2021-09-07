@@ -167,7 +167,6 @@ class DurationComparison(CsvComparison):
     valid_modes = ['all']
     index_field = ['duration']
     value_field = 'trips'
-    # name = 'test'
     simulation_name = 'trip_duration_breakdown_all.csv'
     weight = 1
 
@@ -177,9 +176,18 @@ class TestDurationComparison(CsvComparison):
     valid_modes = ['all']
     index_field = ['duration']
     value_field = 'trips'
-    # name = 'test'
     benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv'))
     simulation_name = 'trip_duration_breakdown_all.csv'
+    weight = 1
+
+
+class EuclideanDistanceComparison(CsvComparison):
+    requirements = ['trip_euclid_distance_breakdown']
+    valid_modes = ['all']
+
+    index_field = ['euclidean_distance']
+    value_field = 'trips'
+    simulation_name = 'trip_euclid_distance_breakdown_all.csv'
     weight = 1
 
 
@@ -189,7 +197,6 @@ class TestEuclideanDistanceComparison(CsvComparison):
 
     index_field = ['euclidean_distance']
     value_field = 'trips'
-    # name = 'test'
     benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv'))
     simulation_name = 'trip_euclid_distance_breakdown_all.csv'
     weight = 1
@@ -2055,6 +2062,7 @@ class BenchmarkWorkStation(WorkStation):
         "mode_shares_comparison": ModeSharesComparison,
         "destination_mode_shares_comparison": DestinationModeSharesComparison,
         "attribute_mode_shares_comparison": ModeSharesByAttributeComparison,
+        "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,
         "transit_interaction_comparison": TransitInteractionComparison,
