@@ -179,11 +179,11 @@ trip_duration_breakdown = ["all"]
 trip_euclid_distance_breakdown = ["all"]
 
 [benchmarks]
-test_pt_interaction_counter = ["bus"]
-test_link_cordon = ["car"]
+test_mode_shares_comparison = ["all]
 test_duration_comparison = ["all"]
 test_euclidean_distance_comparison = ["all"]
-
+test_pt_interaction_counter = ["bus"]
+test_link_cordon = ["car"]
 ```
 
 You can run this config on some toy data: `elara run example_config.toml` (from the project root).
@@ -403,6 +403,7 @@ Currently available benchmarks include:
 * ``mode_shares_comparison``
 * ``destination_mode_shares_comparison``
 * ``attribute_mode_shares_comparison``
+* ``euclidean_distance_comparison``
 * ``duration_comparison``
 * ``link_counter_comparison``
 * ``transit_interaction_comparison``
@@ -508,10 +509,9 @@ or, much more succinctly:
 
 `elara event-handlers link-vehicle-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
-Produce a **benchmark**, in this case we assume that a benchmark has already been created 
-called `ireland-highways` and that it works for buses and cars.
+Produce a **benchmark**, in this case we assume that a benchmark has already been created called and that it works for all modes.
 
-`elara benchmarks ireland-highways car bus -e "ESPG:2157"`
+`elara benchmarks mode_shares_comparison all -e "ESPG:2157"`
 
 Note that we are assuming that all other option defaults are correct. ie:
 - --scale_factor = 0.1
