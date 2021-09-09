@@ -107,11 +107,30 @@ def test_points_counter_init():
 #     assert score['in'] == 0
 
 
-def test_town_mode_share_score_zero():
-    benchmark = benchmarking.TestTownCommuterStats
+def test_mode_share_score_zero():
+    benchmark = benchmarking.TestModeSharesComparison
     test_bm = benchmark(
         config,
         'all',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_destination_mode_share_score_zero():
+    benchmark = benchmarking.TestDestinationModeSharesComparison
+    test_bm = benchmark(
+        config,
+        'all'
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_town_mode_share_with_attribute_groups_score_zero():
+    benchmark = benchmarking.TestModeSharesByAttributeComparison
+    test_bm = benchmark(
+        config=config,
+        mode='all',
+        groupby_person_attribute="subpopulation"
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0

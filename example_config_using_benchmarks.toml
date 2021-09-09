@@ -1,0 +1,30 @@
+[scenario]
+name = "test_town"
+time_periods = 24
+scale_factor = 0.0001
+crs = "EPSG:27700"
+verbose = false
+version = 12
+using_experienced_plans = false
+
+[inputs]
+events = "./tests/test_fixtures/output_events.xml"
+network = "./tests/test_fixtures/output_network.xml"
+transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml"
+transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml"
+plans= "./tests/test_fixtures/output_plans.xml"
+output_config_path = "./tests/test_fixtures/output_config.xml"
+
+[outputs]
+path = "./outputs"
+
+[benchmarks]
+mode_shares_comparison = {benchmark_data_path = "./elara/benchmark_data/test_fixtures/mode_shares.csv"}
+destination_mode_shares_comparison--commuters = {benchmark_data_path = "./elara/benchmark_data/test_fixtures/mode_shares.csv", destination_activity_filters=["work"]}
+attribute_mode_shares_comparison--subpop = {benchmark_data_path = "./elara/benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["subpopulation"]}
+attribute_mode_shares_comparison--age = {benchmark_data_path = "./elara/benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["age"]}
+link_counter_comparison--A = {modes = ["car"], benchmark_data_path = "./elara/benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
+link_counter_comparison--B = {modes = ["car"], benchmark_data_path = "./elara/benchmark_data/test_town/test_town_cordon/test_link_counter_duplicate.json"}
+
+
+

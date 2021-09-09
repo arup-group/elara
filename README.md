@@ -179,11 +179,11 @@ trip_duration_breakdown = ["all"]
 trip_euclid_distance_breakdown = ["all"]
 
 [benchmarks]
-test_pt_interaction_counter = ["bus"]
-test_link_cordon = ["car"]
+test_mode_shares_comparison = ["all]
 test_duration_comparison = ["all"]
 test_euclidean_distance_comparison = ["all"]
-
+test_pt_interaction_counter = ["bus"]
+test_link_cordon = ["car"]
 ```
 
 You can run this config on some toy data: `elara run example_config.toml` (from the project root).
@@ -367,7 +367,7 @@ Care should be taken not to specify unnecesary options as they can add significa
 
 ### Experienced Plans
 
-If using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. Which will prevent elara from providing outputs grouped by person attributes. If such outputs are required set the 'using_experienced_plans' option to 'true' and provide the standard MATSim 'output_plans' as the attributes input:
+If using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. Which will prevent elara from providing outputs grouped by person attributes (ie those that use the `groupby_person_attributes` option). If such outputs are required set the 'using_experienced_plans' option to 'true' and provide the standard MATSim 'output_plans' as the attributes input:
 
 ```{.toml}
 [scenario]
@@ -393,55 +393,24 @@ Benchmarks are added to the config as follows:
 **#** benchmarks.**[benchmarks name]** *list of strings* *(optional)*
 
 Specification of the benchmarks to be run. These include a variety of highway counters, 
-cordons and mode share benchmarks for specific projects. **Benchmarks calculated using preprocessed
- data unique to the given scenario network. This means that a given benchmark will not work for a
-  given scenario (say 'London') unless the same network and/or schedule are in use.** Where a 
-  network or schedule has been changed, the project [bench](https://github.com/arup-group/bench) 
-  has been created to pre-process this data. 
-  'Normalised' volume plots (e.g those produced by ``ireland_highways``) refer to total volumes normalised by number of counters, so figure shows profile for the 'average' counter.
+cordons and mode share benchmarks. **Benchmarks calculated using preprocessed
+ data unique to a scenario. 'Normalised' volume plots refer to total volumes normalised by number of counters, so figure shows profile for the 'average' counter.
+
+ Benchmarks take a `benchmark_data_path` option in addition to regular options. This is used to pass the required scenario data for comparison. The scenario data must match the required format for the benchmark handler.
 
 Currently available benchmarks include:
 
-_newer formats (produced using `bench`):_
+* ``mode_shares_comparison``
+* ``destination_mode_shares_comparison``
+* ``attribute_mode_shares_comparison``
+* ``euclidean_distance_comparison``
+* ``duration_comparison``
+* ``link_counter_comparison``
+* ``transit_interaction_comparison``
 
-* ``ireland_highways``
-* ``ireland_highways_NI``
-* ``ireland_DCC``
-* ``ROI_modeshares``
-* ``london_board_alight_subway``
-* ``london_central_cordon_car``
-* ``london_central_cordon_bus``
-* ``london_inner_cordon_car``
-* ``london_inner_cordon_bus``
-* ``london_boundary_cordon_car``
-* ``london_boundary_cordon_bus``
-* ``london_thames_screen_car``
-* ``london_thames_screen_bus``
-* ``test_pt_interaction_counter``
-* ``test_link_cordon``
+Note that benchmarks are often mode specific and should be configured as such, eg:
 
-^ note that ``ROI_modeshares`` and other mode share benchmarks only support the option of ``["all"]``.
-
-_older formats (no longer maintained):_
-
-* ``london_inner_cordon_car``
-* ``dublin_canal_cordon_car``
-* ``ireland_commuter_modeshare``
-* ``test_town_highways``
-* ``squeeze_town_highways``
-* ``test_town_cordon``
-* ``test_town_peak_cordon``
-* ``test_town_modeshare``
-
-The associated list attached to each handler allows specification of which modes of transport 
-should be processed using that handler. This allows certain handlers to be activated for public 
-transport modes but not private vehicles for example. Possible modes currently include:
-
-* eg ``car, bus, train, subway...``
-
-However please note that benchmarks are often mode specific and should be configured as such, eg:
-
-* ``london_central_cordon_car = ["car"]``
+* ``link_counter_comparison = {modes=["car"], benchmark_data_path = "path/to/data"}``
 
 ### Naming Handlers
 
@@ -540,10 +509,9 @@ or, much more succinctly:
 
 `elara event-handlers link-vehicle-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
-Produce a **benchmark**, in this case we assume that a benchmark has already been created 
-called `ireland-highways` and that it works for buses and cars.
+Produce a **benchmark**, in this case we assume that a benchmark has already been created called and that it works for all modes.
 
-`elara benchmarks ireland-highways car bus -e "ESPG:2157"`
+`elara benchmarks mode_shares_comparison all -e "ESPG:2157"`
 
 Note that we are assuming that all other option defaults are correct. ie:
 - --scale_factor = 0.1
