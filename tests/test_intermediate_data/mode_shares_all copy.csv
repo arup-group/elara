@@ -1,7 +1,0 @@
-,mode,trip_share
-trip_count,bike,0.2
-trip_count,bus,0.4
-trip_count,car,0.4
-trip_count,pt,0.0
-trip_count,transit_walk,0.0
-trip_count,walk,0.0
