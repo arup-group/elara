@@ -17,7 +17,7 @@ class Config:
                 "time_periods": 24,
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
-                "version": 11,
+                "version": 12,
                 "using_experienced_plans": False,
                 "verbose": False,
             },

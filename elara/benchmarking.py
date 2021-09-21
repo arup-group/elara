@@ -477,279 +477,6 @@ class TestCordon(LinkCounterComparison):
     weight = 1
 
 
-# class IrelandHighwayCounters(LinkCounterComparison):
-
-#     name = 'ireland_highways_counters'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('ireland', 'highways', 'car_highways_counters_20210302.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-
-#     options_enabled = True
-
-#     weight = 1
-
-# class IrelandHighwayCounters_DCC(LinkCounterComparison):
-
-#     name = 'ireland_highways_counters_DCC'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('ireland', 'dublin_cordon', 'allvehicle_highways_counters_DCC_20210304.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-
-#     options_enabled = True
-
-#     weight = 1
-
-# class NIHighwayCounters(LinkCounterComparison):
-
-#     name = 'ireland_highways_counters_NI'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('ireland', 'highways', 'NI_car_20210302.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
-
-#     weight = 1
-    
-# class LondonCentralCordonCar(LinkCounterComparison):
-
-#     name = 'london_central_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_car_2017.json')
-#     )
-
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonCentralCordonBus(LinkCounterComparison):
-
-#     name = 'london_central_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_central_london_bus_2017.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['bus']
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonInnerCordonCar(LinkCounterComparison):
-
-#     name = 'london_inner_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_car_2016.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonInnerCordonBus(LinkCounterComparison):
-
-#     name = 'london_inner_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_inner_london_bus_2016.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['bus']
-#     options_enabled = True
-
-#     weight = 1
-
-# class NewZealandCounters(LinkCounterComparison):
-
-#     name = 'new_zealand_counters'
-#     benchmark_data_path = get_benchmark_data(
-#     os.path.join('new_zealand', 'counters', 'new_zealand_counts.json')
-#     )
-
-#     requirements = ['volume_counts']
-#     valid_options = ['car']
-#     options_enabled = True
-
-#     weight = 1
-
-# class AucklandCounters(LinkCounterComparison):
-#     def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
-#         self.benchmark_data_path = benchmark_data_path
-#         super().__init__(config=config, mode=mode)
-#     name = 'auckland_counters'
-#     requirements = ['link_vehicle_counts']
-#     valid_options = ['car']
-#     options_enabled = True
-    
-#     weight = 1
-
-# class WellingtonCounters(LinkCounterComparison):
-#     def __init__(self, config, mode, benchmark_data_path=None, groupby_person_attribute=None, **kwargs):
-#         self.benchmark_data_path = benchmark_data_path
-#         super().__init__(config=config, mode=mode)
-#     name = 'wellington_counters'
-#     requirements = ['link_vehicle_counts']
-#     valid_options = ['car']
-#     options_enabled = True
-
-#     weight = 1
-
-# class LondonBoundaryCordonCar(LinkCounter):
-
-#     name = 'london_outer_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_car_2017.json')
-#     )
-
-#     requirements = ['volume_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonBoundaryCordonBus(LinkCounter):
-
-#     name = 'london_outer_cordon'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_boundary_london_bus_2017.json')
-#     )
-
-#     requirements = ['volume_counts']
-#     valid_modes = ['bus']
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonThamesScreenCar(LinkCounterComparison):
-
-#     name = 'london_thames_screen'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_car_2016.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonThamesScreenBus(LinkCounterComparison):
-
-#     name = 'london_thames_screen'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_thames_screen_bus_2016.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['bus']
-#     options_enabled = True
-
-#     weight = 1
-
-# class SuffolkScreenlinesCounters(LinkCounterComparison):
-
-#     name = 'suffolk_screenlines_counters'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('suffolk', 'screenlines', 'combined_car_benchmarks.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class SuffolkDisaggregatedScreenlinesCounters(LinkCounterComparison):
-
-#     name = 'suffolk_disaggregated_screenlines_counters'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('suffolk', 'screenlines', 'benchmarks.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-
-#     options_enabled = True
-
-#     weight = 1
-
-# class SuffolkCarScreenlinesCounters(LinkCounterComparison):
-
-#     name = 'suffolk_car_screenlines_counters'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('suffolk', 'screenlines', 'screenlines_car.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-
-#     options_enabled = True
-
-#     weight = 1
-
-# class SuffolkHGVScreenlinesCounters(LinkCounter):
-
-#     name = 'suffolk_hgv_screenlines_counters'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('suffolk', 'screenlines', 'screenlines_hgv.json')
-#     )
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ["hgv"]
-
-#     options_enabled = True
-
-#     weight = 1
-
-# class LondonNorthScreen(LinkCounter):
-
-#     name = 'london_northern_screen'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA', 'northern_screen.json')
-#     )
-
-#     requirements = ['volume_counts']
-#     valid_modes = ['car', 'bus']
-#     options_enabled = True
-
-#     weight = 1
-
-
-# class LondonPeriphScreen(LinkCounter):
-
-#     name = 'london_peripheral_screen'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA', 'peripheral_screen.json')
-#     )
-
-#     requirements = ['volume_counts']
-#     valid_modes = ['car', 'bus']
-#     options_enabled = True
-
-#     weight = 1
-
-
 class TransitInteractionComparison(BenchmarkTool):
 
     requirements = ['stop_passenger_counts']
@@ -1017,47 +744,6 @@ class TestPTInteraction(TransitInteractionComparison):
 
     weight = 1
 
-
-# class LondonRODS(TransitInteractionComparison):
-
-#     name = 'london_rods'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_board_alight_subway_2017.json')
-#     )
-
-#     requirements = ['stop_passenger_counts']
-#     valid_modes = ['subway']
-#     options_enabled = True
-
-#     weight = 1
-
-# class WellingtonPTInteration(TransitInteractionComparison):
-
-#     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
-#         self.benchmark_data_path = benchmark_data_path
-#         super().__init__(config, mode=mode, **kwargs)
-
-#     name = 'wellington_stop_passenger_counts'
-
-#     requirements = ['stop_passenger_counts']
-#     valid_modes = ['bus','pt','rail']
-#     options_enabled = True
-
-#     weight = 1
-    
-# class AucklandPTInteraction(TransitInteractionComparison):
-
-#     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
-#         self.benchmark_data_path = benchmark_data_path
-#         super().__init__(config=config, mode=mode, **kwargs)
-
-#     name = 'auckland_stop_passenger_counts'
-
-#     requirements = ['stop_passenger_counts']
-#     valid_modes = ['bus','pt','rail', 'ferry']
-#     options_enabled = True
-
-#     weight = 1
 
 class PassengerStopToStop(BenchmarkTool):
 
@@ -1332,22 +1018,7 @@ class TestPTVolume(PassengerStopToStop):
     weight = 1
 
 
-# class LondonRODSVolume(PassengerStopToStop):
-
-#     name = 'london_rods_volume'
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'london-GLA-UK-puma', 'puma_volumes_subway_2017.json')
-#     )
-
-#     requirements = ['stop_to_stop_passenger_counts']
-#     valid_modes = ['subway']
-#     options_enabled = True
-
-#     weight = 1
-
-
 # ========================== Old style BMs below ==========================
-
 
 class PointsCounter(BenchmarkTool):
 
@@ -1852,50 +1523,6 @@ class OldModeSharesComparison(BenchmarkTool):
 
         return {'counters': score}
 
-# class LondonModeShare(ModeSharesComparison):
-
-#     requirements = ['mode_shares']
-#     valid_modes = ['all']
-#     options_enabled = True
-
-#     weight = 2
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'travel-in-london-11', 'modestats.csv')
-#     )
-
-# class NZModeShare(ModeSharesComparison):
-    
-#     requirements = ['mode_shares']
-#     def __init__(self, config, mode, benchmark_data_path):
-#         self.benchmark_data_path = benchmark_data_path
-#         super().__init__(config, mode)
-#     valid_modes = ['all']
-#     options_enabled = True
-
-#     weight = 2
-
-# class ROIModeShare(ModeSharesComparison):
-
-#     requirements = ['mode_shares']
-#     valid_modes = ['all']
-#     options_enabled = True
-
-#     weight = 2
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('ireland', 'nhts_survey', 'whole_pop_modeshare.csv')
-#     )
-
-# class SuffolkModeShare(ModeSharesComparison):
-
-#     requirements = ['mode_shares']
-#     valid_modes = ['all']
-#     options_enabled = True
-
-#     weight = 2
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('suffolk', 'mode_share_validation', 'combined_pop_mode_share_20210601_10pct.csv')
-#     )
-# Highway Counters
 
 class TestHighwayCounters(PointsCounter):
 
@@ -1909,6 +1536,7 @@ class TestHighwayCounters(PointsCounter):
     options_enabled = True
 
     weight = 1
+
 
 class SqueezeTownHighwayCounters(PointsCounter):
 
@@ -1950,63 +1578,6 @@ class MultimodalTownCarCounters(PointsCounter):
     options_enabled = True
 
     weight = 1
-
-
-# Cordons
-
-# class LondonInnerCordonCar(Cordon):
-
-#     requirements = ['volume_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
-
-#     weight = 1
-#     cordon_counter = HourlyCordonDirectionCount
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('london', 'inner_cordon', 'InnerCordon2016.csv')
-#     )
-#     cordon_path = get_benchmark_data(
-#         os.path.join('london', 'inner_cordon', 'cordon_links.csv')
-#     )
-
-#     directions = {'in': 1, 'out': 2}
-#     year = 2016
-#     hours = None
-#     modes = ['car']
-
-
-# class DublinCanalCordonCar(Cordon):
-
-#     requirements = ['link_vehicle_counts']
-#     valid_modes = ['car']
-#     options_enabled = True
-
-#     weight = 1
-#     cordon_counter = PeriodCordonDirectionCount
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('ireland', 'dublin_cordon', '2016_counts.csv')
-#     )
-#     cordon_path = get_benchmark_data(
-#         os.path.join('ireland', 'dublin_cordon', 'dublin_cordon.csv')
-#     )
-
-#     directions = {'in': 1}
-#     year = 2016
-#     hours = [7, 8, 9]
-#     modes = ['car']
-
-
-# class IrelandCommuterStats(ModeSharesComparison):
-
-#     requirements = ['mode_shares']
-#     valid_modes = ['all']
-#     options_enabled = True
-
-#     weight = 1
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('ireland', 'census_modestats', '2016_census_modestats.csv')
-#     )
-
 
 
 class TestTownHourlyCordon(Cordon):
@@ -2051,8 +1622,6 @@ class TestTownPeakIn(Cordon):
     modes = ['car', 'bus']
 
 
-
-
 class BenchmarkWorkStation(WorkStation):
     """
     WorkStation class for building benchmarks.
@@ -2074,43 +1643,12 @@ class BenchmarkWorkStation(WorkStation):
         "test_link_cordon": TestCordon,
         "test_pt_interaction_counter": TestPTInteraction,
         "test_pt_volumes": TestPTVolume,
-        # "suffolk_screenlines": SuffolkScreenlinesCounters,
-        # "suffolk_disaggregated_screenlines":SuffolkDisaggregatedScreenlinesCounters,
-        # "suffolk_car_screenlines":SuffolkCarScreenlinesCounters,
-        # "suffolk_HGV_screenlines":SuffolkHGVScreenlinesCounters,
-        # "ireland_highways": IrelandHighwayCounters,
-        # "ireland_highways_NI": NIHighwayCounters,
-        # "ireland_DCC": IrelandHighwayCounters_DCC,
-        # "london_boundary_cordon_car": LondonBoundaryCordonCar,
-        # "london_boundary_cordon_bus": LondonBoundaryCordonBus,
-        # "london_central_cordon_car": LondonCentralCordonCar,
-        # "london_central_cordon_bus": LondonCentralCordonBus,
-        # "london_inner_cordon_car": LondonInnerCordonCar,
-        # "london_inner_cordon_bus": LondonInnerCordonBus,
-        # "london_thames_screen_car": LondonThamesScreenCar,
-        # "london_thames_screen_bus": LondonThamesScreenBus,
-        # "london_northern_screen": LondonNorthScreen,
-        # "london_peripheral_screen": LondonPeriphScreen,
-        # "london_board_alight_subway": LondonRODS,
-        # "london_volume_subway": LondonRODSVolume,
-        # "london_modeshares": LondonModeShare,
-        # "ROI_modeshares": ROIModeShare,
-        # "new_zealand_counters" : NewZealandCounters,
-        # "auckland_counters":AucklandCounters,
-        # "nz_modeshares": NZModeShare,
-        # "wellington_counters":WellingtonCounters,
-        # "wellington_stop_passenger_counts": WellingtonPTInteration,
-        # "auckland_stop_passenger_counts":AucklandPTInteraction,
-        
-        # "suffolk_modeshares": SuffolkModeShare,
 
         # old style:
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,
-        # "dublin_canal_cordon_car": DublinCanalCordonCar,
-        # "ireland_commuter_modeshare": IrelandCommuterStats,
         "test_town_cordon": TestTownHourlyCordon,
         "test_town_peak_cordon": TestTownPeakIn,
     }
