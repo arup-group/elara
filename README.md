@@ -402,7 +402,7 @@ using_experienced_plans = true
 
 [inputs]
 ...
-attributes = "./tests/test_fixtures/output_plans.xml"
+attributes = "./tests/test_fixtures/output_plans_v12.xml"
 plans= "./tests/test_fixtures/output_experienced_plans.xml"
 ...
 ```
