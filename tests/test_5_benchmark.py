@@ -77,36 +77,6 @@ def test_points_counter_init():
     assert score['counters'] == 0
 
 
-# def test_town_hourly_in_cordon_score_zero():
-#     benchmark = benchmarking.TestTownHourlyCordon
-#     test_bm = benchmark(
-#         config,
-#         'car',
-#     )
-#     score = test_bm.build({}, write_path=test_outputs)
-#     assert score['in'] == 0
-
-
-# def test_town_hourly_out_cordon_score_zero():
-#     benchmark = benchmarking.TestTownHourlyCordon
-#     test_bm = benchmark(
-#         config,
-#         'car',
-#     )
-#     score = test_bm.build({}, write_path=test_outputs)
-#     assert score['out'] == 0
-
-
-# def test_town_peak_in_cordon_score_zero():
-#     benchmark = benchmarking.TestTownPeakIn
-#     test_bm = benchmark(
-#         config,
-#         'car',
-#     )
-#     score = test_bm.build({}, write_path=test_outputs)
-#     assert score['in'] == 0
-
-
 def test_mode_share_score_zero():
     benchmark = benchmarking.TestModeSharesComparison
     test_bm = benchmark(
@@ -218,15 +188,6 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
 
     pp_workstation.build(write_path=test_outputs)
 
-
-# def test_all_paths_exist(test_config):
-## this test is no longer relevant, as we can pass file paths as handler arguments
-#     benchmark_workstation = benchmarking.BenchmarkWorkStation(test_config)
-#     for name, tool in benchmark_workstation.tools.items():
-#         try:
-#             assert os.path.exists(tool.benchmark_data_path)
-#         except AttributeError:
-#             continue
 
 def test_benchmark_duration_workstation_dictionary(test_config_dictionary, test_paths):
     # call duration comparison handler with dictionary arguments
