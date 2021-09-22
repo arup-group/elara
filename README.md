@@ -125,10 +125,10 @@ elara --help
 It is recommended to use an Anaconda environment for installation on Windows:
 
 ```{sh}
-conda create -n osmox python=3.7
-conda activate osmox
+conda create -n elara python=3.7
+conda activate elara
 conda install geopandas
-git clone git@github.com:arup-group/osmox.git
+git clone git@github.com:arup-group/elara.git
 cd elara
 pip install -e .
 pytest
