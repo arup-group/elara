@@ -180,9 +180,9 @@ stop_passenger_counts = ["bus"]
 stop_passenger_waiting = ["all"]
 
 [plan_handlers]
-mode_shares
+mode_shares = ["all"]
 trip_destination_mode_share = {destination_activity_filters = ["work"]}
-trip_logs
+trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
 toll_logs = ["car']
