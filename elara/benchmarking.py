@@ -238,7 +238,7 @@ class LinkCounterComparison(BenchmarkTool):
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__}"
+                f"Mode: {self.mode} not found in {self.__str__()}"
             )
 
         for counter_id, counter_location in mode_counts.items():
@@ -261,11 +261,11 @@ class LinkCounterComparison(BenchmarkTool):
         self.logger.debug(f"{missing*100}% of BMs are missing snapped links.")
         if total_counters == missing_counters:
             raise UserWarning(
-                f"No links found for {self.__str__}"
+                f"No links found for {self.__str__()}"
             )
         if missing > 0.5:
             self.logger.warning(
-                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no links."
+                f"{self.__str__()} has more than 50% ({missing*100}%) BMs with no links."
                 )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
@@ -509,7 +509,7 @@ class TransitInteractionComparison(BenchmarkTool):
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__}"
+                f"Mode: {self.mode} not found in {self.__str__()}"
             )
 
         for counter_id, counter_location in mode_counts.items():
@@ -532,11 +532,11 @@ class TransitInteractionComparison(BenchmarkTool):
         self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
         if total_counters == missing_counters:
             raise UserWarning(
-                f"No stops found for {self.__str__}"
+                f"No stops found for {self.__str__()}"
             )
         if missing > 0.5:
             self.logger.error(
-                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
+                f"{self.__str__()} has more than 50% ({missing*100}%) BMs with no stops."
                 )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
@@ -783,7 +783,7 @@ class PassengerStopToStop(BenchmarkTool):
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__}"
+                f"Mode: {self.mode} not found in {self.__str__()}"
             )
 
         for od, data in mode_counts.items():
@@ -803,11 +803,11 @@ class PassengerStopToStop(BenchmarkTool):
         self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
         if total_counters == missing_counters:
             raise UserWarning(
-                f"No stops found for {self.__str__}"
+                f"No stops found for {self.__str__()}"
             )
         if missing > 0.5:
             self.logger.error(
-                f"{self.__str__} has more than 50% ({missing*100}%) BMs with no stops."
+                f"{self.__str__()} has more than 50% ({missing*100}%) BMs with no stops."
                 )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
