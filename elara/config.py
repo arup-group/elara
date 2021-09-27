@@ -61,6 +61,9 @@ class Config:
         if path:
             self.logger.debug(f' Loading config from {path}')
             self.settings = toml.load(path, _dict=dict)
+            if self.inputs_directory:
+                print(f"Using Directory {self.inputs_directory}")
+                self.set_inputs_from_directory(self.inputs_directory)
         elif override:
             self.logger.debug(f' Loading config from dict override')
             self.settings = override
@@ -171,32 +174,21 @@ class Config:
             return self.valid_path(inputs_path, "inputs directory")
         else:
             return None
+
     @property
     def events_path(self):
-        if self.inputs_directory:
-            input = self.build_input_path(self.inputs_directory, "output_events")
-            return self.valid_path(input, "events")
-
         return self.valid_path(
             self.settings["inputs"]["events"], "events"
         )
 
     @property
     def plans_path(self):
-        if self.inputs_directory:
-            input = self.build_input_path(self.inputs_directory, "output_plans")
-            return self.valid_path(input, "plans")
-
         return self.valid_path(
             self.settings["inputs"]["plans"], "plans"
         )
 
     @property
     def network_path(self):
-        if self.inputs_directory:
-            input = self.build_input_path(self.inputs_directory, "output_network")
-            return self.valid_path(input, "plans")
-
         return self.valid_path(
             self.settings["inputs"]["network"], "network"
         )
@@ -204,17 +196,6 @@ class Config:
     @property
     #TODO verify logic
     def attributes_path(self):
-        if self.inputs_directory:
-            '''handle files from input directory'''
-            if self.version == 12 and not self.using_experienced_plans:
-                input = self.build_input_path(self.inputs_directory, "plans")
-                return self.valid_path(input, "plans(MATSimV12)")
-            else:
-                input = self.build_input_path(
-                    self.inputs_directory, "output_personAttributes"
-                )
-                return self.valid_path(input, "attributes")
-
         if self.version == 12 and not self.using_experienced_plans:
             return self.valid_path(
                 self.settings["inputs"]["plans"], "plans(MATSimV12)"
@@ -226,36 +207,18 @@ class Config:
 
     @property
     def transit_schedule_path(self):
-        if self.inputs_directory:
-            input = self.build_input_path(
-                self.inputs_directory, "output_transitSchedule"
-            )
-            return self.valid_path(input, "transit_schedule")
-        
         return self.valid_path(
             self.settings["inputs"]["transit_schedule"], "transit_schedule"
         )
 
     @property
     def transit_vehicles_path(self):
-        if self.inputs_directory:
-            input = self.build_input_path(
-                self.inputs_directory, "output_transitVehicles"
-            )
-            return self.valid_path(input, "transit_vehicles")
-        
         return self.valid_path(
             self.settings["inputs"]["transit_vehicles"], "transit_vehicles"
         )
 
     @property
     def output_config_path(self):
-        if self.inputs_directory:
-            input = self.build_input_path(
-                self.inputs_directory, "output_config"
-            )
-            return self.valid_path(input, "output_config")
-
         return self.valid_path(
             self.settings["inputs"]["output_config_path"], "output_config"
         )
@@ -265,18 +228,17 @@ class Config:
         return self.valid_path(
             self.settings["inputs"]["road_pricing"], "output_config"
         )
+
     @staticmethod
-    def build_input_path(path, file):
+    def check_xml_path(xml_path):
         """
-        Returns 'file.xml' if it exists in a directory, else  matsim_output.xml.gz 
+        Returns xml_path if it exists, else assumes it is xml_path.gz
         Error handling for bad paths is left to valid_path method
         :param path: a path containing matsim outputs
         :return: str with path to either xml or gz file
         """
-        xml_path = os.path.join(path, f'{file}.xml')
         if os.path.isfile(xml_path): 
             return xml_path
-            
         return xml_path + '.gz'
 
     @staticmethod
@@ -410,15 +372,40 @@ class Config:
                 if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
+    def set_inputs_from_directory(self, path):
+        self.settings['inputs'].update(
+            {
+                'events': 'output_events.xml',
+                'plans': 'output_plans.xml',
+                'network': 'output_network.xml',
+                'transit_schedule': 'output_transitSchedule.xml',
+                'transit_vehicles': 'output_transitVehicles.xml',
+                'output_config': 'output_config.xml',
+            }
+        )
+
+        if self.version == 12 and not self.using_experienced_plans == False:
+            self.settings['inputs']['attributes'] = 'output_plans.xml'
+        else:
+            self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
+
+        for input, path in self.settings['inputs'].items():
+            if input in ['road_pricing', 'inputs_directory']: 
+                # do not override listed files
+                continue
+            else:
+                full_path = os.path.join(self.inputs_directory, path)
+                self.settings['inputs'][input] = self.check_xml_path(full_path)
+
     def override(self, path_override, dump_log=True):
         """
         :param path_override: override the config input and output paths
         "param dump_log: (bool) optionally dump overriden config to disk
         """
-        self.logger.warning(f"All input paths and output path being overridden with {path_override}")
+        self.logger.warning(f"All input paths and output paths being overwritten with {path_override}")
 
         for path in self.settings['inputs']:
-            if path == "road_pricing":  # assume that road pricing file is not overridden
+            if path == 'road_pricing':  # assume road pricing is not overwritten
                 continue
             file_name = self.settings['inputs'][path].split('/')[-1]
             self.settings['inputs'][path] = os.path.join(path_override, file_name)
@@ -432,11 +419,20 @@ class Config:
                 os.path.join(path_override, "elara_override_log.json")
             )
 
+    def set_single_path_root(self, root, path):
+        """
+        Add a root path to a single configure path
+        :param path: path to add root
+        :param root: root path
+        :returns: path
+        """
+        return os.path.join(root, path)
+
     def set_paths_root(self, root, dump_log=True):
         """
         Add root path to all configured paths (inputs, output directory and benchmark data paths).
         :param root: root path
-        "param dump_log: (bool) optionally dump overriden config to disk
+        :param dump_log: (bool) optionally dump overriden config to disk
         """
         self.logger.warning(f"""
             All input paths, output path and data paths being 'rooted' with {root}.
