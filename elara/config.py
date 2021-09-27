@@ -194,7 +194,6 @@ class Config:
         )
 
     @property
-    #TODO verify logic
     def attributes_path(self):
         if self.version == 12 and not self.using_experienced_plans:
             return self.valid_path(
