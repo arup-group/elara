@@ -165,25 +165,57 @@ class Config:
         )
 
     @property
+    def inputs_directory(self):
+        inputs_path = self.settings["inputs"].get("inputs_directory")
+        if inputs_path:
+            return self.valid_path(inputs_path, "inputs directory")
+        else:
+            return None
+    
+    @property
     def events_path(self):
+        if self.inputs_directory:
+            input = self.build_input_path(self.inputs_directory, "output_events")
+            return self.valid_path(input, "events")
+
         return self.valid_path(
             self.settings["inputs"]["events"], "events"
         )
 
     @property
     def plans_path(self):
+        if self.inputs_directory:
+            input = self.build_input_path(self.inputs_directory, "output_plans")
+            return self.valid_path(input, "plans")
+
         return self.valid_path(
             self.settings["inputs"]["plans"], "plans"
         )
 
     @property
     def network_path(self):
+        if self.inputs_directory:
+            input = self.build_input_path(self.inputs_directory, "output_network")
+            return self.valid_path(input, "plans")
+
         return self.valid_path(
             self.settings["inputs"]["network"], "network"
         )
 
     @property
+    #TODO verify logic
     def attributes_path(self):
+        if self.inputs_directory:
+            '''handle files from input directory'''
+            if self.version == 12 and not self.using_experienced_plans:
+                input = self.build_input_path(self.inputs_directory, "plans")
+                return self.valid_path(input, "plans(MATSimV12)")
+            else:
+                input = self.build_input_path(
+                    self.inputs_directory, "output_personAttributes"
+                )
+                return self.valid_path(input, "attributes")
+
         if self.version == 12 and not self.using_experienced_plans:
             return self.valid_path(
                 self.settings["inputs"]["plans"], "plans(MATSimV12)"
@@ -191,22 +223,40 @@ class Config:
         else:
             return self.valid_path(
             self.settings["inputs"]["attributes"], "attributes"
-        )
+            )
 
     @property
     def transit_schedule_path(self):
+        if self.inputs_directory:
+            input = self.build_input_path(
+                self.inputs_directory, "output_transitSchedule"
+            )
+            return self.valid_path(input, "transit_schedule")
+        
         return self.valid_path(
             self.settings["inputs"]["transit_schedule"], "transit_schedule"
         )
 
     @property
     def transit_vehicles_path(self):
+        if self.inputs_directory:
+            input = self.build_input_path(
+                self.inputs_directory, "output_transitVehicles"
+            )
+            return self.valid_path(input, "transit_vehicles")
+        
         return self.valid_path(
             self.settings["inputs"]["transit_vehicles"], "transit_vehicles"
         )
 
     @property
     def output_config_path(self):
+        if self.inputs_directory:
+            input = self.build_input_path(
+                self.inputs_directory, "output_config"
+            )
+            return self.valid_path(input, "output_config")
+
         return self.valid_path(
             self.settings["inputs"]["output_config_path"], "output_config"
         )
@@ -233,6 +283,20 @@ class Config:
         raise ConfigError(
             f"Configured: {inp}, cannot be parsed as a boolian. Please use 'true' or 'false'"
         )
+
+    @staticmethod
+    def build_input_path(path, file):
+        """
+        Returns 'file.xml' if it exists in a directory, else  matsim_output.xml.gz 
+        Error handling for bad paths is left to valid_path method
+        :param path: a path containing matsim outputs
+        :return: str with path to either xml or gz file
+        """
+        xml_path = os.path.join(path, f"{file}.xml")
+        if os.path.isfile(xml_path): # prefer raw xml over gzip
+            return xml_path
+        else:
+            return xml_path + ".gz"
 
     @staticmethod
     def valid_time_periods(inp):
