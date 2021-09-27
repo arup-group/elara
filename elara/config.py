@@ -171,7 +171,6 @@ class Config:
             return self.valid_path(inputs_path, "inputs directory")
         else:
             return None
-    
     @property
     def events_path(self):
         if self.inputs_directory:
@@ -266,6 +265,19 @@ class Config:
         return self.valid_path(
             self.settings["inputs"]["road_pricing"], "output_config"
         )
+    @staticmethod
+    def build_input_path(path, file):
+        """
+        Returns 'file.xml' if it exists in a directory, else  matsim_output.xml.gz 
+        Error handling for bad paths is left to valid_path method
+        :param path: a path containing matsim outputs
+        :return: str with path to either xml or gz file
+        """
+        xml_path = os.path.join(path, f'{file}.xml')
+        if os.path.isfile(xml_path): 
+            return xml_path
+            
+        return xml_path + '.gz'
 
     @staticmethod
     def valid_bool(inp):
@@ -283,20 +295,6 @@ class Config:
         raise ConfigError(
             f"Configured: {inp}, cannot be parsed as a boolian. Please use 'true' or 'false'"
         )
-
-    @staticmethod
-    def build_input_path(path, file):
-        """
-        Returns 'file.xml' if it exists in a directory, else  matsim_output.xml.gz 
-        Error handling for bad paths is left to valid_path method
-        :param path: a path containing matsim outputs
-        :return: str with path to either xml or gz file
-        """
-        xml_path = os.path.join(path, f"{file}.xml")
-        if os.path.isfile(xml_path): # prefer raw xml over gzip
-            return xml_path
-        else:
-            return xml_path + ".gz"
 
     @staticmethod
     def valid_time_periods(inp):
