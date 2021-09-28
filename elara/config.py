@@ -62,7 +62,7 @@ class Config:
             self.logger.debug(f' Loading config from {path}')
             self.settings = toml.load(path, _dict=dict)
             if self.inputs_directory:
-                print(f"Using Directory {self.inputs_directory}")
+                self.logger.info(f"Using Directory {self.inputs_directory} for inputs")
                 self.set_inputs_from_directory(self.inputs_directory)
         elif override:
             self.logger.debug(f' Loading config from dict override')
@@ -379,12 +379,14 @@ class Config:
                 'network': 'output_network.xml',
                 'transit_schedule': 'output_transitSchedule.xml',
                 'transit_vehicles': 'output_transitVehicles.xml',
-                'output_config': 'output_config.xml',
+                'output_config_path': 'output_config.xml',
             }
         )
-
-        if self.version == 12 and not self.using_experienced_plans == False:
-            self.settings['inputs']['attributes'] = 'output_plans.xml'
+        if self.using_experienced_plans:
+            self.settings['inputs']['plans'] = 'output_experienced_plans.xml'
+        
+        if self.version == 12:
+                self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
             self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
 
@@ -417,15 +419,6 @@ class Config:
             self.dump_settings_to_disk(
                 os.path.join(path_override, "elara_override_log.json")
             )
-
-    def set_single_path_root(self, root, path):
-        """
-        Add a root path to a single configure path
-        :param path: path to add root
-        :param root: root path
-        :returns: path
-        """
-        return os.path.join(root, path)
 
     def set_paths_root(self, root, dump_log=True):
         """
