@@ -203,6 +203,8 @@ test_link_cordon = ["car"]
 
 You can run this config on some toy data: `elara run example_configs/config.toml` (from the project root).
 
+Outputs from a given simulation have well-known names and typically live in a single folder. As a convenience, you may optionally pass the single argument to `[inputs]` with the directory containing the above MATSim outputs using, e.g. `inputs_directory = "./tests/test_fixtures/"`. **NB:** For toll-based outputs, you must still provide the `road_pricing` path separately.
+
 Configured fields are described below:
 
 **[scenario].name** *string* *(required)*
@@ -237,6 +239,9 @@ The EPSG code specifying which coordinate projection system the MATSim scenario 
 **[scenario].verbose** *string* *(required)*
 
 Logging module [level](https://docs.python.org/3/library/logging.html#levels), for example, either ERROR, WARNING, INFO or DEBUG.
+
+**[inputs].inputs_directory *path*
+Path to a directory containing MATSim Outputs. A convenient override for setting paths to standard MATSim outputs using a single line. Handles network, plans, attributes, events, transit vehicles, transit schedule, output config files.
 
 **[inputs].events** *file*
 
