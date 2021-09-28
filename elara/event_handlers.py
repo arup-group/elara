@@ -1950,7 +1950,7 @@ class EventHandlerWorkStation(WorkStation):
         """
 
         if not self.resources:
-            self.logger.warning(f'{self.__str__} has no resources, build returning None.')
+            self.logger.warning(f'{self.__str__()} has no resources, build returning None.')
             return None
 
         # build tools
