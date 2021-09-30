@@ -17,8 +17,9 @@ def test_config_override_update_input_fields_and_output_path():
     assert config.settings['inputs']['events'] == os.path.join(override, events)
     assert config.settings['inputs']['network'] == os.path.join(override, network)
     assert config.settings['inputs']['road_pricing'] == road_pricing
-    assert config.settings['outputs']['path'] == os.path.join(override, config.settings['outputs']['path'].split("/")[-1])
-    assert config.output_path == os.path.join(override, config.settings['outputs']['path'].split("/")[-1])
+    name = os.path.basename(config.settings['outputs']['path'])
+    assert config.settings['outputs']['path'] == os.path.join(override, name)
+    assert config.output_path == os.path.join(override, name)
 
 
 def test_config_set_paths_roots_to_input_fields_and_output_path_and_bm_data_path():
