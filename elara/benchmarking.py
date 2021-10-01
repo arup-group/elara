@@ -100,6 +100,20 @@ class TestModeSharesComparison(ModeSharesComparison):
     )
 
 
+
+class ModeCountsComparison(CsvComparison):
+
+    def __init__(self, config, mode, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    index_field = ['mode']
+    value_field = 'trip_count'
+    simulation_name = 'mode_counts_all.csv'
+    weight = 1
+
+
 class ModeSharesByAttributeComparison(CsvComparison):
 
     def __init__(
