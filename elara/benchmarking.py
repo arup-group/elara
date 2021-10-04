@@ -1643,6 +1643,7 @@ class BenchmarkWorkStation(WorkStation):
 
     tools = {
         "mode_shares_comparison": ModeSharesComparison,
+        "mode_counts_comparison": ModeCountsComparison,
         "destination_mode_shares_comparison": DestinationModeSharesComparison,
         "attribute_mode_shares_comparison": ModeSharesByAttributeComparison,
         "euclidean_distance_comparison": EuclideanDistanceComparison,
