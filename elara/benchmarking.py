@@ -110,8 +110,14 @@ class ModeCountsComparison(CsvComparison):
     valid_modes = ['all']
     index_field = ['mode']
     value_field = 'trip_count'
-    simulation_name = 'mode_counts_all.csv'
+    simulation_name = 'mode_shares_all_counts.csv'
     weight = 1
+
+
+# class TestModeCountsComparison(ModeCountsComparison):
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('test_fixtures', 'mode_counts.csv')
+#     )
 
 
 class ModeSharesByAttributeComparison(CsvComparison):
