@@ -10,8 +10,6 @@ from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
 
 
-logger = logging.getLogger(__name__)
-
 class BenchmarkTool(Tool):
 
     options_enabled = True
@@ -274,7 +272,7 @@ class LinkCounterComparison(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.debug(f'building {str(self)}')
+        self.logger.debug(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_counts = self.counts.get(self.mode)
@@ -545,7 +543,7 @@ class TransitInteractionComparison(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.debug(f'building {str(self)}')
+        self.logger.debug(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_counts = self.counts.get(self.mode)
@@ -816,7 +814,7 @@ class PassengerStopToStop(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.info(f'building {str(self)}')
+        self.logger.info(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_counts = self.counts.get(self.mode)
@@ -1051,7 +1049,7 @@ class PointsCounter(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.info(f'building {str(self)}')
+        self.logger.info(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_benchmark = self.link_counts.get(self.mode)
@@ -1207,7 +1205,7 @@ class Cordon(BenchmarkTool):
         :return: Dictionary of scores {'in': float, 'out': float}
         """
 
-        logger.info(f'building {str(self)}')
+        self.logger.info(f'building {str(self)}')
 
         # Build paths and load appropriate volume counts
         results_name = "link_vehicle_counts_{}.csv".format(self.mode)
