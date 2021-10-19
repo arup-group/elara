@@ -1510,7 +1510,7 @@ class PlanHandlerWorkStation(WorkStation):
         """
 
         if not self.resources:
-            self.logger.warning(f'{self.__str__()} has no resources, build returning None.')
+            self.logger.warning(f'{str(self)} has no resources, build returning None.')
             return None
 
         # build tools
@@ -1534,16 +1534,17 @@ class PlanHandlerWorkStation(WorkStation):
 
         # finalise
         # Generate event file outputs
-        self.logger.debug(f'{self.__str__()} .resources = {self.resources}')
+        self.logger.debug(f'{str(self)} .resources = {self.resources}')
 
         for handler_name, handler in self.resources.items():
-            self.logger.info(f'Finalising {handler.__str__()}')
+            self.logger.debug(f'Finalising {str(handler)}')
             handler.finalise()
 
-            self.logger.debug(f'{len(handler.results)} result_dfs at {handler.__str__()}')
+            self.logger.debug(f'{len(handler.results)} result_dfs at {str(handler)}')
 
             if handler.results:
-                self.logger.info(f'Writing results from {handler.__str__()}')
+                output_path = handler.config.output_path
+                self.logger.info(f'Writing results from {str(handler)} to {output_path}')
 
                 for name, result in handler.results.items():
                     csv_name = "{}.csv".format(name)
