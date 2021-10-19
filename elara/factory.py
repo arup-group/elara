@@ -111,7 +111,7 @@ class Tool:
         :param write_path: Optional output path overwrite
         :return: None
         """
-        self.logger.info(f'Building Tool {self.__str__()}')
+        self.logger.debug(f'Building Tool {self.__str__()}')
         self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
         self.resources = resource
 
@@ -157,7 +157,7 @@ class Tool:
             self.logger.warning(f'path overwritten to {csv_path}')
         else:
             csv_path = os.path.join(self.config.output_path, csv_name)
-            self.logger.info(f'writing to {csv_path}')
+            self.logger.debug(f'writing to {csv_path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -184,7 +184,7 @@ class Tool:
             self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
-            self.logger.info(f'writing to {path}')
+            self.logger.debug(f'writing to {path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -211,7 +211,7 @@ class Tool:
             self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
-            self.logger.info(f'writing to {path}')
+            self.logger.debug(f'writing to {path}')
 
         # File exports
         if isinstance(write_object, dict):
@@ -238,7 +238,7 @@ class Tool:
             self.logger.warning(f'path overwritten to {path}')
         else:
             path = os.path.join(self.config.output_path, name)
-            self.logger.info(f'writing to {path}')
+            self.logger.debug(f'writing to {path}')
 
         # File exports
         if isinstance(write_object, Figure):
@@ -312,11 +312,11 @@ class WorkStation:
 
         self.logger.info(f' *** Created {self}')
         for manager in managers:
-            self.logger.info(f'   * Manager: {manager}')
+            self.logger.debug(f'   * Manager: {manager}')
         for supplier in suppliers:
-            self.logger.info(f'   * Supplier: {supplier}')
+            self.logger.debug(f'   * Supplier: {supplier}')
         for tool in tools:
-            self.logger.info(f'   * Tooling: {tool}')
+            self.logger.debug(f'   * Tooling: {tool}')
 
     def engage(self) -> None:
         """
@@ -433,7 +433,7 @@ class WorkStation:
         Gather manager requirements.
         :return: dict of manager reqs, eg {a: [1,2], b:[1]}
         """
-        self.logger.info("Gathering manager requirements ")
+        self.logger.debug("Gathering manager requirements ")
         reqs = []
 
         if self.managers:
@@ -449,7 +449,7 @@ class WorkStation:
         :param write_path: Optional output path overwrite
         :return: None
         """
-        self.logger.info(f'Building Workstation {self.__str__()}')
+        self.logger.debug(f'Building Workstation {self.__str__()}')
 
         # gather resources
         if self.suppliers:
@@ -490,7 +490,7 @@ class WorkStation:
             self.logger.warning(f'path overwritten to {write_path}')
         else:
             csv_path = os.path.join(self.config.output_path, csv_name)
-            self.logger.info(f'Writing to {csv_path}')
+            self.logger.debug(f'writing to {csv_path}')
 
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
@@ -517,7 +517,7 @@ class WorkStation:
             self.logger.warning(f'path overwritten to {write_path}')
         else:
             path = os.path.join(self.config.output_path, name)
-            self.logger.info(f'Writing to {path}')
+            self.logger.debug(f'writing to {path}')
         # File exports
         if isinstance(write_object, gpd.GeoDataFrame):
             with open(path, "w") as file:
@@ -543,7 +543,7 @@ class WorkStation:
             self.logger.warning(f'path overwritten to {write_path}')
         else:
             path = os.path.join(self.config.output_path, name)
-            self.logger.info(f'Writing to {path}')
+            self.logger.debug(f'writing to {path}')
 
         # File exports
         if isinstance(write_object, dict):
@@ -569,7 +569,7 @@ class ChunkWriter:
         self.idx = 0
 
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
+        self.logger.debug(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
 
     def add(self, lines: list) -> None:
         """
@@ -630,7 +630,7 @@ def build(start_node: WorkStation, write_path=None) -> list:
     logger = logging.getLogger(__name__)
 
     # stage 1:
-    logger.info(f'Starting DAG')
+    logger.debug(f'Starting DAG')
 
     if is_cyclic(start_node):
         raise UserWarning(f"Cyclic dependency found at {is_cyclic(start_node)}")
@@ -641,10 +641,10 @@ def build(start_node: WorkStation, write_path=None) -> list:
 
     display_graph(start_node)
 
-    logger.info(f'DAG prepared')
+    logger.debug(f'DAG prepared')
 
     # stage 2:
-    logger.info(f'Initiating DAG')
+    logger.debug(f'Initiating DAG')
 
     visited = list()
     queue = list()

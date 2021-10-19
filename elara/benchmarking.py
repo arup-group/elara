@@ -10,8 +10,6 @@ from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
 
 
-logger = logging.getLogger(__name__)
-
 class BenchmarkTool(Tool):
 
     options_enabled = True
@@ -209,7 +207,7 @@ class LinkCounterComparison(BenchmarkTool):
     weight = 1
 
     def __str__(self):
-        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+        return f'{self.__class__.__name__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs) -> None:
         """
@@ -225,7 +223,7 @@ class LinkCounterComparison(BenchmarkTool):
             )
 
         self.mode = mode
-        self.logger.info(
+        self.logger.debug(
             f"Initiating: {str(self)} with name: {self.name}"
             )
 
@@ -238,7 +236,7 @@ class LinkCounterComparison(BenchmarkTool):
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__()}"
+                f"Mode: {self.mode} not found in {str(self)}"
             )
 
         for counter_id, counter_location in mode_counts.items():
@@ -261,11 +259,11 @@ class LinkCounterComparison(BenchmarkTool):
         self.logger.debug(f"{missing*100}% of BMs are missing snapped links.")
         if total_counters == missing_counters:
             raise UserWarning(
-                f"No links found for {self.__str__()}"
+                f"No links found for {str(self)}"
             )
         if missing > 0.5:
             self.logger.warning(
-                f"{self.__str__()} has more than 50% ({missing*100}%) BMs with no links."
+                f"{str(self)} has more than 50% ({missing*100}%) BMs with no links."
                 )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
@@ -274,7 +272,7 @@ class LinkCounterComparison(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.info(f'building {str(self)}')
+        self.logger.debug(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_counts = self.counts.get(self.mode)
@@ -483,7 +481,7 @@ class TransitInteractionComparison(BenchmarkTool):
     options_enabled = True
 
     def __str__(self):
-        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+        return f'{self.__class__.__name__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs) -> None:
         """
@@ -496,7 +494,7 @@ class TransitInteractionComparison(BenchmarkTool):
 
         self.mode = mode
 
-        self.logger.info(
+        self.logger.debug(
             f"Initiating {str(self)}"
             )
 
@@ -509,7 +507,7 @@ class TransitInteractionComparison(BenchmarkTool):
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__()}"
+                f"Mode: {self.mode} not found in {str(self)}"
             )
 
         for counter_id, counter_location in mode_counts.items():
@@ -532,11 +530,11 @@ class TransitInteractionComparison(BenchmarkTool):
         self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
         if total_counters == missing_counters:
             raise UserWarning(
-                f"No stops found for {self.__str__()}"
+                f"No stops found for {str(self)}"
             )
         if missing > 0.5:
             self.logger.error(
-                f"{self.__str__()} has more than 50% ({missing*100}%) BMs with no stops."
+                f"{str(self)} has more than 50% ({missing*100}%) BMs with no stops."
                 )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
@@ -545,7 +543,7 @@ class TransitInteractionComparison(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.info(f'building {self.__str__()}')
+        self.logger.debug(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_counts = self.counts.get(self.mode)
@@ -752,7 +750,7 @@ class PassengerStopToStop(BenchmarkTool):
     requirements = ['stop_to_stop_passenger_counts']
 
     def __str__(self):
-        return f'{self.__class__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+        return f'{self.__class__.__name__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
     def __init__(self, config, mode, attribute=None, **kwargs) -> None:
         """
@@ -770,8 +768,8 @@ class PassengerStopToStop(BenchmarkTool):
 
         self.mode = mode
 
-        self.logger.info(
-            f"Initiating {self.__str__()}"
+        self.logger.debug(
+            f"Initiating {str(self)}"
             )
 
         with open(self.benchmark_data_path) as json_file:
@@ -783,7 +781,7 @@ class PassengerStopToStop(BenchmarkTool):
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
-                f"Mode: {self.mode} not found in {self.__str__()}"
+                f"Mode: {self.mode} not found in {str(self)}"
             )
 
         for od, data in mode_counts.items():
@@ -803,11 +801,11 @@ class PassengerStopToStop(BenchmarkTool):
         self.logger.debug(f"{missing*100}% of BMs are missing snapped stops.")
         if total_counters == missing_counters:
             raise UserWarning(
-                f"No stops found for {self.__str__()}"
+                f"No stops found for {str(self)}"
             )
         if missing > 0.5:
             self.logger.error(
-                f"{self.__str__()} has more than 50% ({missing*100}%) BMs with no stops."
+                f"{str(self)} has more than 50% ({missing*100}%) BMs with no stops."
                 )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
@@ -816,7 +814,7 @@ class PassengerStopToStop(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.info(f'building {self.__str__()}')
+        self.logger.info(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_counts = self.counts.get(self.mode)
@@ -1051,7 +1049,7 @@ class PointsCounter(BenchmarkTool):
         :return: Dictionary of scores {'name': float}
         """
 
-        logger.info(f'building {self.__str__()}')
+        self.logger.info(f'building {str(self)}')
 
         # extract benchmark mode count
         mode_benchmark = self.link_counts.get(self.mode)
@@ -1207,7 +1205,7 @@ class Cordon(BenchmarkTool):
         :return: Dictionary of scores {'in': float, 'out': float}
         """
 
-        logger.info(f'building {self.__str__()}')
+        self.logger.info(f'building {str(self)}')
 
         # Build paths and load appropriate volume counts
         results_name = "link_vehicle_counts_{}.csv".format(self.mode)
@@ -1673,6 +1671,9 @@ class BenchmarkWorkStation(WorkStation):
         """
         summary = {}
         flat_summary = []
+        
+        self.logger.info('--BENCHMARK SCORES--')
+
         for benchmark_name, benchmark in self.resources.items():
 
             scores = benchmark.build({}, write_path=write_path)
