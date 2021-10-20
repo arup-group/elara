@@ -227,7 +227,7 @@ as volume counts. For example, if the underlying scenario was run with a 25% sam
 
 Set `version = 12` if using MATSim version 12 outputs (in which case there will be no output personAttributes file).
 
-**[scenario].using_experienced_plans** *boolean {true, false}* *(default false)*
+**[scenario].using_experienced_plans** *boolean {true, false}* *(default true)*
 
 If using MATSim "experienced_plans" you should set this flag to 'true'.
 
@@ -398,13 +398,19 @@ Care should be taken not to specify unnecesary options as they can add significa
 
 ### Experienced Plans
 
-If using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. Which will prevent elara from providing outputs grouped by person attributes (ie those that use the `groupby_person_attributes` option). If such outputs are required, set the 'using_experienced_plans' option to 'true' and provide the standard MATSim 'output_plans' as the attributes input:
-
-```{.toml}
+Elara assumes you wish to analyse MATSim agents' "experienced" plans (rather than the selected plans from the final iteration). If you do **not** wish to use experienced plans, you can set the following option in the config:
+````{.toml}
 [scenario]
 ...
-using_experienced_plans = true
+using_experienced_plans = false 
+```
+This option is set to `true` by default, and does not need to be included it in the config, although you may set it explicitly by default if you wish.
 
+When using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. In turn, this prevents elara from providing outputs grouped by person attributes (ie those that use the `groupby_person_attributes` option). 
+
+If such outputs are required when using experienced plans, provide the standard MATSim 'output_plans' as the attributes input:
+
+```{.toml}
 [inputs]
 ...
 attributes = "./tests/test_fixtures/output_plans_v12.xml"
@@ -412,7 +418,9 @@ plans= "./tests/test_fixtures/output_experienced_plans.xml"
 ...
 ```
 
-This allows elara to access person attributes from the standard output_plans, while taking plans from the output_experienced_plans. This is not necessary if groupby_person_attributes are not required or if using MATSim version 11 and below.
+This allows elara to access person attributes from the standard output_plans, while taking plans from the output_experienced_plans. This is not necessary if groupby_person_attributes are not required.
+
+This guidance does apply when using MATSim version 11 and below, because attributes must always be set explicitly to the relevant `output_personAttributes.xml` file. 
 
 ### Benchmarks
 
@@ -504,7 +512,7 @@ Options:
   -f, --full                  Option to disable output contracting.
   -e, --epsg TEXT             EPSG string, defaults to 'EPSG:27700' (UK).
   -s, --scale_factor FLOAT    Scale factor, defaults to 0.1 (10%).
-  -v, --version INT           MATSim version {11,12}, defaults to 11.
+  -v, --version INT           MATSim version {11,12}, defaults to 12.
   -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
   -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
   -i, --inputs_path PATH      Inputs path location, defaults to current root.

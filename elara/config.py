@@ -93,6 +93,17 @@ class Config:
 
         self.load_required_settings()
 
+        # normally, users should use experienced plans
+        if not self.using_experienced_plans:
+            self.logger.warning('NOT using experienced plans -- please ensure this is desired. Continuing...')
+        else:
+            if not 'experienced' in self.settings['inputs']['plans']:
+                    self.logger.warning('''
+                    Elara set to use experienced plans. output_experienced_plans.xml is expected. 
+                    Check the config to ensure your input files are correct. Continuing... 
+                    '''
+                    )
+
         if not os.path.exists(self.output_path):
             self.logger.info(f'Creating output path: {self.output_path}')
             os.mkdir(self.output_path)
