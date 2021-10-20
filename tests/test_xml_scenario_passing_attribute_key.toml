@@ -5,6 +5,7 @@ scale_factor = 0.0001
 crs = "EPSG:27700"
 verbose = true
 version = 11
+using_experienced_plans = false
 
 [inputs]
 events = "./tests/test_fixtures/output_events.xml.gz"

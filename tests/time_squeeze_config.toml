@@ -3,6 +3,8 @@ name = "time_squeeze"
 time_periods = 24
 scale_factor = 1
 crs = "EPSG:27700"
+version = 11
+using_experienced_plans = false
 verbose = true
 
 [inputs]
