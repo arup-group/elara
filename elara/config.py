@@ -129,10 +129,10 @@ class Config:
             self.settings["scenario"]["scale_factor"]
         )
         self.version = self.valid_version(
-            self.settings["scenario"].get("version", 11)
+            self.settings["scenario"].get("version", 12)
         )
         self.using_experienced_plans = self.valid_bool(
-            self.settings["scenario"].get("using_experienced_plans", False)
+            self.settings["scenario"].get("using_experienced_plans", True)
         )
         self.logging = self.valid_verbosity(
             self.settings["scenario"].get("verbose", False)
@@ -294,7 +294,7 @@ class Config:
         """
         if int(inp) not in [11, 12]:
             raise ConfigError(
-                f"Configured version ({inp}) not valid (please use 11 (default) or 12)"
+                f"Configured version ({inp}) not valid (please use 11 or 12 (default))"
             )
         return int(inp)
 
@@ -375,15 +375,15 @@ class Config:
         self.settings['inputs'].update(
             {
                 'events': 'output_events.xml',
-                'plans': 'output_plans.xml',
+                'plans': 'output_experienced_plans.xml',
                 'network': 'output_network.xml',
                 'transit_schedule': 'output_transitSchedule.xml',
                 'transit_vehicles': 'output_transitVehicles.xml',
                 'output_config_path': 'output_config.xml',
             }
         )
-        if self.using_experienced_plans:
-            self.settings['inputs']['plans'] = 'output_experienced_plans.xml'
+        if not self.using_experienced_plans:
+            self.settings['inputs']['plans'] = 'output_plans.xml'
         
         if self.version == 12:
                 self.settings['inputs']['attributes'] = 'output_plans.xml'
