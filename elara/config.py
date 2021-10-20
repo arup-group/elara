@@ -93,16 +93,6 @@ class Config:
 
         self.load_required_settings()
 
-        # normally, users should use experienced plans
-        if not self.using_experienced_plans:
-            self.logger.warning('NOT using experienced plans -- please ensure this is desired. Continuing...')
-        else:
-            if not 'experienced' in self.settings['inputs']['plans']:
-                    self.logger.warning('''
-                    Elara set to use experienced plans. output_experienced_plans.xml is expected. 
-                    Check the config to ensure your input files are correct. Continuing... 
-                    '''
-                    )
 
         if not os.path.exists(self.output_path):
             self.logger.info(f'Creating output path: {self.output_path}')
@@ -151,6 +141,7 @@ class Config:
 
         # Factory requirements
         self.logger.debug(f'Loading factory build requirements')
+
         self.event_handlers = self.settings.get("event_handlers", {})
         self.plan_handlers = self.settings.get("plan_handlers", {})
         self.post_processors = self.settings.get("post_processors", {})
@@ -162,6 +153,7 @@ class Config:
         self.contract = self.valid_bool(
             self.settings["outputs"].get("contract", False)
         )
+
 
     """
     Property methods used for config dependant requirements.
@@ -465,9 +457,16 @@ class Config:
         path (str): path.json
         """
         with open(path, "w") as fp:
-            json.dump(self.settings , fp) 
+            json.dump(self.settings , fp)
 
-
+    def experienced_plans_warning(self):
+        if not self.using_experienced_plans:
+            self.logger.warning('NOT using experienced plans -- please ensure this is desired. Continuing...')
+        else:
+            if not 'experienced' in self.settings['inputs']['plans']:
+                    self.logger.warning('Elara set to use experienced plans. ' +
+                        'output_experienced_plans.xml is expected. Check config.'
+                    )
 class PathTool(Tool):
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
