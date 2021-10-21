@@ -53,6 +53,13 @@ def test_gzip_config():
     assert config
     return config
 
+@pytest.fixture
+def test_directory_input_config():
+    config_path = os.path.join(test_dir, 'test_directory_input.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
 
 @pytest.fixture
 def test_paths(test_xml_config):
@@ -390,6 +397,22 @@ def test_loading_v12_attributes_from_experienced_plans(test_experienced_plans_co
     assert attribute.attributes['empty_plan'] == {}
     assert attribute.attributes['chris'] == {"subpopulation": "rich", "age": "yes"}
 
+# simplified directory based inputs
+def test_directory_input(test_directory_input_config):
+    input_paths = test_directory_input_config.settings['inputs']
+    correct_paths = {
+                'inputs_directory': './tests/test_fixtures/',
+                'events': './tests/test_fixtures/output_events.xml',
+                'plans': './tests/test_fixtures/output_plans.xml',
+                'attributes': './tests/test_fixtures/output_plans.xml',
+                'network': './tests/test_fixtures/output_network.xml',
+                'transit_schedule': './tests/test_fixtures/output_transitSchedule.xml',
+                'transit_vehicles': './tests/test_fixtures/output_transitVehicles.xml',
+                'output_config_path': './tests/test_fixtures/output_config.xml',
+            }
+    assert input_paths == correct_paths
+    for p in input_paths.values():
+        assert os.path.exists(p)
 
 # gzipped plans
 def test_loading_gzip_attributes(test_gzip_config, test_zip_paths):

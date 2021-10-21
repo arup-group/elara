@@ -61,9 +61,6 @@ class Config:
         if path:
             self.logger.debug(f' Loading config from {path}')
             self.settings = toml.load(path, _dict=dict)
-            if self.inputs_directory:
-                self.logger.info(f"Using Directory {self.inputs_directory} for inputs")
-                self.set_inputs_from_directory(self.inputs_directory)
         elif override:
             self.logger.debug(f' Loading config from dict override')
             self.settings = override
@@ -92,7 +89,11 @@ class Config:
 
 
         self.load_required_settings()
-
+        
+        # load inputs input directory if provided
+        if self.inputs_directory:
+            self.logger.info(f"Using Directory {self.inputs_directory} for inputs")
+            self.set_inputs_from_directory(self.inputs_directory)
 
         if not os.path.exists(self.output_path):
             self.logger.info(f'Creating output path: {self.output_path}')
@@ -386,11 +387,14 @@ class Config:
             }
         )
         if not self.using_experienced_plans:
+            print('CONDITION 1')
             self.settings['inputs']['plans'] = 'output_plans.xml'
         
         if self.version == 12:
-                self.settings['inputs']['attributes'] = 'output_plans.xml'
+            print('CONDITION 2')
+            self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
+            print('CONDITION 3')
             self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
 
         for input, path in self.settings['inputs'].items():
