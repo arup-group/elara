@@ -1,0 +1,31 @@
+[scenario]
+name = "test_town"
+time_periods = 24
+scale_factor = 0.0001
+crs = "EPSG:27700"
+verbose = false
+using_experienced_plans = false
+version = 12
+
+[inputs]
+inputs_directory = "./tests/test_fixtures/"
+
+[event_handlers]
+link_vehicle_counts = ["car"]
+link_passenger_counts = ["bus", "train"]
+stop_passenger_counts = ["bus", "train"]
+
+[plan_handlers]
+mode_shares = ["all"]
+toll_logs = ["car"]
+
+[post_processors]
+vkt = ["car"]
+
+[benchmarks]
+test_link_cordon = ["car"]
+
+[outputs]
+path = "./tests/test_intermediate_data/"
+contract = true
+
