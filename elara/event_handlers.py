@@ -1824,7 +1824,7 @@ class VehicleDepartureLog(EventHandlerTool):
             departure_time = int(float(elem.get("time")))
             delay = int(float(elem.get("delay")))
 
-            if veh_mode == self.mode or self.mode == None:  # None = all modes
+            if veh_mode == self.mode or self.mode == "all":  # None = all modes
 
                 pt_departures = [
 
@@ -1894,7 +1894,7 @@ class VehiclePassengerLog(EventHandlerTool):
             veh_mode = self.vehicle_mode(veh_id)
             stop_id = self.veh_tracker.get(veh_id, None)
             
-            if veh_mode == self.mode or self.mode == None:
+            if veh_mode == self.mode or self.mode == "all":
                 if agent_id[:2] != "pt": # Filter out PT drivers from transit volume statistics
 
                     boardings = [
@@ -1959,7 +1959,7 @@ class VehicleLinkLog(EventHandlerTool):
             link_id = elem.get("link")
             entry_time = int(float(elem.get("time")))
 
-            if veh_mode == self.mode or self.mode == None:
+            if veh_mode == self.mode or self.mode == "all":
                 entry = {
                     "veh_id": veh_id, 
                     "veh_mode": self.vehicle_mode(veh_id),
