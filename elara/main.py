@@ -177,6 +177,24 @@ def stop_to_stop_passenger_counts(
     config = Config(override=override)
     main(config)
 
+@event_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def vehicle_link_log(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+):
+    """
+    create a vehicle link log
+
+    $ elara event-handlers stop_to_stop_passenger_counts train bus -n test -s .2
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    override["event_handlers"]["vehicle_link_log"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
 
 @cli.group(name="plan-handlers", cls=NaturalOrderGroup)
 def plan_handlers():

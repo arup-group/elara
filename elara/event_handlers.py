@@ -1915,6 +1915,75 @@ class VehiclePassengerLog(EventHandlerTool):
     def finalise(self):
         self.vehicle_passenger_log.finish()
 
+class VehicleLinkLog(EventHandlerTool):
+    """
+    Extract all vehicle link entry/link exit events
+    """
+
+    requirements = ['events', 'transit_schedule']
+
+    def __init__(self, config, mode=None, **kwargs):
+        super().__init__(config, mode)
+        self.vehicle_link_log = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+
+        super().build(resources, write_path=write_path)
+
+        csv_name = f"{self.name}.csv"
+
+        self.vehicle_link_log = self.start_chunk_writer(
+            csv_name, write_path = write_path
+            )
+        
+        # Only add to chunk writer when entry + exit complete
+        self.event_staging = {}
+
+    def process_event(self, elem) -> None:
+        """
+        Events are closed only when a vehicle enters then exits a link
+        Events are staged on entry, then added to chunk writer when closed
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+        
+        if event_type == "entered link":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+            link_id = elem.get("link")
+            entry_time = int(float(elem.get("time")))
+
+            if veh_mode == self.mode or self.mode == None:
+                entry = {
+                    "veh_id": veh_id, 
+                    "veh_mode": self.vehicle_mode(veh_id),
+                    "link_id": link_id, 
+                    "entry_time": entry_time
+                }
+
+                self.event_staging.update({veh_id: entry})
+
+        if event_type == "left link":
+            veh_id = elem.get("vehicle")
+            exit_time = int(float(elem.get("time")))
+
+            entry = self.event_staging.get(veh_id)
+
+            if not entry == None:
+                entry.update({"exit_time": exit_time})
+                self.vehicle_link_log.add([entry])
+                del self.event_staging[veh_id] 
+
+        return None
+
+    def finalise(self):
+        self.vehicle_link_log.finish()
 
 class EventHandlerWorkStation(WorkStation):
 
@@ -1933,7 +2002,8 @@ class EventHandlerWorkStation(WorkStation):
         "stop_to_stop_passenger_counts": StopToStopPassengerCounts,
         "vehicle_stop_to_stop_passenger_counts": VehicleStopToStopPassengerCounts,
         "vehicle_departure_log": VehicleDepartureLog,
-        "vehicle_passenger_log": VehiclePassengerLog
+        "vehicle_passenger_log": VehiclePassengerLog,
+        "vehicle_link_log": VehicleLinkLog
     }
 
     def __init__(self, config):
