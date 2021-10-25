@@ -1982,7 +1982,7 @@ class VehicleLinkLog(EventHandlerTool):
         
         if event_type == "vehicle leaves traffic": #exit without left link event
             veh_id = elem.get("vehicle")
-            del self.staging[veh_id]
+            del self.event_staging[veh_id]
 
 
         return None
