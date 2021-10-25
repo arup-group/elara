@@ -1967,12 +1967,12 @@ class VehicleLinkLog(EventHandlerTool):
                     "entry_time": entry_time
                 }
 
-                self.event_staging["veh_id"] = entry
+                self.event_staging[veh_id] = entry
 
         if event_type == "left link":
             veh_id = elem.get("vehicle")
             exit_time = int(float(elem.get("time")))
-
+            
             entry = self.event_staging.get(veh_id)
 
             if entry is not None:
