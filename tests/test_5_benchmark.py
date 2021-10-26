@@ -87,10 +87,22 @@ def test_mode_share_score_zero():
     assert score['mse'] == 0
 
 def test_destination_mode_share_score_zero():
-    benchmark = benchmarking.TestDestinationModeSharesComparison
+    benchmark = benchmarking.TestActivityModeSharesComparison
     test_bm = benchmark(
         config,
-        'all'
+        mode='all',
+        destination_activity_filters=["work"],
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_destination_subpopulaion_mode_share_score_zero():
+    benchmark = benchmarking.TestActivityModeSharesByAttributeComparison
+    test_bm = benchmark(
+        config,
+        mode='all',
+        destination_activity_filters=["work"],
+        groupby_person_attribute="subpopulation",
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0

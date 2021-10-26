@@ -28,7 +28,7 @@ class BenchmarkTool(Tool):
 
 class CsvComparison(BenchmarkTool):
 
-    index_field = None # index column(s) in the csv files
+    index_fields = None # index column(s) in the csv files
     value_field = None # value column in the csv files to compare
     # name = None # suffix to add to the output file names
     benchmark_data_path = None # filepath to the benchmark csv file
@@ -45,9 +45,9 @@ class CsvComparison(BenchmarkTool):
         """
         # Read benchmark and simulation csv files
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
-        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_field)
+        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
         simulation_path = os.path.join(self.config.output_path, self.simulation_name)
-        simulation_df = pd.read_csv(simulation_path, index_col=self.index_field)
+        simulation_df = pd.read_csv(simulation_path, index_col=self.index_fields)
 
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
@@ -85,7 +85,7 @@ class ModeSharesComparison(CsvComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
-    index_field = ['mode']
+    index_fields = ['mode']
     value_field = 'trip_share'
     # name = 'test'
     simulation_name = 'mode_shares_all.csv'
@@ -100,6 +100,11 @@ class TestModeSharesComparison(ModeSharesComparison):
 
 class ModeSharesByAttributeComparison(CsvComparison):
 
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    value_field = 'trip_share'
+    weight = 1
+
     def __init__(
         self,
         config,
@@ -108,7 +113,7 @@ class ModeSharesByAttributeComparison(CsvComparison):
         **kwargs
         ):
         self.groupby_person_attribute = groupby_person_attribute
-        self.index_field = ['mode', 'class']
+        self.index_fields = ['mode', 'class']
         self.simulation_name = f'mode_shares_all_{groupby_person_attribute}.csv'
         super().__init__(
             config,
@@ -117,12 +122,6 @@ class ModeSharesByAttributeComparison(CsvComparison):
             **kwargs
             )
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    value_field = 'trip_share'
-    # name = 'test'
-    weight = 1
-
 
 class TestModeSharesByAttributeComparison(ModeSharesByAttributeComparison):
     benchmark_data_path = get_benchmark_data(
@@ -130,28 +129,35 @@ class TestModeSharesByAttributeComparison(ModeSharesByAttributeComparison):
     )
 
 
-class DestinationModeSharesComparison(CsvComparison):
+class ActivityModeSharesComparison(CsvComparison):
+
+    requirements = ['activity_mode_share']
+    valid_modes = ['all']
+    index_fields = ['mode']
+    value_field = 'trip_share'
+    weight = 1
 
     def __init__(self, config, mode, **kwargs):
         destination_activities = kwargs.get("destination_activity_filters", [])
-        self.simulation_name = f"trip_destination_mode_share_all"
+        groupby_person_attribute = kwargs.get("groupby_person_attribute")
+        self.simulation_name = f"activity_mode_share_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
+        if groupby_person_attribute is not None:
+            self.simulation_name += f"_{groupby_person_attribute}"
         self.simulation_name += ".csv"
         super().__init__(config, mode=mode, **kwargs)
 
-    requirements = ['trip_destination_mode_share']
-    valid_modes = ['all']
-    index_field = ['mode']
-    value_field = 'trip_share'
-    # name = 'test'
-    simulation_name = 'trip_destination_mode_share_all.csv'
-    weight = 1
 
-
-class TestDestinationModeSharesComparison(DestinationModeSharesComparison):
+class TestActivityModeSharesComparison(ActivityModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'mode_shares.csv')
+    )
+
+
+class TestActivityModeSharesByAttributeComparison(ActivityModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
     )
 
 
@@ -163,7 +169,7 @@ class DurationComparison(CsvComparison):
 
     requirements = ['trip_duration_breakdown']
     valid_modes = ['all']
-    index_field = ['duration']
+    index_fields = ['duration']
     value_field = 'trips'
     simulation_name = 'trip_duration_breakdown_all.csv'
     weight = 1
@@ -172,7 +178,7 @@ class DurationComparison(CsvComparison):
 class TestDurationComparison(CsvComparison):
     requirements = ['trip_duration_breakdown']
     valid_modes = ['all']
-    index_field = ['duration']
+    index_fields = ['duration']
     value_field = 'trips'
     benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv'))
     simulation_name = 'trip_duration_breakdown_all.csv'
@@ -183,7 +189,7 @@ class EuclideanDistanceComparison(CsvComparison):
     requirements = ['trip_euclid_distance_breakdown']
     valid_modes = ['all']
 
-    index_field = ['euclidean_distance']
+    index_fields = ['euclidean_distance']
     value_field = 'trips'
     simulation_name = 'trip_euclid_distance_breakdown_all.csv'
     weight = 1
@@ -193,7 +199,7 @@ class TestEuclideanDistanceComparison(CsvComparison):
     requirements = ['trip_euclid_distance_breakdown']
     valid_modes = ['all']
 
-    index_field = ['euclidean_distance']
+    index_fields = ['euclidean_distance']
     value_field = 'trips'
     benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv'))
     simulation_name = 'trip_euclid_distance_breakdown_all.csv'
@@ -1627,7 +1633,8 @@ class BenchmarkWorkStation(WorkStation):
 
     tools = {
         "mode_shares_comparison": ModeSharesComparison,
-        "destination_mode_shares_comparison": DestinationModeSharesComparison,
+        "destination_mode_shares_comparison": ActivityModeSharesComparison,
+        "activity_mode_shares_comparison": ActivityModeSharesComparison,  # prefered name
         "attribute_mode_shares_comparison": ModeSharesByAttributeComparison,
         "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
@@ -1635,7 +1642,8 @@ class BenchmarkWorkStation(WorkStation):
         "transit_interaction_comparison": TransitInteractionComparison,
 
         "test_mode_shares_comparison": TestModeSharesComparison,
-        "test_destination_mode_shares_comparison": TestDestinationModeSharesComparison,
+        "test_destination_mode_shares_comparison": TestActivityModeSharesComparison,
+        "test_activity_mode_shares_comparison": TestActivityModeSharesComparison,  # prefered name
         "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
         "test_duration_comparison": TestDurationComparison,
         "test_link_cordon": TestCordon,
