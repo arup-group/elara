@@ -566,6 +566,7 @@ class ChunkWriter:
         self.chunksize = chunksize
 
         self.chunk = []
+        self.chunk_count = 0 # used for hd5
         self.idx = 0
 
         self.logger = logging.getLogger(__name__)
@@ -589,20 +590,46 @@ class ChunkWriter:
         """
         chunk_df = pd.DataFrame(self.chunk, index=range(self.idx, self.idx + len(self.chunk)))
         if not self.idx:
-            chunk_df.to_csv(self.path)
+            df_write_wrapper(chunk_df, self.path, key = self._chunk_key)
+            #chunk_df.to_csv(self.path)
             self.idx += len(self.chunk)
         else:
-            chunk_df.to_csv(self.path, header=None, mode="a")
+            df_write_wrapper(chunk_df, self.path, key = self._chunk_key, header = None )
+            #chunk_df.to_csv(self.path, header=None, mode="a")
             self.idx += len(self.chunk)
         del chunk_df
         self.chunk = []
+        self.chunk_count += 1
 
     def finish(self) -> None:
         self.write()
         self.logger.info(f'Chunkwriter finished for {self.path}')
+    
+    @property
+    def _chunk_key(self):
+        """a key for h5 stores"""
+        return f't{self.chunk_count}'
 
     def __len__(self):
         return self.idx + len(self.chunk)
+
+def df_write_wrapper(df: pd.DataFrame, path: str, header=True, key=None, mode="a"):
+    """
+    Simple wrapper for writing dataframes to various formats
+    Infers write method from requested file extension
+    """
+    extension = os.path.splitext(path)[-1]
+
+    if extension == '.csv':
+        df.to_csv(path, header = header, mode = mode)
+    elif extension == '.h5':
+        df.to_hdf(path, key = key, mode = mode)
+    else:
+        raise TypeError (
+            f"Don't know how to write dataframes to file type {extension}"
+        )
+
+    return None
 
 
 def build(start_node: WorkStation, write_path=None) -> list:

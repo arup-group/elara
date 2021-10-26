@@ -1936,7 +1936,7 @@ class VehicleLinkLog(EventHandlerTool):
 
         super().build(resources, write_path=write_path)
 
-        csv_name = f"{self.name}.csv"
+        csv_name = f"{self.name}.h5"
 
         self.vehicle_link_log = self.start_chunk_writer(
             csv_name, write_path = write_path
