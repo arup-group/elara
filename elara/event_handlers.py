@@ -1973,17 +1973,20 @@ class VehicleLinkLog(EventHandlerTool):
             veh_id = elem.get("vehicle")
             exit_time = int(float(elem.get("time")))
             
-            entry = self.event_staging.get(veh_id)
-
-            if entry is not None:
+            try:
+                entry = self.event_staging.pop(veh_id)
                 entry["exit_time"] = exit_time
                 self.vehicle_link_log.add([entry])
-                del self.event_staging[veh_id] 
+            except KeyError:
+                pass
         
-        if event_type == "vehicle leaves traffic": #exit without left link event
+        if event_type == "vehicle leaves traffic": #exit via leaves traffic event
             veh_id = elem.get("vehicle")
-            del self.event_staging[veh_id]
 
+            try:
+                entry = self.event_staging.pop(veh_id)
+            except KeyError: # veh enters/leaves traffic on same link
+                pass
 
         return None
 
