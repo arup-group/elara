@@ -131,7 +131,7 @@ class TestModeSharesByAttributeComparison(ModeSharesByAttributeComparison):
 
 class ActivityModeSharesComparison(CsvComparison):
 
-    requirements = ['activity_mode_share']
+    requirements = ['activity_mode_shares']
     valid_modes = ['all']
     index_fields = ['mode']
     value_field = 'trip_share'
@@ -140,7 +140,7 @@ class ActivityModeSharesComparison(CsvComparison):
     def __init__(self, config, mode, **kwargs):
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
-        self.simulation_name = f"activity_mode_share_all"
+        self.simulation_name = f"activity_mode_shares_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:

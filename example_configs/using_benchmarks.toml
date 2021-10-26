@@ -20,7 +20,7 @@ path = "./outputs"
 
 [benchmarks]
 mode_shares_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv"}
-destination_mode_shares_comparison--commuters = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv", destination_activity_filters=["work"]}
+activity_mode_shares_comparison--commuters = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv", destination_activity_filters=["work"]}
 attribute_mode_shares_comparison--subpop = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["subpopulation"]}
 attribute_mode_shares_comparison--age = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["age"]}
 link_counter_comparison--A = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
