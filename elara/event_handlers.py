@@ -11,8 +11,6 @@ from shapely.geometry import LineString
 
 from elara.factory import WorkStation, Tool
 
-logger = logging.getLogger(__name__)
-
 
 class EventHandlerTool(Tool):
     """
