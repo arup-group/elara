@@ -98,6 +98,26 @@ class TestModeSharesComparison(ModeSharesComparison):
     )
 
 
+
+class ModeCountsComparison(CsvComparison):
+
+    def __init__(self, config, mode, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    index_field = ['mode']
+    value_field = 'trip_count'
+    simulation_name = 'mode_shares_all_counts.csv'
+    weight = 1
+
+
+# class TestModeCountsComparison(ModeCountsComparison):
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('test_fixtures', 'mode_counts.csv')
+#     )
+
+
 class ModeSharesByAttributeComparison(CsvComparison):
 
     requirements = ['mode_shares']
@@ -1635,6 +1655,7 @@ class BenchmarkWorkStation(WorkStation):
         "mode_shares_comparison": ModeSharesComparison,
         "destination_mode_shares_comparison": ActivityModeSharesComparison,
         "activity_mode_shares_comparison": ActivityModeSharesComparison,  # prefered name
+        "mode_counts_comparison": ModeCountsComparison,
         "attribute_mode_shares_comparison": ModeSharesByAttributeComparison,
         "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
