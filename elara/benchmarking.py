@@ -80,49 +80,10 @@ class CsvComparison(BenchmarkTool):
 
 class ModeSharesComparison(CsvComparison):
 
-    def __init__(self, config, mode, **kwargs):
-        super().__init__(config, mode=mode, **kwargs)
-
     requirements = ['mode_shares']
     valid_modes = ['all']
+    value_field = 'trip_share'
     index_fields = ['mode']
-    value_field = 'trip_share'
-    # name = 'test'
-    simulation_name = 'mode_shares_all.csv'
-    weight = 1
-
-
-class TestModeSharesComparison(ModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_shares.csv')
-    )
-
-
-
-class ModeCountsComparison(CsvComparison):
-
-    def __init__(self, config, mode, **kwargs):
-        super().__init__(config, mode=mode, **kwargs)
-
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    index_field = ['mode']
-    value_field = 'trip_count'
-    simulation_name = 'mode_shares_all_counts.csv'
-    weight = 1
-
-
-# class TestModeCountsComparison(ModeCountsComparison):
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('test_fixtures', 'mode_counts.csv')
-#     )
-
-
-class ModeSharesByAttributeComparison(CsvComparison):
-
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    value_field = 'trip_share'
     weight = 1
 
     def __init__(
@@ -133,8 +94,11 @@ class ModeSharesByAttributeComparison(CsvComparison):
         **kwargs
         ):
         self.groupby_person_attribute = groupby_person_attribute
-        self.index_fields = ['mode', 'class']
-        self.simulation_name = f'mode_shares_all_{groupby_person_attribute}.csv'
+        self.simulation_name = f"mode_shares_all"
+        if groupby_person_attribute is not None:
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+        self.simulation_name += ".csv"
         super().__init__(
             config,
             mode=mode,
@@ -143,9 +107,57 @@ class ModeSharesByAttributeComparison(CsvComparison):
             )
 
 
-class TestModeSharesByAttributeComparison(ModeSharesByAttributeComparison):
+class TestModeSharesComparison(ModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_shares.csv')
+    )
+
+
+class TestModeSharesByAttributeComparison(ModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'subpop_mode_shares.csv')
+    )
+
+
+class ModeCountsComparison(CsvComparison):
+
+    requirements = ['mode_shares']
+    valid_modes = ['all']
+    value_field = 'trip_count'
+    index_fields = ['mode']
+    weight = 1
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"mode_shares_all"
+        if groupby_person_attribute is not None:
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+        self.simulation_name += "_counts.csv"
+
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+
+
+class TestModeCountsComparison(ModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_counts.csv')
+    )
+
+
+class TestModeCountsByAttributeComparison(ModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_mode_counts.csv')
     )
 
 
@@ -165,7 +177,9 @@ class ActivityModeSharesComparison(CsvComparison):
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
             self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
         self.simulation_name += ".csv"
+
         super().__init__(config, mode=mode, **kwargs)
 
 
@@ -178,6 +192,40 @@ class TestActivityModeSharesComparison(ActivityModeSharesComparison):
 class TestActivityModeSharesByAttributeComparison(ActivityModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'subpop_mode_shares.csv')
+    )
+
+
+class ActivityModeCountsComparison(CsvComparison):
+
+    requirements = ['activity_mode_shares']
+    valid_modes = ['all']
+    index_fields = ['mode']
+    value_field = 'trip_count'
+    weight = 1
+
+    def __init__(self, config, mode, **kwargs):
+        destination_activities = kwargs.get("destination_activity_filters", [])
+        groupby_person_attribute = kwargs.get("groupby_person_attribute")
+        self.simulation_name = f"activity_mode_shares_all"
+        for act in destination_activities:
+            self.simulation_name += f"_{act}"
+        if groupby_person_attribute is not None:
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+        self.simulation_name += "_counts.csv"
+
+        super().__init__(config, mode=mode, **kwargs)
+
+
+class TestActivityModeCountsComparison(ActivityModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'commuter_mode_counts.csv')
+    )
+
+
+class TestActivityModeCountsByAttributeComparison(ActivityModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_commuter_mode_counts.csv')
     )
 
 
@@ -1656,7 +1704,6 @@ class BenchmarkWorkStation(WorkStation):
         "destination_mode_shares_comparison": ActivityModeSharesComparison,
         "activity_mode_shares_comparison": ActivityModeSharesComparison,  # prefered name
         "mode_counts_comparison": ModeCountsComparison,
-        "attribute_mode_shares_comparison": ModeSharesByAttributeComparison,
         "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,

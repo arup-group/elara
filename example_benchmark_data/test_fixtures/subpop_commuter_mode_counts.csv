@@ -1,0 +1,13 @@
+mode,class,trip_count
+bike,None,0.0
+bike,poor,10000.0
+bike,rich,0.0
+bus,None,0.0
+bus,poor,20000.0
+bus,rich,0.0
+car,None,0.0
+car,poor,10000.0
+car,rich,10000.0
+walk,None,0.0
+walk,poor,0.0
+walk,rich,0.0
