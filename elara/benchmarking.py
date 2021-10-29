@@ -1701,9 +1701,10 @@ class BenchmarkWorkStation(WorkStation):
 
     tools = {
         "mode_shares_comparison": ModeSharesComparison,
-        "destination_mode_shares_comparison": ActivityModeSharesComparison,
+        "destination_mode_shares_comparison": ActivityModeSharesComparison,  # to be removed in future when no one is looking
         "activity_mode_shares_comparison": ActivityModeSharesComparison,  # prefered name
         "mode_counts_comparison": ModeCountsComparison,
+        "activity_mode_counts_comparison": ActivityModeCountsComparison,
         "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,
