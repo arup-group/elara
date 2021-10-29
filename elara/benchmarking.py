@@ -31,13 +31,13 @@ class BenchmarkTool(Tool):
 
 class CsvComparison(BenchmarkTool):
 
-    index_fields = None # index column(s) in the csv files
-    value_field = None # value column in the csv files to compare
-    benchmark_data_path = None # filepath to the benchmark csv file
-    simulation_name = None # name of the simulation csv file
-    weight = None # score weight
-
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        # I've commented these out because they are overwritting child attributes at some point!
+        # self.index_fields = None # index column(s) in the csv files
+        # self.value_field = None # value column in the csv files to compare
+        # self.benchmark_data_path = None # filepath to the benchmark csv file
+        # self.simulation_name = None # name of the simulation csv file
+        # self.weight = None # score weight
 
         super().__init__(config, mode=mode, benchmark_data_path=benchmark_data_path, **kwargs)
         self.mode = mode
@@ -85,12 +85,6 @@ class CsvComparison(BenchmarkTool):
 
 class ModeSharesComparison(CsvComparison):
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    value_field = 'trip_share'
-    index_fields = ['mode']
-    weight = 1
-
     def __init__(
         self,
         config,
@@ -98,18 +92,26 @@ class ModeSharesComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.groupby_person_attribute = groupby_person_attribute
-        self.simulation_name = f"mode_shares_all"
-        if groupby_person_attribute is not None:
-            self.simulation_name += f"_{groupby_person_attribute}"
-            self.index_fields.append("class")
-        self.simulation_name += ".csv"
+        self.requirements = ['mode_shares']
+        self.valid_modes = ['all']
+        self.value_field = 'trip_share'
+        self.index_fields = ['mode']
+        self.weight = 1
+
         super().__init__(
             config,
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
             )
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"mode_shares_all"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += ".csv"
 
 
 class TestModeSharesComparison(ModeSharesComparison):
@@ -126,12 +128,6 @@ class TestModeSharesByAttributeComparison(ModeSharesComparison):
 
 class ModeCountsComparison(CsvComparison):
 
-    requirements = ['mode_shares']
-    valid_modes = ['all']
-    value_field = 'trip_count'
-    index_fields = ['mode']
-    weight = 1
-
     def __init__(
         self,
         config,
@@ -139,12 +135,11 @@ class ModeCountsComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.groupby_person_attribute = groupby_person_attribute
-        self.simulation_name = f"mode_shares_all"
-        if groupby_person_attribute is not None:
-            self.simulation_name += f"_{groupby_person_attribute}"
-            self.index_fields.append("class")
-        self.simulation_name += "_counts.csv"
+        self.requirements = ['mode_shares']
+        self.valid_modes = ['all']
+        self.value_field = 'trip_count'
+        self.index_fields = ['mode']
+        self.weight = 1
 
         super().__init__(
             config,
@@ -152,6 +147,14 @@ class ModeCountsComparison(CsvComparison):
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
             )
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"mode_shares_all"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += "_counts.csv"
 
 
 class TestModeCountsComparison(ModeCountsComparison):
@@ -168,13 +171,14 @@ class TestModeCountsByAttributeComparison(ModeCountsComparison):
 
 class ActivityModeSharesComparison(CsvComparison):
 
-    requirements = ['activity_mode_shares']
-    valid_modes = ['all']
-    index_fields = ['mode']
-    value_field = 'trip_share'
-    weight = 1
-
     def __init__(self, config, mode, **kwargs):
+        self.requirements = ['activity_mode_shares']
+        self.valid_modes = ['all']
+        self.index_fields = ['mode']
+        self.value_field = 'trip_share'
+        self.weight = 1
+
+        super().__init__(config, mode=mode, **kwargs)
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
         self.simulation_name = f"activity_mode_shares_all"
@@ -184,9 +188,8 @@ class ActivityModeSharesComparison(CsvComparison):
             self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
         self.simulation_name += ".csv"
-
-        super().__init__(config, mode=mode, **kwargs)
 
 
 class TestActivityModeSharesComparison(ActivityModeSharesComparison):
@@ -203,24 +206,25 @@ class TestActivityModeSharesByAttributeComparison(ActivityModeSharesComparison):
 
 class ActivityModeCountsComparison(CsvComparison):
 
-    requirements = ['activity_mode_shares']
-    valid_modes = ['all']
-    index_fields = ['mode']
-    value_field = 'trip_count'
-    weight = 1
-
     def __init__(self, config, mode, **kwargs):
+        self.requirements = ['activity_mode_shares']
+        self.valid_modes = ['all']
+        self.index_fields = ['mode']
+        self.value_field = 'trip_count'
+        self.weight = 1
+
+        super().__init__(config, mode=mode, **kwargs)
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
         self.simulation_name = f"activity_mode_shares_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
         self.simulation_name += "_counts.csv"
-
-        super().__init__(config, mode=mode, **kwargs)
 
 
 class TestActivityModeCountsComparison(ActivityModeCountsComparison):
