@@ -22,6 +22,9 @@ class BenchmarkTool(Tool):
         if not self.benchmark_data_path:
             self.benchmark_data_path = benchmark_data_path
 
+        self.logger.debug(f"Initiating: {str(self)} with name: {self.name}")
+        self.logger.debug(f"groupby_person_attribute={groupby_person_attribute}, benchmark_data_path={benchmark_data_path}, kwargs={kwargs}")
+
     def __str__(self):
         return f'{self.__class__.__name__}'
 
@@ -30,12 +33,12 @@ class CsvComparison(BenchmarkTool):
 
     index_fields = None # index column(s) in the csv files
     value_field = None # value column in the csv files to compare
-    # name = None # suffix to add to the output file names
     benchmark_data_path = None # filepath to the benchmark csv file
     simulation_name = None # name of the simulation csv file
     weight = None # score weight
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+
         super().__init__(config, mode=mode, benchmark_data_path=benchmark_data_path, **kwargs)
         self.mode = mode
 
@@ -178,6 +181,7 @@ class ActivityModeSharesComparison(CsvComparison):
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
         self.simulation_name += ".csv"
