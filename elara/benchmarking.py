@@ -45,8 +45,10 @@ class CsvComparison(BenchmarkTool):
         """
         # Read benchmark and simulation csv files
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
+        self.logger.debug(f"Using indices '{self.index_fields}'")
         benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
         simulation_path = os.path.join(self.config.output_path, self.simulation_name)
+        self.logger.debug(f"Loading Simulation data from {simulation_path}")
         simulation_df = pd.read_csv(simulation_path, index_col=self.index_fields)
 
         # compare
