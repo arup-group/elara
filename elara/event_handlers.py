@@ -1926,6 +1926,9 @@ class VehicleLinkLog(EventHandlerTool):
         super().__init__(config, mode)
         self.vehicle_link_log = None
 
+        self.logger.warning(f"MODE = {mode}")
+
+
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
         Build handler from resources.

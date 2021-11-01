@@ -594,7 +594,7 @@ class ChunkWriter:
             #chunk_df.to_csv(self.path)
             self.idx += len(self.chunk)
         else:
-            df_write_wrapper(chunk_df, self.path, key = self._chunk_key, header = None )
+            df_write_wrapper(chunk_df, self.path, key = self._chunk_key, header = None, mode = 'a')
             #chunk_df.to_csv(self.path, header=None, mode="a")
             self.idx += len(self.chunk)
         del chunk_df
@@ -613,7 +613,7 @@ class ChunkWriter:
     def __len__(self):
         return self.idx + len(self.chunk)
 
-def df_write_wrapper(df: pd.DataFrame, path: str, header=True, key=None, mode="a"):
+def df_write_wrapper(df: pd.DataFrame, path: str, header=True, key=None, mode="w"):
     """
     Simple wrapper for writing dataframes to various formats
     Infers write method from requested file extension

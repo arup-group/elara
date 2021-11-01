@@ -1277,7 +1277,7 @@ def test_stop_to_stop_finalise_bus_simple(
 
 # Vehicle departs stop test
 def test_vehicle_departs_facility(test_config, input_manager):
-    handler = event_handlers.VehicleDepartureLog(test_config)
+    handler = event_handlers.VehicleDepartureLog(test_config, mode = "all")
     handler.build(input_manager.resources)
             
     for elem in handler.resources['events'].elems:
@@ -1296,9 +1296,29 @@ def test_vehicle_departs_facility(test_config, input_manager):
         'delay': -137
     }
 
+# Vehicle link logs test
+def test_vehicle_link_log(test_config, input_manager):
+    handler = event_handlers.VehicleLinkLog(test_config, mode = "all")
+    handler.build(input_manager.resources)
+            
+    for elem in handler.resources['events'].elems:
+        handler.process_event(elem)
+
+    log_length = len(handler.vehicle_link_log.chunk)
+    chunk_five = handler.vehicle_link_log.chunk[4]
+
+    assert log_length == 10
+    assert chunk_five == {
+        'veh_id': 'chris',
+        'veh_mode': 'car',
+        'link_id': '4-3',
+        'entry_time': 59401,
+        'exit_time': 59406
+    } 
+
 # Vehicle passenger boardings/alightings test
 def test_vehicle_passenger_boarding(test_config, input_manager):
-    handler = event_handlers.VehiclePassengerLog(test_config)
+    handler = event_handlers.VehiclePassengerLog(test_config, mode = "all")
     handler.build(input_manager.resources)
 
     for elem in handler.resources['events'].elems:
