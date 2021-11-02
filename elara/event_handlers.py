@@ -1983,7 +1983,7 @@ class VehicleLinkLog(EventHandlerTool):
         
         if event_type == "vehicle leaves traffic": #exit via leaves traffic event
             veh_id = elem.get("vehicle")
-            # pop if veh entered link via "vehicle enters traffic",
+            # remove staged event. None = veh enters/leaves traffic on same link
             self.event_staging.pop(veh_id, None)
 
         return None
