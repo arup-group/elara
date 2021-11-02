@@ -280,7 +280,7 @@ class ModeShares(PlanHandlerTool):
         z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
         return x, y, z
 
-class TripDestinationModeShare(PlanHandlerTool):
+class ActivityModeShares(PlanHandlerTool):
     """
     Extract mode shares for specified activities from plans. This handler takes a list of activities and computes the mode shares for each
     independant activity trip. 
@@ -1488,7 +1488,8 @@ class PlanHandlerWorkStation(WorkStation):
 
     tools = {
         "mode_shares": ModeShares,
-        "trip_destination_mode_share": TripDestinationModeShare,
+        "trip_destination_mode_share": ActivityModeShares,
+        "activity_mode_shares": ActivityModeShares,  # preferred name
         "leg_logs": LegLogs,
         "trip_logs": TripLogs,
         "plan_logs": PlanLogs,
@@ -1510,7 +1511,7 @@ class PlanHandlerWorkStation(WorkStation):
         """
 
         if not self.resources:
-            self.logger.warning(f'{self.__str__} has no resources, build returning None.')
+            self.logger.warning(f'{str(self)} has no resources, build returning None.')
             return None
 
         # build tools
@@ -1534,16 +1535,17 @@ class PlanHandlerWorkStation(WorkStation):
 
         # finalise
         # Generate event file outputs
-        self.logger.debug(f'{self.__str__()} .resources = {self.resources}')
+        self.logger.debug(f'{str(self)} .resources = {self.resources}')
 
         for handler_name, handler in self.resources.items():
-            self.logger.info(f'Finalising {handler.__str__()}')
+            self.logger.debug(f'Finalising {str(handler)}')
             handler.finalise()
 
-            self.logger.debug(f'{len(handler.results)} result_dfs at {handler.__str__()}')
+            self.logger.debug(f'{len(handler.results)} result_dfs at {str(handler)}')
 
             if handler.results:
-                self.logger.info(f'Writing results from {handler.__str__()}')
+                output_path = handler.config.output_path
+                self.logger.info(f'Writing results from {str(handler)} to {output_path}')
 
                 for name, result in handler.results.items():
                     csv_name = "{}.csv".format(name)

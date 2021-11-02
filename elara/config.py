@@ -5,8 +5,6 @@ from elara.factory import WorkStation, Tool
 import logging
 from elara import ConfigError
 
-logger = logging.getLogger(__name__)
-
 
 class Config:
 

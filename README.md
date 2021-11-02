@@ -52,7 +52,7 @@ These are processed by streaming through all output plans from simulation. Compa
 these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
   * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy.
+  * ``activity_mode_shares``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy.
   * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -181,7 +181,7 @@ stop_passenger_waiting = ["all"]
 
 [plan_handlers]
 mode_shares = ["all"]
-trip_destination_mode_share = {destination_activity_filters = ["work"]}
+activity_mode_shares = {destination_activity_filters = ["work"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
@@ -290,7 +290,7 @@ Specification of the plan handlers to be run during processing. Currently availa
 include:
 
   * ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
-  * ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy. Requires ``destination_activity_filters`` - a list of destination activities as a parameter, eg: ``trip_destination_mode_share = {destination_activity_filters = ["work"]``. 
+  * ``activity_mode_shares``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy. Requires ``destination_activity_filters`` - a list of destination activities as a parameter, eg: ``activity_mode_shares = {destination_activity_filters = ["work"]``. 
   * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Ommitts pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
   * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
   * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -352,16 +352,16 @@ The above config will produce a number of link counts for car and bus with break
 
 An example config using the `groupby_person_attributes` option is included: `./example_configs/complex_options.toml`.
 
-Some handlers require additional options to be passed, for example `trip_destination_mode_share` which calculated mode share only for trips with given destination activity types:
+Some handlers require additional options to be passed, for example `activity_mode_shares` which calculated mode share only for trips with given destination activity types:
 
 ```{.toml}
-trip_destination_mode_share = {destination_activity_filters = ["work"]}
+activity_mode_shares = {destination_activity_filters = ["work"]}
 ```
 
 You can also name your handler, which will be added to the output file names:
 
 ```{.toml}
-trip_destination_mode_share = {name = "commuters", destination_activity_filters = ["work"]}
+activity_mode_shares = {name = "commuters", destination_activity_filters = ["work"]}
 ```
 
 ### Letting Elara Deal With Dependancies
@@ -438,7 +438,7 @@ Benchmarks take a `benchmark_data_path` option in addition to regular options. T
 Currently available benchmarks include:
 
 * ``mode_shares_comparison``
-* ``destination_mode_shares_comparison``
+* ``activity_mode_shares_comparison``
 * ``attribute_mode_shares_comparison``
 * ``euclidean_distance_comparison``
 * ``duration_comparison``

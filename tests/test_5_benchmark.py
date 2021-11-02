@@ -86,24 +86,83 @@ def test_mode_share_score_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
-def test_destination_mode_share_score_zero():
-    benchmark = benchmarking.TestDestinationModeSharesComparison
+
+def test_mode_share_by_attribute_score_zero():
+    benchmark = benchmarking.TestModeSharesByAttributeComparison
     test_bm = benchmark(
         config,
-        'all'
+        mode='all',
+        groupby_person_attribute="subpopulation",
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
-def test_town_mode_share_with_attribute_groups_score_zero():
-    benchmark = benchmarking.TestModeSharesByAttributeComparison
+
+def test_mode_counts_score_zero():
+    benchmark = benchmarking.TestModeCountsComparison
     test_bm = benchmark(
-        config=config,
+        config,
+        mode='all',
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_mode_counts_by_attribute_score_zero():
+    benchmark = benchmarking.TestModeCountsByAttributeComparison
+    test_bm = benchmark(
+        config,
         mode='all',
         groupby_person_attribute="subpopulation"
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
+
+
+def test_activity_mode_share_score_zero():
+    benchmark = benchmarking.TestActivityModeSharesComparison
+    test_bm = benchmark(
+        config,
+        mode='all',
+        destination_activity_filters=["work"],
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+def test_activity_subpopulaion_mode_share_score_zero():
+    benchmark = benchmarking.TestActivityModeSharesByAttributeComparison
+    test_bm = benchmark(
+        config,
+        mode='all',
+        destination_activity_filters=["work"],
+        groupby_person_attribute="subpopulation",
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_activity_mode_share_count_zero():
+    benchmark = benchmarking.TestActivityModeCountsComparison
+    test_bm = benchmark(
+        config,
+        mode='all',
+        destination_activity_filters=["work"],
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_activity_subpopulaion_mode_count_score_zero():
+    benchmark = benchmarking.TestActivityModeCountsByAttributeComparison
+    test_bm = benchmark(
+        config,
+        mode='all',
+        destination_activity_filters=["work"],
+        groupby_person_attribute="subpopulation",
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
 
 def test_duration_comparison_score_zero():
     benchmark = benchmarking.TestDurationComparison
