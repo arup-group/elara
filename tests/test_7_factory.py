@@ -64,7 +64,8 @@ def test_requirements_workstation(test_config):
         'link_vehicle_counts': {'modes':['car']},
         'test_link_cordon': {'modes':['car']},
         'vehicle_departure_log': {'modes':['all']},
-        'vehicle_passenger_log': {'modes':['all']},
+        'vehicle_link_log': {'modes': ['all']},
+        'vehicle_passenger_log': {'modes': ['all']},
     }
 
 
@@ -178,6 +179,7 @@ def test_bfs(requirements):
             'link_vehicle_counts:car:None:': factory.Tool,
             'vehicle_departure_log:all:None:': factory.Tool,
             'vehicle_passenger_log:all:None:': factory.Tool,
+            'vehicle_link_log:all:None:': factory.Tool
         }
     )
 
