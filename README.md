@@ -6,7 +6,7 @@ A command line utility for processing (in big batches or bit by bit) MATSim XML 
 
 * [Introduction](https://github.com/arup-group/elara#introduction)
 * [Installation](https://github.com/arup-group/elara#installation)
-* [Inputs](https://github.com/arup-group/elara#installation)
+* [Inputs](https://github.com/arup-group/elara#inputs)
 * [Usage](https://github.com/arup-group/elara#usage)
 * [Command Line Reference](https://github.com/arup-group/elara#command-line-reference)
 * [Configuration Options](https://github.com/arup-group/elara#configuration-options)
@@ -82,7 +82,7 @@ Inputs to Elara are MATSim format output files, eg:
 * **output_config_path** = "./tests/test_fixtures/output_config.xml"
 * **road pricing config** = "./tests/test_fixtures/roadpricing.xml"
 
-Depending on what outputs you require from elara, some of these inputs may not be required, but it is often conveneient to have them all available as a default. In most cases these Elara inputs may be compressed using gzip (`file.xml.gz`).
+Depending on what outputs you require from elara, some of these inputs may not be required, but it is often convenient to have them all available as a default. In most cases these Elara inputs may be compressed using gzip (`file.xml.gz`).
 
 If you are running a scenario with road pricing, it will be needed to calculate toll log outputs.
 
@@ -95,7 +95,7 @@ There are four main types of handler/tools, arranged into python modules. `elara
 
 *Users are encouraged to add new tools as they require. The below lists are updated periodically but may not be complete.* 
 
-###**Event Handlers/WorkStation Tools**:
+### **Event Handlers/WorkStation Tools**:
 These are processed by streaming (in order) through all output events from simulation.
 
 Currently supported handlers include:
@@ -118,8 +118,8 @@ Compared to the event based outputs these are typically more aggregate but can b
 
 Currently supported handlers include:
 
-* ``mode_shares``: Produce global modeshare of final plans using a mode hierarchy.
-* ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans using a mode hierarchy.
+* ``mode_shares``: Produce global modeshare of final plans (distance-based)
+* ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans.
 * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Omits pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
 * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
 * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -210,7 +210,7 @@ test_link_cordon = ["car"]
 
 You can run this config on some toy data: `elara run example_configs/config.toml` (from the project root).
 
-Outputs from a given simulation have well-known names and typically live in a single folder. As a convenience, you may optionally pass the single argument to `[inputs]` with the directory containing the above MATSim outputs using, e.g. `inputs_directory = "./tests/test_fixtures/"`. **NB:** For toll-based outputs, you must still provide the `road_pricing` path separately.
+If your MATSim outputs use default names and are in the same directory, you may optionally pass the path of this directory as single argument to `[inputs]` using, e.g. `inputs_directory = "./tests/test_fixtures/"`. **NB:** For toll-based outputs, you must still provide the `road_pricing` path separately.
 
 ## Command Line Reference
 
@@ -271,7 +271,7 @@ names, ie `output_plans.xml.gz`, `output_personAttributes.xml.gz`, `output_confi
 
 ### Example CLI Usage
 
-To example, to produce **vehicle kilometres travelled by car (VKT)** for a London scenario, all the defaults are correct but you'd like to read the inputs from a different location to your current path:
+To produce **vehicle kilometres travelled by car (VKT)** for a London scenario, all the defaults are correct but you'd like to read the inputs from a different location to your current path:
 
 `elara post-processors vkt car -inputs_path ~/DIFFERENT/DATA/LOCATION`
 
@@ -279,7 +279,7 @@ or, more succinctly:
 
 `elara post-processors vkt car -i ~/DIFFERENT/DATA/LOCATION`
 
-Produce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
+To roduce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
 a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~/Data/nz_test':
 
 `elara event-handlers volume-counts car bus -epsg EPSG:2113 -scale_factor .01 -name nz_test 
@@ -289,7 +289,7 @@ or, much more succinctly:
 
 `elara event-handlers link-vehicle-counts car bus -e EPSG:2113 -s .01 -n nz_test -o ~/Data/nz_test`
 
-Produce a **benchmark**, in this case we assume that a benchmark has already been created called and that it works for all modes.
+To produce a **benchmark**, in this case we assume that a benchmark has already been created called and that it works for all modes.
 
 `elara benchmarks mode_shares_comparison all -e "ESPG:2157"`
 
@@ -457,13 +457,15 @@ Care should be taken not to specify unnecesary options as they can add significa
 
 ### Experienced Plans
 
-Elara assumes you wish to analyse MATSim agents' "experienced" plans (rather than the selected plans from the final iteration). If you do **not** wish to use experienced plans, you can set the following option in the config:
-````{.toml}
+Elara assumes you your MATSim run is configured to output agents' "experienced" plans (rather than "planned" plans).  If you do **not** wish to use experienced plans, you can set the following option in the config:
+
+```{.toml}
 [scenario]
 ...
 using_experienced_plans = false 
 ```
-This option is set to `true` by default, and does not need to be included it in the config, although you may set it explicitly by default if you wish.
+
+This option is set to `true` by default, and does not need to be included it in the config, although you may set it explicitly if you wish.
 
 When using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. In turn, this prevents elara from providing outputs grouped by person attributes (ie those that use the `groupby_person_attributes` option). 
 
