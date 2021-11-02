@@ -73,3 +73,10 @@ def test_roadpricing_config_path_missing():
     config = Config("tests/test_xml_scenario_bad_path.toml")
     with pytest.raises(KeyError):
         assert config.road_pricing_path == "./tests/test_fixtures/road_pricing.xml"
+
+def test_check_xml_path():
+    config = Config()
+    test_path = os.path.abspath('/not/a/real/file.xml')
+    correct_path = os.path.abspath('/not/a/real/file.xml.gz')
+    test_method_path = config.check_xml_path(test_path)
+    assert test_method_path == correct_path

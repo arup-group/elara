@@ -628,6 +628,9 @@ def main(config):
 
     logger.info('Starting')
 
+    # TODO
+    config.experienced_plans_warning()
+
     # Create output folder if it does not exist
     if not os.path.exists(config.output_path):
         logger.info(f'Creating new output directory {config.output_path}')

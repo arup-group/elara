@@ -25,8 +25,8 @@ class Config:
                 "network": "./output_network.xml.gz",
                 "transit_schedule": "./output_transitSchedule.xml.gz",
                 "transit_vehicles": "./output_transitVehicles.xml.gz",
-                "attributes": "./output_personAttributes.xml.gz",
-                "plans": "./output_plans.xml.gz",
+                "attributes": "./output_plans.xml.gz",
+                "plans": "./output_experienced_plans.xml.gz",
                 "output_config_path": "./output_config.xml",
                 "road_pricing": "./road_pricing.xml",
             },
@@ -87,6 +87,11 @@ class Config:
 
 
         self.load_required_settings()
+        
+        # load inputs input directory if provided
+        if self.inputs_directory:
+            self.logger.info(f"Using Directory {self.inputs_directory} for inputs")
+            self.set_inputs_from_directory(self.inputs_directory)
 
         if not os.path.exists(self.output_path):
             self.logger.info(f'Creating output path: {self.output_path}')
@@ -124,10 +129,10 @@ class Config:
             self.settings["scenario"]["scale_factor"]
         )
         self.version = self.valid_version(
-            self.settings["scenario"].get("version", 11)
+            self.settings["scenario"].get("version", 12)
         )
         self.using_experienced_plans = self.valid_bool(
-            self.settings["scenario"].get("using_experienced_plans", False)
+            self.settings["scenario"].get("using_experienced_plans", True)
         )
         self.logging = self.valid_verbosity(
             self.settings["scenario"].get("verbose", False)
@@ -135,6 +140,7 @@ class Config:
 
         # Factory requirements
         self.logger.debug(f'Loading factory build requirements')
+
         self.event_handlers = self.settings.get("event_handlers", {})
         self.plan_handlers = self.settings.get("plan_handlers", {})
         self.post_processors = self.settings.get("post_processors", {})
@@ -146,6 +152,7 @@ class Config:
         self.contract = self.valid_bool(
             self.settings["outputs"].get("contract", False)
         )
+
 
     """
     Property methods used for config dependant requirements.
@@ -161,6 +168,14 @@ class Config:
         return self.valid_crs(
             self.settings["scenario"]["crs"]
         )
+
+    @property
+    def inputs_directory(self):
+        inputs_path = self.settings["inputs"].get("inputs_directory")
+        if inputs_path:
+            return self.valid_path(inputs_path, "inputs directory")
+        else:
+            return None
 
     @property
     def events_path(self):
@@ -189,7 +204,7 @@ class Config:
         else:
             return self.valid_path(
             self.settings["inputs"]["attributes"], "attributes"
-        )
+            )
 
     @property
     def transit_schedule_path(self):
@@ -214,6 +229,18 @@ class Config:
         return self.valid_path(
             self.settings["inputs"]["road_pricing"], "output_config"
         )
+
+    @staticmethod
+    def check_xml_path(xml_path):
+        """
+        Returns xml_path if it exists, else assumes it is xml_path.gz
+        Error handling for bad paths is left to valid_path method
+        :param path: a path containing matsim outputs
+        :return: str with path to either xml or gz file
+        """
+        if os.path.isfile(xml_path): 
+            return xml_path
+        return xml_path + '.gz'
 
     @staticmethod
     def valid_bool(inp):
@@ -269,7 +296,7 @@ class Config:
         """
         if int(inp) not in [11, 12]:
             raise ConfigError(
-                f"Configured version ({inp}) not valid (please use 11 (default) or 12)"
+                f"Configured version ({inp}) not valid (please use 11 or 12 (default))"
             )
         return int(inp)
 
@@ -346,15 +373,45 @@ class Config:
                 if handler in renaming_dict.keys():
                     self.logger.warning(f'Warning: some handler names have been renamed (see https://github.com/arup-group/elara/pull/81). Did you mean "{renaming_dict[handler]}"?')
 
+    def set_inputs_from_directory(self, path):
+        self.settings['inputs'].update(
+            {
+                'events': 'output_events.xml',
+                'plans': 'output_experienced_plans.xml',
+                'network': 'output_network.xml',
+                'transit_schedule': 'output_transitSchedule.xml',
+                'transit_vehicles': 'output_transitVehicles.xml',
+                'output_config_path': 'output_config.xml',
+            }
+        )
+        if not self.using_experienced_plans:
+            print('CONDITION 1')
+            self.settings['inputs']['plans'] = 'output_plans.xml'
+        
+        if self.version == 12:
+            print('CONDITION 2')
+            self.settings['inputs']['attributes'] = 'output_plans.xml'
+        else:
+            print('CONDITION 3')
+            self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
+
+        for input, path in self.settings['inputs'].items():
+            if input in ['road_pricing', 'inputs_directory']: 
+                # do not override listed files
+                continue
+            else:
+                full_path = os.path.join(self.inputs_directory, path)
+                self.settings['inputs'][input] = self.check_xml_path(full_path)
+
     def override(self, path_override, dump_log=True):
         """
         :param path_override: override the config input and output paths
         "param dump_log: (bool) optionally dump overriden config to disk
         """
-        self.logger.warning(f"All input paths and output path being overridden with {path_override}")
+        self.logger.warning(f"All input paths and output paths being overwritten with {path_override}")
 
         for path in self.settings['inputs']:
-            if path == "road_pricing":  # assume that road pricing file is not overridden
+            if path == 'road_pricing':  # assume road pricing is not overwritten
                 continue
             file_name = self.settings['inputs'][path].split('/')[-1]
             self.settings['inputs'][path] = os.path.join(path_override, file_name)
@@ -372,7 +429,7 @@ class Config:
         """
         Add root path to all configured paths (inputs, output directory and benchmark data paths).
         :param root: root path
-        "param dump_log: (bool) optionally dump overriden config to disk
+        :param dump_log: (bool) optionally dump overriden config to disk
         """
         self.logger.warning(f"""
             All input paths, output path and data paths being 'rooted' with {root}.
@@ -402,9 +459,16 @@ class Config:
         path (str): path.json
         """
         with open(path, "w") as fp:
-            json.dump(self.settings , fp) 
+            json.dump(self.settings , fp)
 
-
+    def experienced_plans_warning(self):
+        if not self.using_experienced_plans:
+            self.logger.warning('NOT using experienced plans -- please ensure this is desired. Continuing...')
+        else:
+            if not 'experienced' in self.settings['inputs']['plans']:
+                    self.logger.warning('Elara set to use experienced plans. ' +
+                        'output_experienced_plans.xml is expected. Check config.'
+                    )
 class PathTool(Tool):
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
