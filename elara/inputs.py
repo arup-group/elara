@@ -18,7 +18,7 @@ WGS_84 = pyproj.Proj("epsg:4326")
 
 class InputTool(Tool):
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
 

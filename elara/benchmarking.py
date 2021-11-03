@@ -16,7 +16,7 @@ class BenchmarkTool(Tool):
     weight = 1
     benchmark_data_path = None
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
         super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
         if not self.benchmark_data_path:
@@ -1254,7 +1254,7 @@ class Cordon(BenchmarkTool):
     hours = None
     modes = None
 
-    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", attribute=None, **kwargs) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
@@ -1317,7 +1317,7 @@ class CordonDirectionCount(BenchmarkTool):
         :param counts_df: DataFrame of all benchmark counts for cordon
         :param links_df: DataFrame of cordon-count to links
         """
-        super().__init__(config=None, mode=None, attribute=None, **kwargs)
+        super().__init__(config=None, mode="all", attribute=None, **kwargs)
 
         self.cordon_name = parent.name
         self.config = parent.config

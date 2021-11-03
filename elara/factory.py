@@ -26,7 +26,7 @@ class Tool:
     requirements = []
     options_enabled = False
 
-    mode = None
+    mode = "all"
     groupby_person_attribute = None
     destination_activity_filters = None
     kwargs = None

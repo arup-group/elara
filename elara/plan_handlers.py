@@ -15,7 +15,7 @@ class PlanHandlerTool(Tool):
     """
     options_enabled = True
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
@@ -88,7 +88,7 @@ class ModeShares(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate Handler.
         :param config: Config
@@ -294,7 +294,7 @@ class ActivityModeShares(PlanHandlerTool):
     ]
     valid_modes = ['all']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate Handler.
         :param config: Config
@@ -506,7 +506,7 @@ class LegLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -700,7 +700,7 @@ class TripLogs(PlanHandlerTool):
     and leg duration under reported.
     """
 
-    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -893,7 +893,7 @@ class UtilityLogs(PlanHandlerTool):
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -961,7 +961,7 @@ class PlanLogs(PlanHandlerTool):
 
     requirements = ['plans', 'attributes']
 
-    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -1134,7 +1134,7 @@ class AgentTollsPaid(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -1254,7 +1254,7 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate handler.
         :param config: config
@@ -1384,7 +1384,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         ]
     valid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute="subpopulation", **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
         """
         Initiate handler.
         :param config: config
