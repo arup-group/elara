@@ -92,7 +92,7 @@ class ModeSharesComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.requirements = ['mode_shares']
+        self.requirements = ['trip_modes']
         self.valid_modes = ['all']
         self.value_field = 'trip_share'
         self.index_fields = ['mode']
@@ -105,13 +105,13 @@ class ModeSharesComparison(CsvComparison):
             **kwargs
             )
         self.groupby_person_attribute = groupby_person_attribute
-        self.simulation_name = f"mode_shares_all"
+        self.simulation_name = f"trip_modes_all"
         if groupby_person_attribute is not None:
             self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
-        self.simulation_name += ".csv"
+        self.simulation_name += "_shares.csv"
 
 
 class TestModeSharesComparison(ModeSharesComparison):
@@ -135,7 +135,7 @@ class ModeCountsComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.requirements = ['mode_shares']
+        self.requirements = ['trip_modes']
         self.valid_modes = ['all']
         self.value_field = 'trip_count'
         self.index_fields = ['mode']
@@ -148,7 +148,7 @@ class ModeCountsComparison(CsvComparison):
             **kwargs
             )
         self.groupby_person_attribute = groupby_person_attribute
-        self.simulation_name = f"mode_shares_all"
+        self.simulation_name = f"trip_modes_all"
         if groupby_person_attribute is not None:
             self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
@@ -172,7 +172,7 @@ class TestModeCountsByAttributeComparison(ModeCountsComparison):
 class ActivityModeSharesComparison(CsvComparison):
 
     def __init__(self, config, mode, **kwargs):
-        self.requirements = ['activity_mode_shares']
+        self.requirements = ['trip_activity_modes']
         self.valid_modes = ['all']
         self.index_fields = ['mode']
         self.value_field = 'trip_share'
@@ -181,7 +181,7 @@ class ActivityModeSharesComparison(CsvComparison):
         super().__init__(config, mode=mode, **kwargs)
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
-        self.simulation_name = f"activity_mode_shares_all"
+        self.simulation_name = f"trip_activity_modes_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
@@ -189,7 +189,7 @@ class ActivityModeSharesComparison(CsvComparison):
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
-        self.simulation_name += ".csv"
+        self.simulation_name += "_shares.csv"
 
 
 class TestActivityModeSharesComparison(ActivityModeSharesComparison):
@@ -207,7 +207,7 @@ class TestActivityModeSharesByAttributeComparison(ActivityModeSharesComparison):
 class ActivityModeCountsComparison(CsvComparison):
 
     def __init__(self, config, mode, **kwargs):
-        self.requirements = ['activity_mode_shares']
+        self.requirements = ['trip_activity_modes']
         self.valid_modes = ['all']
         self.index_fields = ['mode']
         self.value_field = 'trip_count'
@@ -216,7 +216,7 @@ class ActivityModeCountsComparison(CsvComparison):
         super().__init__(config, mode=mode, **kwargs)
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
-        self.simulation_name = f"activity_mode_shares_all"
+        self.simulation_name = f"trip_activity_modes_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:

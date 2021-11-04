@@ -235,8 +235,8 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
 
     plan_workstation = PlanHandlerWorkStation(test_config)
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
-    tool = plan_workstation.tools['mode_shares']
-    plan_workstation.resources['mode_shares'] = tool(test_config, 'all')
+    tool = plan_workstation.tools['trip_modes']
+    plan_workstation.resources['trip_modes'] = tool(test_config, 'all')
     plan_workstation.build(write_path=test_outputs)
 
     pp_workstation = benchmarking.BenchmarkWorkStation(test_config)

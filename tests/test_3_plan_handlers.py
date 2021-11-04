@@ -925,7 +925,7 @@ def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
 ### Modeshare Handler ###
 @pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.ModeShares(test_config, mode='all', groupby_person_attribute="subpopulation")
+    handler = plan_handlers.TripModes(test_config, mode='all', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1078,7 +1078,7 @@ def test_distance_mode_share_complex_pt_2(test_plan_modeshare_handler):
 ### Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_plan_modeshare_handler_no_attribute_slice(test_config_v12, input_manager):
-    handler = plan_handlers.ModeShares(test_config_v12, mode='all')
+    handler = plan_handlers.TripModes(test_config_v12, mode='all')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1126,7 +1126,7 @@ def test_mode_share_without_attribute_slice(test_plan_modeshare_handler_no_attri
 ### Modeshare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ModeShares(test_config_v12, mode='all', groupby_person_attribute="age")
+    handler = plan_handlers.TripModes(test_config_v12, mode='all', groupby_person_attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1248,7 +1248,7 @@ def test_finalised_mode_counts(test_plan_handler_finalised):
 ### TripDestinationModeShare Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ActivityModeShares(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
+    handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
     
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1410,7 +1410,7 @@ def test_activity_mode_share_without_attribute_slice_with_activities_complex(tes
 ### TripDestinationModeShare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.ActivityModeShares(
+    handler = plan_handlers.TripActivityModes(
         test_config_v12,
         mode='all',
         destination_activity_filters = ["work_a","work_b"],
@@ -1567,24 +1567,24 @@ def test_load_plan_handler_manager(test_config, test_paths):
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
 
     # mode_share
-    tool = plan_workstation.tools['mode_shares']
-    plan_workstation.resources['mode_shares'] = tool(
+    tool = plan_workstation.tools['trip_modes']
+    plan_workstation.resources['trip_modes'] = tool(
         test_config,
         mode='all',
         groupby_person_attribute="subpopulation"
         )
 
     # detination based mode_share
-    tool = plan_workstation.tools['activity_mode_shares']
-    plan_workstation.resources['activity_mode_shares'] = tool(
+    tool = plan_workstation.tools['trip_activity_modes']
+    plan_workstation.resources['trip_activity_modes'] = tool(
         test_config,
         'all',
         destination_activity_filters=["work"]
     )
 
      # detination and attribute based mode_share
-    tool = plan_workstation.tools['activity_mode_shares']
-    plan_workstation.resources['activity_mode_shares'] = tool(
+    tool = plan_workstation.tools['trip_activity_modes']
+    plan_workstation.resources['trip_activity_modes'] = tool(
         test_config,
         'all',
         destination_activity_filters=["work"],
@@ -1593,14 +1593,15 @@ def test_load_plan_handler_manager(test_config, test_paths):
 
     plan_workstation.build(write_path=test_outputs)
 
-    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all_detailed.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "mode_shares_all.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_detailed_shares.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_shares.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "activity_mode_shares_all_work_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "activity_mode_shares_all_work_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "activity_mode_shares_all_work.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "activity_mode_shares_all_work_detailed.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_shares.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_detailed_shares.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "activity_mode_shares_all_work_subpopulation.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_subpopulation_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_subpopulation_shares.csv"))

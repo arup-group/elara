@@ -1,4 +1,4 @@
- [scenario]
+[scenario]
 name = "time_squeeze"
 time_periods = 24
 scale_factor = 1
@@ -21,4 +21,3 @@ link_volume_counts = ["car"]
 [outputs]
 path = "./out"
 contract = true
-    

@@ -30,7 +30,7 @@ vehicle_passenger_log = ["bus"]
 #vehicle_stop_to_stop_passenger_counts = ["bus"]
 
 [plan_handlers]
-#mode_shares = {attributes=["age"]}
+#trip_modes = {attributes=["age"]}
 #trip_logs = ["all"]
 #agent_highway_distance_logs = ["car"]
 #trip_highway_distance_logs = ["car"]
