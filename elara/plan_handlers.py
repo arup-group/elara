@@ -250,7 +250,7 @@ class TripModes(ModeShares):
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
-                modes = {}
+                trip_modes = {}
 
                 for stage in plan:
 
@@ -261,7 +261,7 @@ class TripModes(ModeShares):
                         distance = float(route_elem.get("distance", 0))
                         
                         mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
-                        modes[mode] = modes.get(mode, 0) + distance
+                        trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
                         if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
@@ -270,7 +270,7 @@ class TripModes(ModeShares):
                         # only add activity modes when there has been previous activity
                         # (ie trip start time)
                         if end_time:
-                            mode = self.get_furthest_mode(modes)
+                            mode = self.get_furthest_mode(trip_modes)
                             x, y, z = self.mode_table_position(
                                 mode,
                                 attribute_class,
@@ -283,7 +283,46 @@ class TripModes(ModeShares):
                         end_time = convert_time_to_seconds(stage.get('end_time'))
 
                         # reset modes
-                        modes = {}
+                        trip_modes = {}
+
+
+class PlanModes(ModeShares):
+
+    def process_plans(self, elem):
+        """
+        """
+        for plan in elem.xpath(".//plan"):
+            if plan.get('selected') == 'yes':
+
+                ident = elem.get('id')
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+
+                plan_modes = {}
+
+                for stage in plan:
+
+                    if stage.tag == 'leg':
+                        leg_mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        distance = float(route_elem.get("distance", 0))
+                        
+                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        plan_modes[mode] = plan_modes.get(mode, 0) + distance
+
+                    elif stage.tag == 'activity':
+                        if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
+                            continue
+
+                mode = self.get_furthest_mode(plan_modes)
+                            
+                x, y, z = self.mode_table_position(
+                    mode,
+                    attribute_class,
+                    0
+                )
+
+                self.mode_counts[x, y, z] += 1
 
 
 class TripActivityModes(ModeShares):
@@ -307,7 +346,7 @@ class TripActivityModes(ModeShares):
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
-                modes = {}
+                trip_modes = {}
 
                 for stage in plan:
                     if stage.tag == 'leg':
@@ -317,7 +356,7 @@ class TripActivityModes(ModeShares):
                         distance = float(route_elem.get("distance", 0))
                         
                         mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
-                        modes[mode] = modes.get(mode, 0) + distance
+                        trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
                         activity = stage.get('type')
@@ -326,19 +365,71 @@ class TripActivityModes(ModeShares):
 
                         # only add activity modes when there has been previous activity
                         # (ie trip start time) AND the activity is in specified list
-                        if end_time and (activity in self.destination_activity_filters):
-                            mode = self.get_furthest_mode(modes)
-                            x, y, z = self.mode_table_position(
-                                mode,
-                                attribute_class,
-                                end_time
-                            )
-                            self.mode_counts[x, y, z] += 1 
+                        if end_time:
+                            if activity in self.destination_activity_filters:
+                                mode = self.get_furthest_mode(trip_modes)
+                                x, y, z = self.mode_table_position(
+                                    mode,
+                                    attribute_class,
+                                    end_time
+                                )
+                                self.mode_counts[x, y, z] += 1 
+                            # reset modes
+                            trip_modes = {}
                         # update endtime for next activity
                         end_time = convert_time_to_seconds(stage.get('end_time'))
 
-                        # reset modes
-                        modes = {}
+
+class PlanActivityModes(ModeShares):
+
+    def process_plans(self, elem):
+        """
+        """
+        for plan in elem.xpath(".//plan"):
+            if plan.get('selected') == 'yes':
+
+                ident = elem.get('id')
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+
+                end_time = None
+                trip_modes = {}
+                plan_modes = {}
+
+                for stage in plan:
+                    if stage.tag == 'leg':
+                        leg_mode = stage.get('mode')
+                        route_elem = stage.xpath('route')[0]
+                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        distance = float(route_elem.get("distance", 0))
+                        
+                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        trip_modes[mode] = trip_modes.get(mode, 0) + distance
+
+                    elif stage.tag == 'activity':
+                        activity = stage.get('type')
+                        if activity == 'pt interaction':  # ignore pt interaction activities
+                            continue
+
+                        # only add activity modes when there has been previous activity
+                        # (ie trip start time) AND the activity is in specified list
+                        if end_time:
+                            if activity in self.destination_activity_filters:
+                                # add modes and distances to plan_modes
+                                for mode, distance in trip_modes.values():
+                                    plan_modes[mode] = plan_modes.get(mode, 0) + distance
+                            # reset modes
+                            trip_modes = {}
+                            
+                        # update endtime for next activity
+                        end_time = convert_time_to_seconds(stage.get('end_time'))
+
+                mode = self.get_furthest_mode(plan_modes)
+                x, y, z = self.mode_table_position(
+                    mode,
+                    attribute_class,
+                    0
+                )
+                self.mode_counts[x, y, z] += 1 
 
 
 class LegLogs(PlanHandlerTool):
@@ -1339,6 +1430,8 @@ class PlanHandlerWorkStation(WorkStation):
     tools = {
         "trip_modes": TripModes,
         "trip_activity_modes": TripActivityModes,
+        "plan_modes": PlanModes,
+        "plan_activity_modes": PlanActivityModes,
         "leg_logs": LegLogs,
         "trip_logs": TripLogs,
         "plan_logs": PlanLogs,
