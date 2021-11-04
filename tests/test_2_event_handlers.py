@@ -71,7 +71,7 @@ def test_config():
 
 def test_tool_naming(test_config):
     tool = LinkVehicleCounts(config=test_config)
-    assert (str(tool)) == "LinkVehicleCounts"
+    assert (str(tool)) == "LinkVehicleCountsAll"
 
 
 # Paths

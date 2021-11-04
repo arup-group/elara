@@ -118,7 +118,7 @@ def test_set_reproject(example_gdf, set_crs, to_crs, result_crs):
 # Events
 def test_instantiated_class_names(test_xml_config):
     events = inputs.Events(test_xml_config)
-    assert str(events) == "Events"
+    assert str(events) == "EventsAll"
 
 
 def test_loading_xml_events(test_xml_config, test_paths):
