@@ -1854,11 +1854,16 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
-        "mode_shares_comparison": TripModeSharesComparison,
-        "destination_mode_shares_comparison": TripActivityModeSharesComparison,  # to be removed in future when no one is looking
-        "activity_mode_shares_comparison": TripActivityModeSharesComparison,  # prefered name
-        "mode_counts_comparison": TripModeCountsComparison,
-        "activity_mode_counts_comparison": TripActivityModeCountsComparison,
+        "trip_mode_shares_comparison": TripModeSharesComparison,
+        "trip_activity_mode_shares_comparison": TripActivityModeSharesComparison,
+        "trip_mode_counts_comparison": TripModeCountsComparison,
+        "trip_activity_mode_counts_comparison": TripActivityModeCountsComparison,
+        
+        "plan_mode_shares_comparison": PlanModeSharesComparison,
+        "plan_activity_mode_shares_comparison": PlanActivityModeSharesComparison,
+        "plan_mode_counts_comparison": PlanModeCountsComparison,
+        "plan_activity_mode_counts_comparison": PlanActivityModeCountsComparison,
+
         "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,
@@ -1866,7 +1871,7 @@ class BenchmarkWorkStation(WorkStation):
 
         "test_mode_shares_comparison": TestTripModeSharesComparison,
         "test_destination_mode_shares_comparison": TestTripActivityModeSharesComparison,
-        "test_activity_mode_shares_comparison": TestTripActivityModeSharesComparison,  # prefered name
+        "test_activity_mode_shares_comparison": TestTripActivityModeSharesComparison,
         "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
         "test_duration_comparison": TestDurationComparison,
         "test_link_cordon": TestCordon,

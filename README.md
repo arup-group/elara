@@ -19,27 +19,26 @@ A command line utility for processing (in big batches or bit by bit) MATSim XML 
 * [What does the name mean?](https://github.com/arup-group/elara#what-does-the-name-mean)
 
 ## Introduction
+
 Elara allows processing of complex MATSim outputs into more easilly useable forms and formats. For example extracting hourly flows of vehicles for all links in a network (`link_vehicle_counts`). Elara outputs are typically some form of aggregation of simulation outputs. Elara outputs are typically made available in tabular (`csv`) and spatial (`geojson`) formats. Spatial representations are converted to EPSG:4326, which works in kepler.
 
-Once installed Elara is intended to be used as a Command Line Interface (CLI), within this interface you can choose to run elara 
-via a [config](https://github.com/arup-group/elara#configuration) or purely through the 
-[CLI](https://github.com/arup-group/elara#command-line-reference) using command line arguments. The CLI is preferred for 
-producing single outputs, for example to extract vehicle kms, whereas using
-a config can handle big batches of outputs in one go. So if you are after a quick output - best 
-to use the CLI, whereas if you need a collection of outputs and/or reproducibility, a config is preferred.
+Once installed Elara is intended to be used as a Command Line Interface (CLI), within this interface you can choose to run elara via a [config](https://github.com/arup-group/elara#configuration) or purely through the [CLI](https://github.com/arup-group/elara#command-line-reference) using command line arguments. The CLI is preferred for producing single outputs, for example to extract vehicle kms, whereas using
+a config can handle big batches of outputs in one go. So if you are after a quick output - best to use the CLI, whereas if you need a collection of outputs and/or reproducibility, a config is preferred.
 
 The CLI and configs share naming conventions and structure. But we recommend learning about configs first as this provides an overview of most available tools.
-
 
 ## Installation
 
 Assuming Python >=3.7, virtualenv and using git, clone or download this repository.
+
 ```{sh}
 git clone git@github.com:arup-group/elara.git
 ```
+
 Once available locally, navigate to the folder to install Elara and its dependencies. Using a virtual environment is highly recommended.
 
 ### OSX
+
 ```{sh}
 cd elara
 virtualenv -p python3.7 venv
@@ -50,6 +49,7 @@ elara --help
 ```
 
 ### Windows
+
 It is recommended to use an Anaconda environment for installation on Windows:
 
 ```{sh}
@@ -62,13 +62,14 @@ pip install -e .
 pytest
 elara --help
 ```
+
 On Windows, installation may fail due to failure to locate underlying geospatial dependencies (with a traceback indicating `geos_c.dll` cannot be found, or similar). In this case, it is recommended to first install `geopandas` from conda-forge.
 
 ```{sh}
 conda install geopandas -c conda-forge
 ```
-After removing `geopandas`, `fiona`, and `shapely` from the `requirements.txt` file, install Elara as per above.
 
+After removing `geopandas`, `fiona`, and `shapely` from the `requirements.txt` file, install Elara as per above.
 
 ## Inputs
 
@@ -97,6 +98,7 @@ There are four main types of handler/tools, arranged into python modules. `elara
 *Users are encouraged to add new tools as they require. The below lists are updated periodically but may not be complete.* 
 
 ### **Event Handlers/WorkStation Tools**:
+
 These are processed by streaming (in order) through all output events from simulation.
 
 Currently supported handlers include:
@@ -113,14 +115,17 @@ Currently supported handlers include:
 * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 
 ### **Plan Handlers/WorkStation Tools**:
+
 These are processed by streaming through all output plans from simulation. 
 Compared to the event based outputs these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
 
 Currently supported handlers include:
 
-* ``mode_shares``: Produce global modeshare of final plans (distance-based)
-* ``trip_destination_mode_share``: Produce global modeshare to specified destination activities from final plans.
+* ``trip_modes``: Produce modeshares and counts of all trips.
+* ``trip_activity_modes``: Produce modeshares and counts of all trips to specified destination activities.
+* ``plan_modes``: Produce modeshares and counts of all plans (ie the dominant mode for each person).
+* ``plan_activity_modes``: Produce modeshares and counts of all plans (ie the dominant mode for each person) to specified destination activities.
 * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Omits pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
 * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
 * ``plan_logs``: Produce agent plans including unselected plans and scores.
@@ -128,7 +133,8 @@ Currently supported handlers include:
 * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 * ``toll_logs``: Produces summary of amounts agents paid at tolls, depending on the route they drove. Requires road pricing input file. Only works for option ``["car"]``.
 
-###**Post Processing Handlers/Workstation Tools**:
+### **Post Processing Handlers/Workstation Tools**:
+
 These are outputs produced through additional post-processing of the above outputs. Currently supported postprocessors include:
 
 * ``vkt``: Produce link volume vehicle kms by time slice.
@@ -136,16 +142,22 @@ These are outputs produced through additional post-processing of the above outpu
 * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 * ``plan_summary``: Produce summary statistics for all agent plans
 
-###**Benchmarking Handlers/WorkStation Tools**:
+### **Benchmarking Handlers/WorkStation Tools**:
+
 Elara can also assist with validation or 'benchmarking' of simulations. Elara will compare and present simulation results from the above outputs to available benchmarks, it will aditionally output a distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. 
 
 The handlers in this module require correctly formatted benchmark data. Examples can be found in the project `example_benchmark_data` folder.
 
 Currently available benchmarks include:
 
-* ``mode_shares_comparison``
-* ``destination_mode_shares_comparison``
-* ``attribute_mode_shares_comparison``
+* ``trip_mode_shares_comparison``
+* ``trip_activity_mode_shares_comparison``
+* ``trip_mode_counts_comparison``
+* ``trip_activity_mode_counts_comparison``
+* ``plan_mode_shares_comparison``
+* ``plan_activity_mode_shares_comparison``
+* ``plan_mode_counts_comparison``
+* ``plan_activity_mode_counts_comparison``
 * ``euclidean_distance_comparison``
 * ``duration_comparison``
 * ``link_counter_comparison``
@@ -188,8 +200,8 @@ stop_passenger_counts = ["bus"]
 stop_passenger_waiting = ["all"]
 
 [plan_handlers]
-mode_shares = ["all"]
-activity_mode_shares = {destination_activity_filters = ["work"]}
+trip_mode_shares = ["all"]
+trip_activity_mode_shares = {destination_activity_filters = ["work"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
@@ -217,7 +229,7 @@ If your MATSim outputs use default names and are in the same directory, you may 
 
 Elara can also be more generally used via the CLI to process individual outputs. Used in this manner the CLI should be pretty discoverable, once installed, try the command `elara` in your terminal to find out about the available options:
 
-```
+```{sh}
 $ elara
 Usage: elara [OPTIONS] COMMAND [ARGS]...
 
@@ -235,12 +247,11 @@ Commands:
 
 ```
 
-Further commands can then be explored. In general the commands and options available follow the same structure as configuration. An example is shown below. 
+Further commands can then be explored. In general the commands and options available follow the same structure as configuration. An example is shown below.
 
 The example command shown in the example is runnable from inside the `tests/test_fixtures` folder of the project.
 
-
-```
+```{sh}
 $ elara event-handlers volume-counts --help
 
 Usage: elara event-handlers volume-counts [OPTIONS] MODES...
@@ -295,14 +306,15 @@ To produce a **benchmark**, in this case we assume that a benchmark has already 
 `elara benchmarks mode_shares_comparison all -e "ESPG:2157"`
 
 Note that we are assuming that all other option defaults are correct. ie:
-- --scale_factor = 0.1
-- --time_periods = 24
-- etc
 
+* --scale_factor = 0.1
+* --time_periods = 24
+* etc
 
 ## Configuration Options
 
 ### Configuration Reference
+
 Configured fields are described below:
 
 **[scenario].name** *string* *(required)*
@@ -320,7 +332,7 @@ The sample size used in the originating MATSim scenario run. This is used to sca
 
  **[scenario].version** *int {11,12}* *(default 12)*
 
-Set `version = 11` if using MATSim version 11 outputs (in which case there a personAttributes file will be required). 
+Set `version = 11` if using MATSim version 11 outputs (in which case there a personAttributes file will be required).
 
 **[scenario].using_experienced_plans** *boolean {true, false}* *(default true)*
 
@@ -371,7 +383,7 @@ Handler allows specification of additional options:
 * in many cases the only modes supported are ``["all"]`` (this is a default), but some handlers, such as distance logs support modes as an option as per the events handlers above.
 * highway_distances only supports the mode ``car``
 
-**post_processors.*[post-processor name]** *list of strings* *(optional)*
+**post_processors.[post-processor name]** *list of strings* *(optional)*
 
 Specification of the event handlers to be run post processing. Currently available handlers include:
 
@@ -415,13 +427,13 @@ An example config using the `groupby_person_attributes` option is included: `./e
 Some handlers require additional options to be passed, for example `activity_mode_shares` which calculated mode share only for trips with given destination activity types:
 
 ```{.toml}
-activity_mode_shares = {destination_activity_filters = ["work"]}
+trip_activity_mode_shares = {destination_activity_filters = ["work"]}
 ```
 
 You can also name your handler, which will be added to the output file names:
 
 ```{.toml}
-activity_mode_shares = {name = "commuters", destination_activity_filters = ["work"]}
+trip_activity_mode_shares = {name = "commuters", destination_activity_filters = ["work"]}
 ```
 
 ### Letting Elara Deal With Dependancies
@@ -529,14 +541,18 @@ Outputs from the named handlers will be similalry named. An example config using
 
 ### Run the tests (from the elara root dir)
 
-    python -m pytest -vv tests
+```{sh}
+pytest -v
+```
 
 ### Generate a code coverage report
 
 To generate XML & HTML coverage reports to `reports/coverage`:
 
-    ./scripts/code-coverage.sh
-    
+```{sh}
+./scripts/code-coverage.sh
+```
+
 ## Debug
 
 Logging level can be set in the config or via the cli, or otherwise defaults to False (INFO). We 
@@ -544,19 +560,20 @@ currently support the following levels: DEBUG, INFO.
 
 Note that the configured or default logging level can be overwritten to debug using an env variable:
 
-    export ELARA_LOGGINGLEVEL='True'
-    
+```{sh}
+export ELARA_LOGGINGLEVEL='True'
+```
+
 ## Technical Details
+
 Elara is designed to work out it's own dependencies and be somewhat efficient with compute using `elara.factory`. This allows some flexibility and succinctness in application and is particularly suited to extracting batches of outputs as defined in a config.
 
 This design allows Elara to create arbitrarily complex pipelines of output processing, postprocessing and benchmarking as defined by a configuration file or via the CLI.
- 
-Elara defines a graph of connected `WorkStations`, each responsible for building certain types of
- output or intermediate data requirements (`Tools`). These workstations are connected to their 
- respective dependees and dependencies (managers and suppliers) to form a **DAG**.
- 
+
+Elara defines a graph of connected `WorkStations`, each responsible for building certain types of output or intermediate data requirements (`Tools`). These workstations are connected to their respective dependees and dependencies (managers and suppliers) to form a **DAG**.
+
  ![dag](images/dag.png)
- 
+
 Elara uses this **DAG** to provide:
 
 * **Minimal** dependency processing
@@ -573,31 +590,25 @@ Elara does this by traversing the DAG in three stages:
 
 **Is it fast/sensible?**
 
- Sometimes - 
- 
- ![dag](images/design.png)
+Sometimes:
+
+![dag](images/design.png)
 
 ## Adding Features
 
-Elara is designed to be extendable, primarily with new tools such as handlers or benchmarks. 
+Elara is designed to be extendable, primarily with new tools such as handlers or benchmarks.
 
-Where new tools are new classes that implement some process that fits within the implementation 
-(both in terms of code and also abstractly) of a WorkStation. New tools must be added to the 
-relevant workstations 'roster' of tools (ie `.tools`).
+Where new tools are new classes that implement some process that fits within the implementation (both in terms of code and also abstractly) of a WorkStation. New tools must be added to the relevant workstations 'roster' of tools (ie `.tools`).
 
 New tool classes must correctly inherit and implement a number of values and methods so that they 
 play well with their respective workstation:
- 
-* ``.__init__(self, config, mode)``: Used for early validation of mode and 
-subsequent requirements.
-* ``.build(self, resource=None)``: Used to process required output (assumes required resources are 
-available).
+
+* ``.__init__(self, config, mode)``: Used for early validation of mode and subsequent requirements.
+* ``.build(self, resource=None)``: Used to process required output (assumes required resources are available).
 
 A good place to start when adding a new handler/tool is to copy or adapt an existing one.
- 
- It may also be required to add or connect new workstations, where new workstations are new types
-  of process that might contain a new or multiple new tools. New workstations must be defined and
-   connected to their respective suppliers and managers in `main`.
+
+It may also be required to add or connect new workstations, where new workstations are new types of process that might contain a new or multiple new tools. New workstations must be defined and connected to their respective suppliers and managers in `main`.
 
 ### Conventions
 
@@ -609,16 +620,12 @@ For example: `LinkPassengerCounts` or `StopPassengerCounts`.
 
 ## Todo
 
-* More descriptive generated column headers in handler results. Right now column headers are 
-simply numbers mapped to the particular time slice during the modelled day. 
+* More descriptive generated column headers in handler results. Right now column headers are simply numbers mapped to the particular time slice during the modelled day.
 * Try and move away from test_data towards unit tests.
 * More outputs, ie mode distances/times/animations.
 * S3 integration (read and write).
 * automatic discovery of inputs in directory.
 
-
-
 ## What does the name mean?
-[Elara]("https://en.wikipedia.org/wiki/Elara_(moon)") is a moon of Jupiter. There's not much else
- interesting to say about it, other than that the wikipedia article states that it orbits 11-13 
- *gigametres* from the planet. Gigametres is a cool unit of measurement. 
+
+[Elara]("https://en.wikipedia.org/wiki/Elara_(moon)") is a moon of Jupiter. There's not much else interesting to say about it, other than that the wikipedia article states that it orbits 11-13 *gigametres* from the planet. Gigametres is a cool unit of measurement.

@@ -19,13 +19,10 @@ output_config_path = "./tests/test_fixtures/output_config.xml"
 path = "./outputs"
 
 [benchmarks]
-mode_shares_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv"}
-mode_shares_comparison--subpop = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["subpopulation"]}
-mode_shares_comparison--age = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["age"]}
-activity_mode_shares_comparison--commuters = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv", destination_activity_filters=["work"]}
-activity_mode_shares_comparison--subpop_commuters = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", destination_activity_filters=["work"], groupby_person_attributes=["subpopulation"]}
+trip_mode_shares_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv"}
+trip_mode_shares_comparison--subpop = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["subpopulation"]}
+trip_mode_shares_comparison--age = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", groupby_person_attributes=["age"]}
+trip_activity_mode_shares_comparison--commuters = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv", destination_activity_filters=["work"]}
+trip_activity_mode_shares_comparison--subpop_commuters = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_mode_shares.csv", destination_activity_filters=["work"], groupby_person_attributes=["subpopulation"]}
 link_counter_comparison--A = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
 link_counter_comparison--B = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter_duplicate.json"}
-
-
-
