@@ -1,4 +1,4 @@
-mode,trip_share
+mode,share
 walk,0
 bike,0.2
 bus,0.4

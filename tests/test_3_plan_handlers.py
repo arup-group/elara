@@ -1234,13 +1234,13 @@ def test_finalised_trip_mode_counts(test_trip_modeshares_handler_finalised):
     for name, result in handler.results.items():
         if 'counts' in name:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_count.sum() == 10 / handler.config.scale_factor
+                assert result["count"].sum() == 10 / handler.config.scale_factor
             else:
                 assert result.sum() == 10 / handler.config.scale_factor 
 
         else:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_share.sum() == 1
+                assert result.share.sum() == 1
             else:
                 assert result.sum() == 1
 
@@ -1631,13 +1631,13 @@ def test_trip_activity_finalised_mode_counts(test_trip_activity_modeshare_plan_h
     for name, result in handler.results.items():
         if 'counts' in name:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_count.sum() == 2 / handler.config.scale_factor
+                assert result["count"].sum() == 2 / handler.config.scale_factor
             else:
                 assert result.sum() == 2 / handler.config.scale_factor 
 
         else:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_share.sum() == 1
+                assert result.share.sum() == 1
             else:
                 assert result.sum() == 1
 
@@ -1956,13 +1956,13 @@ def test_finalised_plan_mode_counts(test_plan_handler_finalised):
     for name, result in handler.results.items():
         if 'counts' in name:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_count.sum() == 5 / handler.config.scale_factor
+                assert result["count"].sum() == 5 / handler.config.scale_factor
             else:
                 assert result.sum() == 5 / handler.config.scale_factor 
 
         else:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_share.sum() == 1
+                assert result.share.sum() == 1
             else:
                 assert result.sum() == 1
 
@@ -2214,10 +2214,10 @@ def test_work_plan_mode_share_with_destination_activities_filter(test_work_and_e
     assert np.sum(handler.mode_counts[handler.mode_indices['bus']]) == 2
 
 
-### TripDestinationModeShare Handler With Attribute Slices###
+### PlanActivityModeShare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripActivityModes(
+    handler = plan_handlers.PlanActivityModes(
         test_config_v12,
         mode='all',
         destination_activity_filters = ["work_a","work_b"],
@@ -2316,6 +2316,14 @@ def test_plan_activity_modeshare_plan_handler_finalised(test_plan_activity_modes
             </leg>
             <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
+            <leg mode="bike" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bike</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_b" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
         </plan>
     </person>
     """
@@ -2353,18 +2361,18 @@ def test_plan_activity_finalised_mode_counts(test_plan_activity_modeshare_plan_h
     for name, result in handler.results.items():
         if 'counts' in name:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_count.sum() == 2 / handler.config.scale_factor
+                assert result["count"].sum() == 2 / handler.config.scale_factor
             else:
                 assert result.sum() == 2 / handler.config.scale_factor 
 
         else:
             if isinstance(result, pd.DataFrame):
-                assert result.trip_share.sum() == 1
+                assert result.share.sum() == 1
             else:
                 assert result.sum() == 1
 
 # Plan Handler Manager
-def test_load_plan_handler_manager(test_config, test_paths):
+def test_load_workstation_with_trip_modes(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
@@ -2412,3 +2420,53 @@ def test_load_plan_handler_manager(test_config, test_paths):
 
     assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_subpopulation_counts.csv"))
     assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_subpopulation_shares.csv"))
+
+
+def test_load_workstation_with_plan_modes(test_config, test_paths):
+    input_workstation = InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    plan_workstation = PlanHandlerWorkStation(test_config)
+    plan_workstation.connect(managers=None, suppliers=[input_workstation])
+
+    # mode_share
+    tool = plan_workstation.tools['plan_modes']
+    plan_workstation.resources['plan_modes'] = tool(
+        test_config,
+        mode='all',
+        groupby_person_attribute="subpopulation"
+        )
+
+    # detination based mode_share
+    tool = plan_workstation.tools['plan_activity_modes']
+    plan_workstation.resources['plan_activity_modes'] = tool(
+        test_config,
+        'all',
+        destination_activity_filters=["work"]
+    )
+
+     # detination and attribute based mode_share
+    tool = plan_workstation.tools['plan_activity_modes']
+    plan_workstation.resources['plan_activity_modes'] = tool(
+        test_config,
+        'all',
+        destination_activity_filters=["work"],
+        groupby_person_attribute = "subpopulation"
+    )
+
+    plan_workstation.build(write_path=test_outputs)
+
+    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_detailed_shares.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_shares.csv"))
+
+    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_shares.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_detailed_shares.csv"))
+
+    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_subpopulation_counts.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_subpopulation_shares.csv"))

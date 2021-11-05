@@ -1,4 +1,4 @@
-mode,class,trip_count
+mode,class,count
 bike,None,0.0
 bike,poor,20000.0
 bike,rich,0.0

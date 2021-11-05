@@ -199,7 +199,7 @@ class ModeShares(PlanHandlerTool):
         counts_df.index = pd.MultiIndex.from_frame(
             counts_df.index.to_frame().fillna("None")
         )
-        counts_df.columns = ["trip_count"]
+        counts_df.columns = ["count"]
         key = f"{self.name}_detailed_counts"
         self.results[key] = counts_df
 
@@ -220,7 +220,7 @@ class ModeShares(PlanHandlerTool):
         # mode shares breakdown output
         key = f"{self.name}_detailed_shares"
         shares_df = counts_df / total
-        shares_df.columns = ["trip_share"]
+        shares_df.columns = ["share"]
         self.results[key] = shares_df
 
         # mode shares totals by attribute
@@ -415,7 +415,7 @@ class PlanActivityModes(ModeShares):
                         if end_time:
                             if activity in self.destination_activity_filters:
                                 # add modes and distances to plan_modes
-                                for mode, distance in trip_modes.values():
+                                for mode, distance in trip_modes.items():
                                     plan_modes[mode] = plan_modes.get(mode, 0) + distance
                             # reset modes
                             trip_modes = {}

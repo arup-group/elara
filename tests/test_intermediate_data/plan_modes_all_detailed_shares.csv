@@ -1,4 +1,4 @@
-mode,class,hour,count
+mode,class,hour,share
 bike,None,0,0.0
 bike,None,1,0.0
 bike,None,2,0.0
@@ -23,7 +23,7 @@ bike,None,20,0.0
 bike,None,21,0.0
 bike,None,22,0.0
 bike,None,23,0.0
-bike,poor,0,0.0
+bike,poor,0,0.2
 bike,poor,1,0.0
 bike,poor,2,0.0
 bike,poor,3,0.0
@@ -31,7 +31,7 @@ bike,poor,4,0.0
 bike,poor,5,0.0
 bike,poor,6,0.0
 bike,poor,7,0.0
-bike,poor,8,10000.0
+bike,poor,8,0.0
 bike,poor,9,0.0
 bike,poor,10,0.0
 bike,poor,11,0.0
@@ -95,7 +95,7 @@ car,None,20,0.0
 car,None,21,0.0
 car,None,22,0.0
 car,None,23,0.0
-car,poor,0,0.0
+car,poor,0,0.2
 car,poor,1,0.0
 car,poor,2,0.0
 car,poor,3,0.0
@@ -103,7 +103,7 @@ car,poor,4,0.0
 car,poor,5,0.0
 car,poor,6,0.0
 car,poor,7,0.0
-car,poor,8,10000.0
+car,poor,8,0.0
 car,poor,9,0.0
 car,poor,10,0.0
 car,poor,11,0.0
@@ -119,14 +119,14 @@ car,poor,20,0.0
 car,poor,21,0.0
 car,poor,22,0.0
 car,poor,23,0.0
-car,rich,0,0.0
+car,rich,0,0.2
 car,rich,1,0.0
 car,rich,2,0.0
 car,rich,3,0.0
 car,rich,4,0.0
 car,rich,5,0.0
 car,rich,6,0.0
-car,rich,7,10000.0
+car,rich,7,0.0
 car,rich,8,0.0
 car,rich,9,0.0
 car,rich,10,0.0
@@ -167,15 +167,15 @@ bus,None,20,0.0
 bus,None,21,0.0
 bus,None,22,0.0
 bus,None,23,0.0
-bus,poor,0,0.0
+bus,poor,0,0.4
 bus,poor,1,0.0
 bus,poor,2,0.0
 bus,poor,3,0.0
 bus,poor,4,0.0
 bus,poor,5,0.0
 bus,poor,6,0.0
-bus,poor,7,10000.0
-bus,poor,8,10000.0
+bus,poor,7,0.0
+bus,poor,8,0.0
 bus,poor,9,0.0
 bus,poor,10,0.0
 bus,poor,11,0.0
