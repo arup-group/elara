@@ -423,13 +423,14 @@ class PlanActivityModes(ModeShares):
                         # update endtime for next activity
                         end_time = convert_time_to_seconds(stage.get('end_time'))
 
-                mode = self.get_furthest_mode(plan_modes)
-                x, y, z = self.mode_table_position(
-                    mode,
-                    attribute_class,
-                    0
-                )
-                self.mode_counts[x, y, z] += 1 
+                if plan_modes:
+                    mode = self.get_furthest_mode(plan_modes)
+                    x, y, z = self.mode_table_position(
+                        mode,
+                        attribute_class,
+                        0
+                    )
+                    self.mode_counts[x, y, z] += 1 
 
 
 class LegLogs(PlanHandlerTool):
