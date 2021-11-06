@@ -26,7 +26,7 @@ vehicle_passenger_log = ["all"]
 vehicle_link_log = ["all"]
 
 [plan_handlers]
-mode_shares = ["all"]
+trip_modes = ["all"]
 
 [post_processors]
 vkt = ["car"]

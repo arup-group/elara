@@ -18,5 +18,5 @@ output_config_path = "./tests/test_fixtures/output_config.xml"
 path = "./outputs"
 
 [plan_handlers]
-mode_shares = {groupby_person_attributes=["age", "subpopulation"]}
+trip_modes = {name="Census", groupby_person_attributes=["age", "subpopulation"]}
 

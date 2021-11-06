@@ -23,7 +23,7 @@ link_passenger_counts = ["bus", "train"]
 stop_passenger_counts = ["bus", "train"]
 
 [plan_handlers]
-mode_shares = ["all"]
+trip_modes = ["all"]
 
 [outputs]
 path = "./tests/test_intermediate_data"

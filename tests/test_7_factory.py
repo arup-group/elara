@@ -57,7 +57,7 @@ def test_config_dependencies():
 def test_requirements_workstation(test_config):
     requirements = RequirementsWorkStation(test_config)
     assert requirements.gather_manager_requirements() == {
-        'mode_shares': {'modes':['all']},
+        'trip_modes': {'modes':['all']},
         'link_passenger_counts': {'modes':['bus', 'train']},
         'stop_passenger_counts': {'modes':['bus', 'train']},
         'vkt': {'modes':['car']},
@@ -230,7 +230,7 @@ def requirements_complex(test_complex_config):
 def test_complex_requirements_workstation(test_complex_config):
     requirements = RequirementsWorkStation(test_complex_config)
     assert requirements.gather_manager_requirements() == {
-        'mode_shares': {'modes':['all'], 'groupby_person_attributes':["age"]},
+        'trip_modes': {'modes':['all'], 'groupby_person_attributes':["age"]},
         'test_duration_comparison': {'modes':['all']},
         'duration_comparison': {'modes':['all'], 'benchmark_data_path': "./tests/test_outputs/trip_duration_breakdown_all.csv"},
     }
@@ -272,7 +272,7 @@ def test_bfs_complex(requirements_complex):
     # plan handlers
     assert set(requirements_complex.suppliers[1].suppliers[1].resources) == set(
         {
-            'mode_shares:all:age:': factory.Tool,
+            'trip_modes:all:age:': factory.Tool,
             'trip_logs:all:None:': factory.Tool
         }
     )

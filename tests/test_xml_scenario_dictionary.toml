@@ -20,7 +20,7 @@ road_pricing = "./tests/test_fixtures/road_pricing.xml"
 [event_handlers]
 
 [plan_handlers]
-mode_shares = {groupby_person_attributes=["age"]}
+trip_modes = {groupby_person_attributes=["age"]}
 
 [post_processors]
 
