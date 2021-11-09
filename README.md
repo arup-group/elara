@@ -200,7 +200,7 @@ stop_passenger_counts = ["bus"]
 stop_passenger_waiting = ["all"]
 
 [plan_handlers]
-trip_mode_shares = ["all"]
+trip_modes = {modes=["all"]}
 trip_activity_mode_shares = {destination_activity_filters = ["work"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
