@@ -1345,6 +1345,50 @@ def test_vehicle_passenger_boarding(test_config, input_manager):
         'veh_mode': 'bus', 
         'veh_route': 'work_bound'
     }
+
+# Agent Tolls Test
+@pytest.fixture
+def person_toll_events():
+    string = """
+        <events>
+            <event time="200.0" type="personMoney" person="fred" amount="-5" purpose="toll"/>
+            <event time="300.0" type="personMoney" person="fred" amount="-10" purpose="toll"/>
+            <event time="400.0" type="personMoney" person="chris" amount="-1" purpose="toll"/>
+        </events>
+        """
+
+    return etree.fromstring(string)
+
+def test_agent_tolls_process_event(person_toll_events):
+    handler = event_handlers.AgentTollLog(test_config)
+    events = person_toll_events
+    for elem in events:
+        handler.process_event(elem)
+        print(elem.get("person"))
+    
+    target = {
+        'fred': {'toll_total': 15.0, 'tolls_incurred': 2},
+        'chris': {'toll_total': 1, 'tolls_incurred': 1}
+    }
+
+    assert handler.toll_log == target
+
+def test_agent_tolls_process_event_with_subpopuation(person_toll_events, input_manager):
+    handler = event_handlers.AgentTollLog(test_config, groupby_person_attribute="subpopulation")
+    resources = input_manager.resources
+    handler.build(resources)
+
+    events = person_toll_events
+
+    for elem in events:
+        handler.process_event(elem)
+
+    target = {
+        'fred': {'toll_total': 15.0, 'tolls_incurred': 2, 'class': 'poor'},
+        'chris': {'toll_total': 1, 'tolls_incurred': 1, 'class': 'rich'}
+    }
+    
+    assert handler.toll_log == target
     
 # Event Handler Manager
 def test_load_event_handler_manager(test_config, test_paths):

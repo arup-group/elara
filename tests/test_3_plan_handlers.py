@@ -429,7 +429,7 @@ def test_finalised_logs_bad_plans(agent_leg_log_handler_finalised_bad_plans):
 
 @pytest.fixture
 def toll_log_handler(test_config, input_manager):
-    handler = plan_handlers.AgentTollsPaid(test_config, 'car')
+    handler = plan_handlers.AgentTollsPaidFromRPConfig(test_config, 'car')
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)

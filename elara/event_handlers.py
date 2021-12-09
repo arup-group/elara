@@ -1926,8 +1926,6 @@ class VehicleLinkLog(EventHandlerTool):
         super().__init__(config, mode)
         self.vehicle_link_log = None
 
-        self.logger.warning(f"MODE = {mode}")
-
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
@@ -1991,6 +1989,104 @@ class VehicleLinkLog(EventHandlerTool):
     def finalise(self):
         self.vehicle_link_log.finish()
 
+
+class AgentTollLog(EventHandlerTool):
+
+    requirements = ['events', 'attributes', 'transit_schedule']
+
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config, mode)
+
+        # initialise results storage
+        self.result_dfs = dict()
+        self.toll_log = dict()
+        self.groupby_person_attribute = groupby_person_attribute
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+
+        super().build(resources, write_path=write_path)
+
+        self.agent_attributes = self.resources["attributes"]
+
+    def process_event(self, elem) -> None:
+        '''
+        Adds agents and toll amounts to dictionary.
+        Tolls paid are incremented over the 24hr simulation
+
+        Events of interest look like:
+        <event time="100" type="personMoney" person="agentID" 
+        amount="-1.0" purpose="toll"  />
+
+        TODO - Mode filters (don't have veh id)
+        '''
+
+        event_type = elem.get("type")
+
+        if event_type == "personMoney":
+            if elem.get("purpose") == "toll":
+                person = elem.get("person")
+                toll_amount = float(elem.get("amount")) * -1
+
+                existing_record = self.toll_log.get(person)
+
+                if existing_record is not None:
+                    existing_record['toll_total'] += toll_amount
+                    existing_record['tolls_incurred'] += 1
+                else:
+                    new_record = {
+                        person: {
+                            'toll_total': toll_amount,
+                            'tolls_incurred': 1,
+                        }
+                    }
+
+                    self.toll_log.update(new_record)
+                    
+                    if self.groupby_person_attribute is not None:
+                        attrib = self.agent_attributes.attributes.get(
+                            person).get(self.groupby_person_attribute)
+                        new_record[person]['class'] = attrib
+            
+    def finalise(self):
+        df = pd.DataFrame.from_dict(toll_log, orient = "index")
+        df.index.name = 'agent_id'
+
+        key = f"{self.name}"
+        self.result_dfs[key] = df
+
+        if self.groupby_person_attribute:
+
+            key = f"{self.name}_{self.groupby_person_attribute}"
+
+            grouper = df.groupby('class')
+            df_grouped = grouper.agg(
+                {
+                'toll_total': ['sum', 'mean', 'count'],
+                'tolls_incurred': 'sum'
+                }
+            )
+
+            df_grouped.droplevel(0, axis = 1)
+            df_grouped.columns = [
+                'toll_total', 'avg_per_agent', 'tolled_agents', 'tolls_incurred'
+            ]
+
+            self.result_dfs[key] = df_grouped
+            del df_grouped
+
+        del df
+
+        
+
+
+        
+
 class EventHandlerWorkStation(WorkStation):
 
     """
@@ -2009,7 +2105,8 @@ class EventHandlerWorkStation(WorkStation):
         "vehicle_stop_to_stop_passenger_counts": VehicleStopToStopPassengerCounts,
         "vehicle_departure_log": VehicleDepartureLog,
         "vehicle_passenger_log": VehiclePassengerLog,
-        "vehicle_link_log": VehicleLinkLog
+        "vehicle_link_log": VehicleLinkLog,
+        "agent_toll_log": AgentTollLog
     }
 
     def __init__(self, config):

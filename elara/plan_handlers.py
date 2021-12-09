@@ -1064,8 +1064,9 @@ class PlanLogs(PlanHandlerTool):
         s = dt.second
         return s + (60 * (m + (60 * h)))
 
-class AgentTollsPaid(PlanHandlerTool):
+class AgentTollsPaidFromRPConfig(PlanHandlerTool):
     """
+    Deprecated in favour of AgentTollLogs Event Handler
     Extract where and when agents paid tolls and produce summaries by agent and subpopulation.
     """
 
@@ -1083,6 +1084,11 @@ class AgentTollsPaid(PlanHandlerTool):
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to subpopulation
         """
+        self.logger.warning("""
+            Planned agent tolls may differ from actual tolls paid
+        """
+        )
+
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
