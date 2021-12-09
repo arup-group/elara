@@ -657,7 +657,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
         def calc_min_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
-            min_subpop = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            min_subpop = np.divide(unit_matrix, self.duration_max, out = np.zeros_like(unit_matrix), where=self.duration_max!=0)
             min_pop = min_subpop
             min_pop[min_pop == 0] = np.inf
             min_pop = min_pop.min(1)
@@ -905,8 +905,6 @@ class LinkPassengerCounts(EventHandlerTool):
 
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
-
-
 
         if self.groupby_person_attribute:
             names = ['elem', self.groupby_person_attribute, 'hour']
@@ -2054,7 +2052,7 @@ class AgentTollLog(EventHandlerTool):
                         new_record[person]['class'] = attrib
             
     def finalise(self):
-        df = pd.DataFrame.from_dict(toll_log, orient = "index")
+        df = pd.DataFrame.from_dict(self.toll_log, orient = "index")
         df.index.name = 'agent_id'
 
         key = f"{self.name}"
