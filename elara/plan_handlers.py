@@ -1445,7 +1445,7 @@ class PlanHandlerWorkStation(WorkStation):
         "utility_logs": UtilityLogs,
         "agent_highway_distance_logs": AgentHighwayDistanceLogs,
         "trip_highway_distance_logs": TripHighwayDistanceLogs,
-        "toll_logs": AgentTollsPaid
+        "toll_logs": AgentTollsPaidFromRPConfig
     }
 
     def __init__(self, config):
