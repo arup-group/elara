@@ -2006,9 +2006,11 @@ class AgentTollsDaily(EventHandlerTool):
         self.groupby_person_attribute = groupby_person_attribute
 
         if mode not in (None, 'all'): 
+            
             self.logger.warning(f"""
             AgentTolls does not support mode filtering. {self.name}.csv will be empty.
             """
+            )
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
