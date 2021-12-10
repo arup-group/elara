@@ -1067,7 +1067,12 @@ class PlanLogs(PlanHandlerTool):
 class AgentTollsPaidFromRPConfig(PlanHandlerTool):
     """
     Deprecated in favour of AgentTollLogs Event Handler
-    Extract where and when agents paid tolls and produce summaries by agent and subpopulation.
+
+    Produces summaries of tolls paid by extracting routes from plans and
+    comparing them to the road_pricing.xml config file.
+
+    When using factored tolling -- either capped or differential --
+    the actual amount charged to individual agents may be different.
     """
 
     requirements = [
