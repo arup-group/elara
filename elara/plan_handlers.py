@@ -1084,10 +1084,6 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to subpopulation
         """
-        self.logger.warning("""
-            Planned agent tolls may differ from actual tolls paid
-        """
-        )
 
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
@@ -1096,6 +1092,12 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         self.roadpricing = None
         self.agents_ids = None
         self.results = dict()  # Result dataframes ready to export
+
+        # deprecation warning
+        self.logger.warning("""
+            Plan tolls may differ from actual tolls paid. Use EventHandler. 
+        """
+        )
 
     def build(self, resources: dict, write_path=None) -> None:
         """

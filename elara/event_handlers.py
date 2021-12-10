@@ -78,8 +78,15 @@ class EventHandlerTool(Tool):
         :param df: Results dataframe
         :return: Contracted results dataframe
         """
-        cols = [h for h in range(self.config.time_periods)]
-        return df.loc[df[cols].sum(axis=1) > 0]
+        
+        # TODO This is a hack for backwards compaitbility
+        # only try to contract if column indices are hours from config
+        if set(range(self.config.time_periods)).issubset(set(df.columns)):
+            cols = [h for h in range(self.config.time_periods)]
+            return df.loc[df[cols].sum(axis=1) > 0]
+        else:
+            return df
+
 
     def finalise(self):
         """
@@ -1986,11 +1993,9 @@ class VehicleLinkLog(EventHandlerTool):
 
     def finalise(self):
         self.vehicle_link_log.finish()
+class AgentTollsDaily(EventHandlerTool):
 
-
-class AgentTollLog(EventHandlerTool):
-
-    requirements = ['events', 'attributes', 'transit_schedule']
+    requirements = ['events', 'attributes']
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         super().__init__(config, mode)
@@ -1999,6 +2004,11 @@ class AgentTollLog(EventHandlerTool):
         self.result_dfs = dict()
         self.toll_log = dict()
         self.groupby_person_attribute = groupby_person_attribute
+
+        if mode not in (None, 'all'): 
+            self.logger.warning(f"""
+            AgentTolls does not support mode filtering. {self.name}.csv will be empty.
+            """
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
@@ -2058,6 +2068,8 @@ class AgentTollLog(EventHandlerTool):
         key = f"{self.name}"
         self.result_dfs[key] = df
 
+        #TODO Consider Summary
+
         if self.groupby_person_attribute:
 
             key = f"{self.name}_{self.groupby_person_attribute}"
@@ -2076,15 +2088,8 @@ class AgentTollLog(EventHandlerTool):
             ]
 
             self.result_dfs[key] = df_grouped
-            del df_grouped
 
-        del df
-
-        
-
-
-        
-
+        del self.toll_log
 class EventHandlerWorkStation(WorkStation):
 
     """
@@ -2104,7 +2109,7 @@ class EventHandlerWorkStation(WorkStation):
         "vehicle_departure_log": VehicleDepartureLog,
         "vehicle_passenger_log": VehiclePassengerLog,
         "vehicle_link_log": VehicleLinkLog,
-        "agent_toll_log": AgentTollLog
+        "agent_tolls_daily": AgentTollsDaily
     }
 
     def __init__(self, config):

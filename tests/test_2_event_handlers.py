@@ -1360,21 +1360,21 @@ def person_toll_events():
     return etree.fromstring(string)
 
 def test_agent_tolls_process_event(person_toll_events):
-    handler = event_handlers.AgentTollLog(test_config)
+    handler = event_handlers.AgentTollsDaily(test_config)
     events = person_toll_events
     for elem in events:
         handler.process_event(elem)
         print(elem.get("person"))
     
     target = {
-        'fred': {'toll_total': 15.0, 'tolls_incurred': 2},
+        'fred': {'toll_total': 15, 'tolls_incurred': 2},
         'chris': {'toll_total': 1, 'tolls_incurred': 1}
     }
 
     assert handler.toll_log == target
 
 def test_agent_tolls_process_event_with_subpopuation(person_toll_events, input_manager):
-    handler = event_handlers.AgentTollLog(test_config, groupby_person_attribute="subpopulation")
+    handler = event_handlers.AgentTollsDaily(test_config, groupby_person_attribute="subpopulation")
     resources = input_manager.resources
     handler.build(resources)
 
@@ -1384,19 +1384,51 @@ def test_agent_tolls_process_event_with_subpopuation(person_toll_events, input_m
         handler.process_event(elem)
 
     target = {
-        'fred': {'toll_total': 15.0, 'tolls_incurred': 2, 'class': 'poor'},
+        'fred': {'toll_total': 15, 'tolls_incurred': 2, 'class': 'poor'},
         'chris': {'toll_total': 1, 'tolls_incurred': 1, 'class': 'rich'}
     }
     
     assert handler.toll_log == target
+
+def test_agent_tolls_finalise(person_toll_events, input_manager):
+    """
+    tests pandas operations are working as expected
+    """
+    handler = event_handlers.AgentTollsDaily(test_config, groupby_person_attribute="subpopulation")
+    resources = input_manager.resources
+    handler.build(resources)
+
+    events = person_toll_events
+
+    for elem in events:
+        handler.process_event(elem)
+
+    handler.finalise()
+
+    target = {
+        'fred': {'toll_total': 15, 'tolls_incurred': 2, 'class': 'poor'},
+        'chris': {'toll_total': 1, 'tolls_incurred': 1, 'class': 'rich'}
+    }
+
+    target_grouped = {
+        'poor': {'toll_total': 15, 'avg_per_agent': 15, 'tolled_agents': 1, 'tolls_incurred': 2},
+        'rich': {'toll_total': 1, 'avg_per_agent': 1, 'tolled_agents': 1, 'tolls_incurred': 1}
+    }
     
+    results = handler.result_dfs[handler.name].to_dict(orient = 'index')
+    results_grouped = handler.result_dfs[handler.name + '_subpopulation'].to_dict(
+        orient = 'index'
+    )
+    
+    assert results == target
+    assert results_grouped == target_grouped
+
 # Event Handler Manager
 def test_load_event_handler_manager(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
-
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
     event_workstation.load_all_tools(mode='bus')
@@ -1404,9 +1436,12 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     for handler_name, handler in event_workstation.resources.items():
         for name, gdf in handler.result_dfs.items():
-            cols = list(range(handler.config.time_periods))
-            for c in cols:
-                assert c in gdf.columns
-            df = gdf.loc[:, cols]
-            assert np.sum(df.values)
+            if name == 'agent_tolls_daily_bus': # handler does not conform to test criteria
+                assert True
+            else:
+                cols = list(range(handler.config.time_periods))
+                for c in cols:
+                    assert c in gdf.columns
+                df = gdf.loc[:, cols]
+                assert np.sum(df.values)
 
