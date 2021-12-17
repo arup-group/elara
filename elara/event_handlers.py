@@ -2008,18 +2008,27 @@ class VehicleLinkLog(EventHandlerTool):
         self.vehicle_link_log.finish()
 
 
-class AgentTollsDaily(EventHandlerTool):
+class AgentTollsLog(EventHandlerTool):
+    """
+    Produces a raw log of tolling events by agent
+    Additionally produces a 24-hr summary of tolls paid by each agent
+    """
 
     requirements = ['events', 'attributes']
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         super().__init__(config, mode)
 
-        # initialise results storage
-        self.result_dfs = dict()
-        self.toll_log = dict()
         self.groupby_person_attribute = groupby_person_attribute
         self.valid_modes = ['all']
+
+        # initialise results storage
+        self.result_dfs = dict()
+        self.agent_tolls_log = None
+        self.toll_log_summary = dict()
+
+        # keep track of pt drivers paying tolls
+        self.tolled_pt = []
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
@@ -2031,11 +2040,18 @@ class AgentTollsDaily(EventHandlerTool):
 
         super().build(resources, write_path=write_path)
 
-        self.agent_attributes = self.resources["attributes"]
+        self.agent_attributes, found_attributes = self.extract_attributes()
+
+        file_name = f'{self.name}.csv'
+
+        self.agent_tolls_log = self.start_chunk_writer(
+            file_name, write_path=write_path
+        )
 
     def process_event(self, elem) -> None:
         '''
-        Adds agents and toll amounts to dictionary.
+        Logs tolling events using ChunkWriter.
+        Additionally, add agents and toll amounts to dictionary
         Tolls paid are incremented over the 24hr simulation
 
         Events of interest look like:
@@ -2049,50 +2065,67 @@ class AgentTollsDaily(EventHandlerTool):
 
         if event_type == "personMoney":
             if elem.get("purpose") == "toll":
-                person = elem.get("person")
-                toll_amount = float(elem.get("amount")) * -1
+                agent_id = elem.get("person")
 
-                existing_record = self.toll_log.get(person)
+                if agent_id[:2] == "pt":  # filter out pt drivers, and break
+                    self.tolled_pt.append(agent_id)
+                    return None
+
+                toll_amount = float(elem.get("amount")) * -1
+                time = float(elem.get("time"))
+                attrib = None
+
+                toll_event = {
+                    'agent_id': agent_id,
+                    'toll_amount': toll_amount,
+                    'time': time
+                }
+
+                if self.groupby_person_attribute is not None:
+                    attrib = self.agent_attributes.attributes.get(agent_id, {}).get(self.groupby_person_attribute)
+                    toll_event['class'] = attrib
+
+                self.agent_tolls_log.add(toll_event)
+
+                # Add to ChunkWriter and update summary dictionaries
+                self.agent_tolls_log.add(toll_event)
+
+                existing_record = self.toll_log_summary.get(agent_id)
 
                 if existing_record is not None:
                     existing_record['toll_total'] += toll_amount
                     existing_record['tolls_incurred'] += 1
                 else:
-                    new_record = {
-                        person: {
-                            'toll_total': toll_amount,
-                            'tolls_incurred': 1,
-                        }
+                    self.toll_log_summary[agent_id] = {
+                        'toll_total': toll_amount,
+                        'tolls_incurred': 1
                     }
 
-                    self.toll_log.update(new_record)
-
-                    if self.groupby_person_attribute is not None:
-                        attrib = self.agent_attributes.attributes.get(
-                            person).get(self.groupby_person_attribute)
-                        new_record[person]['class'] = attrib
+                    if attrib is not None:
+                        self.toll_log_summary[agent_id]['class'] = attrib
 
     def finalise(self):
-        df = pd.DataFrame.from_dict(self.toll_log, orient="index")
+
+        self.agent_tolls_log.finish()
+
+        # warning about pt tolling
+        if self.tolled_pt:
+            count_pt = len(self.tolled_pt)
+            self.logger.warning(f"{count_pt} PT vehicles incurred tolls. These are excluded from logs")
+
+        # build summaries
+        df = pd.DataFrame.from_dict(self.toll_log_summary, orient="index")
         df.index.name = 'agent_id'
 
-        key = f"{self.name}"
+        key = f"{self.name}_summary"
         self.result_dfs[key] = df
-
-        # TODO Consider Summary
 
         if self.groupby_person_attribute:
 
-            key = f"{self.name}_{self.groupby_person_attribute}"
+            key = f"{self.name}_summary_{self.groupby_person_attribute}"
 
             grouper = df.groupby('class')
-            df_grouped = grouper.agg(
-                {
-                    'toll_total': ['sum', 'mean', 'count'],
-                    'tolls_incurred': 'sum'
-                }
-            )
-
+            df_grouped = grouper.agg({'toll_total': ['sum', 'mean', 'count'], 'tolls_incurred': 'sum'})
             df_grouped.droplevel(0, axis=1)
             df_grouped.columns = [
                 'toll_total', 'avg_per_agent', 'tolled_agents', 'tolls_incurred'
@@ -2100,7 +2133,7 @@ class AgentTollsDaily(EventHandlerTool):
 
             self.result_dfs[key] = df_grouped
 
-        del self.toll_log
+        del self.toll_log_summary
 
 
 class EventHandlerWorkStation(WorkStation):
@@ -2122,7 +2155,7 @@ class EventHandlerWorkStation(WorkStation):
         "vehicle_departure_log": VehicleDepartureLog,
         "vehicle_passenger_log": VehiclePassengerLog,
         "vehicle_link_log": VehicleLinkLog,
-        "agent_tolls_daily": AgentTollsDaily
+        "agent_tolls_log": AgentTollsLog
     }
 
     def __init__(self, config):

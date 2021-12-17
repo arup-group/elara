@@ -1,18 +1,17 @@
-import sys
 import os
 import pytest
 import pandas as pd
 import numpy as np
 import lxml.etree as etree
 
-# paths in config files etc. assume we're in the repo's root, so make sure we always are
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-os.chdir(root_dir)
-
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
 from elara import event_handlers
 from elara.event_handlers import EventHandlerWorkStation, LinkVehicleCounts
+
+# paths in config files etc. assume we're in the repo's root, so make sure we always are
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.chdir(root_dir)
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -221,6 +220,7 @@ def car_enters_link_event():
         """
     return etree.fromstring(string)
 
+
 @pytest.fixture
 def car_link_pair_event():
     time = 6.5 * 60 * 60
@@ -239,6 +239,7 @@ def car_link_pair_event():
         """
     return etree.fromstring(string)
 
+
 @pytest.fixture
 def bus_enters_link_event():
     time = 6.5 * 60 * 60
@@ -247,6 +248,7 @@ def bus_enters_link_event():
         """
     return etree.fromstring(string)
 
+
 @pytest.fixture
 def bus_leaves_link_event():
     time = 6.5 * 60 * 60
@@ -254,6 +256,7 @@ def bus_leaves_link_event():
         <event time="23450.0" type="left link" vehicle="bus1" link="1-2" />
         """
     return etree.fromstring(string)
+
 
 # Volume Counts
 # Car
@@ -1169,8 +1172,6 @@ def test_vehicle_stop_to_stop_finalise_bus(
         assert c in gdf.columns
         assert 'total' in gdf.columns
     df = gdf.loc[:, cols]
-    print(df.values.sum())
-    print(gdf.total)
     assert np.sum(df.values) == 4 / handler.config.scale_factor
     assert np.sum(df.values) == gdf.total.sum()
     if 'subpopulation' in gdf.columns:
@@ -1349,32 +1350,38 @@ def test_vehicle_passenger_boarding(test_config, input_manager):
 # Agent Tolls Test
 @pytest.fixture
 def person_toll_events():
+    """
+    Inlcudes a PT Driver incurring a toll
+    These should be excluded from results
+    """
     string = """
         <events>
             <event time="200.0" type="personMoney" person="fred" amount="-5" purpose="toll"/>
             <event time="300.0" type="personMoney" person="fred" amount="-10" purpose="toll"/>
             <event time="400.0" type="personMoney" person="chris" amount="-1" purpose="toll"/>
+            <event time="500.0" type="personMoney" person="pt_bus1_bus" amount="-1" purpose="toll"/>
         </events>
         """
 
     return etree.fromstring(string)
 
-def test_agent_tolls_process_event(person_toll_events):
-    handler = event_handlers.AgentTollsDaily(test_config)
+def test_agent_tolls_process_event(test_config, person_toll_events, input_manager):
+    handler = event_handlers.AgentTollsLog(test_config)
     events = person_toll_events
+    resources = input_manager.resources
+    handler.build(resources)
     for elem in events:
         handler.process_event(elem)
-        print(elem.get("person"))
-    
+
     target = {
         'fred': {'toll_total': 15, 'tolls_incurred': 2},
         'chris': {'toll_total': 1, 'tolls_incurred': 1}
     }
 
-    assert handler.toll_log == target
+    assert handler.toll_log_summary == target
 
-def test_agent_tolls_process_event_with_subpopuation(person_toll_events, input_manager):
-    handler = event_handlers.AgentTollsDaily(test_config, groupby_person_attribute="subpopulation")
+def test_agent_tolls_process_event_with_subpopuation(test_config, person_toll_events, input_manager):
+    handler = event_handlers.AgentTollsLog(test_config, groupby_person_attribute="subpopulation")
     resources = input_manager.resources
     handler.build(resources)
 
@@ -1388,13 +1395,13 @@ def test_agent_tolls_process_event_with_subpopuation(person_toll_events, input_m
         'chris': {'toll_total': 1, 'tolls_incurred': 1, 'class': 'rich'}
     }
     
-    assert handler.toll_log == target
+    assert handler.toll_log_summary == target
 
-def test_agent_tolls_finalise(person_toll_events, input_manager):
+def test_agent_tolls_finalise(test_config, person_toll_events, input_manager):
     """
     tests pandas operations are working as expected
     """
-    handler = event_handlers.AgentTollsDaily(test_config, groupby_person_attribute="subpopulation")
+    handler = event_handlers.AgentTollsLog(test_config, groupby_person_attribute="subpopulation")
     resources = input_manager.resources
     handler.build(resources)
 
@@ -1415,8 +1422,8 @@ def test_agent_tolls_finalise(person_toll_events, input_manager):
         'rich': {'toll_total': 1, 'avg_per_agent': 1, 'tolled_agents': 1, 'tolls_incurred': 1}
     }
     
-    results = handler.result_dfs[handler.name].to_dict(orient = 'index')
-    results_grouped = handler.result_dfs[handler.name + '_subpopulation'].to_dict(
+    results = handler.result_dfs[handler.name + '_summary'].to_dict(orient = 'index')
+    results_grouped = handler.result_dfs[handler.name + '_summary_subpopulation'].to_dict(
         orient = 'index'
     )
     
@@ -1436,7 +1443,7 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     for handler_name, handler in event_workstation.resources.items():
         for name, gdf in handler.result_dfs.items():
-            if name == 'agent_tolls_daily_bus': # handler does not conform to test criteria
+            if 'agent_tolls_log' in name:  # handler does not conform to test criteria
                 assert True
             else:
                 cols = list(range(handler.config.time_periods))
