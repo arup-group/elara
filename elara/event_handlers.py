@@ -2085,7 +2085,7 @@ class AgentTollsLog(EventHandlerTool):
 
                 if self.groupby_person_attribute is not None:
                     attrib = self.agent_attributes.attributes.get(agent_id, {}).get(self.groupby_person_attribute)
-                    toll_event['class'] = attrib
+                    toll_event[0]['class'] = attrib
 
                 # Add to ChunkWriter and update summary dictionaries
                 self.agent_tolls_log.add(toll_event)
