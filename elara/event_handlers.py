@@ -1959,7 +1959,7 @@ class VehicleLinkLog(EventHandlerTool):
 
         self.vehicle_link_log = self.start_chunk_writer(
             file_name, write_path=write_path
-            )
+        )
 
         # Only add to chunk writer when entry + exit complete
         self.event_staging = {}
@@ -2075,17 +2075,17 @@ class AgentTollsLog(EventHandlerTool):
                 time = float(elem.get("time"))
                 attrib = None
 
-                toll_event = {
-                    'agent_id': agent_id,
-                    'toll_amount': toll_amount,
-                    'time': time
-                }
+                toll_event = [
+                    {
+                        'agent_id': agent_id,
+                        'toll_amount': toll_amount,
+                        'time': time
+                    }
+                ]
 
                 if self.groupby_person_attribute is not None:
                     attrib = self.agent_attributes.attributes.get(agent_id, {}).get(self.groupby_person_attribute)
                     toll_event['class'] = attrib
-
-                self.agent_tolls_log.add(toll_event)
 
                 # Add to ChunkWriter and update summary dictionaries
                 self.agent_tolls_log.add(toll_event)
@@ -2103,6 +2103,8 @@ class AgentTollsLog(EventHandlerTool):
 
                     if attrib is not None:
                         self.toll_log_summary[agent_id]['class'] = attrib
+
+        return None
 
     def finalise(self):
 

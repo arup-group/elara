@@ -1397,6 +1397,26 @@ def test_agent_tolls_process_event_with_subpopuation(test_config, person_toll_ev
     
     assert handler.toll_log_summary == target
 
+def test_agent_tolls_chunkwriter(test_config, person_toll_events, input_manager):
+    handler = event_handlers.AgentTollsLog(test_config)
+    resources = input_manager.resources
+    handler.build(resources)
+
+    events = person_toll_events
+    
+    print(len(events))
+    
+    for elem in events:
+        handler.process_event(elem)
+
+    target_chunk = [
+        {'agent_id': 'fred', 'toll_amount': 5, 'time': 200},
+        {'agent_id': 'fred', 'toll_amount': 10, 'time': 300},
+        {'agent_id': 'chris', 'toll_amount': 1, 'time': 400}
+    ]
+
+    assert handler.agent_tolls_log.chunk == target_chunk
+
 def test_agent_tolls_finalise(test_config, person_toll_events, input_manager):
     """
     tests pandas operations are working as expected
