@@ -5,6 +5,7 @@ import numpy as np
 from typing import Optional
 import logging
 import json
+from matplotlib import pyplot as plt
 
 from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
@@ -30,17 +31,6 @@ class BenchmarkTool(Tool):
 
 
 class CsvComparison(BenchmarkTool):
-
-    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
-        # I've commented these out because they are overwritting child attributes at some point!
-        # self.index_fields = None # index column(s) in the csv files
-        # self.value_field = None # value column in the csv files to compare
-        # self.benchmark_data_path = None # filepath to the benchmark csv file
-        # self.simulation_name = None # name of the simulation csv file
-        # self.weight = None # score weight
-
-        super().__init__(config, mode=mode, benchmark_data_path=benchmark_data_path, **kwargs)
-        self.mode = mode
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -79,11 +69,13 @@ class CsvComparison(BenchmarkTool):
         """
         Bar comparison plot
         """
-        df.plot(kind="bar", figsize=(17,12)).get_figure().\
+        fig, ax = plt.subplots()
+        df.plot(ax=ax, kind="bar", figsize=(17,12)).get_figure().\
             savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}.png'))
+        plt.close()
 
 
-class ModeSharesComparison(CsvComparison):
+class TripModeSharesComparison(CsvComparison):
 
     def __init__(
         self,
@@ -92,9 +84,9 @@ class ModeSharesComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.requirements = ['mode_shares']
+        self.requirements = ['trip_modes']
         self.valid_modes = ['all']
-        self.value_field = 'trip_share'
+        self.value_field = 'share'
         self.index_fields = ['mode']
         self.weight = 1
 
@@ -105,28 +97,28 @@ class ModeSharesComparison(CsvComparison):
             **kwargs
             )
         self.groupby_person_attribute = groupby_person_attribute
-        self.simulation_name = f"mode_shares_all"
+        self.simulation_name = f"trip_modes_all"
         if groupby_person_attribute is not None:
             self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
-        self.simulation_name += ".csv"
+        self.simulation_name += "_shares.csv"
 
 
-class TestModeSharesComparison(ModeSharesComparison):
+class TestTripModeSharesComparison(TripModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'mode_shares.csv')
     )
 
 
-class TestModeSharesByAttributeComparison(ModeSharesComparison):
+class TestTripModeSharesByAttributeComparison(TripModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'subpop_mode_shares.csv')
     )
 
 
-class ModeCountsComparison(CsvComparison):
+class TripModeCountsComparison(CsvComparison):
 
     def __init__(
         self,
@@ -135,9 +127,9 @@ class ModeCountsComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.requirements = ['mode_shares']
+        self.requirements = ['trip_modes']
         self.valid_modes = ['all']
-        self.value_field = 'trip_count'
+        self.value_field = 'count'
         self.index_fields = ['mode']
         self.weight = 1
 
@@ -148,7 +140,7 @@ class ModeCountsComparison(CsvComparison):
             **kwargs
             )
         self.groupby_person_attribute = groupby_person_attribute
-        self.simulation_name = f"mode_shares_all"
+        self.simulation_name = f"trip_modes_all"
         if groupby_person_attribute is not None:
             self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
@@ -157,31 +149,31 @@ class ModeCountsComparison(CsvComparison):
         self.simulation_name += "_counts.csv"
 
 
-class TestModeCountsComparison(ModeCountsComparison):
+class TestTripModeCountsComparison(TripModeCountsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'mode_counts.csv')
     )
 
 
-class TestModeCountsByAttributeComparison(ModeCountsComparison):
+class TestTripModeCountsByAttributeComparison(TripModeCountsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'subpop_mode_counts.csv')
     )
 
 
-class ActivityModeSharesComparison(CsvComparison):
+class TripActivityModeSharesComparison(CsvComparison):
 
     def __init__(self, config, mode, **kwargs):
-        self.requirements = ['activity_mode_shares']
+        self.requirements = ['trip_activity_modes']
         self.valid_modes = ['all']
         self.index_fields = ['mode']
-        self.value_field = 'trip_share'
+        self.value_field = 'share'
         self.weight = 1
 
         super().__init__(config, mode=mode, **kwargs)
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
-        self.simulation_name = f"activity_mode_shares_all"
+        self.simulation_name = f"trip_activity_modes_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
@@ -189,34 +181,34 @@ class ActivityModeSharesComparison(CsvComparison):
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
-        self.simulation_name += ".csv"
+        self.simulation_name += "_shares.csv"
 
 
-class TestActivityModeSharesComparison(ActivityModeSharesComparison):
+class TestTripActivityModeSharesComparison(TripActivityModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'mode_shares.csv')
     )
 
 
-class TestActivityModeSharesByAttributeComparison(ActivityModeSharesComparison):
+class TestTripActivityModeSharesByAttributeComparison(TripActivityModeSharesComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'subpop_mode_shares.csv')
     )
 
 
-class ActivityModeCountsComparison(CsvComparison):
+class TripActivityModeCountsComparison(CsvComparison):
 
     def __init__(self, config, mode, **kwargs):
-        self.requirements = ['activity_mode_shares']
+        self.requirements = ['trip_activity_modes']
         self.valid_modes = ['all']
         self.index_fields = ['mode']
-        self.value_field = 'trip_count'
+        self.value_field = 'count'
         self.weight = 1
 
         super().__init__(config, mode=mode, **kwargs)
         destination_activities = kwargs.get("destination_activity_filters", [])
         groupby_person_attribute = kwargs.get("groupby_person_attribute")
-        self.simulation_name = f"activity_mode_shares_all"
+        self.simulation_name = f"trip_activity_modes_all"
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
@@ -227,15 +219,171 @@ class ActivityModeCountsComparison(CsvComparison):
         self.simulation_name += "_counts.csv"
 
 
-class TestActivityModeCountsComparison(ActivityModeCountsComparison):
+class TestTripActivityModeCountsComparison(TripActivityModeCountsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'commuter_mode_counts.csv')
     )
 
 
-class TestActivityModeCountsByAttributeComparison(ActivityModeCountsComparison):
+class TestTripActivityModeCountsByAttributeComparison(TripActivityModeCountsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'subpop_commuter_mode_counts.csv')
+    )
+
+
+class PlanModeSharesComparison(CsvComparison):
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.requirements = ['plan_modes']
+        self.valid_modes = ['all']
+        self.value_field = 'share'
+        self.index_fields = ['mode']
+        self.weight = 1
+
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"plan_modes_all"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += "_shares.csv"
+
+
+class TestPlanModeSharesComparison(PlanModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_shares.csv')
+    )
+
+
+class TestPlanModeSharesByAttributeComparison(PlanModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
+    )
+
+
+class PlanModeCountsComparison(CsvComparison):
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.requirements = ['plan_modes']
+        self.valid_modes = ['all']
+        self.value_field = 'count'
+        self.index_fields = ['mode']
+        self.weight = 1
+
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"plan_modes_all"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += "_counts.csv"
+
+
+class TestPlanModeCountsComparison(PlanModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_plan_counts.csv')
+    )
+
+
+class TestPlanModeCountsByAttributeComparison(PlanModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_mode_plan_counts.csv')
+    )
+
+
+class PlanActivityModeSharesComparison(CsvComparison):
+
+    def __init__(self, config, mode, **kwargs):
+        self.requirements = ['plan_activity_modes']
+        self.valid_modes = ['all']
+        self.index_fields = ['mode']
+        self.value_field = 'share'
+        self.weight = 1
+
+        super().__init__(config, mode=mode, **kwargs)
+        destination_activities = kwargs.get("destination_activity_filters", [])
+        groupby_person_attribute = kwargs.get("groupby_person_attribute")
+        self.simulation_name = f"plan_activity_modes_all"
+        for act in destination_activities:
+            self.simulation_name += f"_{act}"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += "_shares.csv"
+
+
+class TestPlanActivityModeSharesComparison(PlanActivityModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'mode_shares.csv')
+    )
+
+
+class TestPlanActivityModeSharesByAttributeComparison(PlanActivityModeSharesComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
+    )
+
+
+class PlanActivityModeCountsComparison(CsvComparison):
+
+    def __init__(self, config, mode, **kwargs):
+        self.requirements = ['plan_activity_modes']
+        self.valid_modes = ['all']
+        self.index_fields = ['mode']
+        self.value_field = 'count'
+        self.weight = 1
+
+        super().__init__(config, mode=mode, **kwargs)
+        destination_activities = kwargs.get("destination_activity_filters", [])
+        groupby_person_attribute = kwargs.get("groupby_person_attribute")
+        self.simulation_name = f"plan_activity_modes_all"
+        for act in destination_activities:
+            self.simulation_name += f"_{act}"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += "_counts.csv"
+
+
+class TestPlanActivityModeCountsComparison(PlanActivityModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'commuter_plan_mode_counts.csv')
+    )
+
+
+class TestPlanActivityModeCountsByAttributeComparison(PlanActivityModeCountsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'subpop_commuter_plan_mode_counts.csv')
     )
 
 
@@ -541,6 +689,7 @@ class LinkCounterComparison(BenchmarkTool):
         bm_results_normalised_plot = comparative_plots(bm_results_normalised_df)
         plot_name = f'{self.name}_summary_normalised.png'
         bm_results_normalised_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -805,10 +954,9 @@ class TransitInteractionComparison(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
 
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
-
         plot_name = f'{self.name}_{self.mode}_summary.png'
-
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -1076,12 +1224,10 @@ class PassengerStopToStop(BenchmarkTool):
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
-
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
-
         plot_name = f'{self.name}_{self.mode}_summary.png'
-
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -1234,12 +1380,10 @@ class PointsCounter(BenchmarkTool):
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
-
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
-
         plot_name = f'{self.name}_{self.mode}_summary.png'
-
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
@@ -1598,7 +1742,7 @@ class OldModeSharesComparison(BenchmarkTool):
         bm_results_summary_plot = comparative_column_plots(summary_df_plot)
         plot_name = '{}_modeshare_results.png'.format(self.config.name)
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
-
+        plt.close()
 
         # get scores and write outputs
         score = sum(((np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model))) * 100) ** 2)
@@ -1636,7 +1780,7 @@ class SqueezeTownHighwayCounters(PointsCounter):
 
 # Multimodal Test Scenario
 
-class MultimodalTownModeShare(ModeSharesComparison):
+class MultimodalTownModeShare(TripModeSharesComparison):
 
     requirements = ['mode_shares']
     valid_modes = ['all']
@@ -1710,19 +1854,24 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
-        "mode_shares_comparison": ModeSharesComparison,
-        "destination_mode_shares_comparison": ActivityModeSharesComparison,  # to be removed in future when no one is looking
-        "activity_mode_shares_comparison": ActivityModeSharesComparison,  # prefered name
-        "mode_counts_comparison": ModeCountsComparison,
-        "activity_mode_counts_comparison": ActivityModeCountsComparison,
+        "trip_mode_shares_comparison": TripModeSharesComparison,
+        "trip_activity_mode_shares_comparison": TripActivityModeSharesComparison,
+        "trip_mode_counts_comparison": TripModeCountsComparison,
+        "trip_activity_mode_counts_comparison": TripActivityModeCountsComparison,
+        
+        "plan_mode_shares_comparison": PlanModeSharesComparison,
+        "plan_activity_mode_shares_comparison": PlanActivityModeSharesComparison,
+        "plan_mode_counts_comparison": PlanModeCountsComparison,
+        "plan_activity_mode_counts_comparison": PlanActivityModeCountsComparison,
+
         "euclidean_distance_comparison": EuclideanDistanceComparison,
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,
         "transit_interaction_comparison": TransitInteractionComparison,
 
-        "test_mode_shares_comparison": TestModeSharesComparison,
-        "test_destination_mode_shares_comparison": TestActivityModeSharesComparison,
-        "test_activity_mode_shares_comparison": TestActivityModeSharesComparison,  # prefered name
+        "test_mode_shares_comparison": TestTripModeSharesComparison,
+        "test_destination_mode_shares_comparison": TestTripActivityModeSharesComparison,
+        "test_activity_mode_shares_comparison": TestTripActivityModeSharesComparison,
         "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
         "test_duration_comparison": TestDurationComparison,
         "test_link_cordon": TestCordon,

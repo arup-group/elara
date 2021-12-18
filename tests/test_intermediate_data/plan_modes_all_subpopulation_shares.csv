@@ -1,4 +1,4 @@
-mode,class,trip_share
+mode,class,share
 bike,None,0.0
 bike,poor,0.2
 bike,rich,0.0
