@@ -1380,7 +1380,7 @@ def test_agent_tolls_process_event(test_config, person_toll_events, input_manage
 
     assert handler.toll_log_summary == target
 
-def test_agent_tolls_process_event_with_subpopuation(test_config, person_toll_events, input_manager):
+def test_agent_tolls_process_event_with_subpopulation(test_config, person_toll_events, input_manager):
     handler = event_handlers.AgentTollsLog(test_config, groupby_person_attribute="subpopulation")
     resources = input_manager.resources
     handler.build(resources)
@@ -1403,9 +1403,7 @@ def test_agent_tolls_chunkwriter(test_config, person_toll_events, input_manager)
     handler.build(resources)
 
     events = person_toll_events
-    
-    print(len(events))
-    
+        
     for elem in events:
         handler.process_event(elem)
 
@@ -1463,9 +1461,7 @@ def test_load_event_handler_manager(test_config, test_paths):
 
     for handler_name, handler in event_workstation.resources.items():
         for name, gdf in handler.result_dfs.items():
-            if 'agent_tolls_log' in name:  # handler does not conform to test criteria
-                assert True
-            else:
+            if 'agent_tolls_log' not in name:  # handler does not conform to test criteria
                 cols = list(range(handler.config.time_periods))
                 for c in cols:
                     assert c in gdf.columns
