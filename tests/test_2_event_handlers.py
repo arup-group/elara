@@ -1381,6 +1381,10 @@ def test_agent_tolls_process_event(test_config, person_toll_events, input_manage
     assert handler.toll_log_summary == target
 
 def test_agent_tolls_process_event_with_subpopulation(test_config, person_toll_events, input_manager):
+    """
+    Agent attributes supplied via input_manager/test_config see file:
+    ./tests/test_fixtures/output_personAttributes.xml.gz
+    """
     handler = event_handlers.AgentTollsLog(test_config, groupby_person_attribute="subpopulation")
     resources = input_manager.resources
     handler.build(resources)
