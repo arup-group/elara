@@ -19,7 +19,7 @@ class EventHandlerTool(Tool):
     result_dfs = dict()
     options_enabled = True
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
@@ -137,7 +137,7 @@ class VehiclePassengerGraph(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -223,7 +223,7 @@ class StopPassengerWaiting(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -363,7 +363,7 @@ class LinkVehicleCounts(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -506,7 +506,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         'attributes',
     ]
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -749,7 +749,7 @@ class LinkPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -952,7 +952,7 @@ class RoutePassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -1138,7 +1138,7 @@ class StopPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -1322,7 +1322,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -1557,7 +1557,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
     ]
     invalid_modes = ['car']
 
-    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         """
         Initiate class, creates results placeholders.
         :param config: Config object
@@ -1789,7 +1789,7 @@ class VehicleDepartureLog(EventHandlerTool):
 
     requirements = ['events', 'transit_schedule']
 
-    def __init__(self, config, mode=None, **kwargs):
+    def __init__(self, config, mode="all", **kwargs):
         super().__init__(config, mode)
         self.vehicle_departure_log = None
 
@@ -1852,7 +1852,7 @@ class VehiclePassengerLog(EventHandlerTool):
 
     requirements = ['events', 'transit_schedule']
 
-    def __init__(self, config, mode=None, **kwargs):
+    def __init__(self, config, mode="all", **kwargs):
         super().__init__(config, mode)
         self.vehicle_passenger_log = None
 
