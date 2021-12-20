@@ -1,4 +1,3 @@
-from math import floor
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -7,8 +6,7 @@ import logging
 import os
 import networkx as nx
 from shapely.geometry import LineString
-
-
+from math import floor
 from elara.factory import WorkStation, Tool
 
 
@@ -78,8 +76,14 @@ class EventHandlerTool(Tool):
         :param df: Results dataframe
         :return: Contracted results dataframe
         """
-        cols = [h for h in range(self.config.time_periods)]
-        return df.loc[df[cols].sum(axis=1) > 0]
+
+        # TODO This is a hack for backwards compaitbility
+        # only try to contract if column indices are hours from config
+        if set(range(self.config.time_periods)).issubset(set(df.columns)):
+            cols = [h for h in range(self.config.time_periods)]
+            return df.loc[df[cols].sum(axis=1) > 0]
+        else:
+            return df
 
     def finalise(self):
         """
@@ -567,7 +571,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
 
-        self.link_tracker = dict() #{(agent,link):start_time}
+        self.link_tracker = dict()  # {(agent,link):start_time}
 
     def process_event(self, elem) -> None:
         """
@@ -600,17 +604,20 @@ class LinkVehicleSpeeds(EventHandlerTool):
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
                 start_time = float(elem.get("time"))
-                self.link_tracker[ident] = (event_type , start_time)
+                self.link_tracker[ident] = (event_type, start_time)
 
         elif event_type == "left link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
             if veh_mode == self.mode:
-            # look for attribute_class, if not found assume pt and use mode
+                # look for attribute_class, if not found assume pt and use mode
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
-                if ident in self.link_tracker: #if person not in link tracker, this means they've entered link via "vehicle enters traffic event" and should be ignored.
+
+                # if person not in link tracker, this means they've entered
+                # link via "vehicle enters traffic event" and should be ignored.
+                if ident in self.link_tracker:
                     start_time = self.link_tracker[ident][1]
                     # start_event_type = self.link_tracker[ident][0]
                     x, y, z = table_position(
@@ -631,7 +638,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
                     self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z])
 
-                    if self.duration_min[x, y, z] == 0: #needs this condition or else the minimum duration would ever budge from zero
+                    # needs this condition or else the minimum duration would ever budge from zero
+                    if self.duration_min[x, y, z] == 0:
                         self.duration_min[x, y, z] = duration
                     else:
                         self.duration_min[x, y, z] = min(duration, self.duration_min[x, y, z])
@@ -651,13 +659,17 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
         def calc_max_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
-            max_subpop = np.divide(unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            max_subpop = np.divide(
+                unit_matrix, self.duration_min, out=np.zeros_like(unit_matrix), where=self.duration_max != 0
+            )
             max_pop = max_subpop.max(1)
             return [max_subpop, max_pop]
 
         def calc_min_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
-            min_subpop = np.divide(unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max!=0)
+            min_subpop = np.divide(
+                unit_matrix, self.duration_max, out=np.zeros_like(unit_matrix), where=self.duration_max != 0
+            )
             min_pop = min_subpop
             min_pop[min_pop == 0] = np.inf
             min_pop = min_pop.min(1)
@@ -714,7 +726,6 @@ class LinkVehicleSpeeds(EventHandlerTool):
         max_speeds = self.elem_gdf.join(max_speeds, how="left")
         max_speeds = calc_speeds(self, max_speeds)
         self.result_dfs[key] = max_speeds
-
 
         if self.groupby_person_attribute:
             # Calc min at subpop level
@@ -905,8 +916,6 @@ class LinkPassengerCounts(EventHandlerTool):
 
         # Scale final counts
         self.counts *= 1.0 / self.config.scale_factor
-
-
 
         if self.groupby_person_attribute:
             names = ['elem', self.groupby_person_attribute, 'hour']
@@ -1191,7 +1200,7 @@ class StopPassengerCounts(EventHandlerTool):
                 )
         else:
             self.logger.debug(f'Filtering stops for mode:{self.mode}.')
-            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+            self.elem_gdf = self.elem_gdf.loc[viable_stops, :]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
@@ -1309,6 +1318,7 @@ class StopPassengerCounts(EventHandlerTool):
             )
             self.result_dfs[key] = totals_df
 
+
 class StopToStopPassengerCounts(EventHandlerTool):
     """
     Build Passenger Counts between stops for given mode in mode vehicles.
@@ -1351,7 +1361,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Check for car
-        if self.mode in ['car','walk','bike']:
+        if self.mode in ['car', 'walk', 'bike']:
             raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.mode}")
 
         # Initialise class attributes
@@ -1373,7 +1383,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
                 )
         else:
             self.logger.debug(f'Filtering stops for mode:{self.mode}.')
-            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+            self.elem_gdf = self.elem_gdf.loc[viable_stops, :]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
@@ -1505,7 +1515,9 @@ class StopToStopPassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index(['origin', 'destination', str(self.groupby_person_attribute)])
         counts_df['total'] = counts_df.sum(1)
 
-        counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.origin_geometry, counts_df.destination_geometry)]
+        counts_df['geometry'] = [
+            LineString([o, d]) for o, d in zip(counts_df.origin_geometry, counts_df.destination_geometry)
+        ]
         counts_df.drop('origin_geometry', axis=1, inplace=True)
         counts_df.drop('destination_geometry', axis=1, inplace=True)
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
@@ -1533,7 +1545,9 @@ class StopToStopPassengerCounts(EventHandlerTool):
 
         totals_df = totals_df.reset_index().set_index(['origin', 'destination'])
 
-        totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.origin_geometry, totals_df.destination_geometry)]
+        totals_df['geometry'] = [
+            LineString([o, d]) for o, d in zip(totals_df.origin_geometry, totals_df.destination_geometry)
+        ]
         totals_df.drop('origin_geometry', axis=1, inplace=True)
         totals_df.drop('destination_geometry', axis=1, inplace=True)
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
@@ -1541,7 +1555,6 @@ class StopToStopPassengerCounts(EventHandlerTool):
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
         key = f"{self.name}"
         self.result_dfs[key] = totals_df
-
 
 
 class VehicleStopToStopPassengerCounts(EventHandlerTool):
@@ -1586,7 +1599,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         # Check for car
-        if self.mode in ['car','walk','bike']:
+        if self.mode in ['car', 'walk', 'bike']:
             raise ValueError(f"Passenger Counts Handlers not intended for use with mode type = {self.mode}")
 
         # Initialise class attributes
@@ -1615,13 +1628,13 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
                 )
         else:
             self.logger.debug(f'Filtering stops for mode:{self.mode}.')
-            self.elem_gdf = self.elem_gdf.loc[viable_stops,:]
+            self.elem_gdf = self.elem_gdf.loc[viable_stops, :]
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
 
         # Initialise results dictionary
-        self.counts = dict() # passenger counts
-        self.veh_counts = dict() # vehicle counts
+        self.counts = dict()  # passenger counts
+        self.veh_counts = dict()  # vehicle counts
 
         # Initialise agent status mapping
         self.veh_occupancy = dict()  # {veh_id : {attribute_class: COUNT}}
@@ -1720,9 +1733,10 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
         counts_df.index.names = names + ['to_stop_arrival_hour']
         counts_df.columns = ['pax_counts', 'veh_counts']
-        counts_df = counts_df.reset_index().set_index(names + ['to_stop_arrival_hour','veh_counts'])['pax_counts'] # move vehicle counts to the series index
+        # move vehicle counts to the series index
+        counts_df = counts_df.reset_index().set_index(names + ['to_stop_arrival_hour', 'veh_counts'])['pax_counts']
 
-        # scale 
+        # scale
         counts_df *= 1.0 / self.config.scale_factor
 
         del self.counts
@@ -1742,8 +1756,9 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         counts_df = counts_df.reset_index().set_index(names+['veh_counts'])
         counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
         counts_df['total'] = counts_df.sum(1)
-        
-        counts_df['geometry'] = [LineString([o, d]) for o,d in zip(counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
+
+        counts_df['geometry'] = [LineString([o, d]) for o, d in zip(
+            counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
         counts_df.drop('from_stop_geometry', axis=1, inplace=True)
         counts_df.drop('to_stop_geometry', axis=1, inplace=True)
         counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
@@ -1751,7 +1766,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         #################
         # temp: unit tests currently require all hours of the day as columns
         # TODO: planning to remove this requirement - then delete this code block
-        for h in range(0,24):
+        for h in range(0, 24):
             if h not in counts_df.columns:
                 counts_df[h] = 0
         #################
@@ -1761,7 +1776,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
             self.result_dfs[key] = counts_df
 
         # # calc sum across all recorded attribute classes
-        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id','route','veh_counts']).sum()
+        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id', 'route', 'veh_counts']).sum()
 
         # Join stop data and build geometry
         for n in ("from_stop", "to_stop"):
@@ -1772,8 +1787,10 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
                     stop_info, how="left"
                 )
             totals_df.index.name = n
-        
-        totals_df['geometry'] = [LineString([o, d]) for o,d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)]
+
+        totals_df['geometry'] = [
+            LineString([o, d]) for o, d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)
+        ]
         totals_df.drop('from_stop_geometry', axis=1, inplace=True)
         totals_df.drop('to_stop_geometry', axis=1, inplace=True)
         totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
@@ -1806,7 +1823,7 @@ class VehicleDepartureLog(EventHandlerTool):
         pt_csv_name = f"{self.name}.csv"
 
         self.vehicle_departure_log = self.start_chunk_writer(
-            pt_csv_name, write_path = write_path
+            pt_csv_name, write_path=write_path
             )
 
     def process_event(self, elem) -> None:
@@ -1818,7 +1835,7 @@ class VehicleDepartureLog(EventHandlerTool):
         if event_type == 'VehicleDepartsAtFacility':
 
             veh_id = elem.get("vehicle")
-            veh_mode = self.vehicle_mode(veh_id)            
+            veh_mode = self.vehicle_mode(veh_id)
             veh_route = self.vehicle_route(veh_id)
             stop_id = elem.get("facility")
             departure_time = int(float(elem.get("time")))
@@ -1845,6 +1862,7 @@ class VehicleDepartureLog(EventHandlerTool):
     def finalise(self):
         self.vehicle_departure_log.finish()
 
+
 class VehiclePassengerLog(EventHandlerTool):
     """
     Extract a log of passenger boardings and alightings to a PT vehicle.
@@ -1866,10 +1884,10 @@ class VehiclePassengerLog(EventHandlerTool):
         super().build(resources, write_path=write_path)
 
         pt_csv_name = f"{self.name}.csv"
-        self.veh_tracker = dict() # {veh_id: last_stop}
+        self.veh_tracker = dict()  # {veh_id: last_stop}
 
         self.vehicle_passenger_log = self.start_chunk_writer(
-            pt_csv_name, write_path = write_path
+            pt_csv_name, write_path=write_path
             )
 
     def process_event(self, elem) -> None:
@@ -1880,22 +1898,22 @@ class VehiclePassengerLog(EventHandlerTool):
 
         # keep track of the last vehicle stop
         if event_type == 'VehicleArrivesAtFacility':
-            veh_id = elem.get("vehicle")            
-            # veh_mode = self.vehicle_mode(veh_id)    
+            veh_id = elem.get("vehicle")
+            # veh_mode = self.vehicle_mode(veh_id)
             stop_id = elem.get("facility")
             self.veh_tracker[veh_id] = stop_id
 
         # add boardings/alightings to the log
         if event_type in ['PersonEntersVehicle', 'PersonLeavesVehicle']:
             agent_id = elem.get("person")
-            veh_id = elem.get("vehicle")            
+            veh_id = elem.get("vehicle")
             veh_route = self.vehicle_route(veh_id)
             event_time = elem.get("time")
             veh_mode = self.vehicle_mode(veh_id)
             stop_id = self.veh_tracker.get(veh_id, None)
-            
+
             if veh_mode == self.mode or self.mode == "all":
-                if agent_id[:2] != "pt": # Filter out PT drivers from transit volume statistics
+                if agent_id[:2] != "pt":  # Filter out PT drivers from transit volume statistics
 
                     boardings = [
                         {
@@ -1915,6 +1933,7 @@ class VehiclePassengerLog(EventHandlerTool):
     def finalise(self):
         self.vehicle_passenger_log.finish()
 
+
 class VehicleLinkLog(EventHandlerTool):
     """
     Extract all vehicle link entry/link exit events
@@ -1925,9 +1944,6 @@ class VehicleLinkLog(EventHandlerTool):
     def __init__(self, config, mode=None, **kwargs):
         super().__init__(config, mode)
         self.vehicle_link_log = None
-
-        self.logger.warning(f"MODE = {mode}")
-
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
@@ -1942,9 +1958,9 @@ class VehicleLinkLog(EventHandlerTool):
         file_name = f"{self.name}.csv"
 
         self.vehicle_link_log = self.start_chunk_writer(
-            file_name, write_path = write_path
-            )
-        
+            file_name, write_path=write_path
+        )
+
         # Only add to chunk writer when entry + exit complete
         self.event_staging = {}
 
@@ -1955,7 +1971,7 @@ class VehicleLinkLog(EventHandlerTool):
         :param elem: Event XML element
         """
         event_type = elem.get("type")
-        
+
         if event_type == "entered link":
             veh_id = elem.get("vehicle")
             veh_mode = self.vehicle_mode(veh_id)
@@ -1964,9 +1980,9 @@ class VehicleLinkLog(EventHandlerTool):
 
             if veh_mode == self.mode or self.mode == "all":
                 entry = {
-                    "veh_id": veh_id, 
+                    "veh_id": veh_id,
                     "veh_mode": self.vehicle_mode(veh_id),
-                    "link_id": link_id, 
+                    "link_id": link_id,
                     "entry_time": entry_time
                 }
 
@@ -1980,8 +1996,8 @@ class VehicleLinkLog(EventHandlerTool):
             if entry is not None:
                 entry["exit_time"] = int(float(elem.get("time")))
                 self.vehicle_link_log.add([entry])
-        
-        if event_type == "vehicle leaves traffic": #exit via leaves traffic event
+
+        if event_type == "vehicle leaves traffic":  # exit via leaves traffic event
             veh_id = elem.get("vehicle")
             # remove staged event. None = veh enters/leaves traffic on same link
             self.event_staging.pop(veh_id, None)
@@ -1990,6 +2006,137 @@ class VehicleLinkLog(EventHandlerTool):
 
     def finalise(self):
         self.vehicle_link_log.finish()
+
+
+class AgentTollsLog(EventHandlerTool):
+    """
+    Produces a raw log of tolling events by agent
+    Additionally produces a 24-hr summary of tolls paid by each agent
+    """
+
+    requirements = ['events', 'attributes']
+
+    def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
+        super().__init__(config, mode)
+
+        self.groupby_person_attribute = groupby_person_attribute
+        self.valid_modes = ['all']
+
+        # initialise results storage
+        self.result_dfs = dict()
+        self.agent_tolls_log = None
+        self.toll_log_summary = dict()
+
+        # keep track of pt drivers paying tolls
+        self.tolled_pt = []
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+
+        super().build(resources, write_path=write_path)
+
+        self.agent_attributes, found_attributes = self.extract_attributes()
+
+        file_name = f'{self.name}.csv'
+
+        self.agent_tolls_log = self.start_chunk_writer(
+            file_name, write_path=write_path
+        )
+
+    def process_event(self, elem) -> None:
+        '''
+        Logs tolling events using ChunkWriter.
+        Additionally, add agents and toll amounts to dictionary
+        Tolls paid are incremented over the 24hr simulation
+
+        Events of interest look like:
+        <event time="100" type="personMoney" person="agentID"
+        amount="-1.0" purpose="toll"  />
+
+        TODO - Mode filters (don't have veh id)
+        '''
+
+        event_type = elem.get("type")
+
+        if event_type == "personMoney":
+            if elem.get("purpose") == "toll":
+                agent_id = elem.get("person")
+
+                if agent_id[:2] == "pt":  # filter out pt drivers, and break
+                    self.tolled_pt.append(agent_id)
+                    return None
+
+                toll_amount = float(elem.get("amount")) * -1
+                time = float(elem.get("time"))
+                attrib = None
+
+                toll_event = [
+                    {
+                        'agent_id': agent_id,
+                        'toll_amount': toll_amount,
+                        'time': time
+                    }
+                ]
+
+                if self.groupby_person_attribute is not None:
+                    attrib = self.agent_attributes.attributes.get(agent_id, {}).get(self.groupby_person_attribute)
+                    toll_event[0]['class'] = attrib
+
+                # Add to ChunkWriter and update summary dictionaries
+                self.agent_tolls_log.add(toll_event)
+
+                existing_record = self.toll_log_summary.get(agent_id)
+
+                if existing_record is not None:
+                    existing_record['toll_total'] += toll_amount
+                    existing_record['tolls_incurred'] += 1
+                else:
+                    self.toll_log_summary[agent_id] = {
+                        'toll_total': toll_amount,
+                        'tolls_incurred': 1
+                    }
+
+                    if attrib is not None:
+                        self.toll_log_summary[agent_id]['class'] = attrib
+
+        return None
+
+    def finalise(self):
+
+        self.agent_tolls_log.finish()
+
+        # warning about pt tolling
+        if self.tolled_pt:
+            count_pt = len(self.tolled_pt)
+            self.logger.warning(f"{count_pt} PT vehicles incurred tolls. These are excluded from logs")
+
+        # build summaries
+        df = pd.DataFrame.from_dict(self.toll_log_summary, orient="index")
+        df.index.name = 'agent_id'
+
+        key = f"{self.name}_summary"
+        self.result_dfs[key] = df
+
+        if self.groupby_person_attribute:
+
+            key = f"{self.name}_summary_{self.groupby_person_attribute}"
+
+            grouper = df.groupby('class')
+            df_grouped = grouper.agg({'toll_total': ['sum', 'mean', 'count'], 'tolls_incurred': 'sum'})
+            df_grouped.droplevel(0, axis=1)
+            df_grouped.columns = [
+                'toll_total', 'avg_per_agent', 'tolled_agents', 'tolls_incurred'
+            ]
+
+            self.result_dfs[key] = df_grouped
+
+        del self.toll_log_summary
+
 
 class EventHandlerWorkStation(WorkStation):
 
@@ -2009,7 +2156,8 @@ class EventHandlerWorkStation(WorkStation):
         "vehicle_stop_to_stop_passenger_counts": VehicleStopToStopPassengerCounts,
         "vehicle_departure_log": VehicleDepartureLog,
         "vehicle_passenger_log": VehiclePassengerLog,
-        "vehicle_link_log": VehicleLinkLog
+        "vehicle_link_log": VehicleLinkLog,
+        "agent_tolls_log": AgentTollsLog
     }
 
     def __init__(self, config):
@@ -2092,9 +2240,12 @@ def table_position(elem_indices, class_indices, periods, elem_id, attribute_clas
     return x, y, z
 
 
-def table_position_4d(origin_elem_indices, destination_elem_indices, class_indices, periods, o_id, d_id, attribute_class, time):
+def table_position_4d(origin_elem_indices, destination_elem_indices, class_indices,
+                      periods, o_id, d_id, attribute_class, time):
     """
-    Calculate the result table coordinates from a given a origin element ID, destination elmement ID, attribute class and timestamp.
+    Calculate the result table coordinates from a given a origin element ID,
+    destination elmement ID, attribute class and timestamp.
+
     :param origin_elem_indices: Element index list
     :param destination_elem_indices: Element index list
     :param class_indices: attribute index list

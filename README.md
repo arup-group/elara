@@ -86,7 +86,7 @@ Inputs to Elara are MATSim format output files, eg:
 
 Depending on what outputs you require from elara, some of these inputs may not be required, but it is often convenient to have them all available as a default. In most cases these Elara inputs may be compressed using gzip (`file.xml.gz`).
 
-If you are running a scenario with road pricing, it will be needed to calculate toll log outputs.
+The road pricing config is required when using the (deprecated) ``toll_log`` plan handler, but *not* when calcuating toll logs using the `agent_tolls_log` event handler.
 
 ## Output Handlers
 
@@ -113,6 +113,7 @@ Currently supported handlers include:
 * ``vehicle_departure_log``: Vehicle departures and delays from facilities (stops in the case of PT).
 * ``vehicle_passenger_log``: A log of every passenger boarding and alighting to/from a transit vehicle.
 * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
+* ``agent_tolls_log``: Produce a log and 24-hour summary (total amount, number of tolls incurred) of agents' tolling events.
 
 ### **Plan Handlers/WorkStation Tools**:
 
@@ -131,7 +132,7 @@ Currently supported handlers include:
 * ``plan_logs``: Produce agent plans including unselected plans and scores.
 * ``agent_highway_distance_logs``: Produce agent distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
-* ``toll_logs``: Produces summary of amounts agents paid at tolls, depending on the route they drove. Requires road pricing input file. Only works for option ``["car"]``.
+* **(DEPRECATED)** ``toll_logs``: Produces summary of amounts agents paid at tolls based on route information contained in agent plans. Requires road pricing input file. Only works for option ``["car"]``. *The AgentTollsPaidFromRPConfig handler is still supported, but has been superseded by an event handler. This handler calculates toll payments via a link-lookup with the road pricing configuration file, and will not account for any in-simulation adjustments for differential or capped road pricing.*
 
 ### **Post Processing Handlers/Workstation Tools**:
 
@@ -205,7 +206,6 @@ trip_activity_mode_shares = {destination_activity_filters = ["work"]}
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
-toll_logs = ["car']
 
 [post_processors]
 vkt = ["car"]
@@ -223,7 +223,7 @@ test_link_cordon = ["car"]
 
 You can run this config on some toy data: `elara run example_configs/config.toml` (from the project root).
 
-If your MATSim outputs use default names and are in the same directory, you may optionally pass the path of this directory as single argument to `[inputs]` using, e.g. `inputs_directory = "./tests/test_fixtures/"`. **NB:** For toll-based outputs, you must still provide the `road_pricing` path separately.
+If your MATSim outputs use default names and are in the same directory, you may optionally pass the path of this directory as single argument to `[inputs]` using, e.g. `inputs_directory = "./tests/test_fixtures/"`. **NB:** If using the ``toll_log`` plan handler, you must still provide the `road_pricing` path separately.
 
 ## Command Line Reference
 

@@ -1062,9 +1062,15 @@ class PlanLogs(PlanHandlerTool):
         s = dt.second
         return s + (60 * (m + (60 * h)))
 
-class AgentTollsPaid(PlanHandlerTool):
+class AgentTollsPaidFromRPConfig(PlanHandlerTool):
     """
-    Extract where and when agents paid tolls and produce summaries by agent and subpopulation.
+    Deprecated in favour of AgentTollLogs Event Handler
+
+    Produces summaries of tolls paid by extracting routes from plans and
+    comparing them to the road_pricing.xml config file.
+
+    When using factored tolling -- either capped or differential --
+    the actual amount charged to individual agents may be different.
     """
 
     requirements = [
@@ -1081,6 +1087,7 @@ class AgentTollsPaid(PlanHandlerTool):
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to subpopulation
         """
+
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
@@ -1088,6 +1095,12 @@ class AgentTollsPaid(PlanHandlerTool):
         self.roadpricing = None
         self.agents_ids = None
         self.results = dict()  # Result dataframes ready to export
+
+        # deprecation warning
+        self.logger.warning("""
+            Plan tolls may differ from actual tolls paid. Use EventHandler. 
+        """
+        )
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -1437,7 +1450,7 @@ class PlanHandlerWorkStation(WorkStation):
         "utility_logs": UtilityLogs,
         "agent_highway_distance_logs": AgentHighwayDistanceLogs,
         "trip_highway_distance_logs": TripHighwayDistanceLogs,
-        "toll_logs": AgentTollsPaid
+        "toll_logs": AgentTollsPaidFromRPConfig
     }
 
     def __init__(self, config):
