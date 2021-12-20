@@ -75,6 +75,55 @@ class CsvComparison(BenchmarkTool):
         plt.close()
 
 
+class LinkVehicleSpeedsComparison(CsvComparison):
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.requirements = ['vehicle_link_speeds']
+        self.invalid_modes = ['all']
+        
+        time_slice = str(kwargs.get("time_slice"))  # this is the required column field, typically hour of day
+        if time_slice is None:
+            self.logger.warning("Not found 'time_slice' of {time_slice} in {self} kwargs, defaulting to '0'")
+            time_slice = "0"
+        self.value_field = time_slice
+
+        self.index_fields = ['id']
+        self.weight = 1
+
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"link_vehicle_speeds_{mode}_average"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += ".csv"
+
+
+class TestLinkVehicleSpeedsComparison(LinkVehicleSpeedsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'link_vehicle_speeds_car_average.csv')
+    )
+
+
+# class TestLinkVehicleSpeedsComparisonByAttributeComparison(LinkVehicleSpeedsComparison):
+#     benchmark_data_path = get_benchmark_data(
+#         os.path.join('test_fixtures', 'link_vehicle_speeds_car_average.csv')
+#     )
+
+
 class TripModeSharesComparison(CsvComparison):
 
     def __init__(
@@ -1868,6 +1917,8 @@ class BenchmarkWorkStation(WorkStation):
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,
         "transit_interaction_comparison": TransitInteractionComparison,
+
+        "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
 
         "test_mode_shares_comparison": TestTripModeSharesComparison,
         "test_destination_mode_shares_comparison": TestTripActivityModeSharesComparison,
