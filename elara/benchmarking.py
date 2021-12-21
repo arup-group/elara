@@ -47,7 +47,7 @@ class CsvComparison(BenchmarkTool):
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
         bm_df.columns = ['trips_benchmark', 'trips_simulation']
-        bm_df.fillna(0, inplace=True)
+        bm_df.dropna(inplace=True)
         self.plot_comparison(bm_df)
         bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
         bm_df['abs_difference'] = bm_df.difference.abs()
@@ -90,8 +90,8 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         # get required time-slice from kwargs
         time_slice = str(kwargs.get("time_slice"))  # this is the required column field, typically hour of day
         if time_slice is None:
-            self.logger.warning("Not found 'time_slice' of {time_slice} in {self} kwargs, defaulting to '9'")
-            time_slice = "9"
+            self.logger.warning("Not found 'time_slice' of {time_slice} in {self} kwargs, defaulting to '8'")
+            time_slice = "8"
         self.value_field = time_slice
 
         self.index_fields = ['id']

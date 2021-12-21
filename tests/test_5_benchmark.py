@@ -31,7 +31,7 @@ def test_link_vehicle_speed_comparison():
     benchmark = benchmarking.TestLinkVehicleSpeedsComparison(
         config=config,
         mode="car",
-        time_slice=9
+        time_slice=8
     )
     score = benchmark.build({}, write_path=test_outputs)
     assert score['mse'] == 0
@@ -41,7 +41,7 @@ def test_link_vehicle_speed_comparison_with_groupby_subpopulation():
     benchmark = benchmarking.TestLinkVehicleSpeedsComparisonByAttributeComparison(
         config=config,
         mode="car",
-        time_slice=9,
+        time_slice=8,
         groupby_person_attribute="subpopulation"
     )
     score = benchmark.build({}, write_path=test_outputs)
