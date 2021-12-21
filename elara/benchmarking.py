@@ -87,10 +87,11 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         self.requirements = ['vehicle_link_speeds']
         self.invalid_modes = ['all']
         
+        # get required time-slice from kwargs
         time_slice = str(kwargs.get("time_slice"))  # this is the required column field, typically hour of day
         if time_slice is None:
-            self.logger.warning("Not found 'time_slice' of {time_slice} in {self} kwargs, defaulting to '0'")
-            time_slice = "0"
+            self.logger.warning("Not found 'time_slice' of {time_slice} in {self} kwargs, defaulting to '9'")
+            time_slice = "9"
         self.value_field = time_slice
 
         self.index_fields = ['id']
@@ -118,10 +119,10 @@ class TestLinkVehicleSpeedsComparison(LinkVehicleSpeedsComparison):
     )
 
 
-# class TestLinkVehicleSpeedsComparisonByAttributeComparison(LinkVehicleSpeedsComparison):
-#     benchmark_data_path = get_benchmark_data(
-#         os.path.join('test_fixtures', 'link_vehicle_speeds_car_average.csv')
-#     )
+class TestLinkVehicleSpeedsComparisonByAttributeComparison(LinkVehicleSpeedsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'link_vehicle_speeds_car_average_subpopulation.csv')
+    )
 
 
 class TripModeSharesComparison(CsvComparison):
