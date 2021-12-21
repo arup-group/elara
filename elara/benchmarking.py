@@ -90,8 +90,7 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         # get required time-slice from kwargs
         time_slice = str(kwargs.get("time_slice"))  # this is the required column field, typically hour of day
         if time_slice is None:
-            self.logger.warning("Not found 'time_slice' of {time_slice} in {self} kwargs, defaulting to '8'")
-            time_slice = "8"
+            raise ValueError(f"Not found 'time_slice' in {self} kwargs: {kwargs}'")
         self.value_field = time_slice
 
         self.index_fields = ['id']
