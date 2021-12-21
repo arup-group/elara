@@ -163,6 +163,7 @@ Currently available benchmarks include:
 * ``duration_comparison``
 * ``link_counter_comparison``
 * ``transit_interaction_comparison``
+* ``link_vehicle_speeds_comparison``
 
 ## Running from a Configuration File
 

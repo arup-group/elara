@@ -47,7 +47,7 @@ class CsvComparison(BenchmarkTool):
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
         bm_df.columns = ['trips_benchmark', 'trips_simulation']
-        bm_df.fillna(0, inplace=True)
+        bm_df.dropna(inplace=True)
         self.plot_comparison(bm_df)
         bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
         bm_df['abs_difference'] = bm_df.difference.abs()
@@ -73,6 +73,55 @@ class CsvComparison(BenchmarkTool):
         df.plot(ax=ax, kind="bar", figsize=(17,12)).get_figure().\
             savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}.png'))
         plt.close()
+
+
+class LinkVehicleSpeedsComparison(CsvComparison):
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.requirements = ['vehicle_link_speeds']
+        self.invalid_modes = ['all']
+        
+        # get required time-slice from kwargs
+        time_slice = str(kwargs.get("time_slice"))  # this is the required column field, typically hour of day
+        if time_slice is None:
+            raise ValueError(f"Not found 'time_slice' in {self} kwargs: {kwargs}'")
+        self.value_field = time_slice
+
+        self.index_fields = ['id']
+        self.weight = 1
+
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+        self.groupby_person_attribute = groupby_person_attribute
+        self.simulation_name = f"link_vehicle_speeds_{mode}_average"
+        if groupby_person_attribute is not None:
+            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.simulation_name += f"_{groupby_person_attribute}"
+            self.index_fields.append("class")
+            self.logger.debug(f"Index fields={self.index_fields}")
+        self.simulation_name += ".csv"
+
+
+class TestLinkVehicleSpeedsComparison(LinkVehicleSpeedsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'link_vehicle_speeds_car_average.csv')
+    )
+
+
+class TestLinkVehicleSpeedsComparisonByAttributeComparison(LinkVehicleSpeedsComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'link_vehicle_speeds_car_average_subpopulation.csv')
+    )
 
 
 class TripModeSharesComparison(CsvComparison):
@@ -1868,6 +1917,8 @@ class BenchmarkWorkStation(WorkStation):
         "duration_comparison": DurationComparison,
         "link_counter_comparison": LinkCounterComparison,
         "transit_interaction_comparison": TransitInteractionComparison,
+
+        "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
 
         "test_mode_shares_comparison": TestTripModeSharesComparison,
         "test_destination_mode_shares_comparison": TestTripActivityModeSharesComparison,
