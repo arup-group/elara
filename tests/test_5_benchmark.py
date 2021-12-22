@@ -26,6 +26,33 @@ if not os.path.exists(benchmarks_path):
 config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
 config = Config(config_path)
 
+def test_trip_duration_comparison_cars():
+    benchmark = benchmarking.TestTripDurationComparisonCars(
+        config=config,
+        mode="all"
+    )
+    score = benchmark.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_trip_duration_comparison_all():
+    benchmark = benchmarking.TestTripDurationComparisonAll(
+        config=config,
+        mode="all"
+    )
+    score = benchmark.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_trip_duration_comparison_mode_consistency():
+    benchmark = benchmarking.TestTripDurationComparisonWithModeConsistency(
+        config=config,
+        mode="all",
+        mode_consistency=True
+    )
+    score = benchmark.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
 
 def test_link_vehicle_speed_comparison():
     benchmark = benchmarking.TestLinkVehicleSpeedsComparison(

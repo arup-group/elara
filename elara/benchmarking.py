@@ -16,8 +16,10 @@ class BenchmarkTool(Tool):
     options_enabled = True
     weight = 1
     benchmark_data_path = None
+    plot_type = None
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
+        self.plot_type = kwargs.pop("plot_type", None)
         super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
         self.logger = logging.getLogger(__name__)
         if not self.benchmark_data_path:
@@ -66,6 +68,10 @@ class CsvComparison(BenchmarkTool):
         return scores
 
     def plot_comparison(self, df):
+        if self.plot_type == "bar":
+            self.plot_bar(df)
+
+    def plot_bar(self, df):
         """
         Bar comparison plot
         """
@@ -75,7 +81,94 @@ class CsvComparison(BenchmarkTool):
         plt.close()
 
 
+class TripDurationComparison(CsvComparison):
+
+    """
+    Compares observed trip durations against thise in trip_logs. Expects bm data with format:
+
+    agent,seq,mode,duration_s
+    chris,1,car,454.0
+    chris,2,car,463.0
+    nick,1,car,4.0
+    nick,2,car,454.0
+
+    Where 'agent' is agent_id and trip is the agent trip id.
+    By setting a kwarg "mode_consistency = true", mode is used to ensure only trips with 
+    matching mode are compared. Default is false.
+    The value field 'duration_s' is the trip duartion in seconds.
+
+    """
+
+    def __init__(
+        self,
+        config,
+        mode,
+        groupby_person_attribute=None,
+        **kwargs
+        ):
+        self.requirements = ['trip_logs']
+        self.valid_modes = ["all"]
+        self.simulation_name = "trip_logs_all_trips.csv"
+        self.value_field = "duration_s"
+
+        if kwargs.get("mode_consistency") is True:
+            self.index_fields = ["agent", "seq", "mode"]
+        else:
+            self.index_fields = ["agent", "seq"]
+
+        self.weight = 1
+
+        super().__init__(
+            config,
+            mode=mode,
+            groupby_person_attribute=groupby_person_attribute,
+            **kwargs
+            )
+
+
+class TestTripDurationComparisonCars(TripDurationComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'trip_durations_car.csv')
+    )
+
+
+class TestTripDurationComparisonAll(TripDurationComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'trip_durations_multi_modal.csv')
+    )
+
+
+class TestTripDurationComparisonWithModeConsistency(TripDurationComparison):
+    benchmark_data_path = get_benchmark_data(
+        os.path.join('test_fixtures', 'trip_durations_mode_consistency.csv')
+    )
+
+
 class LinkVehicleSpeedsComparison(CsvComparison):
+
+    """
+    Compares observed speeds against vehicle_link_speeds. Expects input bm data with format:
+
+    id,8
+    1-5,10.0
+    5-1,10.0
+
+    or
+    
+    id,8,17
+    1-5,10.0,9.5
+    5-1,10.0,9.8
+
+    or
+
+    id,class,8,17
+    1-5,freight,10.0,9.5
+    1-5,hhs,10.0,9.8
+    5-1,freight,10.0,9.8
+
+    Where 'id' is link_id and value columns represent time_slices.
+    Class can be used with the groupby_person_attribute option.
+    """
 
     def __init__(
         self,
@@ -126,6 +219,8 @@ class TestLinkVehicleSpeedsComparisonByAttributeComparison(LinkVehicleSpeedsComp
 
 class TripModeSharesComparison(CsvComparison):
 
+    plot_type = "bar"
+
     def __init__(
         self,
         config,
@@ -168,6 +263,8 @@ class TestTripModeSharesByAttributeComparison(TripModeSharesComparison):
 
 
 class TripModeCountsComparison(CsvComparison):
+
+    plot_type = "bar"
 
     def __init__(
         self,
@@ -212,6 +309,8 @@ class TestTripModeCountsByAttributeComparison(TripModeCountsComparison):
 
 class TripActivityModeSharesComparison(CsvComparison):
 
+    plot_type = "bar"
+
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['trip_activity_modes']
         self.valid_modes = ['all']
@@ -247,6 +346,8 @@ class TestTripActivityModeSharesByAttributeComparison(TripActivityModeSharesComp
 
 class TripActivityModeCountsComparison(CsvComparison):
 
+    plot_type = "bar"
+
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['trip_activity_modes']
         self.valid_modes = ['all']
@@ -281,6 +382,8 @@ class TestTripActivityModeCountsByAttributeComparison(TripActivityModeCountsComp
 
 
 class PlanModeSharesComparison(CsvComparison):
+
+    plot_type = "bar"
 
     def __init__(
         self,
@@ -325,6 +428,8 @@ class TestPlanModeSharesByAttributeComparison(PlanModeSharesComparison):
 
 class PlanModeCountsComparison(CsvComparison):
 
+    plot_type = "bar"
+
     def __init__(
         self,
         config,
@@ -368,6 +473,8 @@ class TestPlanModeCountsByAttributeComparison(PlanModeCountsComparison):
 
 class PlanActivityModeSharesComparison(CsvComparison):
 
+    plot_type = "bar"
+
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['plan_activity_modes']
         self.valid_modes = ['all']
@@ -402,6 +509,8 @@ class TestPlanActivityModeSharesByAttributeComparison(PlanActivityModeSharesComp
 
 
 class PlanActivityModeCountsComparison(CsvComparison):
+
+    plot_type = "bar"
 
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['plan_activity_modes']
@@ -438,6 +547,8 @@ class TestPlanActivityModeCountsByAttributeComparison(PlanActivityModeCountsComp
 
 class DurationComparison(CsvComparison):
 
+    plot_type = "bar"
+
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         super().__init__(config, mode=mode, **kwargs)
         self.benchmark_data_path = benchmark_data_path
@@ -451,6 +562,8 @@ class DurationComparison(CsvComparison):
 
 
 class TestDurationComparison(CsvComparison):
+
+    plot_type = "bar"
     requirements = ['trip_duration_breakdown']
     valid_modes = ['all']
     index_fields = ['duration']
@@ -461,6 +574,8 @@ class TestDurationComparison(CsvComparison):
 
 
 class EuclideanDistanceComparison(CsvComparison):
+
+    plot_type = "bar"
     requirements = ['trip_euclid_distance_breakdown']
     valid_modes = ['all']
 
@@ -471,6 +586,8 @@ class EuclideanDistanceComparison(CsvComparison):
 
 
 class TestEuclideanDistanceComparison(CsvComparison):
+
+    plot_type = "bar"
     requirements = ['trip_euclid_distance_breakdown']
     valid_modes = ['all']
 
