@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE population SYSTEM "http://matsim.org/files/dtd/population_v6.dtd">
+
+<!-- ====================================================================== -->
+
+<population>
+	<person id="chris">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">rich</attribute>
+			<attribute name="age" class="java.lang.String">yes</attribute>
+		</attributes>
+		<plan>
+			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="07:00:00" ></activity>
+			<leg mode="car" dep_time="07:00:00" trav_time="00:07:34"></leg>
+			<activity type="work" link="3-4" x="10100.0" y="0.0" end_time="16:30:00" ></activity>
+			<leg mode="car" dep_time="16:30:00" trav_time="00:07:43"></leg>
+			<activity type="home" link="1-2" x="0.0" y="0.0" ></activity>
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
+	<person id="empty_plan">
+		<plan>
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
+	<person id="fatema">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+			<attribute name="age" class="java.lang.String">no</attribute>
+		</attributes>
+		<plan>
+			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" ></activity>
+			<leg mode="bike" dep_time="08:00:00" trav_time="00:52:31"></leg>
+			<activity type="work" link="3-4" x="10100.0" y="0.0" end_time="17:30:00" ></activity>
+			<leg mode="bike" dep_time="17:30:00" trav_time="00:52:31"></leg>
+			<activity type="home" link="1-2" x="0.0" y="0.0" ></activity>
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
+	<person id="fred">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+			<attribute name="age" class="java.lang.String">no</attribute>
+		</attributes>
+		<plan>
+			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" ></activity>
+			<leg mode="walk" trav_time="00:01:18"></leg>
+			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" ></activity>
+			<leg mode="bus" trav_time="00:43:42"></leg>
+			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" ></activity>
+			<leg mode="walk" trav_time="00:01:18"></leg>
+			<activity type="work" link="3-4" x="10100.0" y="0.0" end_time="17:30:00" ></activity>
+			<leg mode="walk" trav_time="00:01:18"></leg>
+			<activity type="pt interaction" link="4-3" x="10050.0" y="0.0" max_dur="00:00:00" ></activity>
+			<leg mode="bus" trav_time="00:13:42"></leg>
+			<activity type="pt interaction" link="2-1" x="50.0" y="0.0" max_dur="00:00:00" ></activity>
+			<leg mode="walk" trav_time="00:01:18"></leg>
+			<activity type="home" link="1-2" x="0.0" y="0.0" ></activity>
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
+	<person id="gerry">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+			<attribute name="age" class="java.lang.String">no</attribute>
+		</attributes>
+		<plan>
+			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="07:00:00" ></activity>
+			<leg mode="pt" trav_time="00:46:18"></leg>
+			<activity type="work" link="3-4" x="10100.0" y="0.0" end_time="16:30:00" ></activity>
+			<leg mode="pt" trav_time="01:16:18"></leg>
+			<activity type="home" link="1-2" x="0.0" y="0.0" ></activity>
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
+	<person id="nick">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+			<attribute name="age" class="java.lang.String">no</attribute>
+		</attributes>
+		<plan>
+			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" ></activity>
+			<leg mode="car" dep_time="08:00:00" trav_time="00:00:04"></leg>
+			<activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" ></activity>
+			<leg mode="car" dep_time="17:30:00" trav_time="00:07:34"></leg>
+			<activity type="home" link="1-2" x="0.0" y="0.0" >
+			</activity>
+		</plan>
+	</person>
+
+<!-- ====================================================================== -->
+
+</population>
