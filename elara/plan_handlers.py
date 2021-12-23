@@ -569,7 +569,7 @@ class LegLogs(PlanHandlerTool):
                         mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
 
                         trav_time = stage.get('trav_time')
-                        h, m, s = trav_time.split(": ")
+                        h, m, s = trav_time.split(":")
                         td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
                         arrival_dt = activity_end_dt + td
@@ -813,7 +813,7 @@ class TripLogs(PlanHandlerTool):
                         modes[mode] = modes.get(mode, 0) + distance
 
                         trav_time = stage.get('trav_time')
-                        h, m, s = trav_time.split(": ")
+                        h, m, s = trav_time.split(":")
                         td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
                         activity_start_dt += td
 
@@ -1533,7 +1533,7 @@ def convert_time_to_seconds(t: str) -> Optional[int]:
     """
     if not t:
         return None
-    t = t.split(": ")
+    t = t.split(":")
     return ((int(t[0]) * 60) + int(t[1])) * 60 + int(t[2])
 
 
@@ -1573,7 +1573,7 @@ def matsim_time_to_datetime(
     if current_time is None:
         current_time = start_of_day
 
-    h, m, s = (int(i) for i in new_time_str.split(": "))
+    h, m, s = (int(i) for i in new_time_str.split(":"))
     new_time = start_of_day + timedelta(hours=h, minutes=m, seconds=s)
 
     if logger is not None:
