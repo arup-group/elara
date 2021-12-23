@@ -28,6 +28,8 @@ jobs:
         export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
         pip install GDAL==3.0.2
         pip install -r requirements.txt
+    - name: Check install
+        elara --help
     - name: Lint with flake8
       run: |
         pip install flake8
