@@ -173,7 +173,7 @@ class Config:
     def inputs_directory(self):
         inputs_path = self.settings["inputs"].get("inputs_directory")
         if inputs_path:
-            return self.valid_path(inputs_path, "inputs directory")
+            return self.valid_path(inputs_path, "inputs_directory")
         else:
             return None
 
@@ -187,6 +187,12 @@ class Config:
     def plans_path(self):
         return self.valid_path(
             self.settings["inputs"]["plans"], "plans"
+        )
+    
+    @property
+    def input_plans_path(self):
+        return self.valid_path(
+            self.settings["inputs"]["input_plans"], "input_plans"
         )
 
     @property
@@ -385,11 +391,9 @@ class Config:
             }
         )
         if not self.using_experienced_plans:
-            print('CONDITION 1')
             self.settings['inputs']['plans'] = 'output_plans.xml'
         
         if self.version == 12:
-            print('CONDITION 2')
             self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
             print('CONDITION 3')
@@ -499,6 +503,13 @@ class GetPlansPath(PathTool):
         super().build(resource)
         self.path = self.config.plans_path
 
+class GetInputPlansPath(PathTool):
+    path = None
+
+    def build(self, resource: dict, write_path=None):
+        super().build(resource)
+        self.path = self.config.input_plans_path
+
 
 class GetNetworkPath(PathTool):
     path = None
@@ -553,6 +564,7 @@ class PathFinderWorkStation(WorkStation):
         'crs': GetCRS,
         'events_path': GetEventsPath,
         'plans_path': GetPlansPath,
+        'input_plans_path': GetInputPlansPath,
         'network_path': GetNetworkPath,
         'attributes_path': GetAttributesPath,
         'transit_schedule_path': GetTransitSchedulePath,

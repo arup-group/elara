@@ -501,4 +501,5 @@ def test_load_input_manager(test_xml_config, test_paths):
     assert input_workstation.resources['subpopulations']
     assert input_workstation.resources['attributes']
     assert input_workstation.resources['plans']
+    assert input_workstation.resources['input_plans']
     assert input_workstation.resources['mode_map']

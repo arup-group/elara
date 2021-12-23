@@ -5,6 +5,7 @@ import pandas as pd
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
+from elara.input_plan_handlers import InputPlanHandlerWorkstation
 from elara.event_handlers import EventHandlerWorkStation
 from elara.postprocessing import PostProcessWorkStation
 from elara.benchmarking import BenchmarkWorkStation
@@ -34,26 +35,31 @@ def test_main(test_config):
     benchmarks = BenchmarkWorkStation(test_config)
     event_handlers = EventHandlerWorkStation(test_config)
     plan_handlers = PlanHandlerWorkStation(test_config)
+    input_plan_handlers = InputPlanHandlerWorkstation(test_config)
     input_workstation = InputsWorkStation(test_config)
     paths = PathFinderWorkStation(test_config)
 
     requirements.connect(
         managers=None,
-        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers]
+        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers, input_plan_handlers]
     )
     benchmarks.connect(
         managers=[requirements],
-        suppliers=[event_handlers, plan_handlers],
+        suppliers=[event_handlers, plan_handlers, input_plan_handlers],
     )
     postprocessing.connect(
         managers=[requirements],
-        suppliers=[event_handlers, plan_handlers]
+        suppliers=[event_handlers, plan_handlers, input_plan_handlers]
     )
     event_handlers.connect(
         managers=[postprocessing, benchmarks, requirements],
         suppliers=[input_workstation]
     )
     plan_handlers.connect(
+        managers=[requirements, benchmarks, postprocessing],
+        suppliers=[input_workstation]
+    )
+    input_plan_handlers.connect(
         managers=[requirements, benchmarks, postprocessing],
         suppliers=[input_workstation]
     )

@@ -8,6 +8,7 @@ from elara.helpers import PathPath, NaturalOrderGroup
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
+from elara.input_plan_handlers import InputPlanHandlerWorkstation
 from elara.event_handlers import EventHandlerWorkStation
 from elara.postprocessing import PostProcessWorkStation
 from elara.benchmarking import BenchmarkWorkStation
@@ -660,21 +661,22 @@ def main(config):
     benchmarks = BenchmarkWorkStation(config)
     event_handlers = EventHandlerWorkStation(config)
     plan_handlers = PlanHandlerWorkStation(config)
+    input_plan_handlers = InputPlanHandlerWorkstation(config)
     input_workstation = InputsWorkStation(config)
     paths = PathFinderWorkStation(config)
 
     # 2: Connect Workstations
     config_requirements.connect(
         managers=None,
-        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers]
+        suppliers=[postprocessing, benchmarks, event_handlers, plan_handlers, input_plan_handlers]
     )
     benchmarks.connect(
         managers=[config_requirements],
-        suppliers=[postprocessing, event_handlers, plan_handlers],
+        suppliers=[postprocessing, event_handlers, plan_handlers, input_plan_handlers],
     )
     postprocessing.connect(
         managers=[config_requirements, benchmarks],
-        suppliers=[input_workstation, event_handlers, plan_handlers]
+        suppliers=[input_workstation, event_handlers, plan_handlers, input_plan_handlers]
     )
     event_handlers.connect(
         managers=[postprocessing, benchmarks, config_requirements],
@@ -684,8 +686,12 @@ def main(config):
         managers=[config_requirements, benchmarks, postprocessing],
         suppliers=[input_workstation]
     )
+    input_plan_handlers.connect(
+        managers=[config_requirements, benchmarks, postprocessing],
+        suppliers=[input_workstation]
+    )
     input_workstation.connect(
-        managers=[event_handlers, plan_handlers, postprocessing],
+        managers=[event_handlers, plan_handlers, input_plan_handlers, postprocessing],
         suppliers=[paths]
     )
     paths.connect(
