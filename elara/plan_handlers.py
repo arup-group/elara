@@ -1045,7 +1045,7 @@ class PlanLogs(PlanHandlerTool):
                         in_transit = True
 
                     trav_time = stage.get('trav_time')
-                    h, m, s = trav_time.split(": ")
+                    h, m, s = trav_time.split(":")
                     td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
                     arrival_dt = activity_end_dt + td
 
