@@ -605,12 +605,14 @@ def london_rods_volumes(
 @click.argument("config_path", type=click.Path(exists=True))
 @click.option("--path_override", '-o', default=None)
 @click.option("--root", '-r', default=None)
-def run(config_path, path_override, root):
+@click.option("--output_directory_override", default=None)
+def run(config_path, path_override, root, output_directory_override):
     """
     Run Elara using a config.
     :param config_path: Configuration file path
     :param path_override: containing directory to update for [inputs], outputs.path in toml
     :param root: add root to all paths (assumes that paths in config are relative)
+    :param output_directory_override: change output directory
     """
     if path_override and root:
         raise UserWarning(
@@ -624,6 +626,9 @@ def run(config_path, path_override, root):
     
     if root:
         config.set_paths_root(root)
+
+    if output_directory_override:
+        config.output_directory_override(output_directory_override)
         
     main(config)
 

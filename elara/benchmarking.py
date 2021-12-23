@@ -18,15 +18,17 @@ class BenchmarkTool(Tool):
     benchmark_data_path = None
     plot_type = None
 
-    def __init__(self, config, mode="all", groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         self.plot_type = kwargs.pop("plot_type", None)
-        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
-        self.logger = logging.getLogger(__name__)
+        proposed_bm_path = kwargs.pop("benchmark_data_path", None)
         if not self.benchmark_data_path:
-            self.benchmark_data_path = benchmark_data_path
+            self.benchmark_data_path = proposed_bm_path
 
+        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        
+        self.logger = logging.getLogger(__name__)
         self.logger.debug(f"Initiating: {str(self)} with name: {self.name}")
-        self.logger.debug(f"groupby_person_attribute={groupby_person_attribute}, benchmark_data_path={benchmark_data_path}, kwargs={kwargs}")
+        self.logger.debug(f"groupby_person_attribute={groupby_person_attribute}, benchmark_data_path={self.benchmark_data_path}, kwargs={kwargs}")
 
     def __str__(self):
         return f'{self.__class__.__name__}'
@@ -81,7 +83,7 @@ class CsvComparison(BenchmarkTool):
         plt.close()
 
 
-class TripDurationComparison(CsvComparison):
+class TripDurationsComparison(CsvComparison):
 
     """
     Compares observed trip durations against thise in trip_logs. Expects bm data with format:
@@ -111,7 +113,7 @@ class TripDurationComparison(CsvComparison):
         self.simulation_name = "trip_logs_all_trips.csv"
         self.value_field = "duration_s"
 
-        if kwargs.get("mode_consistency") is True:
+        if kwargs.pop("mode_consistent", False) is True:
             self.index_fields = ["agent", "seq", "mode"]
         else:
             self.index_fields = ["agent", "seq"]
@@ -126,19 +128,19 @@ class TripDurationComparison(CsvComparison):
             )
 
 
-class TestTripDurationComparisonCars(TripDurationComparison):
+class TestTripDurationComparisonCars(TripDurationsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'trip_durations_car.csv')
     )
 
 
-class TestTripDurationComparisonAll(TripDurationComparison):
+class TestTripDurationComparisonAll(TripDurationsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'trip_durations_multi_modal.csv')
     )
 
 
-class TestTripDurationComparisonWithModeConsistency(TripDurationComparison):
+class TestTripDurationComparisonWithModeConsistency(TripDurationsComparison):
     benchmark_data_path = get_benchmark_data(
         os.path.join('test_fixtures', 'trip_durations_mode_consistency.csv')
     )
@@ -177,14 +179,14 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         groupby_person_attribute=None,
         **kwargs
         ):
-        self.requirements = ['vehicle_link_speeds']
+        self.requirements = ['link_vehicle_speeds']
         self.invalid_modes = ['all']
         
         # get required time-slice from kwargs
-        time_slice = str(kwargs.get("time_slice"))  # this is the required column field, typically hour of day
+        time_slice = kwargs.pop("time_slice", None)  # this is the required column field, typically hour of day
         if time_slice is None:
             raise ValueError(f"Not found 'time_slice' in {self} kwargs: {kwargs}'")
-        self.value_field = time_slice
+        self.value_field = str(time_slice)
 
         self.index_fields = ['id']
         self.weight = 1
@@ -545,7 +547,7 @@ class TestPlanActivityModeCountsByAttributeComparison(PlanActivityModeCountsComp
     )
 
 
-class DurationComparison(CsvComparison):
+class DurationBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
 
@@ -561,7 +563,7 @@ class DurationComparison(CsvComparison):
     weight = 1
 
 
-class TestDurationComparison(CsvComparison):
+class TestDurationBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
     requirements = ['trip_duration_breakdown']
@@ -573,7 +575,7 @@ class TestDurationComparison(CsvComparison):
     weight = 1
 
 
-class EuclideanDistanceComparison(CsvComparison):
+class EuclideanDistanceBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
     requirements = ['trip_euclid_distance_breakdown']
@@ -585,7 +587,7 @@ class EuclideanDistanceComparison(CsvComparison):
     weight = 1
 
 
-class TestEuclideanDistanceComparison(CsvComparison):
+class TestEuclideanDistanceBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
     requirements = ['trip_euclid_distance_breakdown']
@@ -2020,28 +2022,35 @@ class BenchmarkWorkStation(WorkStation):
     """
 
     tools = {
+        # trip mode shares and counts
         "trip_mode_shares_comparison": TripModeSharesComparison,
         "trip_activity_mode_shares_comparison": TripActivityModeSharesComparison,
         "trip_mode_counts_comparison": TripModeCountsComparison,
         "trip_activity_mode_counts_comparison": TripActivityModeCountsComparison,
         
+        # plan mode shares and counts
         "plan_mode_shares_comparison": PlanModeSharesComparison,
         "plan_activity_mode_shares_comparison": PlanActivityModeSharesComparison,
         "plan_mode_counts_comparison": PlanModeCountsComparison,
         "plan_activity_mode_counts_comparison": PlanActivityModeCountsComparison,
 
-        "euclidean_distance_comparison": EuclideanDistanceComparison,
-        "duration_comparison": DurationComparison,
+        # trip breakdowns - aggregate distribution comparisons
+        "euclidean_distance_breakdown_comparison": EuclideanDistanceBreakdownComparison,
+        "duration_breakdown_comparison": DurationBreakdownComparison,
+
+        # traditional benchmarks - eg cordons etc
         "link_counter_comparison": LinkCounterComparison,
         "transit_interaction_comparison": TransitInteractionComparison,
 
+        # new benchmarks - link speeds, trip durations
         "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
+        "trip_durations_comparison": TripDurationsComparison,
 
         "test_mode_shares_comparison": TestTripModeSharesComparison,
         "test_destination_mode_shares_comparison": TestTripActivityModeSharesComparison,
         "test_activity_mode_shares_comparison": TestTripActivityModeSharesComparison,
-        "test_euclidean_distance_comparison": TestEuclideanDistanceComparison,
-        "test_duration_comparison": TestDurationComparison,
+        "test_euclidean_distance_breakdown_comparison": TestEuclideanDistanceBreakdownComparison,
+        "test_duration_breakdown_comparison": TestDurationBreakdownComparison,
         "test_link_cordon": TestCordon,
         "test_pt_interaction_counter": TestPTInteraction,
         "test_pt_volumes": TestPTVolume,

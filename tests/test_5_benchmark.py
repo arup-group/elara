@@ -48,7 +48,7 @@ def test_trip_duration_comparison_mode_consistency():
     benchmark = benchmarking.TestTripDurationComparisonWithModeConsistency(
         config=config,
         mode="all",
-        mode_consistency=True
+        mode_consistent=True
     )
     score = benchmark.build({}, write_path=test_outputs)
     assert score['mse'] == 0
@@ -300,7 +300,7 @@ def test_plan_activity_subpopulaion_mode_count_score_zero():
 
 
 def test_duration_comparison_score_zero():
-    benchmark = benchmarking.TestDurationComparison
+    benchmark = benchmarking.TestDurationBreakdownComparison
     test_bm = benchmark(
         config,
         'all',
@@ -309,7 +309,7 @@ def test_duration_comparison_score_zero():
     assert score['mse'] == 0
 
 def test_duration_comparison_score_zero():
-    benchmark = benchmarking.TestDurationComparison
+    benchmark = benchmarking.TestDurationBreakdownComparison
     test_bm = benchmark(
         config,
         'all',
@@ -318,7 +318,7 @@ def test_duration_comparison_score_zero():
     assert score['mse'] == 0
 
 def test_duration_comparison_score_zero_filepath():
-    benchmark = benchmarking.DurationComparison
+    benchmark = benchmarking.DurationBreakdownComparison
     benchmark_data_path = os.path.join('tests','test_outputs','trip_duration_breakdown_all.csv')
     test_bm = benchmark(
         config,
@@ -401,7 +401,7 @@ def test_benchmark_duration_workstation_dictionary(test_config_dictionary, test_
 
     benchmarking_workstation = benchmarking.BenchmarkWorkStation(test_config_dictionary)
     benchmarking_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation, pp_workstation])
-    tool = benchmarking_workstation.tools['duration_comparison']
-    benchmarking_workstation.resources['duration_comparison'] = tool(test_config_dictionary, 'all', benchmark_data_path='./tests/test_outputs/trip_duration_breakdown_all.csv')
+    tool = benchmarking_workstation.tools['duration_breakdown_comparison']
+    benchmarking_workstation.resources['duration_breakown_comparison'] = tool(test_config_dictionary, 'all', benchmark_data_path='./tests/test_outputs/trip_duration_breakdown_all.csv')
 
     benchmarking_workstation.build(write_path=test_outputs)

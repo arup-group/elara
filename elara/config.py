@@ -425,6 +425,18 @@ class Config:
                 os.path.join(path_override, "elara_override_log.json")
             )
 
+    def output_directory_override(self, path_override, dump_log=False):
+        """
+        :param path_override: override the config output path
+        "param dump_log: (bool) optionally dump overriden config to disk
+        """
+        self.output_path = path_override
+
+        if dump_log:
+            self.dump_settings_to_disk(
+                os.path.join(path_override, "elara_override_log.json")
+            )
+
     def set_paths_root(self, root, dump_log=True):
         """
         Add root path to all configured paths (inputs, output directory and benchmark data paths).
