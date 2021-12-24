@@ -12,6 +12,10 @@ class InputPlanHandlerWorkstation(PlanHandlerWorkStation):
     Same invocation as PlanHandlerWorkstation but with unique toll definitions.
     """
 
+    # dict key to hand to supplier.resources
+    # allows handler to be subclassed by overriding
+    plans_resource = 'input_plans'
+
     tools = {
         "input_trip_logs": InputTripLogs
     }

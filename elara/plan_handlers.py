@@ -1456,6 +1456,9 @@ class PlanHandlerWorkStation(WorkStation):
     """
     Work Station class for collecting and building Plans Handlers.
     """
+    # dict key to hand to supplier.resources
+    # allows handler to be subclassed by overriding
+    plans_resource = 'plans'
 
     tools = {
         "trip_modes": TripModes,
@@ -1489,7 +1492,7 @@ class PlanHandlerWorkStation(WorkStation):
         super().build()
 
         # iterate through plans
-        plans = self.supplier_resources['plans']
+        plans = self.supplier_resources[self.plans_resource]
         self.logger.info(' *** Commencing Plans Iteration ***')
         base = 1
 

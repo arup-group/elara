@@ -626,7 +626,7 @@ class Plans(InputTool):
         """
         super().build(resources)
 
-        path = resources['plans_path'].path
+        path = resources[self.requirements[0]].path
 
         self.plans = get_elems(path, "plan")
         # self.persons = get_elems(path, "person")

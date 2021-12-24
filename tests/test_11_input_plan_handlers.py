@@ -121,3 +121,20 @@ def test_agent_input_trip_log_process_person(agent_trip_handler):
     assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 4)
     assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
     assert handler.activities_log.chunk[1]["act"] == "work"
+
+def test_input_trip_log_process_from_config(agent_trip_handler):
+    handler = agent_trip_handler
+    plans = handler.resources['input_plans']
+    for person in plans.persons:
+        handler.process_plans(person)
+
+    handler.finalise()
+
+    test_act_df = pd.read_csv('./tests/test_outputs/input_trip_logs_all_activities.csv')
+    test_trip_df = pd.read_csv('./tests/test_outputs/input_trip_logs_all_trips.csv')
+
+    assert test_act_df.shape == (15, 15)
+    assert test_trip_df.shape == (10, 20)
+  
+    # Unrouted input trips all have 0 distance
+    assert test_trip_df.distance.sum() == 0
