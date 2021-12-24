@@ -340,6 +340,8 @@ class WorkStation:
         # loop tool first looking for matches so that tool order is preserved
         else:
             for tool_name, tool in self.tools.items():
+                if tool_name == 'input_trip_logs':
+                    print('foo')
                 
                 for manager_requirement, options in manager_requirements.items():
 
@@ -361,7 +363,7 @@ class WorkStation:
                                 }
                             
                             optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
-                            
+
                             for mode in modes:
                                 for groupby_person_attribute in groupby_person_attributes:
                                     # build unique key for tool initiated with option

@@ -12,7 +12,6 @@ sys.path.append(os.path.abspath('../elara'))
 from elara.config import Config, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara import input_plan_handlers, plan_handlers
-from elara.plan_handlers import PlanHandlerWorkStation
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -82,7 +81,7 @@ def input_manager_v12(test_config_v12, test_paths_v12):
 @pytest.fixture
 def agent_trip_handler(test_config_v12, input_manager_v12):
     input_manager = input_manager_v12
-    handler = input_plan_handlers.InputTripLogs(test_config_v12, 'all')
+    handler = input_plan_handlers.InputTripLogs(test_config_v12, mode="all")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -138,3 +137,11 @@ def test_input_trip_log_process_from_config(agent_trip_handler):
   
     # Unrouted input trips all have 0 distance
     assert test_trip_df.distance.sum() == 0
+
+# Test Workstation
+def test_input_plan_workstation_build(test_config_v12, input_manager_v12):
+    input_plan_workstation = input_plan_handlers.InputPlanHandlerWorkstation(test_config_v12)
+    input_plan_workstation.connect(managers=None, suppliers=[input_manager_v12])
+    input_plan_workstation.build()
+
+    assert True

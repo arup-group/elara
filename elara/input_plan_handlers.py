@@ -1,10 +1,10 @@
+import logging
 from elara.plan_handlers import PlanHandlerWorkStation, TripLogs
 
 
 class InputTripLogs(TripLogs):
     requirements = ['input_plans', 'transit_schedule', 'attributes']
     valid_modes = ['all']
-
 
 class InputPlanHandlerWorkstation(PlanHandlerWorkStation):
     """
@@ -19,3 +19,7 @@ class InputPlanHandlerWorkstation(PlanHandlerWorkStation):
     tools = {
         "input_trip_logs": InputTripLogs
     }
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
