@@ -219,13 +219,6 @@ vkt = ["car"]
 plan_summary = ["all"]
 trip_duration_breakdown = ["all"]
 trip_euclid_distance_breakdown = ["all"]
-
-[benchmarks]
-test_mode_shares_comparison = ["all]
-test_duration_breakdown_comparison = ["all"]
-test_euclidean_distance_breakdown_comparison = ["all"]
-test_pt_interaction_counter = ["bus"]
-test_link_cordon = ["car"]
 ```
 
 You can run this config on some toy data: `elara run example_configs/config.toml` (from the project root).

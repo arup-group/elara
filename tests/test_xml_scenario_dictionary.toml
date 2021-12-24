@@ -25,7 +25,6 @@ trip_modes = {groupby_person_attributes=["age"]}
 [post_processors]
 
 [benchmarks]
-test_duration_breakdown_comparison = ["all"]
 duration_breakdown_comparison = {modes = ["all"], benchmark_data_path = "./tests/test_outputs/trip_duration_breakdown_all.csv"}
 
 [outputs]

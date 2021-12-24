@@ -19,7 +19,12 @@ class BenchmarkTool(Tool):
     plot_type = None
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
-        self.plot_type = kwargs.pop("plot_type", None)
+
+        # override default plot type if supplied, remove from kwargs as these don't affect suppliers
+        if "plot_type" in kwargs:
+            self.plot_type = kwargs.pop("plot_type", None)
+
+        # override default path if supplied, remove from kwargs as these don't affect suppliers
         proposed_bm_path = kwargs.pop("benchmark_data_path", None)
         if not self.benchmark_data_path:
             self.benchmark_data_path = proposed_bm_path
@@ -94,7 +99,8 @@ class TripDurationsComparison(CsvComparison):
     nick,1,car,4.0
     nick,2,car,454.0
 
-    Where 'agent' is agent_id and trip is the agent trip id.
+    'agent' is agent_id.
+    'seq' is the agent trip sequence number (the current convention starts countimg from 1).
     By setting a kwarg "mode_consistency = true", mode is used to ensure only trips with 
     matching mode are compared. Default is false.
     The value field 'duration_s' is the trip duartion in seconds.
@@ -113,6 +119,7 @@ class TripDurationsComparison(CsvComparison):
         self.simulation_name = "trip_logs_all_trips.csv"
         self.value_field = "duration_s"
 
+        # check for mode_consistent option and remove (not a required option for managers)
         if kwargs.pop("mode_consistent", False) is True:
             self.index_fields = ["agent", "seq", "mode"]
         else:
@@ -126,24 +133,6 @@ class TripDurationsComparison(CsvComparison):
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
             )
-
-
-class TestTripDurationComparisonCars(TripDurationsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'trip_durations_car.csv')
-    )
-
-
-class TestTripDurationComparisonAll(TripDurationsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'trip_durations_multi_modal.csv')
-    )
-
-
-class TestTripDurationComparisonWithModeConsistency(TripDurationsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'trip_durations_mode_consistency.csv')
-    )
 
 
 class LinkVehicleSpeedsComparison(CsvComparison):
@@ -207,18 +196,6 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         self.simulation_name += ".csv"
 
 
-class TestLinkVehicleSpeedsComparison(LinkVehicleSpeedsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'link_vehicle_speeds_car_average.csv')
-    )
-
-
-class TestLinkVehicleSpeedsComparisonByAttributeComparison(LinkVehicleSpeedsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'link_vehicle_speeds_car_average_subpopulation.csv')
-    )
-
-
 class TripModeSharesComparison(CsvComparison):
 
     plot_type = "bar"
@@ -250,18 +227,6 @@ class TripModeSharesComparison(CsvComparison):
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
         self.simulation_name += "_shares.csv"
-
-
-class TestTripModeSharesComparison(TripModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_shares.csv')
-    )
-
-
-class TestTripModeSharesByAttributeComparison(TripModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
-    )
 
 
 class TripModeCountsComparison(CsvComparison):
@@ -297,18 +262,6 @@ class TripModeCountsComparison(CsvComparison):
         self.simulation_name += "_counts.csv"
 
 
-class TestTripModeCountsComparison(TripModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_counts.csv')
-    )
-
-
-class TestTripModeCountsByAttributeComparison(TripModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_mode_counts.csv')
-    )
-
-
 class TripActivityModeSharesComparison(CsvComparison):
 
     plot_type = "bar"
@@ -334,18 +287,6 @@ class TripActivityModeSharesComparison(CsvComparison):
         self.simulation_name += "_shares.csv"
 
 
-class TestTripActivityModeSharesComparison(TripActivityModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_shares.csv')
-    )
-
-
-class TestTripActivityModeSharesByAttributeComparison(TripActivityModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
-    )
-
-
 class TripActivityModeCountsComparison(CsvComparison):
 
     plot_type = "bar"
@@ -369,18 +310,6 @@ class TripActivityModeCountsComparison(CsvComparison):
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
         self.simulation_name += "_counts.csv"
-
-
-class TestTripActivityModeCountsComparison(TripActivityModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'commuter_mode_counts.csv')
-    )
-
-
-class TestTripActivityModeCountsByAttributeComparison(TripActivityModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_commuter_mode_counts.csv')
-    )
 
 
 class PlanModeSharesComparison(CsvComparison):
@@ -416,18 +345,6 @@ class PlanModeSharesComparison(CsvComparison):
         self.simulation_name += "_shares.csv"
 
 
-class TestPlanModeSharesComparison(PlanModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_shares.csv')
-    )
-
-
-class TestPlanModeSharesByAttributeComparison(PlanModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
-    )
-
-
 class PlanModeCountsComparison(CsvComparison):
 
     plot_type = "bar"
@@ -461,18 +378,6 @@ class PlanModeCountsComparison(CsvComparison):
         self.simulation_name += "_counts.csv"
 
 
-class TestPlanModeCountsComparison(PlanModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_plan_counts.csv')
-    )
-
-
-class TestPlanModeCountsByAttributeComparison(PlanModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_mode_plan_counts.csv')
-    )
-
-
 class PlanActivityModeSharesComparison(CsvComparison):
 
     plot_type = "bar"
@@ -496,18 +401,6 @@ class PlanActivityModeSharesComparison(CsvComparison):
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
         self.simulation_name += "_shares.csv"
-
-
-class TestPlanActivityModeSharesComparison(PlanActivityModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'mode_shares.csv')
-    )
-
-
-class TestPlanActivityModeSharesByAttributeComparison(PlanActivityModeSharesComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_mode_shares.csv')
-    )
 
 
 class PlanActivityModeCountsComparison(CsvComparison):
@@ -535,18 +428,6 @@ class PlanActivityModeCountsComparison(CsvComparison):
         self.simulation_name += "_counts.csv"
 
 
-class TestPlanActivityModeCountsComparison(PlanActivityModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'commuter_plan_mode_counts.csv')
-    )
-
-
-class TestPlanActivityModeCountsByAttributeComparison(PlanActivityModeCountsComparison):
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_fixtures', 'subpop_commuter_plan_mode_counts.csv')
-    )
-
-
 class DurationBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
@@ -563,18 +444,6 @@ class DurationBreakdownComparison(CsvComparison):
     weight = 1
 
 
-class TestDurationBreakdownComparison(CsvComparison):
-
-    plot_type = "bar"
-    requirements = ['trip_duration_breakdown']
-    valid_modes = ['all']
-    index_fields = ['duration']
-    value_field = 'trips'
-    benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv'))
-    simulation_name = 'trip_duration_breakdown_all.csv'
-    weight = 1
-
-
 class EuclideanDistanceBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
@@ -583,19 +452,6 @@ class EuclideanDistanceBreakdownComparison(CsvComparison):
 
     index_fields = ['euclidean_distance']
     value_field = 'trips'
-    simulation_name = 'trip_euclid_distance_breakdown_all.csv'
-    weight = 1
-
-
-class TestEuclideanDistanceBreakdownComparison(CsvComparison):
-
-    plot_type = "bar"
-    requirements = ['trip_euclid_distance_breakdown']
-    valid_modes = ['all']
-
-    index_fields = ['euclidean_distance']
-    value_field = 'trips'
-    benchmark_data_path = get_benchmark_data(os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv'))
     simulation_name = 'trip_euclid_distance_breakdown_all.csv'
     weight = 1
 
@@ -862,20 +718,6 @@ class LinkCounterComparison(BenchmarkTool):
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
-class TestCordon(LinkCounterComparison):
-
-    name = 'test_link_counter'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_town', 'test_town_cordon', 'test_link_counter.json')
-    )
-
-    requirements = ['link_vehicle_counts']
-    valid_modes = ['car', 'bus']
-    options_enabled = True
-
-    weight = 1
-
-
 class TransitInteractionComparison(BenchmarkTool):
 
     requirements = ['stop_passenger_counts']
@@ -1129,20 +971,6 @@ class TransitInteractionComparison(BenchmarkTool):
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
-class TestPTInteraction(TransitInteractionComparison):
-
-    name = 'test_pt_interaction_counter'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_town', 'pt_interactions', 'test_interaction_counter.json')
-    )
-
-    requirements = ['stop_passenger_counts']
-    valid_modes = ['bus']
-    options_enabled = True
-
-    weight = 1
-
-
 class PassengerStopToStop(BenchmarkTool):
 
     name = None
@@ -1152,7 +980,7 @@ class PassengerStopToStop(BenchmarkTool):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
 
-    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode, **kwargs) -> None:
         """
         PT Volume count (between stops) benchmarker for json formatted
         {mode: {o: {d: {
@@ -1164,7 +992,7 @@ class PassengerStopToStop(BenchmarkTool):
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, **kwargs)
 
         self.mode = mode
 
@@ -1400,20 +1228,6 @@ class PassengerStopToStop(BenchmarkTool):
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 
-class TestPTVolume(PassengerStopToStop):
-
-    name = 'test_pt_interaction_counter'
-    benchmark_data_path = get_benchmark_data(
-        os.path.join('test_town', 'pt_stop_to_stop_volumes', 'test_pt_volumes_bus.json')
-    )
-
-    requirements = ['stop_to_stop_passenger_counts']
-    valid_modes = ['bus']
-    options_enabled = True
-
-    weight = 1
-
-
 # ========================== Old style BMs below ==========================
 
 class PointsCounter(BenchmarkTool):
@@ -1422,14 +1236,14 @@ class PointsCounter(BenchmarkTool):
     benchmark_data_path = None
     requirements = ['volume_counts']
 
-    def __init__(self, config, mode, attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode, groupby_person_attribute=None, **kwargs) -> None:
         """
         Points Counter parent object used for highways traffic counter networks (ie 'coils' or
         'loops').
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
 
@@ -1566,14 +1380,14 @@ class Cordon(BenchmarkTool):
     hours = None
     modes = None
 
-    def __init__(self, config, mode="all", attribute=None, **kwargs) -> None:
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Cordon parent object used for cordon benchmarks. Initiated with CordonCount
         objects as required.
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, attribute=attribute, **kwargs)
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.cordon_counts = []
 
@@ -1629,7 +1443,7 @@ class CordonDirectionCount(BenchmarkTool):
         :param counts_df: DataFrame of all benchmark counts for cordon
         :param links_df: DataFrame of cordon-count to links
         """
-        super().__init__(config=None, mode="all", attribute=None, **kwargs)
+        super().__init__(config=None, mode="all", groupby_person_attribute=None, **kwargs)
 
         self.cordon_name = parent.name
         self.config = parent.config
@@ -1862,7 +1676,7 @@ class OldModeSharesComparison(BenchmarkTool):
     valid_modes = ['all']
     options_enabled = True
     
-    def __init__(self, config, mode, attribute=None, benchmark_data_path=None, **kwargs):
+    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
         """
         ModeStat parent object for benchmarking with mode share data.
         :param config: Config object
@@ -1871,7 +1685,7 @@ class OldModeSharesComparison(BenchmarkTool):
         super().__init__(
             config=config,
             mode=mode,
-            attribute=attribute,
+            groupby_person_attribute=groupby_person_attribute,
             benchmark_data_path=benchmark_data_path,
             **kwargs
         )
@@ -1918,7 +1732,7 @@ class OldModeSharesComparison(BenchmarkTool):
         return {'counters': score}
 
 
-class TestHighwayCounters(PointsCounter):
+class TestTownHighwayCounters(PointsCounter):
 
     name = 'test_highways'
     benchmark_data_path = get_benchmark_data(
@@ -2046,17 +1860,8 @@ class BenchmarkWorkStation(WorkStation):
         "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
         "trip_durations_comparison": TripDurationsComparison,
 
-        "test_mode_shares_comparison": TestTripModeSharesComparison,
-        "test_destination_mode_shares_comparison": TestTripActivityModeSharesComparison,
-        "test_activity_mode_shares_comparison": TestTripActivityModeSharesComparison,
-        "test_euclidean_distance_breakdown_comparison": TestEuclideanDistanceBreakdownComparison,
-        "test_duration_breakdown_comparison": TestDurationBreakdownComparison,
-        "test_link_cordon": TestCordon,
-        "test_pt_interaction_counter": TestPTInteraction,
-        "test_pt_volumes": TestPTVolume,
-
-        # old style:
-        "test_town_highways": TestHighwayCounters,
+        # old style, maintained for posterity and backward compatability:
+        "test_town_highways": TestTownHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
         "multimodal_town_modeshare": MultimodalTownModeShare,
         "multimodal_town_cars_counts": MultimodalTownCarCounters,

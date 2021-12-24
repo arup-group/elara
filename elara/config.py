@@ -90,7 +90,7 @@ class Config:
         
         # load inputs input directory if provided
         if self.inputs_directory:
-            self.logger.info(f"Using Directory {self.inputs_directory} for inputs")
+            self.logger.info(f"Using directory {self.inputs_directory} for inputs")
             self.set_inputs_from_directory(self.inputs_directory)
 
         if not os.path.exists(self.output_path):
