@@ -3,7 +3,7 @@ name = "test_town"
 time_periods = 24
 scale_factor = 0.0001
 crs = "EPSG:27700"
-verbose = true
+verbose = false
 version = 12
 using_experienced_plans = false
 
@@ -29,3 +29,9 @@ plan_activity_mode_counts_comparison--commuters = {benchmark_data_path = "./exam
 plan_activity_mode_counts_comparison--commuters_by_subpopulation = {benchmark_data_path = "./example_benchmark_data/test_fixtures/subpop_commuter_plan_mode_counts.csv", destination_activity_filters=["work"], groupby_person_attributes=["subpopulation"]}
 link_counter_comparison--A = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
 link_counter_comparison--B = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter_duplicate.json"}
+duration_breakdown_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
+euclidean_distance_breakdown_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_euclid_distance_breakdown_all.csv"}
+link_vehicle_speeds_comparison = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_fixtures/link_vehicle_speeds_car_average.csv", time_slice = 8}
+link_vehicle_speeds_comparison--subpops = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_fixtures/link_vehicle_speeds_car_average_subpopulation.csv", time_slice = 8, groupby_person_attributes=["subpopulation"]}
+trip_durations_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_durations_car.csv"}
+trip_durations_comparison--mode_consistent = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_durations_mode_consistency.csv", mode_consistent = true}

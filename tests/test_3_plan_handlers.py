@@ -2470,3 +2470,33 @@ def test_load_workstation_with_plan_modes(test_config, test_paths):
 
     assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_subpopulation_counts.csv"))
     assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_subpopulation_shares.csv"))
+
+
+def test_load_workstation_with_logs(test_config, test_paths):
+    input_workstation = InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    plan_workstation = PlanHandlerWorkStation(test_config)
+    plan_workstation.connect(managers=None, suppliers=[input_workstation])
+
+    # leg_logs
+    plan_workstation.resources['leg_logs'] = plan_workstation.tools['leg_logs'](
+        test_config,
+        mode='all',
+        )
+
+    # trip_logs
+    plan_workstation.resources['trip_logs'] = plan_workstation.tools['trip_logs'](
+        test_config,
+        mode='all',
+        )
+
+    plan_workstation.build(write_path=test_outputs)
+
+    assert os.path.exists(os.path.join(test_outputs, "leg_logs_all_legs.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "leg_logs_all_activities.csv"))
+
+    assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_trips.csv"))
+    assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_activities.csv"))

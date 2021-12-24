@@ -62,7 +62,10 @@ def test_requirements_workstation(test_config):
         'stop_passenger_counts': {'modes':['bus', 'train']},
         'vkt': {'modes':['car']},
         'link_vehicle_counts': {'modes':['car']},
-        'test_link_cordon': {'modes':['car']},
+        'link_counter_comparison': {
+            'benchmark_data_path': './example_benchmark_data/test_town/test_town_cordon/test_link_counter.json',
+             'modes': ['car']
+            },
         'vehicle_departure_log': {'modes':['all']},
         'vehicle_link_log': {'modes': ['all']},
         'vehicle_passenger_log': {'modes': ['all']},
@@ -231,8 +234,7 @@ def test_complex_requirements_workstation(test_complex_config):
     requirements = RequirementsWorkStation(test_complex_config)
     assert requirements.gather_manager_requirements() == {
         'trip_modes': {'modes':['all'], 'groupby_person_attributes':["age"]},
-        'test_duration_comparison': {'modes':['all']},
-        'duration_comparison': {'modes':['all'], 'benchmark_data_path': "./tests/test_outputs/trip_duration_breakdown_all.csv"},
+        'duration_breakdown_comparison': {'modes':['all'], 'benchmark_data_path': "./tests/test_outputs/trip_duration_breakdown_all.csv"},
     }
 
 
@@ -258,15 +260,13 @@ def test_bfs_complex(requirements_complex):
     # bms
     assert set(requirements_complex.suppliers[1].resources) == set(
         {
-            'test_duration_comparison:all:None:': factory.Tool,
-            'duration_comparison:all:None:./tests/test_outputs/trip_duration_breakdown_all.csv': factory.Tool,
+            'duration_breakdown_comparison:all:None:./tests/test_outputs/trip_duration_breakdown_all.csv': factory.Tool,
         }
     )
     # post processors
     assert set(requirements_complex.suppliers[1].resources) == set(
         {
-            'duration_comparison:all:None:./tests/test_outputs/trip_duration_breakdown_all.csv': factory.Tool,
-            'test_duration_comparison:all:None:': factory.Tool
+            'duration_breakdown_comparison:all:None:./tests/test_outputs/trip_duration_breakdown_all.csv': factory.Tool,
         }
     )
     # plan handlers

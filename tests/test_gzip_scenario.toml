@@ -33,5 +33,4 @@ contract = true
 vkt = ["car"]
 
 [benchmarks]
-test_link_cordon = ["car"]
-test_town_modeshare = ["all"]
+link_counter_comparison = {modes=["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
