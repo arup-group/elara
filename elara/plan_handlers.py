@@ -692,6 +692,7 @@ class TripLogs(PlanHandlerTool):
 
         self.activities_log = None
         self.trips_log = None
+        self.see_trips_log = None
         self.see = see
 
         # Initialise results storage
@@ -710,10 +711,16 @@ class TripLogs(PlanHandlerTool):
 
         activity_csv_name = f"{self.name}_activities.csv"
         trips_csv_name = f"{self.name}_trips.csv"
+        see_trips_csv_name = f"{self.name}_see_trips.csv"
 
         self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
         self.trips_log = self.start_chunk_writer(trips_csv_name, write_path=write_path)
-        self.see_analyser(self,trips)
+        
+        if self.see:
+            # writes the SEE specific trips log 
+            self.see_trips_log = self.start_chunk_writer(see_trips_csv_name, write_path=write_path)
+            # performs the SEE analysis
+            # self.see_analyser(self,trips)
 
     def see_analyser(self, trips):
 
@@ -836,7 +843,7 @@ class TripLogs(PlanHandlerTool):
         """
         ident = elem.get('id')
 
-        # this toggles on the keeping of unselected plans
+        # this toggles on the keeping of unselected plans for use in SEE
         if self.see:
             plans_to_keep = ['yes','no']
         
@@ -944,9 +951,6 @@ class TripLogs(PlanHandlerTool):
                                     'end_s': self.get_seconds(activity_end_dt),
                                     'duration': activity_duration,
                                     'duration_s': activity_duration.total_seconds(),
-                                    # "utility": plan.get("score"),
-                                    # "selected": plan.get('selected'),
-                                    # "innovation_hash" : innovation_hash,
                                 }
                             )
 
@@ -969,12 +973,26 @@ class TripLogs(PlanHandlerTool):
                         td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
                         activity_start_dt += td
 
-                self.activities_log.add(activities)
-                self.trips_log.add(trips)
+            # if SEE toggled on, we keep unselected and selected plans
+            if self.see:
+                
+                # SEE specific outputs
+                self.see_trips_log.add(trips)
 
-        # when complete, if SEE is toggled on, calls SEE function
-        if self.see:
-            self.see_analyser(trips)
+                # standard outputs
+                if plan.get('selected') in ["yes"]:
+                    self.activities_log.add(activities)
+                    self.trips_log.add(trips)
+
+            # if no SEE, outputs the standard selected outputs
+            else:
+                if plan.get('selected') in ["yes"]:
+                    self.activities_log.add(activities)
+                    self.trips_log.add(trips)
+
+        # # when complete, if SEE is toggled on, calls SEE function
+        # if self.see:
+        #     self.see_analyser(trips)
 
     def finalise(self):
         """
@@ -982,6 +1000,7 @@ class TripLogs(PlanHandlerTool):
         """
         self.activities_log.finish()
         self.trips_log.finish()
+        self.see_trips_log.finish()
 
     @staticmethod
     def get_seconds(dt: datetime) -> int:
