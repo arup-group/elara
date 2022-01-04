@@ -593,6 +593,7 @@ class RequirementsWorkStation(WorkStation):
         reqs = {}
         reqs.update(self.config.event_handlers)
         reqs.update(self.config.plan_handlers)
+        reqs.update(self.config.input_plan_handlers)
         reqs.update(self.config.post_processors)
         reqs.update(self.config.benchmarks)
         return reqs
