@@ -425,6 +425,24 @@ def trip_logs(
     config = Config(override=override)
     main(config)
 
+@plan_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def see_trip_logs(
+        modes, debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full, see
+):
+    """
+    Create an agent trip logs output for the SEE analysis. Example invocation for option "all" is:
+
+    $ elara plan-handlers see-trip-logs all
+    """
+    override = common_override(
+        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full, see
+    )
+    override["plan_handlers"]["see_trip_logs"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
 
 @plan_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
