@@ -1651,10 +1651,6 @@ class SeeTripLogs(PlanHandlerTool):
 
         trips = pd.DataFrame(summary).groupby(['agent',"innovation_hash"]).apply(get_dominant)
 
-        # output 1
-        # csv_name = "/see/allTrips.csv"
-        # self.write_csv(trips, csv_name, write_path=write_path)
-
         # for each agent and each innovation, we want to define the dominantMode (by frequency)
         trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
         trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
@@ -1663,9 +1659,8 @@ class SeeTripLogs(PlanHandlerTool):
         plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
 
         # calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
-        # Remember, the chosen plan may not always be the top score
+        # Remember, the chosen plan may not always be the top score due to randomness in MATSim process
         # in the case of the selected plan, the relative disutility is 0
-
         plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
         plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
 
@@ -1678,8 +1673,6 @@ class SeeTripLogs(PlanHandlerTool):
         plans = plans.merge(homes,on='agent',how='left')
 
         # todo. Add a warning if many home locations are not found
-
-        # geopandas the df
         gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
 
         # dropping some columns
