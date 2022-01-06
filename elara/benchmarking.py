@@ -1,3 +1,4 @@
+from pandas.core import groupby
 from plotnine import ggplot, aes, geom_point, geom_line, geom_col, labs, theme, element_text
 import pandas as pd
 import os
@@ -32,6 +33,9 @@ class BenchmarkTool(Tool):
 
 class CsvComparison(BenchmarkTool):
 
+    plot = True
+    output_value_fields = ['trips_benchmark', 'trip_simulation']
+
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
         Compare two csv files (benchmark vs simulation), calculate and plot their differences
@@ -40,16 +44,20 @@ class CsvComparison(BenchmarkTool):
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
         self.logger.debug(f"Using indices '{self.index_fields}'")
         benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+
         simulation_path = os.path.join(self.config.output_path, self.simulation_name)
         self.logger.debug(f"Loading Simulation data from {simulation_path}")
         simulation_df = pd.read_csv(simulation_path, index_col=self.index_fields)
 
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
-        bm_df.columns = ['trips_benchmark', 'trips_simulation']
+        bm_df.columns = self.output_value_fields
         bm_df.fillna(0, inplace=True)
-        self.plot_comparison(bm_df)
-        bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
+
+        if self.plot is True:
+            self.plot_comparison(bm_df)
+
+        bm_df['difference'] = bm_df[self.output_value_fields[0]] - bm_df[self.output_value_fields[1]]
         bm_df['abs_difference'] = bm_df.difference.abs()
 
         # write results
@@ -1245,6 +1253,32 @@ class TestPTVolume(PassengerStopToStop):
 
     weight = 1
 
+# ================= Input/Output Plan Comparison BMs  ====================
+class PlanComparisonTripStart(CsvComparison):
+    simulation_name = 'trip_logs_all_trips.csv'
+    requirements = ['trip_logs']
+    index_fields = ['agent', 'seq']
+    value_field = 'start_s'
+    output_value_fields = ['start_s_bm', 'start_s_sim']
+    plot = False
+
+class PlanComparisonActivityStart(CsvComparison):
+    simulation_name = 'trip_logs_all_activities.csv'
+    requirements = ['trip_logs']
+    index_fields = ['agent', 'seq']
+    value_field = 'start_s'
+    output_value_fields = ['start_s_bm', 'start_s_sim']
+    plot = False
+
+
+class PlanComparisonActivityDuration(CsvComparison):
+    simulation_name = 'trip_logs_all_activities.csv'
+    requirements = ['trip_logs']
+    index_fields = ['agent', 'seq']
+    value_field = 'duration_s'
+    output_value_fields = ['duration_s_bm', 'duration_s_sim']
+    plot = False
+
 
 # ========================== Old style BMs below ==========================
 
@@ -1877,6 +1911,11 @@ class BenchmarkWorkStation(WorkStation):
         "test_link_cordon": TestCordon,
         "test_pt_interaction_counter": TestPTInteraction,
         "test_pt_volumes": TestPTVolume,
+
+        # plan comparisons
+        "plan_comparison_trip_start": PlanComparisonTripStart,
+        "plan_comparison_activity_start": PlanComparisonActivityStart,
+        "plan_comparison_activity_duration": PlanComparisonActivityDuration,
 
         # old style:
         "test_town_highways": TestHighwayCounters,

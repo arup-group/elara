@@ -1485,7 +1485,7 @@ class PlanHandlerWorkStation(WorkStation):
         """
 
         if not self.resources:
-            self.logger.warning(f'{str(self)} has gi`````` resources, build returning None.')
+            self.logger.warning(f'{str(self)} has no resources, build returning None.')
             return None
 
         # build tools

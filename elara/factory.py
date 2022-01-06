@@ -340,8 +340,6 @@ class WorkStation:
         # loop tool first looking for matches so that tool order is preserved
         else:
             for tool_name, tool in self.tools.items():
-                if tool_name == 'input_trip_logs':
-                    print('foo')
                 
                 for manager_requirement, options in manager_requirements.items():
 
