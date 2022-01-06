@@ -59,6 +59,13 @@ def test_config_v13():
     assert config
     return config
 
+@pytest.fixture
+def test_config_see():
+    config_path = os.path.join(test_dir, 'test_xml_scenario_SEE.toml')
+    config = Config(config_path)
+    assert config
+    return config
+
 
 def test_v12_config(test_config_v12):
     assert test_config_v12.version == 12
@@ -89,6 +96,14 @@ def test_paths_v12(test_config_v12):
 @pytest.fixture
 def input_manager(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+    return input_workstation
+
+@pytest.fixture
+def input_manager_see(test_config_see, test_paths):
+    input_workstation = InputsWorkStation(test_config_see)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
     input_workstation.build()
@@ -2500,3 +2515,13 @@ def test_load_workstation_with_logs(test_config, test_paths):
 
     assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_trips.csv"))
     assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_activities.csv"))
+
+def test_see_utility_comparisons(test_config_see, input_manager_see):
+    
+    handler = plan_handlers.SeeTripLogs(test_config_see, mode='all')
+    assert handler.results['SeeAllPlansGdf']
+    
+    # sys.exit(1)
+
+    # assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
+    # assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 3
