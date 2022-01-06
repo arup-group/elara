@@ -50,17 +50,9 @@
 		</attributes>
 		<plan>
 			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" ></activity>
-			<leg mode="walk" trav_time="00:01:18"></leg>
-			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" ></activity>
-			<leg mode="bus" trav_time="00:43:42"></leg>
-			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" ></activity>
-			<leg mode="walk" trav_time="00:01:18"></leg>
+			<leg mode="bus" trav_time="00:46:18"></leg>
 			<activity type="work" link="3-4" x="10100.0" y="0.0" end_time="17:30:00" ></activity>
-			<leg mode="walk" trav_time="00:01:18"></leg>
-			<activity type="pt interaction" link="4-3" x="10050.0" y="0.0" max_dur="00:00:00" ></activity>
-			<leg mode="bus" trav_time="00:13:42"></leg>
-			<activity type="pt interaction" link="2-1" x="50.0" y="0.0" max_dur="00:00:00" ></activity>
-			<leg mode="walk" trav_time="00:01:18"></leg>
+			<leg mode="bus" trav_time="00:16:18"></leg>
 			<activity type="home" link="1-2" x="0.0" y="0.0" ></activity>
 		</plan>
 	</person>
