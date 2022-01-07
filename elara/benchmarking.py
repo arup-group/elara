@@ -1257,27 +1257,105 @@ class TestPTVolume(PassengerStopToStop):
 class PlanComparisonTripStart(CsvComparison):
     simulation_name = 'trip_logs_all_trips.csv'
     requirements = ['trip_logs']
+    valid_modes = ['all']
     index_fields = ['agent', 'seq']
     value_field = 'start_s'
     output_value_fields = ['start_s_bm', 'start_s_sim']
     plot = False
 
+
+class InputPlanComparisonTripStart(PlanComparisonTripStart):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_trips.csv'
+        )
+
+        super().__init__(
+            config,
+            benchmark_data_path=self.benchmark_data_path,
+            **kwargs
+        )
+
+
+class PlanComparisonTripDuration(CsvComparison):
+    simulation_name = 'trip_logs_all_trips.csv'
+    requirements = ['trip_logs']
+    valid_modes = ['all']
+    index_fields = ['agent', 'seq']
+    value_field = 'duration_s'
+    output_value_fields = ['duration_s_bm', 'duration_s_sim']
+    plot = False
+
+
+class InputPlanComparisonTripDuration(PlanComparisonTripDuration):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_trips.csv'
+        )
+
+        super().__init__(
+            config,
+            benchmark_data_path=self.benchmark_data_path,
+            **kwargs
+        )
+
+
 class PlanComparisonActivityStart(CsvComparison):
     simulation_name = 'trip_logs_all_activities.csv'
     requirements = ['trip_logs']
+    valid_modes = ['all']
     index_fields = ['agent', 'seq']
     value_field = 'start_s'
     output_value_fields = ['start_s_bm', 'start_s_sim']
     plot = False
+
+
+class InputPlanComparisonActivityStart(PlanComparisonActivityStart):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_activities.csv'
+        )
+
+        super().__init__(
+            config,
+            benchmark_data_path=self.benchmark_data_path,
+            **kwargs
+        )
 
 
 class PlanComparisonActivityDuration(CsvComparison):
     simulation_name = 'trip_logs_all_activities.csv'
     requirements = ['trip_logs']
+    valid_modes = ['all']
     index_fields = ['agent', 'seq']
     value_field = 'duration_s'
     output_value_fields = ['duration_s_bm', 'duration_s_sim']
     plot = False
+
+
+class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_activities.csv'
+        )
+
+        super().__init__(
+            config,
+            benchmark_data_path=self.benchmark_data_path,
+            **kwargs
+        )
 
 
 # ========================== Old style BMs below ==========================
@@ -1914,9 +1992,14 @@ class BenchmarkWorkStation(WorkStation):
 
         # plan comparisons
         "plan_comparison_trip_start": PlanComparisonTripStart,
+        "input_plan_comparison_trip_start": InputPlanComparisonTripStart,
+        "plan_comparison_trip_duration": PlanComparisonTripDuration,
+        "input_plan_comparison_trip_duration": InputPlanComparisonTripDuration,
         "plan_comparison_activity_start": PlanComparisonActivityStart,
+        "input_plan_comparison_activity_start": InputPlanComparisonActivityStart,
         "plan_comparison_activity_duration": PlanComparisonActivityDuration,
-
+        "input_plan_comparison_activity_duration": InputPlanComparisonActivityDuration,
+        
         # old style:
         "test_town_highways": TestHighwayCounters,
         "squeeze_town_highways": SqueezeTownHighwayCounters,
