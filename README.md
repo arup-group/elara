@@ -154,24 +154,7 @@ These are outputs produced through additional post-processing of the above outpu
 
 Elara can also assist with validation or 'benchmarking' of simulations. Elara will compare and present simulation results from the above outputs to available benchmarks, it will aditionally output a distance based score for the model. Where distance is some measure of how different the simulation is from the observed data.
 
-The handlers in this module require correctly formatted benchmark data. Examples can be found in the project `example_benchmark_data` folder.
-
-Currently available benchmarks include:
-
-* ``trip_mode_shares_comparison``
-* ``trip_activity_mode_shares_comparison``
-* ``trip_mode_counts_comparison``
-* ``trip_activity_mode_counts_comparison``
-* ``plan_mode_shares_comparison``
-* ``plan_activity_mode_shares_comparison``
-* ``plan_mode_counts_comparison``
-* ``plan_activity_mode_counts_comparison``
-* ``euclidean_distance_breakdown_comparison``
-* ``duration_breakdown_comparison``
-* ``link_counter_comparison``
-* ``transit_interaction_comparison``
-* ``link_vehicle_speeds_comparison``
-* ``trip_durations_comparison``
+The handlers in this module require correctly formatted benchmark data. Examples can be found in the project `example_benchmark_data` folder. This documentation has been moved to [here](https://github.com/arup-group/elara/benchmarks.md).
 
 ## Running from a Configuration File
 
@@ -537,57 +520,7 @@ plans= "./tests/test_fixtures/output_experienced_plans.xml"
 
 This allows elara to access person attributes from the standard output_plans, while taking plans from the output_experienced_plans. This is not necessary if groupby_person_attributes are not required.
 
-This guidance does apply when using MATSim version 11 and below, because attributes must always be set explicitly to the relevant `output_personAttributes.xml` file. 
-
-### Benchmarks
-
-Benchmarks provide functionality to compare standard elara outputs to observed data. Benchmarks require passing of the observed data as an additional option. This data must be formatted as the benchmark handler expects. Examples can be found in `./example_benchmark_data/`.
-
-Benchmarks are added to the config as follows:
-
-**[benchmarks]**
-
-**[NAME]** *list of strings below* *(optional)*
-
-Specification of the benchmarks to be run. These include a variety of highway counters, cordons and mode share benchmarks. For example:
-
-```{toml}
-[benchmarks]
-trip_mode_shares_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/mode_shares.csv"}
-link_counter_comparison = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
-```
-
-Benchmarks take a `benchmark_data_path` option in addition to regular options. This is used to pass the required scenario data for comparison. The scenario data must match the required format for the benchmark handler. Example benchmark data can be found in `./example_benchmark_data/`.
-
-Note that benchmarks are often mode specific and should be configured as such, eg:
-
-* ``link_counter_comparison = {modes=["car"], benchmark_data_path = "path/to/data"}``
-
-Benchmarks output into a special `benchmarks` output sub direcctory, they also sometimes incllude a plot.
-
-*A 'Normalised' plot refers to total volumes normalised by number of counters.*
-
-### Naming Handlers
-
-The toml config format prevents duplicating keys, such that it is not possible to use the same handler twice, eg:
-
-```{.toml}
-[benchmarks]
-duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
-duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all_ALTERNATE.csv"}
-```
-
-Will throw an error due to the duplicated toml key `duration_comparison`.
-
-Therefore Elara allows the use of an additional syntax to name the handlers: `{HANDLER_KEY}--{UNIQUE_IDENTIFIER}`, eg:
-
-```{.toml}
-[benchmarks]
-duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
-duration_comparison--ALTERNATE = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all_ALTERNATE.csv"}
-```
-
-Outputs from the named handlers will be similalry named. An example config using naming is included: `./example_configs/using_benchmarks.toml`
+This guidance does apply when using MATSim version 11 and below, because attributes must always be set explicitly to the relevant `output_personAttributes.xml` file.
 
 ## Tests
 
