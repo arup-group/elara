@@ -10,18 +10,18 @@ The `elara.benchmarking` module is intended to allow automated assurance and val
 
 A key advantage of using elara for benchmarking is that comparison can be orchestrated by a single configured operation and that we can make use of elara's `factory` module to ensure all required pre-processing is efficiently undertaken as required. For example, if we want to use the `link_speed_comparison` for cars, elara will know to also output simulated link speeds for cars.
 
-The module is intended to provide a summary of individual and combined benchmarks quality. For example, providing Mean Squared Errors. These are commonly referred to as simulation scores, to be used to quickly compare different simulation runs (during calibration) and assurance of individual simulations. Ultimately this module is being built to provide a 'loss' or 'value' function to facilitate automated calibration/training.
+The module is intended to provide a summary of individual and combined benchmarks quality. For example, providing Mean Squared Errors. These are commonly referred to as simulation scores, to be used to quickly compare  simulations during calibration, and provide assurance of individual simulations. Ultimately this module is being built to provide a 'loss' or 'value' function to facilitate automated calibration/training.
 
 ## Types of Benchmarks
 
-There are several types of comparison within the module, some traditional "benchmarks" such as flow counters and some less traditional:
+There are several types of comparisons within the module, some traditional "benchmarks" such as flow counters and some less traditional:
 
-- Trip Bases Mode Shares and Counts
-- Plan Based Mode Counts and Shares
-- Trip Distance and Duration Distributions
-- Cordons, ScreenLines and Counters
-- Link Speeds Comparisons
-- Agent Plan Comparisons
+- [Trip Based Mode Shares and Counts](https://github.com/arup-group/elara/benchmarks.md#trip-based-mode-shares-and-counts)
+- [Plan Based Mode Counts and Shares](https://github.com/arup-group/elara/benchmarks.md#plan-based-mode-shares-and-counts)
+- [Trip Distance and Duration Distributions](https://github.com/arup-group/elara/benchmarks.md#trip-distance-and-duration-distributions)
+- [Cordons, ScreenLines and Counters](https://github.com/arup-group/elara/benchmarks.md#cordons,-screenlines-and-counters)
+- [Link Speeds Comparisons](https://github.com/arup-group/elara/benchmarks.md#link-speed-comparisons)
+- [Agent Plan Comparisons](https://github.com/arup-group/elara/benchmarks.md#agent-plan-comparisons)
 
 ## Available Benchmarks
 
@@ -39,7 +39,7 @@ link_counter_comparison = {modes = ["car"], benchmark_data_path = "./example_ben
 
 Most benchmarks require passing of the observed data as an additional option - `benchmark_data_path`. This data must be formatted as the benchmark handler expects. Examples can be found in `./example_benchmark_data/`.
 
-Benchmark results output into a special `benchmarks` output sub direcctory. Many benchmarks additionally create plots as default.
+Benchmark results are output into a special `benchmarks` output sub directory. Many benchmarks additionally create plots as default.
 
 ### Naming Benchmarks
 
@@ -72,7 +72,7 @@ Outputs from the named handlers will be similarly named. An example config using
 
 Mode share and count benchmarks.
 
-Can be optionally grouped by agent attribute or filtered by destination activity if such data is availabe.
+Can be optionally grouped by agent attribute or filtered by destination activity if such data is available.
 
 ## trip_mode_shares_comparison
 
@@ -103,7 +103,7 @@ rail,0
 car,0.4
 ```
 
-Ommitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
+Omitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
 
 ```{csv}
 mode,class,share
@@ -154,7 +154,7 @@ car,40000.0
 walk,0.0
 ```
 
-Ommitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
+Omitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
 
 ```{csv}
 mode,class,count
@@ -189,7 +189,7 @@ car,0.8
 walk,0.09
 ```
 
-Ommitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
+Omitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
 
 ```{csv}
 mode,class,share
@@ -224,7 +224,7 @@ car,40000.0
 walk,0.0
 ```
 
-Ommitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
+Omitted or unrecognised modes will be ignored. If `groupby_person_attributes` is being used, the attribute values should be provided as an additional column `class`:
 
 ```{csv}
 mode,class,count
@@ -483,9 +483,9 @@ Stop ids must match those in the simulation.
 
 -------------------
 
-# Link Speeds Comparison
+# Link Speed Comparisons
 
-Compare average hourly link speeds. Link speeds are in meters per second. A common source of this data is google api querries.
+Compare average hourly link speeds. Link speeds are in meters per second. A common source of this data is google api queries.
 
 ## link_vehicle_speeds_comparison
 
@@ -529,9 +529,9 @@ id,class,8,17
 5-1,freight,9.8,9.3
 ```
 
-# Agent Trip Duration Comparison
+# Agent Plan Comparisons
 
-Compare agent trip durations. Durations are in seconds and are generally expected to come from travel diary data, as the trip duartions must belong to specific agent trips. Because this diary data is typically used in the input synthetic population
+Compare agent trip durations. Durations are in seconds. Trip durations must belong to specific agent trips (this is ensured using agent unique ids and trip enumeration). This data typically comes from travel diary data. Because this diary data is typically used in the input synthetic population, ie it has not been partitioned - this comparison is not a proper validation.
 
 ## trip_durations_comparison
 
