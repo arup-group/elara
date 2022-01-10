@@ -85,8 +85,8 @@ class ExampleTool(Tool):
 
 def test_tool_naming():
     tool = ExampleTool(Config())
-    assert (str(tool)) == "ExampleTool"
-    assert tool.name == "example_tool"
+    assert (str(tool)) == "ExampleToolAll"
+    assert tool.name == "example_tool_all"
     tool = ExampleTool(config=Config(), mode="car")
     assert (str(tool)) == "ExampleToolCar"
     assert tool.name == "example_tool_car"

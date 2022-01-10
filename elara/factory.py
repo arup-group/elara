@@ -38,7 +38,7 @@ class Tool:
 
     def __init__(
             self, config,
-            mode: Union[None, str] = None,
+            mode: Union[None, str] = 'all',
             groupby_person_attribute: Union[None, str] = None,
             **kwargs
     ) -> None:
@@ -96,8 +96,8 @@ class Tool:
                 requirements[req].pop("name", None)
                 requirements[req].pop("benchmark_data_path", None)
         else:
-            requirements = {req: None for req in self.requirements}
-
+            requirements = {req: {"modes": ["all"]} for req in self.requirements}
+            # requirements = {req: None for req in self.requirements}
         return requirements
 
     def build(
