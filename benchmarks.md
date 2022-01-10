@@ -19,7 +19,7 @@ There are several types of comparisons within the module, some traditional "benc
 - [Trip Based Mode Shares and Counts](#trip-based-mode-shares-and-counts)
 - [Plan Based Mode Counts and Shares](#plan-based-mode-shares-and-counts)
 - [Trip Distance and Duration Distributions](#trip-distance-and-duration-distributions)
-- [Cordons, ScreenLines and Counters](#cordons,-screenlines-and-counters)
+- [Cordons, ScreenLines and Counters](#cordons-screenlines-and-counters)
 - [Link Speeds Comparisons](#link-speed-comparisons)
 - [Agent Plan Comparisons](#agent-plan-comparisons)
 
