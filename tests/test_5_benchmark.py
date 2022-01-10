@@ -257,7 +257,7 @@ def test_input_plan_comparison_trip_start_zero():
         config,
         mode='all',
     )
-    score, df = test_bm.build({}, write_path=test_outputs)
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
 def test_input_plan_comparison_trip_duration_zero():
@@ -267,7 +267,7 @@ def test_input_plan_comparison_trip_duration_zero():
         config,
         mode='all',
     )
-    score, df = test_bm.build({}, write_path=test_outputs)
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
 def test_input_plan_comparison_activity_start_zero():
@@ -277,7 +277,7 @@ def test_input_plan_comparison_activity_start_zero():
         config,
         mode='all',
     )
-    score, df = test_bm.build({}, write_path=test_outputs)
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
 def test_input_plan_comparison_activity_duration_zero():
@@ -287,7 +287,7 @@ def test_input_plan_comparison_activity_duration_zero():
         config,
         mode='all',
     )
-    score, df = test_bm.build({}, write_path=test_outputs)
+    score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
 def test_duration_comparison_score_zero():
