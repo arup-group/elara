@@ -1273,11 +1273,13 @@ class InputPlanComparisonTripStart(PlanComparisonTripStart):
             'input_trip_logs_all_trips.csv'
         )
 
-        super().__init__(
-            config,
-            benchmark_data_path=self.benchmark_data_path,
-            **kwargs
-        )
+        super().__init__(config)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
 
 
 class PlanComparisonTripDuration(CsvComparison):
@@ -1293,17 +1295,20 @@ class PlanComparisonTripDuration(CsvComparison):
 class InputPlanComparisonTripDuration(PlanComparisonTripDuration):
     requirements = ['trip_logs', 'input_trip_logs']
 
-    def __init__(self, config, **kwargs) -> None: 
+    def __init__(self, config, **kwargs) -> None:
+
         self.benchmark_data_path = os.path.join(
             config.output_path,
             'input_trip_logs_all_trips.csv'
         )
 
-        super().__init__(
-            config,
-            benchmark_data_path=self.benchmark_data_path,
-            **kwargs
-        )
+        super().__init__(config, **kwargs)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
 
 
 class PlanComparisonActivityStart(CsvComparison):
@@ -1325,11 +1330,13 @@ class InputPlanComparisonActivityStart(PlanComparisonActivityStart):
             'input_trip_logs_all_activities.csv'
         )
 
-        super().__init__(
-            config,
-            benchmark_data_path=self.benchmark_data_path,
-            **kwargs
-        )
+        super().__init__(config, **kwargs)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
 
 
 class PlanComparisonActivityDuration(CsvComparison):
@@ -1351,11 +1358,13 @@ class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
             'input_trip_logs_all_activities.csv'
         )
 
-        super().__init__(
-            config,
-            benchmark_data_path=self.benchmark_data_path,
-            **kwargs
-        )
+        super().__init__(config, **kwargs)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
 
 
 # ========================== Old style BMs below ==========================
