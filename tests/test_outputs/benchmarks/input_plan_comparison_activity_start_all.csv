@@ -1,0 +1,16 @@
+agent,seq,start_s_bm,start_s_sim,difference,abs_difference
+chris,1,0,0,0,0
+chris,2,25654,25654,0,0
+chris,3,59863,59863,0,0
+fatema,1,0,0,0,0
+fatema,2,31951,31951,0,0
+fatema,3,66151,66151,0,0
+fred,1,0,0,0,0
+fred,2,31578,31578,0,0
+fred,3,63978,63978,0,0
+gerry,1,0,0,0,0
+gerry,2,27978,27978,0,0
+gerry,3,63978,63978,0,0
+nick,1,0,0,0,0
+nick,2,28804,28804,0,0
+nick,3,63454,63454,0,0
