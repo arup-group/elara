@@ -16,7 +16,7 @@ The module is intended to provide a summary of individual and combined benchmark
 
 There are several types of comparisons within the module, some traditional "benchmarks" such as flow counters and some less traditional:
 
-- [Trip Based Mode Shares and Counts](https://github.com/arup-group/elara/benchmarks.md#trip-based-mode-shares-and-counts)
+- [Trip Based Mode Shares and Counts](#trip-based-mode-shares-and-counts)
 - [Plan Based Mode Counts and Shares](https://github.com/arup-group/elara/benchmarks.md#plan-based-mode-shares-and-counts)
 - [Trip Distance and Duration Distributions](https://github.com/arup-group/elara/benchmarks.md#trip-distance-and-duration-distributions)
 - [Cordons, ScreenLines and Counters](https://github.com/arup-group/elara/benchmarks.md#cordons,-screenlines-and-counters)
