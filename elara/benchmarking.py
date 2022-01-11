@@ -61,7 +61,7 @@ class CsvComparison(BenchmarkTool):
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
         bm_df.columns = self.output_value_fields
-        bm_df.fillna(0, inplace=True)
+        bm_df.dropna(0, inplace=True)
 
         if self.plot is True:
             self.plot_comparison(bm_df)
