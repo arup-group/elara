@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <events version="1.0">
+	<event time="200.0" type="personMoney" person="fred" amount="-5" purpose="toll"/>
+	<event time="300.0" type="personMoney" person="fred" amount="-10" purpose="toll"/>
+	<event time="400.0" type="personMoney" person="chris" amount="-1" purpose="toll"/>
+	<event time="500.0" type="personMoney" person="pt_bus1_bus" amount="-1" purpose="toll"/>
 	<event time="25200.0" type="actend" person="gerry" link="1-2" actType="home"  />
 	<event time="25200.0" type="departure" person="gerry" link="1-2" legMode="transit_walk"  />
 	<event time="25200.0" type="actend" person="chris" link="1-2" actType="home"  />

@@ -1452,8 +1452,30 @@ def test_agent_tolls_finalise(test_config, person_toll_events, input_manager):
     assert results == target
     assert results_grouped == target_grouped
 
-# Event Handler Manager
-def test_load_event_handler_manager(test_config, test_paths):
+
+# Event Handler Manager Load all tools with car mode
+def test_load_all_event_handler_manager_with_mode_car(test_config, test_paths):
+    input_workstation = inputs.InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+    event_workstation = EventHandlerWorkStation(test_config)
+    event_workstation.connect(managers=None, suppliers=[input_workstation])
+    event_workstation.load_all_tools(mode='car')
+    event_workstation.build(write_path=test_outputs)
+
+    for handler_name, handler in event_workstation.resources.items():
+        for name, gdf in handler.result_dfs.items():
+            if 'agent_tolls_log' not in name:  # handler does not conform to test criteria
+                cols = list(range(handler.config.time_periods))
+                for c in cols:
+                    assert c in gdf.columns
+                df = gdf.loc[:, cols]
+                assert np.sum(df.values)
+
+
+# Event Handler Manager Load all tools with bus mode
+def test_load_all_event_handler_manager_with_mode_bus(test_config, test_paths):
     input_workstation = inputs.InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
     input_workstation.load_all_tools()
@@ -1472,3 +1494,23 @@ def test_load_event_handler_manager(test_config, test_paths):
                 df = gdf.loc[:, cols]
                 assert np.sum(df.values)
 
+
+# Event Handler Manager Load all tools with car mode and groupby subpopulation
+def test_load_all_event_handler_manager_with_mode_car_and_groupby_subpopulation(test_config, test_paths):
+    input_workstation = inputs.InputsWorkStation(test_config)
+    input_workstation.connect(managers=None, suppliers=[test_paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+    event_workstation = EventHandlerWorkStation(test_config)
+    event_workstation.connect(managers=None, suppliers=[input_workstation])
+    event_workstation.load_all_tools(mode='car', groupby_person_attribute="subpopulation")
+    event_workstation.build(write_path=test_outputs)
+
+    for handler_name, handler in event_workstation.resources.items():
+        for name, gdf in handler.result_dfs.items():
+            if 'agent_tolls_log' not in name:  # handler does not conform to test criteria
+                cols = list(range(handler.config.time_periods))
+                for c in cols:
+                    assert c in gdf.columns
+                df = gdf.loc[:, cols]
+                assert np.sum(df.values)

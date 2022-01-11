@@ -27,7 +27,10 @@ jobs:
         sudo apt-get install ca-certificates
         export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
         pip install GDAL==3.0.2
-        pip install -r requirements.txt
+        pip install .
+    - name: Check install
+      run: |
+        elara --help
     - name: Lint with flake8
       run: |
         pip install flake8
@@ -37,6 +40,9 @@ jobs:
       run: |
         export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
         ./scripts/code-coverage.sh
+    - name: Smoke test example_configs directory
+      run: |
+        ./scripts/example_configs_smoke_test.sh
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:

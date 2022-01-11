@@ -33,7 +33,7 @@ trip_modes = ["all"]
 vkt = ["car"]
 
 [benchmarks]
-test_link_cordon = ["car"]
+link_counter_comparison = {modes=["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
 
 [outputs]
 path = "./tests/test_intermediate_data"
