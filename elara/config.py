@@ -92,7 +92,7 @@ class Config:
         
         # load inputs input directory if provided
         if self.inputs_directory:
-            self.logger.info(f"Using Directory {self.inputs_directory} for inputs")
+            self.logger.info(f"Using directory {self.inputs_directory} for inputs")
             self.set_inputs_from_directory(self.inputs_directory)
 
         if not os.path.exists(self.output_path):
@@ -426,6 +426,18 @@ class Config:
         output_dir = self.settings['outputs']['path'].split('/')[-1]
         self.settings['outputs']['path'] = os.path.join(path_override, output_dir)
         self.output_path = os.path.join(path_override, output_dir)
+
+        if dump_log:
+            self.dump_settings_to_disk(
+                os.path.join(path_override, "elara_override_log.json")
+            )
+
+    def output_directory_override(self, path_override, dump_log=False):
+        """
+        :param path_override: override the config output path
+        "param dump_log: (bool) optionally dump overriden config to disk
+        """
+        self.output_path = path_override
 
         if dump_log:
             self.dump_settings_to_disk(

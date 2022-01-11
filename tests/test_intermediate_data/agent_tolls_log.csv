@@ -1,0 +1,4 @@
+,agent_id,toll_amount,time,class
+0,fred,5.0,200.0,poor
+1,fred,10.0,300.0,poor
+2,chris,1.0,400.0,rich

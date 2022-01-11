@@ -38,7 +38,7 @@ def test_config_set_paths_roots_to_input_fields_and_output_path_and_bm_data_path
     assert config.settings['inputs']['road_pricing'] == os.path.join(root, road_pricing)
     assert config.settings['outputs']['path'] == os.path.join(root, out_path)
     assert config.output_path == os.path.join(root, out_path)
-    assert config.settings['benchmarks']['duration_comparison']['benchmark_data_path'] == os.path.join(root, bm_data_path)
+    assert config.settings['benchmarks']['duration_breakdown_comparison']['benchmark_data_path'] == os.path.join(root, bm_data_path)
 
 
 def test_dump_overrides_to_json(tmpdir):

@@ -471,6 +471,8 @@ class WorkStation:
         """
         self.logger.info(f"Loading all tools for {self.__str__()}")
         for name, tool in self.tools.items():
+            if tool.invalid_modes and mode in tool.invalid_modes:
+                continue
             if mode is None and tool.valid_modes is not None:
                 mode = tool.valid_modes[0]
             self.resources[name] = tool(self.config, mode=mode, groupby_person_attribute=groupby_person_attribute)

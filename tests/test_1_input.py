@@ -125,14 +125,14 @@ def test_loading_xml_events(test_xml_config, test_paths):
     events = inputs.Events(test_xml_config)
     events.build(test_paths.resources)
     num_events = sum(1 for _ in events.elems)
-    assert num_events == 190
+    assert num_events == 194
 
 
 def test_loading_gzip_events(test_gzip_config, test_zip_paths):
     events = inputs.Events(test_gzip_config)
     events.build(test_zip_paths.resources)
     num_events = sum(1 for _ in events.elems)
-    assert num_events == 190
+    assert num_events == 194
 
 
 # Modemap

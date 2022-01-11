@@ -93,11 +93,18 @@ The road pricing config is required when using the (deprecated) ``toll_log`` pla
 Elara supports and can be selectively configured to output a growing number of outputs. The units responsible
 for each output are often referred to as 'handlers', although `elara.factory` describes them more generally as `Tools`.
 
-There are four main types of handler/tools, arranged into python modules. `elara.factory` refers to these groups as `WorkStations`:
+There are four main types of handler/tools, arranged into python modules:
 
-*Users are encouraged to add new tools as they require. The below lists are updated periodically but may not be complete.* 
+* elara.event_handlers
+* elara.plan_handlers
+* elara.postprocessing
+* elara.benchmarking
 
-### **Event Handlers/WorkStation Tools**:
+Within each module a `WorkStation` is responsible for orchestrating all that modules tools. The `elara.factory` module is then responsible for orchestratinig all the `Workstations` together.
+
+### **Event Handlers/WorkStation Tools**
+
+*Users are encouraged to add new tools as they require. The below lists are updated periodically but may not be complete.*
 
 These are processed by streaming (in order) through all output events from simulation.
 
@@ -115,9 +122,9 @@ Currently supported handlers include:
 * ``vehicle_passenger_graph``: Experimental support for building interaction graph objects (networkx).
 * ``agent_tolls_log``: Produce a log and 24-hour summary (total amount, number of tolls incurred) of agents' tolling events.
 
-### **Plan Handlers/WorkStation Tools**:
+### **Plan Handlers/WorkStation Tools**
 
-These are processed by streaming through all output plans from simulation. 
+These are processed by streaming through all output plans from simulation.
 Compared to the event based outputs these are typically more aggregate but can be computationally faster and can be used to expose agent plan
 'memories' and plan scoring.
 
@@ -134,7 +141,7 @@ Currently supported handlers include:
 * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 * **(DEPRECATED)** ``toll_logs``: Produces summary of amounts agents paid at tolls based on route information contained in agent plans. Requires road pricing input file. Only works for option ``["car"]``. *The AgentTollsPaidFromRPConfig handler is still supported, but has been superseded by an event handler. This handler calculates toll payments via a link-lookup with the road pricing configuration file, and will not account for any in-simulation adjustments for differential or capped road pricing.*
 
-### **Post Processing Handlers/Workstation Tools**:
+### **Post Processing Handlers/Workstation Tools**
 
 These are outputs produced through additional post-processing of the above outputs. Currently supported postprocessors include:
 
@@ -143,32 +150,15 @@ These are outputs produced through additional post-processing of the above outpu
 * ``trip_euclid_distance_breakdown``: Produce binned trip distances.
 * ``plan_summary``: Produce summary statistics for all agent plans
 
-### **Benchmarking Handlers/WorkStation Tools**:
+### **Benchmarking Handlers/WorkStation Tools**
 
-Elara can also assist with validation or 'benchmarking' of simulations. Elara will compare and present simulation results from the above outputs to available benchmarks, it will aditionally output a distance based score for the model. Where distance is some measure of how different the simulation is from the observed data. 
+Elara can also assist with validation or 'benchmarking' of simulations. Elara will compare and present simulation results from the above outputs to available benchmarks, it will aditionally output a distance based score for the model. Where distance is some measure of how different the simulation is from the observed data.
 
-The handlers in this module require correctly formatted benchmark data. Examples can be found in the project `example_benchmark_data` folder.
-
-Currently available benchmarks include:
-
-* ``trip_mode_shares_comparison``
-* ``trip_activity_mode_shares_comparison``
-* ``trip_mode_counts_comparison``
-* ``trip_activity_mode_counts_comparison``
-* ``plan_mode_shares_comparison``
-* ``plan_activity_mode_shares_comparison``
-* ``plan_mode_counts_comparison``
-* ``plan_activity_mode_counts_comparison``
-* ``euclidean_distance_comparison``
-* ``duration_comparison``
-* ``link_counter_comparison``
-* ``transit_interaction_comparison``
+The handlers in this module require correctly formatted benchmark data. Examples can be found in the project `example_benchmark_data` folder. This documentation has been moved to [here](https://github.com/arup-group/elara/benchmarks.md).
 
 ## Running from a Configuration File
 
-For reproducibility or to process a range of outputs, configuration is the most sensible and processing efficient way to use Elara.
-
-Once Elara is installed configuration is accessed via a simple CLI command:
+For reproducibility or to process a range of outputs, using a config file is the most sensible and processing efficient way to use Elara. From your terminal:
 
 `elara run <CONFIG PATH>`
 
@@ -212,13 +202,6 @@ vkt = ["car"]
 plan_summary = ["all"]
 trip_duration_breakdown = ["all"]
 trip_euclid_distance_breakdown = ["all"]
-
-[benchmarks]
-test_mode_shares_comparison = ["all]
-test_duration_comparison = ["all"]
-test_euclidean_distance_comparison = ["all"]
-test_pt_interaction_counter = ["bus"]
-test_link_cordon = ["car"]
 ```
 
 You can run this config on some toy data: `elara run example_configs/config.toml` (from the project root).
@@ -247,9 +230,7 @@ Commands:
 
 ```
 
-Further commands can then be explored. In general the commands and options available follow the same structure as configuration. An example is shown below.
-
-The example command shown in the example is runnable from inside the `tests/test_fixtures` folder of the project.
+Further commands can then be explored. In general the commands and options available follow the same structure as configuration.
 
 ```{sh}
 $ elara event-handlers volume-counts --help
@@ -291,7 +272,7 @@ or, more succinctly:
 
 `elara post-processors vkt car -i ~/DIFFERENT/DATA/LOCATION`
 
-To roduce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
+To reduce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
 a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~/Data/nz_test':
 
 `elara event-handlers volume-counts car bus -epsg EPSG:2113 -scale_factor .01 -name nz_test 
@@ -303,7 +284,7 @@ or, much more succinctly:
 
 To produce a **benchmark**, in this case we assume that a benchmark has already been created called and that it works for all modes.
 
-`elara benchmarks mode_shares_comparison all -e "ESPG:2157"`
+`elara benchmarks mode_shares_comparison all`
 
 Note that we are assuming that all other option defaults are correct. ie:
 
@@ -317,56 +298,81 @@ Note that we are assuming that all other option defaults are correct. ie:
 
 Configured fields are described below:
 
-**[scenario].name** *string* *(required)*
+**[scenario]**
+
+**name** *string* *(required)*
 
 The name of the scenario being processed.
 
-**[scenario].time_periods** *integer* *(required)*
+**time_periods** *integer* *(required)*
 
 The number of time slices used to split a 24-hour period for the purposes of reporting. A value 
 of ``24`` will produce summary metrics for each our of the day. Similarly, a value of ``96`` will produce 15-minute summaries.
 
-**[scenario].scale_factor** *float* *(required)*
+**scale_factor** *float* *(required)*
 
 The sample size used in the originating MATSim scenario run. This is used to scale metrics such as volume counts. For example, if the underlying scenario was run with a 25% sample size, a value of ``0.25`` in this field will ensure that all calculated volume counts are scaled by 4 times.
 
- **[scenario].version** *int {11,12}* *(default 12)*
+ **version** *int {11,12}* *(default 12)*
 
 Set `version = 11` if using MATSim version 11 outputs (in which case there a personAttributes file will be required).
 
-**[scenario].using_experienced_plans** *boolean {true, false}* *(default true)*
+**using_experienced_plans** *boolean {true, false}* *(default true)*
 
 If using MATSim "experienced_plans" you should set this flag to 'true'.
 
-**[scenario].crs** *string* *(required)*
+**crs** *string* *(required)*
 
 The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This is used to convert the results to WGS 84 as required.
 
-**[scenario].verbose** *string* *(required)*
+**verbose** *string* *(required)*
 
 Logging module [level](https://docs.python.org/3/library/logging.html#levels), for example, either ERROR, WARNING, INFO or DEBUG.
 
-**[inputs].inputs_directory** *path*
+**[inputs]**
+
+**inputs_directory** *path*
 Path to a directory containing MATSim Outputs. A convenient override for setting paths to standard MATSim outputs using a single line. Handles network, plans, attributes, events, transit vehicles, transit schedule, output config files.
 
-**[inputs].events** *file*
+**events** *file*
 
 Path to the MATSim events XML file. Can be absolute or relative to the invocation location.
 
-**[inputs].network** *file* 
+**.network** *file*
 Path to the MATSim network XML file. Can be absolute or relative to the invocation location.
 
-**[inputs].etc** *file*
+**etc** *file*
 
-Path to additional MATSim resources.
+Path to additional MATSim resources:
 
-**[outputs].path** *directory* *(required)*
+* transit_schedule
+* transit_vehicles
+* attributes
+* plans
+* output_config_path
+* road_pricing
+
+**[outputs]**
+
+**path** *directory* *(required)*
 
 Desired output directory. Can be absolute or relative to the invocation location. If the directory does not exist it will be created.
 
-**[event_handlers].[NAME]** *list of strings as below* *(all optional)*
+**[event_handlers]**
 
-The associated list attached to each handler allows specification of which network modes should be processed using that handler. This allows certain handlers to be activated for specific modes.
+**[NAME]** *list of strings as below* *(all optional)*
+
+Specification of the plan handlers to be run during processing. For example:
+
+```{toml}
+[event_handlers]
+link_vehicle_counts = ["car", "bus"]
+link_passenger_counts = ["bus"]
+```
+
+All available event handlers are described in [Output Handlers](https://github.com/arup-group/elara#output-handlers).
+
+The associated list attached to each handler allows specification of the network modes to be processed using that handler. This allows certain handlers to be activated for specific modes.
 
 * modes should be supplied as a list eg ``["car", "bus", "train", ...]`` or just ``["car"]``.
 * note that ``waiting_times`` only supports the option of ``["all"]``.
@@ -374,24 +380,44 @@ The associated list attached to each handler allows specification of which netwo
 
 The above format of `HANDLER_NAME = ["car", "bus"]` is a shorthand way of passing options. These options can also be passed in a dictionary format, ie `HANDLER_NAMES = {modes=["car","bus"]}`. More complex configuration options using this dictionary option are described later.
 
-**[plan_handlers].[NAME]** *list of strings as below* *(optional)*
+**[plan_handlers]**
 
-Specification of the plan handlers to be run during processing.
+**[NAME]** *list of strings as below* *(optional)*
 
-Handler allows specification of additional options:
+Specification of the plan handlers to be run during processing. For example:
 
-* in many cases the only modes supported are ``["all"]`` (this is a default), but some handlers, such as distance logs support modes as an option as per the events handlers above.
+```{toml}
+[plan_handlers]
+trip_modes = ["all"]
+trip_logs
+agent_highway_distance_logs = ["car"]
+```
+
+All available event handlers are described in [Output Handlers](https://github.com/arup-group/elara#output-handlers).
+
+The associated list attached to each handler allows specification of the network modes to be processed using that handler. This allows certain handlers to be activated for specific modes.
+
+* in many cases the only modes supported are ``["all"]`` (this is a default, demonstrated in the above example for `trip_logs`).
 * highway_distances only supports the mode ``car``
 
-**post_processors.[post-processor name]** *list of strings* *(optional)*
+**[post_processors]**
 
-Specification of the event handlers to be run post processing. Currently available handlers include:
+**[NAME]** *list of strings* *(optional)*
+
+Specification of the event handlers to be run post processing. For example:
+
+```{toml}
+[post_processors]
+vkt = ["car"]
+plan_summary = ["all"]
+trip_duration_breakdown = ["all"]
+```
 
 The associated list attached to each handler allows specification of which modes of transport 
-should be processed using that handler:
+should be processed using that handler.
 
 * modes should be supplied as a list eg ``["car", "bus", "train", ...]`` or just ``["car"]``.
-* note that ``plan_summary`` only support the option of ``["all"]``.
+* note that ``plan_summary`` and `breakdowns` only support the option of ``["all"]``.
 
 ### Additional Options
 
@@ -494,48 +520,7 @@ plans= "./tests/test_fixtures/output_experienced_plans.xml"
 
 This allows elara to access person attributes from the standard output_plans, while taking plans from the output_experienced_plans. This is not necessary if groupby_person_attributes are not required.
 
-This guidance does apply when using MATSim version 11 and below, because attributes must always be set explicitly to the relevant `output_personAttributes.xml` file. 
-
-### Benchmarks
-
-Benchmarks provide functionality to compare standard elara outputs to observed data. Benchmarks require passing of the observed data as an additional option. This data must be formatted as the benchmark handler expects. Examples can be found in `./example_benchmark_data/`.
-
-Benchmarks are added to the config as follows:
-
-**[benchmarks].[NAME]** *list of strings below* *(optional)*
-
-Specification of the benchmarks to be run. These include a variety of highway counters, 
-cordons and mode share benchmarks.
-
-Benchmarks take a `benchmark_data_path` option in addition to regular options. This is used to pass the required scenario data for comparison. The scenario data must match the required format for the benchmark handler. Example benchmark data can be found in `./example_benchmark_data/`.
-
-Note that benchmarks are often mode specific and should be configured as such, eg:
-
-* ``link_counter_comparison = {modes=["car"], benchmark_data_path = "path/to/data"}``
-
-*'Normalised' output plots refer to total volumes normalised by number of counters, so figure shows profile for the 'average' counter.*
-
-### Naming Handlers
-
-The toml config format prevents duplicating keys, such that it is not possible to use the same handler twice, eg:
-
-```{.toml}
-[benchmarks]
-duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
-duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all_ALTERNATE.csv"}
-```
-
-Will throw an error due to the duplicated toml key `duration_comparison`.
-
-Therefore Elara allows the use of an additional syntax to name the handlers: `{HANDLER_KEY}--{UNIQUE_IDENTIFIER}`, eg:
-
-```{.toml}
-[benchmarks]
-duration_comparison = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
-duration_comparison--ALTERNATE = {benchmark_data_path = "./benchmark_data/test_fixtures/trip_duration_breakdown_all_ALTERNATE.csv"}
-```
-
-Outputs from the named handlers will be similalry named. An example config using naming is included: `./example_configs/using_benchmarks.toml`
+This guidance does apply when using MATSim version 11 and below, because attributes must always be set explicitly to the relevant `output_personAttributes.xml` file.
 
 ## Tests
 

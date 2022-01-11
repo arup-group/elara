@@ -678,7 +678,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             return [min_subpop, min_pop]
 
         def flatten_subpops(self, subpop_matrix):
-            names = ['elem', self.groupby_person_attribute, 'hour']
+            names = ['elem', 'class', 'hour']
             indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
             index = pd.MultiIndex.from_product(indexes, names=names)
             df = pd.DataFrame(subpop_matrix.flatten(), index=index)[0]
@@ -697,6 +697,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             average_speeds = flatten_subpops(self, self.inverseduration_sum)
             average_speeds = self.elem_gdf.join(average_speeds, how="left")
             average_speeds = calc_speeds(self, average_speeds)
+            average_speeds.index.name = "id"
             self.result_dfs[key] = average_speeds
 
         # Calc average at pop level
@@ -715,6 +716,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             max_speeds = flatten_subpops(self, calc_max_matrices(self)[0])
             max_speeds = self.elem_gdf.join(max_speeds, how="left")
             max_speeds = calc_speeds(self, max_speeds)
+            max_speeds.index.name = "id"
             self.result_dfs[key] = max_speeds
 
         # Calc max at pop level
@@ -734,6 +736,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             min_speeds = flatten_subpops(self, min_matrix)
             min_speeds = self.elem_gdf.join(min_speeds, how="left")
             min_speeds = calc_speeds(self, min_speeds)
+            min_speeds.index.name = "id"
             self.result_dfs[key] = min_speeds
 
         # Calc max at pop level
@@ -2124,16 +2127,20 @@ class AgentTollsLog(EventHandlerTool):
 
         if self.groupby_person_attribute:
 
-            key = f"{self.name}_summary_{self.groupby_person_attribute}"
+            if "class" in df.columns:
 
-            grouper = df.groupby('class')
-            df_grouped = grouper.agg({'toll_total': ['sum', 'mean', 'count'], 'tolls_incurred': 'sum'})
-            df_grouped.droplevel(0, axis=1)
-            df_grouped.columns = [
-                'toll_total', 'avg_per_agent', 'tolled_agents', 'tolls_incurred'
-            ]
-
-            self.result_dfs[key] = df_grouped
+                key = f"{self.name}_summary_{self.groupby_person_attribute}"
+                grouper = df.groupby('class')
+                df_grouped = grouper.agg({'toll_total': ['sum', 'mean', 'count'], 'tolls_incurred': 'sum'})
+                df_grouped.droplevel(0, axis=1)
+                df_grouped.columns = [
+                    'toll_total', 'avg_per_agent', 'tolled_agents', 'tolls_incurred'
+                ]
+                self.result_dfs[key] = df_grouped
+            else:
+                self.logger.warning(
+                    "groupby person attribute failed for {self} - no 'class' column found in df"
+                    )
 
         del self.toll_log_summary
 
