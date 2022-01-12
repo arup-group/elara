@@ -68,8 +68,7 @@ class Config:
             self.settings = self.default_settings
 
         # convert list-format handler arguments to dictionary
-        for handler_group in [
-            'event_handlers', 'plan_handlers', 'input_plan_handlers', 'post_processors','benchmarks']:
+        for handler_group in ['event_handlers', 'plan_handlers', 'input_plan_handlers', 'post_processors','benchmarks']:
             for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]

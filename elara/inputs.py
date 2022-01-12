@@ -626,6 +626,7 @@ class Plans(InputTool):
         """
         super().build(resources)
 
+        # call by list index so 'input_plans' can be used by InputPlans
         path = resources[self.requirements[0]].path
 
         self.plans = get_elems(path, "plan")
