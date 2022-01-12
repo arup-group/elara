@@ -626,7 +626,8 @@ class Plans(InputTool):
         """
         super().build(resources)
 
-        path = resources['plans_path'].path
+        # call by list index so 'input_plans' can be used by InputPlans
+        path = resources[self.requirements[0]].path
 
         self.plans = get_elems(path, "plan")
         # self.persons = get_elems(path, "person")
@@ -640,6 +641,15 @@ class Plans(InputTool):
         for elem in iterator:
             if len(elem.find('./plan').getchildren()) > 0:
                 yield elem
+
+class InputPlans(Plans):
+    """
+    InputTool for iterating through plans used as inputs to a MATSim simulation.
+    Used to calculate agent choice differences in a given simulation.
+    """
+    requirements = ['input_plans_path']
+    plans = None
+    persons = None
 
 class OutputConfig(InputTool):
 
@@ -794,8 +804,6 @@ class RoadPricing(InputTool):
             tollname = 'missing'
         return ident, tollname
 
-        
-
 
 class InputsWorkStation(WorkStation):
     tools = {
@@ -807,6 +815,7 @@ class InputsWorkStation(WorkStation):
         'subpopulations': Subpopulations,
         'attributes': Attributes,
         'plans': Plans,
+        'input_plans': InputPlans,
         'output_config': OutputConfig,
         'mode_map': ModeMap,
         'road_pricing': RoadPricing,

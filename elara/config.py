@@ -51,6 +51,7 @@ class Config:
         self.logging = None
         self.event_handlers = None
         self.plan_handlers = None
+        self.input_plan_handlers = None
         self.post_processors = None
         self.benchmarks = None
         self.output_path = None
@@ -67,7 +68,7 @@ class Config:
             self.settings = self.default_settings
 
         # convert list-format handler arguments to dictionary
-        for handler_group in ['event_handlers','plan_handlers','post_processors','benchmarks']:
+        for handler_group in ['event_handlers', 'plan_handlers', 'input_plan_handlers', 'post_processors','benchmarks']:
             for handler in self.settings.get(handler_group, [None]):
                 if handler:
                     options = self.settings[handler_group][handler]
@@ -143,6 +144,7 @@ class Config:
 
         self.event_handlers = self.settings.get("event_handlers", {})
         self.plan_handlers = self.settings.get("plan_handlers", {})
+        self.input_plan_handlers = self.settings.get("input_plan_handlers", {})
         self.post_processors = self.settings.get("post_processors", {})
         self.benchmarks = self.settings.get("benchmarks", {})
 
@@ -173,7 +175,7 @@ class Config:
     def inputs_directory(self):
         inputs_path = self.settings["inputs"].get("inputs_directory")
         if inputs_path:
-            return self.valid_path(inputs_path, "inputs directory")
+            return self.valid_path(inputs_path, "inputs_directory")
         else:
             return None
 
@@ -187,6 +189,12 @@ class Config:
     def plans_path(self):
         return self.valid_path(
             self.settings["inputs"]["plans"], "plans"
+        )
+    
+    @property
+    def input_plans_path(self):
+        return self.valid_path(
+            self.settings["inputs"]["input_plans"], "input_plans"
         )
 
     @property
@@ -385,11 +393,9 @@ class Config:
             }
         )
         if not self.using_experienced_plans:
-            print('CONDITION 1')
             self.settings['inputs']['plans'] = 'output_plans.xml'
         
         if self.version == 12:
-            print('CONDITION 2')
             self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
             print('CONDITION 3')
@@ -511,6 +517,13 @@ class GetPlansPath(PathTool):
         super().build(resource)
         self.path = self.config.plans_path
 
+class GetInputPlansPath(PathTool):
+    path = None
+
+    def build(self, resource: dict, write_path=None):
+        super().build(resource)
+        self.path = self.config.input_plans_path
+
 
 class GetNetworkPath(PathTool):
     path = None
@@ -565,6 +578,7 @@ class PathFinderWorkStation(WorkStation):
         'crs': GetCRS,
         'events_path': GetEventsPath,
         'plans_path': GetPlansPath,
+        'input_plans_path': GetInputPlansPath,
         'network_path': GetNetworkPath,
         'attributes_path': GetAttributesPath,
         'transit_schedule_path': GetTransitSchedulePath,
@@ -590,6 +604,7 @@ class RequirementsWorkStation(WorkStation):
         reqs = {}
         reqs.update(self.config.event_handlers)
         reqs.update(self.config.plan_handlers)
+        reqs.update(self.config.input_plan_handlers)
         reqs.update(self.config.post_processors)
         reqs.update(self.config.benchmarks)
         return reqs

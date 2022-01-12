@@ -39,7 +39,7 @@ class PlanHandlerTool(Tool):
 
     def extract_mode_from_v11_route_elem(self, route_elem):
         """
-        Extract mode and route identifieers from a MATSim v12 route xml element.
+        Extract mode and route identifieers from a MATSim v11 route xml element.
         """
         route = route_elem.text.split('===')[-2]
         mode = self.resources['transit_schedule'].route_to_mode_map.get(route)
@@ -47,7 +47,7 @@ class PlanHandlerTool(Tool):
 
     def extract_routeid_from_v12_route_elem(self, route_elem):
         """
-        Extract mode and route identifieers from a route xml element.
+        Extract mode and route identifieers from a MATSim v11 route xml element.
         """
         route_dict = json.loads(route_elem.text.strip())
         route = route_dict["transitRouteId"]
@@ -88,7 +88,6 @@ class PlanHandlerTool(Tool):
             key: value for (key, value) in zip(list_in, range(0, len(list_in)))
         }
         return list_in, list_indices_map
-
 
     def mode_table_position(
         self,
@@ -242,7 +241,7 @@ class TripModes(ModeShares):
         :param elem: Plan XML element
         """
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
@@ -257,8 +256,8 @@ class TripModes(ModeShares):
                         route_elem = stage.xpath('route')[0]
                         mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
-                        
-                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        # ignore access and egress walk
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
                         trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
@@ -290,7 +289,7 @@ class PlanModes(ModeShares):
         """
         """
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
@@ -304,8 +303,8 @@ class PlanModes(ModeShares):
                         route_elem = stage.xpath('route')[0]
                         mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
-                        
-                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        # ignore access and egress walk
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
                         plan_modes[mode] = plan_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
@@ -313,7 +312,7 @@ class PlanModes(ModeShares):
                             continue
 
                 mode = self.get_furthest_mode(plan_modes)
-                            
+
                 x, y, z = self.mode_table_position(
                     mode,
                     attribute_class,
@@ -325,20 +324,25 @@ class PlanModes(ModeShares):
 
 class TripActivityModes(ModeShares):
     """
-    Extract mode shares for specified activities from plans. This handler takes a list of activities and computes the mode shares for each
-    independant activity trip. 
+    Extract mode shares for specified activities from plans.
+    This handler takes a list of activities and computes the mode shares for each independent activity trip.
     """
 
     def process_plans(self, elem):
         """
-        Iterate through the plans and produce counts / mode shares for trips to the destination activities specified in the list. 
-        This handler counts the longest travelling mode of the trip leg leading to each instance of the destination activity(ies) specified 
-        e.g. if the destination acitivity list consists of ['work_a', work_b] and a plan consists of the trips 
-        [home] --> (bus,11km) --> [work_a] --> (train, 10km) --> [work_b], the resulting counts will see (bus) +1 & (train) + 1.
+        Iterate through the plans and produce counts / mode shares for trips to
+        the destination activities specified in the list.
+
+        This handler counts the longest travelling mode of the trip leg leading to each instance of the
+        destination activity(ies) specified
+
+        e.g. if the destination acitivity list consists of ['work_a', work_b]
+        and a plan consists of the trips [home] --> (bus,11km) --> [work_a] --> (train, 10km) --> [work_b],
+        the resulting counts will see: (bus) +1 & (train) + 1.
         :param elem: Plan XML element
         """
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
@@ -352,8 +356,8 @@ class TripActivityModes(ModeShares):
                         route_elem = stage.xpath('route')[0]
                         mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
-                        
-                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        # ignore access and egress walk
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
                         trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
@@ -371,7 +375,7 @@ class TripActivityModes(ModeShares):
                                     attribute_class,
                                     end_time
                                 )
-                                self.mode_counts[x, y, z] += 1 
+                                self.mode_counts[x, y, z] += 1
                             # reset modes
                             trip_modes = {}
                         # update endtime for next activity
@@ -384,7 +388,7 @@ class PlanActivityModes(ModeShares):
         """
         """
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
@@ -399,8 +403,8 @@ class PlanActivityModes(ModeShares):
                         route_elem = stage.xpath('route')[0]
                         mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
-                        
-                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)  # ignore access and egress walk
+                        # ignore access and egress walk
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
                         trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
@@ -417,7 +421,7 @@ class PlanActivityModes(ModeShares):
                                     plan_modes[mode] = plan_modes.get(mode, 0) + distance
                             # reset modes
                             trip_modes = {}
-                            
+
                         # update endtime for next activity
                         end_time = convert_time_to_seconds(stage.get('end_time'))
 
@@ -428,7 +432,7 @@ class PlanActivityModes(ModeShares):
                         attribute_class,
                         0
                     )
-                    self.mode_counts[x, y, z] += 1 
+                    self.mode_counts[x, y, z] += 1
 
 
 class LegLogs(PlanHandlerTool):
@@ -439,10 +443,10 @@ class LegLogs(PlanHandlerTool):
     # todo make it so that 'all' option not required (maybe for all plan handlers)
 
     """
-    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
-    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
-    to calculate the start of the next activity. This results in time waiting to enter 
-    first link as being activity time. Therefore activity durations are slightly over reported 
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of
+    original init plan) and do not show activity start time. As a result, we use leg 'duration'
+    to calculate the start of the next activity. This results in time waiting to enter
+    first link as being activity time. Therefore activity durations are slightly over reported
     and leg duration under reported.
     """
 
@@ -496,11 +500,11 @@ class LegLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 activities = []
                 legs = []
-                
+
                 attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
                 leg_seq_idx = 0
@@ -562,7 +566,7 @@ class LegLogs(PlanHandlerTool):
                         leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
                         mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
-                        mode = {"egress_walk":"walk", "access_walk":"walk"}.get(mode, mode)
+                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
@@ -628,15 +632,16 @@ class LegLogs(PlanHandlerTool):
 class TripLogs(PlanHandlerTool):
 
     requirements = ['plans', 'transit_schedule', 'attributes']
-    valid_modes = ['all'] #mode and purpose options need to be enabled for post-processing cross tabulation w euclidian distance
+    # mode and purpose options need to be enabled for post-processing cross tabulation w euclidian distance
+    valid_modes = ['all']
 
-    # todo make it so that 'all' option not required (maybe for all plan handlers)
+    # TODO make it so that 'all' option not required (maybe for all plan handlers)
 
     """
-    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
-    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
-    to calculate the start of the next activity. This results in time waiting to enter 
-    first link as being activity time. Therefore activity durations are slightly over reported 
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of
+    original init plan) and do not show activity start time. As a result, we use leg 'duration'
+    to calculate the start of the next activity. This results in time waiting to enter
+    first link as being activity time. Therefore activity durations are slightly over reported
     and leg duration under reported.
     """
 
@@ -659,7 +664,6 @@ class TripLogs(PlanHandlerTool):
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
-
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -693,7 +697,7 @@ class TripLogs(PlanHandlerTool):
 
             attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 # check that plan starts with an activity
                 if not plan[0].tag == 'activity':
@@ -788,14 +792,25 @@ class TripLogs(PlanHandlerTool):
                     elif stage.tag == 'leg':
 
                         leg_mode = stage.get('mode')
-                        route_elem = stage.xpath('route')[0]
-                        distance = float(route_elem.get("distance", 0))
 
-                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        # check for route elements. these are used to infer modes when analyzing output plans
+                        # routes do not exist when analysing input plans (except when they are also simulation outputs)
+                        route_elem = stage.xpath('route')
+                        if route_elem:  # is not [], use route info
+                            route_elem = route_elem[0]
 
-                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
+                            distance = float(route_elem.get("distance", 0))
+
+                            mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+
+                            mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                            trip_distance += distance
+                        else:  # use leg info
+                            mode = leg_mode
+                            distance = 0  # don't know distances for unrouted trips
+
+                        # update mode dictionary with leg or route information
                         modes[mode] = modes.get(mode, 0) + distance
-                        trip_distance += distance
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
@@ -871,12 +886,12 @@ class UtilityLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 score = plan.get('score')
-                utilities = [{'agent': ident,'score': score}]
+                utilities = [{'agent': ident, 'score': score}]
                 self.utility_log.add(utilities)
-                
+
                 return None
 
     def finalise(self):
@@ -885,6 +900,7 @@ class UtilityLogs(PlanHandlerTool):
         """
         self.utility_log.finish()
 
+
 class PlanLogs(PlanHandlerTool):
     """
     Write log of all plans, including selection and score.
@@ -892,10 +908,10 @@ class PlanLogs(PlanHandlerTool):
     """
 
     """
-    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
-    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
-    to calculate the start of the next activity. This results in time waiting to enter 
-    first link as being activity time. Therefore activity durations are slightly over reported 
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of
+    original init plan) and do not show activity start time. As a result, we use leg 'duration'
+    to calculate the start of the next activity. This results in time waiting to enter
+    first link as being activity time. Therefore activity durations are slightly over reported
     and leg duration under reported.
     """
 
@@ -994,30 +1010,30 @@ class PlanLogs(PlanHandlerTool):
                             # record previous trip
                             trip_records.append(
                                 {
-                                "pid": ident,
-                                "subpop": attribute,
-                                # "license": license,
-                                "plan": pidx,
-                                "seq": trip_seq,
-                                "start": self.get_seconds(trip_start_time),
-                                "distance": distance(x, y, prev_x, prev_y),
-                                "mode": trip_mode,
-                                "prev_mode": prev_mode,
-                                "origin_activity": prev_act,
-                                "destination_activity": act_type,
-                                "act_duration": duration.seconds,
-                                "selected": selected,
-                                "score": score
+                                    "pid": ident,
+                                    "subpop": attribute,
+                                    # "license": license,
+                                    "plan": pidx,
+                                    "seq": trip_seq,
+                                    "start": self.get_seconds(trip_start_time),
+                                    "distance": distance(x, y, prev_x, prev_y),
+                                    "mode": trip_mode,
+                                    "prev_mode": prev_mode,
+                                    "origin_activity": prev_act,
+                                    "destination_activity": act_type,
+                                    "act_duration": duration.seconds,
+                                    "selected": selected,
+                                    "score": score
                                 }
                             )
-                        
+
                             prev_mode = trip_mode
 
                         prev_act = act_type
-                        in_transit = False    
+                        in_transit = False
                         prev_x = x
                         prev_y = y
-                        
+
                 elif stage.tag == 'leg':
 
                     leg_start_time = activity_end_dt
@@ -1062,6 +1078,7 @@ class PlanLogs(PlanHandlerTool):
         s = dt.second
         return s + (60 * (m + (60 * h)))
 
+
 class AgentTollsPaidFromRPConfig(PlanHandlerTool):
     """
     Deprecated in favour of AgentTollLogs Event Handler
@@ -1098,9 +1115,8 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
 
         # deprecation warning
         self.logger.warning("""
-            Plan tolls may differ from actual tolls paid. Use EventHandler. 
-        """
-        )
+            Plan tolls may differ from actual tolls paid. Use EventHandler.
+        """)
 
     def build(self, resources: dict, write_path=None) -> None:
         """
@@ -1113,8 +1129,10 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
 
         self.attributes = resources['attributes']
         self.roadpricing = resources['road_pricing']
-        self.toll_log = pd.DataFrame(columns = ["agent","subpopulation","tollname","link","time","toll"]) #df for results
-        
+        self.toll_log = pd.DataFrame(
+            columns=["agent", "subpopulation", "tollname", "link", "time", "toll"]
+        )  # df for results
+
     def process_plans(self, elem):
         """
         Iteratively check whether agent pays toll as part of their car trip and append to log.
@@ -1122,23 +1140,23 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         """
         ident = elem.get('id')
         attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
-        agent_in_tolled_space = [0,0] # {trip marker, whether last link was tolled}
+        agent_in_tolled_space = [0, 0]  # {trip marker, whether last link was tolled}
 
         def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
-            if current_link_tolled and agent_in_tolled_space[1] == False: #entering into tolled space from non-tolled space
-                return True
-            elif current_link_tolled and agent_in_tolled_space[1] == True and agent_in_tolled_space[0] != start_time: #already in a tolled space but starting new trip
-                return True
+            if current_link_tolled and agent_in_tolled_space[1] is False:
+                return True  # enter into tolled space from non-tolled space
+            elif current_link_tolled and agent_in_tolled_space[1] is True and agent_in_tolled_space[0] != start_time:
+                return True  # already in a tolled space but starting new trip
             else:
                 return False
-        
-        def get_toll(link,time): #assumes prices fed in chronological order
+
+        def get_toll(link, time):  # assumes prices fed in chronological order
             for elem in self.roadpricing.links[link]:
                 if time < elem.get('end_time'):
                     return elem.get('amount')
 
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 for stage in plan:
                     if stage.tag == 'leg':
@@ -1147,30 +1165,30 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
                         if not mode == self.mode:
                             continue
                         route = stage.xpath('route')[0].text.split(' ')
-                        
+
                         for i, link in enumerate(route):
                             if link in self.roadpricing.links:
                                 current_link_tolled = True
                             else:
                                 current_link_tolled = False
-                            
+
                             # append results to dictionary if toll applies
                             if apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
                                 toll_dictionary = {
                                                 "agent": ident,
                                                 "subpopulation": attribute,
-                                                "tollname":self.roadpricing.tollnames[link],
+                                                "tollname": self.roadpricing.tollnames[link],
                                                 "link": link,
                                                 "time": start_time,
-                                                "toll": get_toll(link,start_time)}
+                                                "toll": get_toll(link, start_time)}
                                 self.toll_log = self.toll_log.append(toll_dictionary, ignore_index=True)
-                            
-                            #update memory of last link
+
+                            # update memory of last link
                             if link in self.roadpricing.links:
                                 agent_in_tolled_space[1] = True
                             else:
                                 agent_in_tolled_space[1] = False
-                            agent_in_tolled_space[0] = start_time # use start time as a marker of unique leg
+                            agent_in_tolled_space[0] = start_time  # use start time as a marker of unique leg
 
     def finalise(self):
         """
@@ -1180,17 +1198,17 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         # log of individual toll events
         toll_log_df = self.toll_log
         toll_log_df['toll'] = pd.to_numeric(toll_log_df['toll'])
-        key = f"tolls_paid_log"
+        key = "tolls_paid_log"
         self.results[key] = toll_log_df
 
-        #total amount paid by each agent
-        aggregate_df = toll_log_df.groupby(by=['agent','subpopulation'])['toll'].sum()
-        key = f"tolls_paid_total_by_agent"
+        # total amount paid by each agent
+        aggregate_df = toll_log_df.groupby(by=['agent', 'subpopulation'])['toll'].sum()
+        key = "tolls_paid_total_by_agent"
         self.results[key] = aggregate_df
 
         # average amount paid by each agent within subpopulation
         aggregate_df = aggregate_df.reset_index().groupby(by=['subpopulation'])['toll'].mean()
-        key = f"tolls_paid_average_by_subpopulation"
+        key = "tolls_paid_average_by_subpopulation"
         self.results[key] = aggregate_df
 
 
@@ -1258,7 +1276,7 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         ident = elem.get('id')
 
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
+            if plan.get('selected') != 'no':
 
                 for stage in plan:
 
@@ -1383,8 +1401,8 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
         for plan in elem.xpath(".//plan"):
-            if plan.get('selected') == 'yes':
-                
+            if plan.get('selected') != 'no':
+
                 trips = []
                 trip_counter = None
                 trip_seq_idx = 0
@@ -1393,14 +1411,14 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
 
                     if stage.tag == 'activity':
                         if not stage.get('type') == 'pt interaction':
-                            
+
                             if trip_counter is not None:
                                 # record previous counts and move idx
                                 # this 'works' because plans must end with an activity
                                 trips.append(trip_counter)
-                            
+
                             trip_seq_idx += 1
-                            
+
                             # set counter
                             trip_counter = {
                                 'agent': ident,
@@ -1438,6 +1456,9 @@ class PlanHandlerWorkStation(WorkStation):
     """
     Work Station class for collecting and building Plans Handlers.
     """
+    # dict key to hand to supplier.resources
+    # allows handler to be subclassed by overriding
+    plans_resource = 'plans'
 
     tools = {
         "trip_modes": TripModes,
@@ -1457,7 +1478,6 @@ class PlanHandlerWorkStation(WorkStation):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
 
-
     def build(self, write_path=None):
         """
         Build all required handlers, then finalise and save results.
@@ -1472,8 +1492,8 @@ class PlanHandlerWorkStation(WorkStation):
         super().build()
 
         # iterate through plans
-        plans = self.supplier_resources['plans']
-        self.logger.info(f' *** Commencing Plans Iteration ***')
+        plans = self.supplier_resources[self.plans_resource]
+        self.logger.info(' *** Commencing Plans Iteration ***')
         base = 1
 
         for i, person in enumerate(plans.persons):
@@ -1537,12 +1557,11 @@ def matsim_time_to_datetime(
         idx=None,
         base_year=2020,
         base_month=4,
-        base_day=1,
-    ) -> datetime:
+        base_day=1,) -> datetime:
     """
-    Function to convert matsim time strings (hours,  minutes and seconds since start) 
+    Function to convert matsim time strings (hours,  minutes and seconds since start)
     to datetime objects (days, hours, minutes, seconds).
-    Raises a warning for backward time steps. To remmove backward time steps, consider 
+    Raises a warning for backward time steps. To remmove backward time steps, consider
     using the 'non_wrapping_datetime' method which has the same arguments.
     :param current_time: datetime from previous event
     :param new_time_str: new time string
@@ -1571,7 +1590,7 @@ def matsim_time_to_datetime(
 
 def safe_duration(start_time, end_time):
     """
-    Duration calculation that can cope with None as starting time. In which case assumes start time at start 
+    Duration calculation that can cope with None as starting time. In which case assumes start time at start
     of day (00:00:00).
     Returns tuple(datetime.timedelta, datetime.datetime)
     """

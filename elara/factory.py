@@ -38,7 +38,7 @@ class Tool:
 
     def __init__(
             self, config,
-            mode: Union[None, str] = None,
+            mode: Union[None, str] = 'all',
             groupby_person_attribute: Union[None, str] = None,
             **kwargs
     ) -> None:
@@ -96,8 +96,8 @@ class Tool:
                 requirements[req].pop("name", None)
                 requirements[req].pop("benchmark_data_path", None)
         else:
-            requirements = {req: None for req in self.requirements}
-
+            requirements = {req: {"modes": ["all"]} for req in self.requirements}
+            # requirements = {req: None for req in self.requirements}
         return requirements
 
     def build(
@@ -361,7 +361,7 @@ class WorkStation:
                                 }
                             
                             optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
-                            
+
                             for mode in modes:
                                 for groupby_person_attribute in groupby_person_attributes:
                                     # build unique key for tool initiated with option

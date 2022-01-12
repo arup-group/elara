@@ -8,6 +8,7 @@ from elara.helpers import PathPath, NaturalOrderGroup
 from elara.config import Config, RequirementsWorkStation, PathFinderWorkStation
 from elara.inputs import InputsWorkStation
 from elara.plan_handlers import PlanHandlerWorkStation
+from elara.input_plan_handlers import InputPlanHandlerWorkstation
 from elara.event_handlers import EventHandlerWorkStation
 from elara.postprocessing import PostProcessWorkStation
 from elara.benchmarking import BenchmarkWorkStation

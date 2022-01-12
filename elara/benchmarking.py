@@ -1,3 +1,4 @@
+from pandas.core import groupby
 from plotnine import ggplot, aes, geom_point, geom_line, geom_col, labs, theme, element_text
 import pandas as pd
 import os
@@ -41,6 +42,9 @@ class BenchmarkTool(Tool):
 
 class CsvComparison(BenchmarkTool):
 
+    plot = True
+    output_value_fields = ['trips_benchmark', 'trip_simulation']
+
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
         Compare two csv files (benchmark vs simulation), calculate and plot their differences
@@ -49,16 +53,20 @@ class CsvComparison(BenchmarkTool):
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
         self.logger.debug(f"Using indices '{self.index_fields}'")
         benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+
         simulation_path = os.path.join(self.config.output_path, self.simulation_name)
         self.logger.debug(f"Loading Simulation data from {simulation_path}")
         simulation_df = pd.read_csv(simulation_path, index_col=self.index_fields)
 
         # compare
         bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
-        bm_df.columns = ['trips_benchmark', 'trips_simulation']
-        bm_df.dropna(inplace=True)
-        self.plot_comparison(bm_df)
-        bm_df['difference'] = bm_df['trips_simulation'] - bm_df['trips_benchmark']
+        bm_df.columns = self.output_value_fields
+        bm_df.dropna(0, inplace=True)
+
+        if self.plot is True:
+            self.plot_comparison(bm_df)
+
+        bm_df['difference'] = bm_df[self.output_value_fields[0]] - bm_df[self.output_value_fields[1]]
         bm_df['abs_difference'] = bm_df.difference.abs()
 
         # write results
@@ -1227,6 +1235,120 @@ class PassengerStopToStop(BenchmarkTool):
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
+# ================= Input/Output Plan Comparison BMs  ====================
+
+class PlanComparisonTripStart(CsvComparison):
+    simulation_name = 'trip_logs_all_trips.csv'
+    requirements = ['trip_logs']
+    valid_modes = ['all']
+    index_fields = ['agent', 'seq']
+    value_field = 'start_s'
+    output_value_fields = ['start_s_bm', 'start_s_sim']
+    plot = False
+
+
+class InputPlanComparisonTripStart(PlanComparisonTripStart):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_trips.csv'
+        )
+
+        super().__init__(config)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
+
+
+class PlanComparisonTripDuration(CsvComparison):
+    simulation_name = 'trip_logs_all_trips.csv'
+    requirements = ['trip_logs']
+    valid_modes = ['all']
+    index_fields = ['agent', 'seq']
+    value_field = 'duration_s'
+    output_value_fields = ['duration_s_bm', 'duration_s_sim']
+    plot = False
+
+
+class InputPlanComparisonTripDuration(PlanComparisonTripDuration):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None:
+
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_trips.csv'
+        )
+
+        super().__init__(config, **kwargs)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
+
+
+class PlanComparisonActivityStart(CsvComparison):
+    simulation_name = 'trip_logs_all_activities.csv'
+    requirements = ['trip_logs']
+    valid_modes = ['all']
+    index_fields = ['agent', 'seq']
+    value_field = 'start_s'
+    output_value_fields = ['start_s_bm', 'start_s_sim']
+    plot = False
+
+
+class InputPlanComparisonActivityStart(PlanComparisonActivityStart):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_activities.csv'
+        )
+
+        super().__init__(config, **kwargs)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
+
+
+class PlanComparisonActivityDuration(CsvComparison):
+    simulation_name = 'trip_logs_all_activities.csv'
+    requirements = ['trip_logs']
+    valid_modes = ['all']
+    index_fields = ['agent', 'seq']
+    value_field = 'duration_s'
+    output_value_fields = ['duration_s_bm', 'duration_s_sim']
+    plot = False
+
+
+class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
+    requirements = ['trip_logs', 'input_trip_logs']
+
+    def __init__(self, config, **kwargs) -> None: 
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_activities.csv'
+        )
+
+        super().__init__(config, **kwargs)
+
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
+
 
 # ========================== Old style BMs below ==========================
 
@@ -1856,6 +1978,16 @@ class BenchmarkWorkStation(WorkStation):
         "link_counter_comparison": LinkCounterComparison,
         "transit_interaction_comparison": TransitInteractionComparison,
 
+        # plan comparisons
+        "plan_comparison_trip_start": PlanComparisonTripStart,
+        "input_plan_comparison_trip_start": InputPlanComparisonTripStart,
+        "plan_comparison_trip_duration": PlanComparisonTripDuration,
+        "input_plan_comparison_trip_duration": InputPlanComparisonTripDuration,
+        "plan_comparison_activity_start": PlanComparisonActivityStart,
+        "input_plan_comparison_activity_start": InputPlanComparisonActivityStart,
+        "plan_comparison_activity_duration": PlanComparisonActivityDuration,
+        "input_plan_comparison_activity_duration": InputPlanComparisonActivityDuration,
+      
         # new benchmarks - link speeds, trip durations
         "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
         "trip_durations_comparison": TripDurationsComparison,
