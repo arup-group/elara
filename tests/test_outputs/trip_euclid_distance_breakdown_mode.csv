@@ -1,25 +1,25 @@
 ,mode,euclidean_distance,trips
-0,bike,0 to 1 km,0
-1,bike,1 to 5 km,0
-2,bike,5 to 10 km,0
-3,bike,10 to 25 km,2
-4,bike,25 to 50 km,0
-5,bike,50 to 100 km,0
-6,bike,100 to 200 km,0
-7,bike,200+ km,0
-8,bus,0 to 1 km,0
-9,bus,1 to 5 km,0
-10,bus,5 to 10 km,0
-11,bus,10 to 25 km,4
-12,bus,25 to 50 km,0
-13,bus,50 to 100 km,0
-14,bus,100 to 200 km,0
-15,bus,200+ km,0
-16,car,0 to 1 km,0
-17,car,1 to 5 km,0
-18,car,5 to 10 km,2
-19,car,10 to 25 km,2
-20,car,25 to 50 km,0
-21,car,50 to 100 km,0
-22,car,100 to 200 km,0
-23,car,200+ km,0
+0,bike,0 to 1 km,0.0
+1,bike,1 to 5 km,0.0
+2,bike,5 to 10 km,0.0
+3,bike,10 to 25 km,20000.0
+4,bike,25 to 50 km,0.0
+5,bike,50 to 100 km,0.0
+6,bike,100 to 200 km,0.0
+7,bike,200+ km,0.0
+8,bus,0 to 1 km,0.0
+9,bus,1 to 5 km,0.0
+10,bus,5 to 10 km,0.0
+11,bus,10 to 25 km,40000.0
+12,bus,25 to 50 km,0.0
+13,bus,50 to 100 km,0.0
+14,bus,100 to 200 km,0.0
+15,bus,200+ km,0.0
+16,car,0 to 1 km,0.0
+17,car,1 to 5 km,0.0
+18,car,5 to 10 km,20000.0
+19,car,10 to 25 km,20000.0
+20,car,25 to 50 km,0.0
+21,car,50 to 100 km,0.0
+22,car,100 to 200 km,0.0
+23,car,200+ km,0.0

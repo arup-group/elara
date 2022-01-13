@@ -1,19 +1,19 @@
 ,d_act,duration,trips
-0,home,0 to 5 min,0
-1,home,5 to 10 min,2
-2,home,10 to 15 min,0
-3,home,15 to 30 min,1
-4,home,30 to 45 min,0
-5,home,45 to 60 min,1
-6,home,60 to 90 min,1
-7,home,90 to 120 min,0
-8,home,120+ min,0
-9,work,0 to 5 min,1
-10,work,5 to 10 min,1
-11,work,10 to 15 min,0
-12,work,15 to 30 min,0
-13,work,30 to 45 min,0
-14,work,45 to 60 min,3
-15,work,60 to 90 min,0
-16,work,90 to 120 min,0
-17,work,120+ min,0
+0,home,0 to 5 min,0.0
+1,home,5 to 10 min,20000.0
+2,home,10 to 15 min,0.0
+3,home,15 to 30 min,10000.0
+4,home,30 to 45 min,0.0
+5,home,45 to 60 min,10000.0
+6,home,60 to 90 min,10000.0
+7,home,90 to 120 min,0.0
+8,home,120+ min,0.0
+9,work,0 to 5 min,10000.0
+10,work,5 to 10 min,10000.0
+11,work,10 to 15 min,0.0
+12,work,15 to 30 min,0.0
+13,work,30 to 45 min,0.0
+14,work,45 to 60 min,30000.0
+15,work,60 to 90 min,0.0
+16,work,90 to 120 min,0.0
+17,work,120+ min,0.0

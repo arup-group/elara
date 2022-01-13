@@ -452,6 +452,38 @@ class DurationBreakdownComparison(CsvComparison):
     weight = 1
 
 
+class DurationModeBreakdownComparison(CsvComparison):
+
+    plot_type = "bar"
+
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
+        self.benchmark_data_path = benchmark_data_path
+
+    requirements = ['trip_duration_breakdown']
+    valid_modes = ['all']
+    index_fields = ['duration', 'mode']
+    value_field = 'trips'
+    simulation_name = 'trip_duration_breakdown_mode.csv'
+    weight = 1
+
+
+class DurationDestinationActivityBreakdownComparison(CsvComparison):
+
+    plot_type = "bar"
+
+    def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
+        super().__init__(config, mode=mode, **kwargs)
+        self.benchmark_data_path = benchmark_data_path
+
+    requirements = ['trip_duration_breakdown']
+    valid_modes = ['all']
+    index_fields = ['duration', 'd_act']
+    value_field = 'trips'
+    simulation_name = 'trip_duration_breakdown_d_act.csv'
+    weight = 1
+
+
 class EuclideanDistanceBreakdownComparison(CsvComparison):
 
     plot_type = "bar"
@@ -1973,6 +2005,8 @@ class BenchmarkWorkStation(WorkStation):
         # trip breakdowns - aggregate distribution comparisons
         "euclidean_distance_breakdown_comparison": EuclideanDistanceBreakdownComparison,
         "duration_breakdown_comparison": DurationBreakdownComparison,
+        "duration_mode_breakdown_comparison": DurationModeBreakdownComparison,
+        "duration_d_act_breakdown_comparison": DurationDestinationActivityBreakdownComparison,
 
         # traditional benchmarks - eg cordons etc
         "link_counter_comparison": LinkCounterComparison,

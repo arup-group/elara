@@ -254,9 +254,136 @@ Configuration and data as per the trip based equivalents.
 
 Compare trip distributions (binned)s.
 
+## duration_breakdown_comparison
+
+Compare histogram of trip durations to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
+
+***Support for durations by mode or group to be added.***
+
+### Example Configuration
+
+```{.toml}
+[benchmarks]
+duration_breakdown_comparison = {benchmark_data_path = PATH}
+```
+
+- `benchmark_data_path` (required) path to observed data for comparison
+- `modes` must be set to `modes = ["all"]`, (this is the default)
+
+### Benchmark (Observed) Data Format
+
+csv formatted as follows:
+
+```{csv}
+duration,trips
+0 to 5 min,1
+5 to 10 min,3
+10 to 15 min,0
+15 to 30 min,1
+30 to 45 min,0
+45 to 60 min,4
+60 to 90 min,1
+90 to 120 min,0
+120+ min,0
+```
+
+## duration_mode_breakdown_comparison
+
+Compare histogram of trip durations by mode to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
+
+***Support for durations by mode or group to be added.***
+
+### Example Configuration
+
+```{.toml}
+[benchmarks]
+duration_mode_breakdown_comparison = {benchmark_data_path = PATH}
+```
+
+- `benchmark_data_path` (required) path to observed data for comparison
+- `modes` must be set to `modes = ["all"]`, (this is the default)
+
+### Benchmark (Observed) Data Format
+
+csv formatted as follows:
+
+```{csv}
+,mode,duration,trips
+0,bike,0 to 5 min,0.0
+1,bike,5 to 10 min,0.0
+2,bike,10 to 15 min,0.0
+3,bike,15 to 30 min,0.0
+4,bike,30 to 45 min,0.0
+5,bike,45 to 60 min,20000.0
+6,bike,60 to 90 min,0.0
+7,bike,90 to 120 min,0.0
+8,bike,120+ min,0.0
+9,bus,0 to 5 min,0.0
+10,bus,5 to 10 min,0.0
+11,bus,10 to 15 min,0.0
+12,bus,15 to 30 min,10000.0
+13,bus,30 to 45 min,0.0
+14,bus,45 to 60 min,20000.0
+15,bus,60 to 90 min,10000.0
+16,bus,90 to 120 min,0.0
+17,bus,120+ min,0.0
+18,car,0 to 5 min,10000.0
+19,car,5 to 10 min,30000.0
+20,car,10 to 15 min,0.0
+21,car,15 to 30 min,0.0
+22,car,30 to 45 min,0.0
+23,car,45 to 60 min,0.0
+24,car,60 to 90 min,0.0
+25,car,90 to 120 min,0.0
+26,car,120+ min,0.0
+
+```
+
+## duration_d_act_breakdown_comparison
+
+Compare histogram of trip durations by destination activity to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
+
+***Support for durations by mode or group to be added.***
+
+### Example Configuration
+
+```{.toml}
+[benchmarks]
+duration_d_act_breakdown_comparison = {benchmark_data_path = PATH}
+```
+
+- `benchmark_data_path` (required) path to observed data for comparison
+- `modes` must be set to `modes = ["all"]`, (this is the default)
+
+### Benchmark (Observed) Data Format
+
+csv formatted as follows:
+
+```{csv}
+,d_act,duration,trips
+0,home,0 to 5 min,0.0
+1,home,5 to 10 min,20000.0
+2,home,10 to 15 min,0.0
+3,home,15 to 30 min,10000.0
+4,home,30 to 45 min,0.0
+5,home,45 to 60 min,10000.0
+6,home,60 to 90 min,10000.0
+7,home,90 to 120 min,0.0
+8,home,120+ min,0.0
+9,work,0 to 5 min,10000.0
+10,work,5 to 10 min,10000.0
+11,work,10 to 15 min,0.0
+12,work,15 to 30 min,0.0
+13,work,30 to 45 min,0.0
+14,work,45 to 60 min,30000.0
+15,work,60 to 90 min,0.0
+16,work,90 to 120 min,0.0
+17,work,120+ min,0.0
+```
+
 ## euclidean_distance_breakdown_comparison
 
-Compare histogram of trip distances to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam. Trip distances are euclidean rather than routed.
+Compare histogram of trip distances to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam. Trip distances are euclidean rather than routed. Therefore this is not generally intended as a benchmark as destination choice and therefore euclidean distance are not expected to change.
 
 ***Support for distances by mode or group to be added.***
 
@@ -285,39 +412,6 @@ euclidean_distance,trips
 100 to 200 km,0
 200+ km,0
 
-```
-
-## duration_breakdown_comparison
-
-Compare histogram of trip durations to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
-
-***Support for durations by mode or group to be added.***
-
-### Example Configuration
-
-```{.toml}
-[benchmarks]
-euclidean_distance_breakdown_comparison = {benchmark_data_path = PATH}
-```
-
-- `benchmark_data_path` (required) path to observed data for comparison
-- `modes` must be set to `modes = ["all"]`, (this is the default)
-
-### Benchmark (Observed) Data Format
-
-csv formatted as follows:
-
-```{csv}
-duration,trips
-0 to 5 min,1
-5 to 10 min,3
-10 to 15 min,0
-15 to 30 min,1
-30 to 45 min,0
-45 to 60 min,4
-60 to 90 min,1
-90 to 120 min,0
-120+ min,0
 ```
 
 -------------------
