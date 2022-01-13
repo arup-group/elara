@@ -417,8 +417,9 @@ class Config:
         self.logger.warning(f"All input paths and output paths being overwritten with {path_override}")
 
         for path in self.settings['inputs']:
-            if path == 'road_pricing':  # assume road pricing is not overwritten
-                continue
+            if path in ['road_pricing', 'input_plans']:
+                continue # assume road pricing and input plans paths are not overwritten
+
             file_name = self.settings['inputs'][path].split('/')[-1]
             self.settings['inputs'][path] = os.path.join(path_override, file_name)
 
