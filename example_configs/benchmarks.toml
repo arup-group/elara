@@ -30,6 +30,8 @@ plan_activity_mode_counts_comparison--commuters_by_subpopulation = {benchmark_da
 link_counter_comparison--A = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter.json"}
 link_counter_comparison--B = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_town/test_town_cordon/test_link_counter_duplicate.json"}
 duration_breakdown_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_duration_breakdown_all.csv"}
+duration_mode_breakdown_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_duration_breakdown_mode.csv"}
+duration_d_act_breakdown_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_duration_breakdown_d_act.csv"}
 euclidean_distance_breakdown_comparison = {benchmark_data_path = "./example_benchmark_data/test_fixtures/trip_euclid_distance_breakdown_all.csv"}
 link_vehicle_speeds_comparison = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_fixtures/link_vehicle_speeds_car_average.csv", time_slice = 8}
 link_vehicle_speeds_comparison--subpops = {modes = ["car"], benchmark_data_path = "./example_benchmark_data/test_fixtures/link_vehicle_speeds_car_average_subpopulation.csv", time_slice = 8, groupby_person_attributes=["subpopulation"]}
