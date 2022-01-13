@@ -419,7 +419,9 @@ def test_input_plan_comparison_activity_duration_zero():
 
 def test_duration_comparison_score_zero_filepath():
     benchmark = benchmarking.DurationBreakdownComparison
-    benchmark_data_path = os.path.join('tests','test_outputs','trip_duration_breakdown_all.csv')
+    benchmark_data_path = get_benchmark_data(
+            os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv')
+        )
     test_bm = benchmark(
         config,
         'all',
@@ -428,6 +430,33 @@ def test_duration_comparison_score_zero_filepath():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
+
+def test_mode_duration_comparison_score_zero_filepath():
+    benchmark = benchmarking.DurationModeBreakdownComparison
+    benchmark_data_path = get_benchmark_data(
+            os.path.join('test_fixtures', 'trip_duration_breakdown_mode.csv')
+        )
+    test_bm = benchmark(
+        config,
+        'all',
+        benchmark_data_path = benchmark_data_path
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_destination_act_duration_comparison_score_zero_filepath():
+    benchmark = benchmarking.DurationDestinationActivityBreakdownComparison
+    benchmark_data_path = get_benchmark_data(
+            os.path.join('test_fixtures', 'trip_duration_breakdown_d_act.csv')
+        )
+    test_bm = benchmark(
+        config,
+        'all',
+        benchmark_data_path = benchmark_data_path
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
 
 # Config
 @pytest.fixture

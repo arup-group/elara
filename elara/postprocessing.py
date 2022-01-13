@@ -15,7 +15,7 @@ class PostProcessor(Tool):
         self.logger = logging.getLogger(__name__)
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
-    def breakdown(self, data, bins, labels, colnames, write_path, groupby_field = None, groupby_data = None):
+    def breakdown(self, data, bins, labels, colnames, write_path, groupby_field = None, groupby_data = None, scale = True):
         """
         Bin a data series and export to a csv file
         :params Pandas Series data: A numerical set
@@ -24,6 +24,7 @@ class PostProcessor(Tool):
         :params list colnames: the column names of the output file
         :params str groupby_field: the attribute name of the attribute used to cross tabulate (e.g. mode or purpose)
         :params Pandas Series groupby_data: A categorical set to cross tabulate distance by
+        :params bool, default True, scale outputs based on config scale
 
         :returns: None 
         """        
@@ -36,7 +37,11 @@ class PostProcessor(Tool):
         else:
             breakdown_df = pd.cut(data, bins=bins, labels=labels).value_counts().sort_index().reset_index()
             breakdown_df.columns = colnames
-            csv_breakdown_name = f"{self.name}.csv"        
+            csv_breakdown_name = f"{self.name}.csv"
+        
+        # scale counts
+        if scale:
+            breakdown_df[colnames[1]] /= self.config.scale_factor
 
         # Export breakdown
         self.write_csv(breakdown_df, csv_breakdown_name, write_path=write_path)
