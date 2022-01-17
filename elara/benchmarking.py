@@ -496,6 +496,18 @@ class EuclideanDistanceBreakdownComparison(CsvComparison):
     weight = 1
 
 
+class EuclideanDistanceModeBreakdownComparison(CsvComparison):
+
+    plot_type = "bar"
+    requirements = ['trip_euclid_distance_breakdown']
+    valid_modes = ['all']
+
+    index_fields = ['euclidean_distance', 'mode']
+    value_field = 'trips'
+    simulation_name = 'trip_euclid_distance_breakdown_mode.csv'
+    weight = 1
+
+
 class LinkCounterComparison(BenchmarkTool):
 
     requirements = ['link_vehicle_counts']
@@ -2004,6 +2016,7 @@ class BenchmarkWorkStation(WorkStation):
 
         # trip breakdowns - aggregate distribution comparisons
         "euclidean_distance_breakdown_comparison": EuclideanDistanceBreakdownComparison,
+        "euclidean_distance_mode_breakdown_comparison": EuclideanDistanceModeBreakdownComparison,
         "duration_breakdown_comparison": DurationBreakdownComparison,
         "duration_mode_breakdown_comparison": DurationModeBreakdownComparison,
         "duration_d_act_breakdown_comparison": DurationDestinationActivityBreakdownComparison,
