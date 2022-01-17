@@ -417,6 +417,35 @@ def test_input_plan_comparison_activity_duration_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
+
+def test_euclid_distance_comparison_score_zero_filepath():
+    benchmark = benchmarking.EuclideanDistanceBreakdownComparison
+    benchmark_data_path = get_benchmark_data(
+            os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv')
+        )
+    test_bm = benchmark(
+        config,
+        'all',
+        benchmark_data_path = benchmark_data_path
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
+def test_mode_euclid_distance_comparison_score_zero_filepath():
+    benchmark = benchmarking.EuclideanDistanceModeBreakdownComparison
+    benchmark_data_path = get_benchmark_data(
+            os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_mode.csv')
+        )
+    test_bm = benchmark(
+        config,
+        'all',
+        benchmark_data_path = benchmark_data_path
+    )
+    score = test_bm.build({}, write_path=test_outputs)
+    assert score['mse'] == 0
+
+
 def test_duration_comparison_score_zero_filepath():
     benchmark = benchmarking.DurationBreakdownComparison
     benchmark_data_path = get_benchmark_data(

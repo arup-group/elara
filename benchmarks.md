@@ -258,8 +258,6 @@ Compare trip distributions (binned)s.
 
 Compare histogram of trip durations to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
 
-***Support for durations by mode or group to be added.***
-
 ### Example Configuration
 
 ```{.toml}
@@ -290,8 +288,6 @@ duration,trips
 ## duration_mode_breakdown_comparison
 
 Compare histogram of trip durations by mode to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
-
-***Support for durations by mode or group to be added.***
 
 ### Example Configuration
 
@@ -343,8 +339,6 @@ csv formatted as follows:
 
 Compare histogram of trip durations by destination activity to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam.
 
-***Support for durations by mode or group to be added.***
-
 ### Example Configuration
 
 ```{.toml}
@@ -385,8 +379,6 @@ csv formatted as follows:
 
 Compare histogram of trip distances to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam. Trip distances are euclidean rather than routed. Therefore this is not generally intended as a benchmark as destination choice and therefore euclidean distance are not expected to change.
 
-***Support for distances by mode or group to be added.***
-
 ### Example Configuration
 
 ```{.toml}
@@ -412,6 +404,52 @@ euclidean_distance,trips
 100 to 200 km,0
 200+ km,0
 
+```
+
+## euclidean_distance_mode_breakdown_comparison
+
+Compare histogram of trip distances by mode to observed. Observed data may be from a validating data source, such as a survey, or more simply extracted from the input synthetic population using pam. Trip distances are euclidean rather than routed.
+
+### Example Configuration
+
+```{.toml}
+[benchmarks]
+euclidean_distance_mode_breakdown_comparison = {benchmark_data_path = PATH}
+```
+
+- `benchmark_data_path` (required) path to observed data for comparison
+- `modes` must be set to `modes = ["all"]`, (this is the default)
+
+### Benchmark (Observed) Data Format
+
+csv formatted as follows:
+
+```{csv}
+,mode,euclidean_distance,trips
+0,bike,0 to 1 km,0.0
+1,bike,1 to 5 km,0.0
+2,bike,5 to 10 km,0.0
+3,bike,10 to 25 km,20000.0
+4,bike,25 to 50 km,0.0
+5,bike,50 to 100 km,0.0
+6,bike,100 to 200 km,0.0
+7,bike,200+ km,0.0
+8,bus,0 to 1 km,0.0
+9,bus,1 to 5 km,0.0
+10,bus,5 to 10 km,0.0
+11,bus,10 to 25 km,40000.0
+12,bus,25 to 50 km,0.0
+13,bus,50 to 100 km,0.0
+14,bus,100 to 200 km,0.0
+15,bus,200+ km,0.0
+16,car,0 to 1 km,0.0
+17,car,1 to 5 km,0.0
+18,car,5 to 10 km,20000.0
+19,car,10 to 25 km,20000.0
+20,car,25 to 50 km,0.0
+21,car,50 to 100 km,0.0
+22,car,100 to 200 km,0.0
+23,car,200+ km,0.0
 ```
 
 -------------------
