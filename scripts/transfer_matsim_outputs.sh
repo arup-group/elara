@@ -59,8 +59,8 @@ gzip --force -dk "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/R
               "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_transitVehicles.xml.gz" \
               "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_transitSchedule.xml.gz" \
               "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_network.xml.gz" \
-              "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_events.xml.gz"
-# unzip "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/output_experienced_plans.xml.gz" "./cambridge-abm/${VERSION}/matsim_outputs/output_experienced_plans.xml"
+              "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_events.xml.gz" \
+              "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_experienced_plans.xml.gz"
 
 # Move files
 mv  "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_plans.xml" "./cambridge-abm/${VERSION}/matsim_outputs/output_plans.xml"
@@ -70,6 +70,7 @@ mv "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMa
 mv "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_network.xml" "./cambridge-abm/${VERSION}/matsim_outputs/output_network.xml"
 mv "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_events.xml" "./cambridge-abm/${VERSION}/matsim_outputs/output_events.xml"
 mv "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_config.xml" "./cambridge-abm/${VERSION}/matsim_outputs/output_config.xml"
+mv "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs/RunMultimodalMatsim_outputs/output_experienced_plans.xml" "./cambridge-abm/${VERSION}/matsim_outputs/output_experienced_plans.xml"
 
 # Remove directory with copied data from columbus
 rm -rf "./cambridge-abm/${VERSION}/matsim_outputs/${VERSION}_outputs"
