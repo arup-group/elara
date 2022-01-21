@@ -1729,77 +1729,85 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         """
         # TODO this is a mess. requires some forcing to string hacks for None. The pd ops are forcing None to np.nan
         del self.veh_occupancy
-        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
-        counts_df = pd.Series(self.counts)
 
-        # include vehicle counts (in case a vehicle arrives at a stop more than once)
-        counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
-        counts_df.index.names = names + ['to_stop_arrival_hour']
-        counts_df.columns = ['pax_counts', 'veh_counts']
-        # move vehicle counts to the series index
-        counts_df = counts_df.reset_index().set_index(names + ['to_stop_arrival_hour', 'veh_counts'])['pax_counts']
+        # Check if counts dictionary exists
+        if self.counts:
+            names = ['from_stop', 'to_stop', 'veh_id']
+            if self.groupby_person_attribute:
+                names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
 
-        # scale
-        counts_df *= 1.0 / self.config.scale_factor
+            counts_df = pd.Series(self.counts)
+            # include vehicle counts (in case a vehicle arrives at a stop more than once)
+            counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
+            counts_df.index.names = names + ['to_stop_arrival_hour']
+            counts_df.columns = ['pax_counts', 'veh_counts']
+            # move vehicle counts to the series index
+            counts_df = counts_df.reset_index().set_index(names + ['to_stop_arrival_hour', 'veh_counts'])['pax_counts']
 
-        del self.counts
-        counts_df = counts_df.unstack(level='to_stop_arrival_hour').sort_index().fillna(0)
+            # scale
+            counts_df *= 1.0 / self.config.scale_factor
 
-        # Join stop data and build geometry
-        for n in ("from_stop", "to_stop"):
-            counts_df = counts_df.reset_index().set_index(n)
-            stop_info = self.elem_gdf.copy()
-            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
-            counts_df = counts_df.join(
-                    stop_info, how="left"
-                )
+            del self.counts
+            counts_df = counts_df.unstack(level='to_stop_arrival_hour').sort_index().fillna(0)
 
-            counts_df.index.name = n
+            # Join stop data and build geometry
+            for n in ("from_stop", "to_stop"):
+                counts_df = counts_df.reset_index().set_index(n)
+                stop_info = self.elem_gdf.copy()
+                stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+                counts_df = counts_df.join(
+                        stop_info, how="left"
+                    )
 
-        counts_df = counts_df.reset_index().set_index(names+['veh_counts'])
-        counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
-        counts_df['total'] = counts_df.sum(1)
+                counts_df.index.name = n
 
-        counts_df['geometry'] = [LineString([o, d]) for o, d in zip(
-            counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
-        counts_df.drop('from_stop_geometry', axis=1, inplace=True)
-        counts_df.drop('to_stop_geometry', axis=1, inplace=True)
-        counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
+            counts_df = counts_df.reset_index().set_index(names+['veh_counts'])
+            counts_df['route'] = counts_df.index.get_level_values('veh_id').map(self.veh_route)
+            counts_df['total'] = counts_df.sum(1)
 
-        #################
-        # temp: unit tests currently require all hours of the day as columns
-        # TODO: planning to remove this requirement - then delete this code block
-        for h in range(0, 24):
-            if h not in counts_df.columns:
-                counts_df[h] = 0
-        #################
+            counts_df['geometry'] = [LineString([o, d]) for o, d in zip(
+                counts_df.from_stop_geometry, counts_df.to_stop_geometry)]
+            counts_df.drop('from_stop_geometry', axis=1, inplace=True)
+            counts_df.drop('to_stop_geometry', axis=1, inplace=True)
+            counts_df = gpd.GeoDataFrame(counts_df, geometry='geometry')
 
-        if self.groupby_person_attribute:
-            key = f"{self.name}_{self.groupby_person_attribute}"
-            self.result_dfs[key] = counts_df
+            #################
+            # temp: unit tests currently require all hours of the day as columns
+            # TODO: planning to remove this requirement - then delete this code block
+            for h in range(0, 24):
+                if h not in counts_df.columns:
+                    counts_df[h] = 0
+            #################
 
-        # # calc sum across all recorded attribute classes
-        totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id', 'route', 'veh_counts']).sum()
+            if self.groupby_person_attribute:
+                key = f"{self.name}_{self.groupby_person_attribute}"
+                self.result_dfs[key] = counts_df
 
-        # Join stop data and build geometry
-        for n in ("from_stop", "to_stop"):
-            totals_df = totals_df.reset_index().set_index(n)
-            stop_info = self.elem_gdf.copy()
-            stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
-            totals_df = totals_df.join(
-                    stop_info, how="left"
-                )
-            totals_df.index.name = n
+            # # calc sum across all recorded attribute classes
+            totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id', 'route', 'veh_counts']).sum()
 
-        totals_df['geometry'] = [
-            LineString([o, d]) for o, d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)
-        ]
-        totals_df.drop('from_stop_geometry', axis=1, inplace=True)
-        totals_df.drop('to_stop_geometry', axis=1, inplace=True)
-        totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
+            # Join stop data and build geometry
+            for n in ("from_stop", "to_stop"):
+                totals_df = totals_df.reset_index().set_index(n)
+                stop_info = self.elem_gdf.copy()
+                stop_info.columns = [f"{n}_{c}" for c in stop_info.columns]
+                totals_df = totals_df.join(
+                        stop_info, how="left"
+                    )
+                totals_df.index.name = n
 
-        key = f"{self.name}"
-        self.result_dfs[key] = totals_df
+            totals_df['geometry'] = [
+                LineString([o, d]) for o, d in zip(totals_df.from_stop_geometry, totals_df.to_stop_geometry)
+            ]
+            totals_df.drop('from_stop_geometry', axis=1, inplace=True)
+            totals_df.drop('to_stop_geometry', axis=1, inplace=True)
+            totals_df = gpd.GeoDataFrame(totals_df, geometry='geometry')
+
+            key = f"{self.name}"
+            self.result_dfs[key] = totals_df
+
+        else:
+            self.logger.warn('Vehicle counts dictionary is empty!!! No VehicleArrivesAtFacility events found!!!')
 
 
 class VehicleDepartureLog(EventHandlerTool):
