@@ -11,9 +11,11 @@ __pycache__/
 
 # C extensions
 *.so
+*.swp
 
 # Distribution / packaging
 .Python
+cambridge-abm/
 build/
 develop-eggs/
 dist/
