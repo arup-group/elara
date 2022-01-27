@@ -995,8 +995,8 @@ class PlanLogs(PlanHandlerTool):
                         )
 
                         duration, arrival_dt = safe_duration(arrival_dt, activity_end_dt)
-                        x = float(stage.get('x'))
-                        y = float(stage.get('y'))
+                        x = stage.get('x') # float coerce fails if None
+                        y = stage.get('y')
 
                         if trip_start_time is not None:  # ignores first activity
 
