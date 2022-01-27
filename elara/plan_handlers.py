@@ -995,8 +995,11 @@ class PlanLogs(PlanHandlerTool):
                         )
 
                         duration, arrival_dt = safe_duration(arrival_dt, activity_end_dt)
-                        x = stage.get('x') # float coerce fails if None
-                        y = stage.get('y')
+
+                        # MATSim BUG: first activity location may not be recorded
+                        # Use NaN to allow distance() -> NaN
+                        x = float(stage.get('x', np.NaN))
+                        y = float(stage.get('y', np.NaN))
 
                         if trip_start_time is not None:  # ignores first activity
 
