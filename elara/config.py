@@ -484,7 +484,7 @@ class Config:
         if not self.using_experienced_plans:
             self.logger.warning('NOT using experienced plans -- please ensure this is desired. Continuing...')
         else:
-            if not 'experienced' in self.settings['inputs']['plans']:
+            if not 'experienced' in str(self.settings['inputs']['plans']):
                     self.logger.warning('Elara set to use experienced plans. ' +
                         'output_experienced_plans.xml is expected. Check config.'
                     )
