@@ -15,7 +15,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-cambridge-abm/
 build/
 develop-eggs/
 dist/
@@ -131,5 +130,4 @@ dmypy.json
 tests/test_outputs/
 test_chunks.csv
 reports/
-
 tests_TC
