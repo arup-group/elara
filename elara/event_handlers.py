@@ -1732,13 +1732,13 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
 
         # Check if counts dictionary exists
         if self.counts:
-            names = ['from_stop', 'to_stop', 'veh_id']
-            if self.groupby_person_attribute:
-                names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
+            names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
 
             counts_df = pd.Series(self.counts)
             # include vehicle counts (in case a vehicle arrives at a stop more than once)
             counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
+
+            # logging.error('len(counts_df.index.names)',len(counts_df.index.names))
             counts_df.index.names = names + ['to_stop_arrival_hour']
             counts_df.columns = ['pax_counts', 'veh_counts']
             # move vehicle counts to the series index
