@@ -152,7 +152,7 @@ def common_override(
                 "transit_schedule": inputs_path / "output_transitSchedule.xml.gz",
                 "transit_vehicles": inputs_path / "output_transitVehicles.xml.gz",
                 "attributes": inputs_path / "output_personAttributes.xml.gz",
-                "plans": inputs_path / "output_plans.xml.gz",
+                "plans": inputs_path / "output_experienced_plans.xml.gz",
                 "output_config_path": inputs_path / "output_config.xml",
             },
         "event_handlers":
