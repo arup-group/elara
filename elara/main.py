@@ -1,4 +1,6 @@
+from email.policy import default
 import os.path
+from attr import attributes
 
 import click
 import logging
@@ -133,8 +135,12 @@ def main(config):
 
 
 def common_override(
-        debug, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+        debug, name, experienced_plans, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
 ):
+    
+    plans_file = "output_experienced_plans.xml.gz" if experienced_plans else "output_plans.xml.gz"
+    attributes_file = "output_plans.xml.gz" if version >= 12 else "output_personAttributes.xml.gz"
+
     return {
         "scenario":
             {
@@ -151,8 +157,8 @@ def common_override(
                 "network": inputs_path / "output_network.xml.gz",
                 "transit_schedule": inputs_path / "output_transitSchedule.xml.gz",
                 "transit_vehicles": inputs_path / "output_transitVehicles.xml.gz",
-                "attributes": inputs_path / "output_personAttributes.xml.gz",
-                "plans": inputs_path / "output_experienced_plans.xml.gz",
+                "attributes": inputs_path / attributes_file,
+                "plans": inputs_path / plans_file,
                 "output_config_path": inputs_path / "output_config.xml",
             },
         "event_handlers":
@@ -174,7 +180,6 @@ def common_override(
             },
     }
 
-
 def common_options(func):
     func = click.option(
         '-d', '--debug', is_flag=True, help="Switch on debug verbosity."
@@ -184,6 +189,11 @@ def common_options(func):
         '-n', '--name', type=click.STRING, default=str(Path(os.getcwd())).split('/')[-1],
         help="Scenario name, defaults to root dir name."
     )(func)
+
+    func = click.option(
+        '-x', '--experienced_plans', is_flag=True, default=True, 
+        help="Switch for Using Experienced Plans, defaults to True"
+    )
 
     func = click.option(
         '-i', '--inputs_path', type=PathPath(exists=True), default=Path(os.getcwd()),
@@ -206,7 +216,7 @@ def common_options(func):
     )(func)
 
     func = click.option(
-        '-v', '--version', type=click.INT, default=11,
+        '-v', '--version', type=click.INT, default=12,
         help="MATSim version {11,12}"
     )(func)
 

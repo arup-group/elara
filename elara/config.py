@@ -16,7 +16,7 @@ class Config:
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
                 "version": 12,
-                "using_experienced_plans": False,
+                "using_experienced_plans": True,
                 "verbose": False,
             },
         "inputs":
@@ -206,13 +206,9 @@ class Config:
     @property
     def attributes_path(self):
         if self.version == 12 and not self.using_experienced_plans:
-            return self.valid_path(
-                self.settings["inputs"]["plans"], "plans(MATSimV12)"
-            )
+            return self.valid_path(self.settings["inputs"]["plans"], "plans(MATSimV12)")
         else:
-            return self.valid_path(
-            self.settings["inputs"]["attributes"], "attributes"
-            )
+            return self.valid_path(self.settings["inputs"]["attributes"], "attributes")
 
     @property
     def transit_schedule_path(self):
