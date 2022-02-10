@@ -766,7 +766,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
         # convert all dataframes from meters per second to kph
         for result, df in self.result_dfs.items():
-            self.result_dfs[result] *= mps_to_kph
+            data_columns = [i for i in range(0, self.config.time_periods)]
+            self.result_dfs[result].loc[:, data_columns] *= mps_to_kph
 
 class LinkPassengerCounts(EventHandlerTool):
     """
