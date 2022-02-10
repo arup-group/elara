@@ -576,7 +576,9 @@ class LinkVehicleSpeeds(EventHandlerTool):
     def process_event(self, elem) -> None:
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle leaves traffic'
-        events to determine average time spent on links and convert to speed (m/s)
+        events to determine average time spent on links. Units are converted from m/s to kph
+        as a last step in the finalise method.
+        
         :param elem: Event XML element
 
         The events of interest to this handler look like:
