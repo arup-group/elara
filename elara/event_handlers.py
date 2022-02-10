@@ -571,52 +571,65 @@ class LinkVehicleSpeeds(EventHandlerTool):
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
 
-        self.link_tracker = dict()  # {(agent,link):start_time}
+        self.link_tracker = dict()  # {(agent,link): start_time}
 
     def process_event(self, elem) -> None:
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle leaves traffic'
-        events to determine average time spent on link.
+        events to determine average time spent on links and convert to speed (m/s)
         :param elem: Event XML element
 
         The events of interest to this handler look like:
 
           <event time="300.0"
-                 type="vehicle enters traffic"
+                 type="entered link"
                  person="nick"
                  link ="1-2"
                  vehicle="nick"
                  networkMode="car"
                  relativePosition="1.0"/>
           <event time="600.0"
-                 type="vehicle leaves traffic"
+                 type="left link"
                  person="nick"
                  link ="1-2"
                  vehicle="nick"
                  networkMode="car"
                  relativePosition="1.0"/>
 
+        Because vehicles can enter or leave traffic at the downstream node
+        of a link when accessing facilities, we explicity ignore or exclude 
+        the following patterns:
+            ENTERED LINK -> VEHICLE LEAVES TRAFFIC
+            VEHICLE ENTERS TRAFFIC -> LEFT LINK
         """
 
         event_type = elem.get("type")
         if event_type == "entered link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.mode:
+
+            # check vehicle mode and add to tracker
+            if veh_mode == self.mode or self.mode == "all":
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type, start_time)
+                print(self.link_tracker)
+
+        # remove vehicle from tracker if exiting network after entering the link
+        elif event_type == "vehicle leaves traffic":
+            ident = elem.get("vehicle")
+            self.link_tracker.pop(ident, None)
 
         elif event_type == "left link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.mode:
+            if veh_mode == self.mode or self.mode == "all":
                 # look for attribute_class, if not found assume pt and use mode
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
 
-                # if person not in link tracker, this means they've entered
-                # link via "vehicle enters traffic event" and should be ignored.
+                # if agent ident not in link tracker, they have entered via
+                # "vehicle enters traffic event" and should be ignored.
                 if ident in self.link_tracker:
                     start_time = self.link_tracker[ident][1]
                     # start_event_type = self.link_tracker[ident][0]
@@ -650,6 +663,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
         by time slice. The only thing left to do is scale by the sample size and
         create dataframes.
         """
+
+        mps_to_kph = 3.6
 
         def calc_av_matrices(self):
             counts_pop = self.counts.sum(1)
@@ -749,6 +764,9 @@ class LinkVehicleSpeeds(EventHandlerTool):
         min_speeds = calc_speeds(self, min_speeds)
         self.result_dfs[key] = min_speeds
 
+        # convert all dataframes from meters per second to kph
+        for result, df in self.result_dfs.items():
+            self.result_dfs[result] *= mps_to_kph
 
 class LinkPassengerCounts(EventHandlerTool):
     """
