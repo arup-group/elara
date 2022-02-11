@@ -614,7 +614,6 @@ class LinkVehicleSpeeds(EventHandlerTool):
             if veh_mode == self.mode or self.mode == "all":
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type, start_time)
-                print(self.link_tracker)
 
         # remove vehicle from tracker if exiting network after entering the link
         elif event_type == "vehicle leaves traffic":
