@@ -571,7 +571,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
 
-        self.link_tracker = dict()  # {(agent,link): start_time}
+        self.link_tracker = dict()  # {(agent, event_type): start_time}
 
     def process_event(self, elem) -> None:
         """
