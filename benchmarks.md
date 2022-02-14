@@ -618,7 +618,9 @@ Stop ids must match those in the simulation.
 
 # Link Speed Comparisons
 
-Compare average hourly link speeds. Link speeds are in meters per second. A common source of this data is google api queries.
+Compare average hourly link speeds. A common source of this data is google api queries.
+
+Link speeds are in kilometers per hour (kph). Users are expected to ensure their benchmark data has been converted into kph prior to using this handler.
 
 ## link_vehicle_speeds_comparison
 
