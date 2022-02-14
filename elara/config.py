@@ -155,7 +155,6 @@ class Config:
             self.settings["outputs"].get("contract", False)
         )
 
-
     """
     Property methods used for config dependant requirements.
     For example crs is only required if spatial processing required.
@@ -394,7 +393,6 @@ class Config:
         if self.version == 12:
             self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
-            print('CONDITION 3')
             self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
 
         for input, path in self.settings['inputs'].items():
