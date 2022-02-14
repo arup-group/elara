@@ -500,17 +500,17 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
             assert c in gdf.columns
         df = gdf.loc[:, cols]
         if name == "link_vehicle_speeds_car_average":
-            assert np.sum(df.values) == (2+5+4)/3
+            assert np.sum(df.values) == (2+5+4)/3 * 3.6
         elif name == "link_vehicle_speeds_car_average_subpopulation":
-            assert np.sum(df.values) == (2+5+4)
+            assert np.sum(df.values) == (2+5+4) * 3.6
         elif name == "link_vehicle_speeds_car_min":
-            assert np.sum(df.values) == 2
+            assert np.sum(df.values) == 2 * 3.6
         elif name == "link_vehicle_speeds_car_min_subpopulation": # TODO something wrong here
-            assert np.sum(df.values) == 7
+            assert np.sum(df.values) == 7 * 3.6
         elif name == "link_vehicle_speeds_car_max":
-            assert np.sum(df.values) == 5
+            assert np.sum(df.values) == 5 * 3.6
         elif name == "link_vehicle_speeds_car_max_subpopulation":
-            assert np.sum(df.values) == 9
+            assert np.sum(df.values) == 9 * 3.6
 
 
 # With no attribute groups
@@ -1297,9 +1297,28 @@ def test_vehicle_departs_facility(test_config, input_manager):
         'delay': -137
     }
 
+# Vehicle link speeds test using full events/config
+def test_link_vehicle_speeds_events_file(test_config, input_manager):
+    handler = event_handlers.LinkVehicleSpeeds(test_config, mode="all")
+    handler.build(input_manager.resources)
+
+    for elem in handler.resources['events'].elems:
+        handler.process_event(elem)
+
+    handler.finalise()
+
+    # test that the minimum speed is realistic (<10 kph)
+    data_cols = [i for i in range(0, test_config.time_periods)]
+
+    for  df in handler.result_dfs.values():
+        df = df[data_cols]
+        df.replace(0, np.nan, inplace=True)
+        min_speed = df.min().min() # min value across all time columns
+        assert min_speed >= 10
+
 # Vehicle link logs test
 def test_vehicle_link_log(test_config, input_manager):
-    handler = event_handlers.VehicleLinkLog(test_config, mode = "all")
+    handler = event_handlers.VehicleLinkLog(test_config, mode="all")
     handler.build(input_manager.resources)
             
     for elem in handler.resources['events'].elems:
