@@ -16,7 +16,7 @@ class Config:
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
                 "version": 12,
-                "using_experienced_plans": False,
+                "using_experienced_plans": True,
                 "verbose": False,
             },
         "inputs":
@@ -155,7 +155,6 @@ class Config:
             self.settings["outputs"].get("contract", False)
         )
 
-
     """
     Property methods used for config dependant requirements.
     For example crs is only required if spatial processing required.
@@ -206,13 +205,9 @@ class Config:
     @property
     def attributes_path(self):
         if self.version == 12 and not self.using_experienced_plans:
-            return self.valid_path(
-                self.settings["inputs"]["plans"], "plans(MATSimV12)"
-            )
+            return self.valid_path(self.settings["inputs"]["plans"], "plans(MATSimV12)")
         else:
-            return self.valid_path(
-            self.settings["inputs"]["attributes"], "attributes"
-            )
+            return self.valid_path(self.settings["inputs"]["attributes"], "attributes")
 
     @property
     def transit_schedule_path(self):
@@ -398,7 +393,6 @@ class Config:
         if self.version == 12:
             self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
-            print('CONDITION 3')
             self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
 
         for input, path in self.settings['inputs'].items():

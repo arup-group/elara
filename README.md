@@ -251,6 +251,8 @@ Options:
   -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
   -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
   -i, --inputs_path PATH      Inputs path location, defaults to current root.
+  -x, --no_experienced_plans  Switch for turning off Experienced Plans. Set to
+                              use output_plans instead.
   -n, --name TEXT             Scenario name, defaults to root dir name.
   -d, --debug                 Switch on debug verbosity.
   --help                      Show this message and exit.
