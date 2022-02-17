@@ -189,7 +189,7 @@ def common_options(func):
 
     func = click.option(
         '-x', '--no_experienced_plans', is_flag=True, default=False, 
-        help="Switch for Using Experienced Plans, defaults to True"
+        help="Switch for turning off Experienced Plans. Set to use output_plans instead."
     )(func)
 
     func = click.option(
