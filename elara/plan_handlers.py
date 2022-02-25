@@ -311,15 +311,16 @@ class PlanModes(ModeShares):
                         if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
                             continue
 
-                mode = self.get_furthest_mode(plan_modes)
+                if plan_modes: # stay-home agents have no legs/modes
+                    mode = self.get_furthest_mode(plan_modes)
 
-                x, y, z = self.mode_table_position(
-                    mode,
-                    attribute_class,
-                    0
-                )
+                    x, y, z = self.mode_table_position(
+                        mode,
+                        attribute_class,
+                        0
+                    )
 
-                self.mode_counts[x, y, z] += 1
+                    self.mode_counts[x, y, z] += 1
 
 
 class TripActivityModes(ModeShares):
