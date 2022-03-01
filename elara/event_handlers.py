@@ -567,7 +567,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                                 self.config.time_periods))
 
         # Initialise duration cummulative sum table
-        self.inverseduration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.duration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
 
@@ -648,7 +648,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     self.counts[x, y, z] += 1
 
                     if duration != 0:
-                        self.inverseduration_sum[x, y, z] += 1/duration
+                        self.duration_sum[x, y, z] += duration
 
                     self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z])
 
@@ -668,9 +668,14 @@ class LinkVehicleSpeeds(EventHandlerTool):
         mps_to_kph = 3.6
 
         def calc_av_matrices(self):
+            """
+            Calculate link average speed. 
+            Average speed = (total distance travelled) / (total travel duration) = 
+                            (n * link_distance) / sum(travel duration)
+            """
             counts_pop = self.counts.sum(1)
-            duration_pop = self.inverseduration_sum.sum(1)
-            av_pop = np.divide(duration_pop, counts_pop, out=np.zeros_like(counts_pop), where=duration_pop != 0)
+            duration_pop = self.duration_sum.sum(1)
+            av_pop = np.divide(counts_pop, duration_pop, out=np.zeros_like(duration_pop), where=duration_pop != 0)
             return av_pop
 
         def calc_max_matrices(self):
@@ -710,7 +715,10 @@ class LinkVehicleSpeeds(EventHandlerTool):
         if self.groupby_person_attribute:
             # Calc average at subpop level
             key = f"{self.name}_average_{self.groupby_person_attribute}"
-            average_speeds = flatten_subpops(self, self.inverseduration_sum)
+            duration_subpop = flatten_subpops(self, self.duration_sum).reset_index().set_index(['elem','class'])
+            counts_subpop = flatten_subpops(self, self.counts).reset_index().set_index(['elem','class'])
+            average_speeds = np.divide(counts_subpop, duration_subpop, out=np.zeros_like(duration_subpop), where=duration_subpop != 0).fillna(0)
+            average_speeds = average_speeds.reset_index().set_index('elem')
             average_speeds = self.elem_gdf.join(average_speeds, how="left")
             average_speeds = calc_speeds(self, average_speeds)
             average_speeds.index.name = "id"
