@@ -480,12 +480,12 @@ def test_link_speed_process_events_car(test_car_link_speed_handler, car_link_pai
     for elem in car_link_pair_event:
         handler.process_event(elem)
     assert np.sum(handler.counts) == 3
-    assert np.sum(handler.inverseduration_sum)== 0.11
+    assert np.sum(handler.duration_sum)== 95
     link_index = handler.elem_indices['1-2']
     class_index = handler.class_indices['poor']
     period = 6
     assert handler.counts[link_index][class_index][period] == 2
-    assert handler.inverseduration_sum[link_index][class_index][period] == 1/50+1/25
+    assert handler.duration_sum[link_index][class_index][period] == 50+25
 
 
 def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_event):
@@ -500,9 +500,9 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
             assert c in gdf.columns
         df = gdf.loc[:, cols]
         if name == "link_vehicle_speeds_car_average":
-            assert np.sum(df.values) == (2+5+4)/3 * 3.6
+            assert np.sum(df.values) == 3 / (1/2 + 1/5 + 1/4) * 3.6
         elif name == "link_vehicle_speeds_car_average_subpopulation":
-            assert np.sum(df.values) == (2+5+4) * 3.6
+            assert np.sum(df.values) == 18 + 9.6
         elif name == "link_vehicle_speeds_car_min":
             assert np.sum(df.values) == 2 * 3.6
         elif name == "link_vehicle_speeds_car_min_subpopulation": # TODO something wrong here
