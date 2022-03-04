@@ -484,8 +484,8 @@ class LegLogs(PlanHandlerTool):
         activity_csv_name = f"{self.name}_activities.csv"
         legs_csv_name = f"{self.name}_legs.csv"
 
-        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
-        self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path)
+        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path, compression=self.compression)
+        self.legs_log = self.start_chunk_writer(legs_csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
 
@@ -679,8 +679,8 @@ class TripLogs(PlanHandlerTool):
         activity_csv_name = f"{self.name}_activities.csv"
         trips_csv_name = f"{self.name}_trips.csv"
 
-        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path)
-        self.trips_log = self.start_chunk_writer(trips_csv_name, write_path=write_path)
+        self.activities_log = self.start_chunk_writer(activity_csv_name, write_path=write_path, compression=self.compression)
+        self.trips_log = self.start_chunk_writer(trips_csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
 
@@ -873,7 +873,7 @@ class UtilityLogs(PlanHandlerTool):
 
         utility_csv_name = f"{self.name}.csv"
 
-        self.utility_log = self.start_chunk_writer(utility_csv_name, write_path=write_path)
+        self.utility_log = self.start_chunk_writer(utility_csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
 
@@ -947,7 +947,7 @@ class PlanLogs(PlanHandlerTool):
         self.attributes = self.resources["attributes"]
 
         csv_name = f"{self.name}.csv"
-        self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path)
+        self.plans_log = self.start_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
 
@@ -1394,7 +1394,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
 
         # Initialise results writer
         csv_name = f"{self.name}.csv"
-        self.distances_log = self.start_chunk_writer(csv_name, write_path=write_path)
+        self.distances_log = self.start_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
         """
@@ -1527,7 +1527,7 @@ class PlanHandlerWorkStation(WorkStation):
 
                 for name, result in handler.results.items():
                     csv_name = "{}.csv".format(name)
-                    self.write_csv(result, csv_name, write_path=write_path)
+                    self.write_csv(result, csv_name, write_path=write_path, compression=handler.compression)
                     del result
 
 

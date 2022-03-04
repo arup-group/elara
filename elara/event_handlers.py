@@ -255,7 +255,7 @@ class StopPassengerWaiting(EventHandlerTool):
         self.agent_attributes, _ = self.extract_attributes()
 
         csv_name = f"{str(self)}.csv"
-        self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
+        self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
 
     def process_event(self, elem) -> None:
         """
@@ -1830,7 +1830,7 @@ class VehicleDepartureLog(EventHandlerTool):
     requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode="all", **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
         self.vehicle_departure_log = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -1846,7 +1846,7 @@ class VehicleDepartureLog(EventHandlerTool):
         pt_csv_name = f"{self.name}.csv"
 
         self.vehicle_departure_log = self.start_chunk_writer(
-            pt_csv_name, write_path=write_path
+            pt_csv_name, write_path=write_path, compression=self.compression
             )
 
     def process_event(self, elem) -> None:
@@ -1894,7 +1894,7 @@ class VehiclePassengerLog(EventHandlerTool):
     requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode="all", **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
         self.vehicle_passenger_log = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -1910,7 +1910,7 @@ class VehiclePassengerLog(EventHandlerTool):
         self.veh_tracker = dict()  # {veh_id: last_stop}
 
         self.vehicle_passenger_log = self.start_chunk_writer(
-            pt_csv_name, write_path=write_path
+            pt_csv_name, write_path=write_path, compression=self.compression
             )
 
     def process_event(self, elem) -> None:
@@ -1965,7 +1965,7 @@ class VehicleLinkLog(EventHandlerTool):
     requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode=None, **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
         self.vehicle_link_log = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -1981,7 +1981,7 @@ class VehicleLinkLog(EventHandlerTool):
         file_name = f"{self.name}.csv"
 
         self.vehicle_link_log = self.start_chunk_writer(
-            file_name, write_path=write_path
+            file_name, write_path=write_path, compression=self.compression
         )
 
         # Only add to chunk writer when entry + exit complete
@@ -2040,7 +2040,7 @@ class AgentTollsLog(EventHandlerTool):
     requirements = ['events', 'attributes']
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
 
         self.groupby_person_attribute = groupby_person_attribute
         self.valid_modes = ['all']
@@ -2068,7 +2068,7 @@ class AgentTollsLog(EventHandlerTool):
         file_name = f'{self.name}.csv'
 
         self.agent_tolls_log = self.start_chunk_writer(
-            file_name, write_path=write_path
+            file_name, write_path=write_path, compression=self.compression
         )
 
     def process_event(self, elem) -> None:
@@ -2243,7 +2243,7 @@ class EventHandlerWorkStation(WorkStation):
                     csv_name = "{}.csv".format(name)
                     geojson_name = "{}.geojson".format(name)
 
-                    self.write_csv(df, csv_name, write_path=write_path)
+                    self.write_csv(df, csv_name, write_path=write_path, compression=handler.compression)
                     if isinstance(df, gpd.GeoDataFrame):
                         self.write_geojson(df, geojson_name, write_path=write_path)
 
