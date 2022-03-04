@@ -464,6 +464,13 @@ You can also name your handler, which will be added to the output file names:
 trip_activity_mode_shares = {name = "commuters", destination_activity_filters = ["work"]}
 ```
 
+Tabular (csv) outputs of the event and plan handlers can optionally be exported to a compressed format, by passing the `compression` option:
+
+```{.toml}
+[event_handlers]
+link_vehicle_counts = {modes = ["car","bus"], compression = "gzip"}
+```
+
 ### Letting Elara Deal With Dependancies
 
 The `modes` and `groupby_person_attributes` options are understood by elara as dependancies. Therefore if you ask for a postprocessor such as VKT (or a benchmark - described later below), elara will make sure that any handlers required to produce these outputs will also be created and given the correct options.

@@ -243,7 +243,7 @@ class VKT(PostProcessor):
             geojson_name = f"{self.name}_{self.groupby_person_attribute}.geojson"
 
             self.write_csv(vkt_gdf, csv_name, write_path=write_path, compression=self.compression)
-            self.write_geojson(vkt_gdf, geojson_name, write_path=write_path, compression=self.compression)
+            self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
 
         file_name = f"link_vehicle_counts_{self.mode}.geojson"
         file_path = os.path.join(self.config.output_path, file_name)
