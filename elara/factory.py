@@ -52,7 +52,7 @@ class Tool:
         self.config = config
         self.mode = self._validate_mode(mode)
         self.groupby_person_attribute = groupby_person_attribute
-        self.compression = compression
+        self.compression = self._validate_compression_method(compression)
         self.kwargs = kwargs
 
     def __str__(self):
@@ -132,6 +132,17 @@ class Tool:
             if mode in self.invalid_modes:
                 raise UserWarning(f'Invalid mode option: {mode} at tool: {self}')
         return mode
+
+    def _validate_compression_method(self, compression: str) -> str:
+        """
+        Validate output file compression method.
+        :param compression: compression method used by the pandas.to_csv method.
+        :return: str
+        """
+        valid_compression_methods = ['infer', None, 'bz2', 'gzip', 'xz', 'zip']
+        if compression not in valid_compression_methods:
+            raise UserWarning(f'Unsupported compression method: {compression} at tool: {self}')
+        return compression
 
     def start_chunk_writer(self, csv_name: str, write_path=None, compression=None):
         """
