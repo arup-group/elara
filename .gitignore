@@ -89,6 +89,9 @@ target/
 profile_default/
 ipython_config.py
 
+# config files
+config_test.toml
+
 # pyenv
 .python-version
 

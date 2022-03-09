@@ -1336,6 +1336,19 @@ def test_vehicle_link_log(test_config, input_manager):
         'exit_time': 59406
     } 
 
+
+# Vehicle link logs compressed output test 
+def test_vehicle_link_log_compressed(test_config, input_manager):
+    handler = event_handlers.VehicleLinkLog(test_config, mode="all", compression = "gzip")
+    handler.build(input_manager.resources, write_path=test_outputs)
+            
+    for elem in handler.resources['events'].elems:
+        handler.process_event(elem)
+
+    handler.finalise()
+    df_log = pd.read_csv(os.path.join(test_outputs, 'vehicle_link_log_all.csv.gz'))
+    assert len(df_log) == 10
+
 # Vehicle passenger boardings/alightings test
 def test_vehicle_passenger_boarding(test_config, input_manager):
     handler = event_handlers.VehiclePassengerLog(test_config, mode = "all")
