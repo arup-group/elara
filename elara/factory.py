@@ -47,7 +47,7 @@ class Tool:
         Initiate a tool instance with optional option (ie: 'bus').
         :param mode: optional mode, typically assumed to be str
         :param groupby_person_attribute: optional key for person attribute, str
-        :param compression: compression used for output (csv) files. Can be one of: 'gzip', 'zip', 'bz2', 'zstd'
+        :param compression: compression used for output (csv) files. Can be one of: 'infer', 'gzip', 'zip', 'bz2', 'zstd', None
         """
         self.config = config
         self.mode = self._validate_mode(mode)
@@ -139,9 +139,9 @@ class Tool:
         :param compression: compression method used by the pandas.to_csv method.
         :return: str
         """
-        valid_compression_methods = ['infer', None, 'bz2', 'gzip', 'xz', 'zip']
+        valid_compression_methods = [None, 'bz2', 'gzip', 'xz', 'zip']
         if compression not in valid_compression_methods:
-            raise TypeError(f'Unsupported compression method: {compression} at tool: {self}')
+            raise ValueError(f'Unsupported compression method: {compression} at tool: {self}')
         return compression
 
     def start_chunk_writer(self, csv_name: str, write_path=None, compression=None):
