@@ -141,7 +141,7 @@ class Tool:
         """
         valid_compression_methods = ['infer', None, 'bz2', 'gzip', 'xz', 'zip']
         if compression not in valid_compression_methods:
-            raise UserWarning(f'Unsupported compression method: {compression} at tool: {self}')
+            raise TypeError(f'Unsupported compression method: {compression} at tool: {self}')
         return compression
 
     def start_chunk_writer(self, csv_name: str, write_path=None, compression=None):
