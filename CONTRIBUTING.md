@@ -31,13 +31,15 @@ A good issue will outline the problem in a full written format. It is helpful to
 
 In case of bugs, please provide the full error message, the OS and information about the environment in which the process had been run. It is also helpful to include a small (if possible) set of data on which the problem can be recreated - or at the very least, a thorough description of the input data should be included.
 
+In the case of feature requests, be as specific as possible regarding the purpose and need for the feature. When requesting a new handler, or proposing changes to an existing handler, please clearly explain what analytical problems the new functionality will solve and why it is important for your project. This helps us to prioritize development tasks and better maintain the code base in the long term. 
+
 ## Contributing Code - Pull Request Process
 
 1. All new work is done in a branch taken from master, details can be found here:
 [feature branch workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow)
 2. Ensure your work is covered by unit tests to the required percentage level. This script 
 [`scripts/code-coverage.sh`](https://github.com/arup-group/elara/blob/master/scripts/code-coverage.sh)
- will help both in checking that the coverage level is satisfied and investigating places in code that have not been covered by the tests (via an output file `reports/coverage/index.html` which can be viewed in a browser).
+ will help both in checking that the coverage level is satisfied and investigating places in code that have not been covered by the tests (via an output file `reports/coverage/index.html` which can be viewed in a browser). We strongly encourage writing/updating tests for new code.
 3. Provide [docstrings](https://www.python.org/dev/peps/pep-0257/) for new methods.
 4. Perform linting locally using ```flake8 . --max-line-length 120 --count  --show-source --statistics --exclude=scripts,tests```
 5. Add or update dependencies in `requirements.txt` if applicable.
