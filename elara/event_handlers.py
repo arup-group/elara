@@ -255,7 +255,7 @@ class StopPassengerWaiting(EventHandlerTool):
         self.agent_attributes, _ = self.extract_attributes()
 
         csv_name = f"{str(self)}.csv"
-        self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path)
+        self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
 
     def process_event(self, elem) -> None:
         """
@@ -567,56 +567,70 @@ class LinkVehicleSpeeds(EventHandlerTool):
                                 self.config.time_periods))
 
         # Initialise duration cummulative sum table
-        self.inverseduration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
+        self.duration_sum = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_min = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
         self.duration_max = np.zeros((len(self.elem_indices), len(self.classes), self.config.time_periods))
 
-        self.link_tracker = dict()  # {(agent,link):start_time}
+        self.link_tracker = dict()  # {(agent, event_type): start_time}
 
     def process_event(self, elem) -> None:
         """
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle leaves traffic'
-        events to determine average time spent on link.
+        events to determine average time spent on links. Units are converted from m/s to kph
+        as a last step in the finalise method.
+        
         :param elem: Event XML element
 
         The events of interest to this handler look like:
 
           <event time="300.0"
-                 type="vehicle enters traffic"
+                 type="entered link"
                  person="nick"
                  link ="1-2"
                  vehicle="nick"
                  networkMode="car"
                  relativePosition="1.0"/>
           <event time="600.0"
-                 type="vehicle leaves traffic"
+                 type="left link"
                  person="nick"
                  link ="1-2"
                  vehicle="nick"
                  networkMode="car"
                  relativePosition="1.0"/>
 
+        Because vehicles can enter or leave traffic at the downstream node
+        of a link when accessing facilities, we explicity ignore or exclude 
+        the following patterns:
+            ENTERED LINK -> VEHICLE LEAVES TRAFFIC
+            VEHICLE ENTERS TRAFFIC -> LEFT LINK
         """
 
         event_type = elem.get("type")
         if event_type == "entered link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.mode:
+
+            # check vehicle mode and add to tracker
+            if veh_mode == self.mode or self.mode == "all":
                 start_time = float(elem.get("time"))
                 self.link_tracker[ident] = (event_type, start_time)
+
+        # remove vehicle from tracker if exiting network after entering the link
+        elif event_type == "vehicle leaves traffic":
+            ident = elem.get("vehicle")
+            self.link_tracker.pop(ident, None)
 
         elif event_type == "left link":
             ident = elem.get("vehicle")
             veh_mode = self.vehicle_mode(ident)
-            if veh_mode == self.mode:
+            if veh_mode == self.mode or self.mode == "all":
                 # look for attribute_class, if not found assume pt and use mode
                 attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
                 link = elem.get("link")
                 end_time = float(elem.get("time"))
 
-                # if person not in link tracker, this means they've entered
-                # link via "vehicle enters traffic event" and should be ignored.
+                # if agent ident not in link tracker, they have entered via
+                # "vehicle enters traffic event" and should be ignored.
                 if ident in self.link_tracker:
                     start_time = self.link_tracker[ident][1]
                     # start_event_type = self.link_tracker[ident][0]
@@ -634,7 +648,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                     self.counts[x, y, z] += 1
 
                     if duration != 0:
-                        self.inverseduration_sum[x, y, z] += 1/duration
+                        self.duration_sum[x, y, z] += duration
 
                     self.duration_max[x, y, z] = max(duration, self.duration_max[x, y, z])
 
@@ -651,11 +665,22 @@ class LinkVehicleSpeeds(EventHandlerTool):
         create dataframes.
         """
 
-        def calc_av_matrices(self):
-            counts_pop = self.counts.sum(1)
-            duration_pop = self.inverseduration_sum.sum(1)
-            av_pop = np.divide(duration_pop, counts_pop, out=np.zeros_like(counts_pop), where=duration_pop != 0)
-            return av_pop
+        mps_to_kph = 3.6
+
+        def calc_average_speed(self, counts_link:pd.DataFrame, duration_link:pd.DataFrame)->pd.DataFrame:
+            """
+            Calculate link average speed. 
+            Average speed = (total distance travelled) / (total travel duration) = 
+                            (n * link_distance) / sum(travel duration)
+            """
+            # number of vehicles divided by the total travel time on the link (n/Σ(t_i))
+            average_speeds = np.divide(counts_link, duration_link, out=np.zeros_like(duration_link), where=duration_link != 0).fillna(0)
+
+            # multiply by link distances to derive average speed
+            average_speeds = self.elem_gdf.join(average_speeds.reset_index().set_index('elem'), how="left")
+            average_speeds = multiply_distance(self, average_speeds)
+
+            return average_speeds
 
         def calc_max_matrices(self):
             unit_matrix = np.ones((len(self.elem_indices), len(self.classes), self.config.time_periods))
@@ -683,39 +708,46 @@ class LinkVehicleSpeeds(EventHandlerTool):
             index = pd.MultiIndex.from_product(indexes, names=names)
             df = pd.DataFrame(subpop_matrix.flatten(), index=index)[0]
             df = df.unstack(level='hour').sort_index()
-            df = df.reset_index().set_index('elem')
             return df
 
-        def calc_speeds(self, df):  # converts 1/duration matrix into speeds by multiplying through by length
+        def multiply_distance(self, df): 
+            """
+            Multiplies time period columns (ie hour 0...23) by link length
+            """
             for i in range(self.config.time_periods):
                 df[i] = df[i] * df["length"]
             return df
 
         if self.groupby_person_attribute:
-            # Calc average at subpop level
+            # Calc average speed at subpopulation level
             key = f"{self.name}_average_{self.groupby_person_attribute}"
-            average_speeds = flatten_subpops(self, self.inverseduration_sum)
-            average_speeds = self.elem_gdf.join(average_speeds, how="left")
-            average_speeds = calc_speeds(self, average_speeds)
+            counts_link_subpop = flatten_subpops(self, self.counts)   
+            duration_link_subpop = flatten_subpops(self, self.duration_sum)    
+            average_speeds = calc_average_speed(self, counts_link_subpop, duration_link_subpop)
+
             average_speeds.index.name = "id"
             self.result_dfs[key] = average_speeds
 
-        # Calc average at pop level
+        # Calc average speed at population level
         key = f"{self.name}_average"
-        average_speeds = calc_av_matrices(self)
-        average_speeds = pd.DataFrame(
-                data=average_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
-            ).sort_index()
-        average_speeds = self.elem_gdf.join(average_speeds, how="left")
-        average_speeds = calc_speeds(self, average_speeds)
+        # total link counts by hour
+        counts_link_pop = pd.DataFrame(
+            data=self.counts.sum(1), index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index().rename_axis('elem')
+        # sum of link travel duration by hour 
+        duration_link_pop = pd.DataFrame(
+            data=self.duration_sum.sum(1), index=self.elem_ids, columns=range(0, self.config.time_periods)
+            ).sort_index().rename_axis('elem')
+
+        average_speeds = calc_average_speed(self, counts_link_pop, duration_link_pop)
         self.result_dfs[key] = average_speeds
 
         if self.groupby_person_attribute:
             # Calc max at subpop level
             key = f"{self.name}_max_{self.groupby_person_attribute}"
-            max_speeds = flatten_subpops(self, calc_max_matrices(self)[0])
+            max_speeds = flatten_subpops(self, calc_max_matrices(self)[0]).reset_index().set_index('elem')
             max_speeds = self.elem_gdf.join(max_speeds, how="left")
-            max_speeds = calc_speeds(self, max_speeds)
+            max_speeds = multiply_distance(self, max_speeds)
             max_speeds.index.name = "id"
             self.result_dfs[key] = max_speeds
 
@@ -726,16 +758,16 @@ class LinkVehicleSpeeds(EventHandlerTool):
                 data=max_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
         max_speeds = self.elem_gdf.join(max_speeds, how="left")
-        max_speeds = calc_speeds(self, max_speeds)
+        max_speeds = multiply_distance(self, max_speeds)
         self.result_dfs[key] = max_speeds
 
         if self.groupby_person_attribute:
             # Calc min at subpop level
             key = f"{self.name}_min_{self.groupby_person_attribute}"
             min_matrix = calc_min_matrices(self)[0]
-            min_speeds = flatten_subpops(self, min_matrix)
+            min_speeds = flatten_subpops(self, min_matrix).reset_index().set_index('elem')
             min_speeds = self.elem_gdf.join(min_speeds, how="left")
-            min_speeds = calc_speeds(self, min_speeds)
+            min_speeds = multiply_distance(self, min_speeds)
             min_speeds.index.name = "id"
             self.result_dfs[key] = min_speeds
 
@@ -746,9 +778,13 @@ class LinkVehicleSpeeds(EventHandlerTool):
                 data=min_speeds, index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index()
         min_speeds = self.elem_gdf.join(min_speeds, how="left")
-        min_speeds = calc_speeds(self, min_speeds)
+        min_speeds = multiply_distance(self, min_speeds)
         self.result_dfs[key] = min_speeds
 
+        # convert all dataframes from meters per second to kph
+        for result, df in self.result_dfs.items():
+            data_columns = [i for i in range(0, self.config.time_periods)]
+            self.result_dfs[result].loc[:, data_columns] *= mps_to_kph
 
 class LinkPassengerCounts(EventHandlerTool):
     """
@@ -1818,7 +1854,7 @@ class VehicleDepartureLog(EventHandlerTool):
     requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode="all", **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
         self.vehicle_departure_log = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -1834,7 +1870,7 @@ class VehicleDepartureLog(EventHandlerTool):
         pt_csv_name = f"{self.name}.csv"
 
         self.vehicle_departure_log = self.start_chunk_writer(
-            pt_csv_name, write_path=write_path
+            pt_csv_name, write_path=write_path, compression=self.compression
             )
 
     def process_event(self, elem) -> None:
@@ -1882,7 +1918,7 @@ class VehiclePassengerLog(EventHandlerTool):
     requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode="all", **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
         self.vehicle_passenger_log = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -1898,7 +1934,7 @@ class VehiclePassengerLog(EventHandlerTool):
         self.veh_tracker = dict()  # {veh_id: last_stop}
 
         self.vehicle_passenger_log = self.start_chunk_writer(
-            pt_csv_name, write_path=write_path
+            pt_csv_name, write_path=write_path, compression=self.compression
             )
 
     def process_event(self, elem) -> None:
@@ -1953,7 +1989,7 @@ class VehicleLinkLog(EventHandlerTool):
     requirements = ['events', 'transit_schedule']
 
     def __init__(self, config, mode=None, **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
         self.vehicle_link_log = None
 
     def build(self, resources: dict, write_path: Optional[str] = None):
@@ -1969,7 +2005,7 @@ class VehicleLinkLog(EventHandlerTool):
         file_name = f"{self.name}.csv"
 
         self.vehicle_link_log = self.start_chunk_writer(
-            file_name, write_path=write_path
+            file_name, write_path=write_path, compression=self.compression
         )
 
         # Only add to chunk writer when entry + exit complete
@@ -2028,7 +2064,7 @@ class AgentTollsLog(EventHandlerTool):
     requirements = ['events', 'attributes']
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
-        super().__init__(config, mode)
+        super().__init__(config, mode, **kwargs)
 
         self.groupby_person_attribute = groupby_person_attribute
         self.valid_modes = ['all']
@@ -2056,7 +2092,7 @@ class AgentTollsLog(EventHandlerTool):
         file_name = f'{self.name}.csv'
 
         self.agent_tolls_log = self.start_chunk_writer(
-            file_name, write_path=write_path
+            file_name, write_path=write_path, compression=self.compression
         )
 
     def process_event(self, elem) -> None:
@@ -2231,7 +2267,7 @@ class EventHandlerWorkStation(WorkStation):
                     csv_name = "{}.csv".format(name)
                     geojson_name = "{}.geojson".format(name)
 
-                    self.write_csv(df, csv_name, write_path=write_path)
+                    self.write_csv(df, csv_name, write_path=write_path, compression=handler.compression)
                     if isinstance(df, gpd.GeoDataFrame):
                         self.write_geojson(df, geojson_name, write_path=write_path)
 

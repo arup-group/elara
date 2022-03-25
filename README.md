@@ -112,7 +112,7 @@ Currently supported handlers include:
 
 * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice. Counts **vehicles** entering link (PT vehicles counted once).
 * ``link_passenger_counts``: Produce link passenger counts by time slice. Counts **agents** entering link.
-* ``link_vehicle_speeds``: Produce average vehicle speeds across link.
+* ``link_vehicle_speeds``: Produce average vehicle speeds across link (in kilometers per hour).
 * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
 * ``stop_passenger_interactions``: Boardings and Alightings by time slice.
 * ``stop_to_stop_passenger_counts``: Passenger counts between directly connected stops/stations.
@@ -251,6 +251,8 @@ Options:
   -p, --time_periods INTEGER  Time period breakdown, defaults to 24 (hourly.
   -o, --outputs_path PATH     Outputs path, defaults to './elara_out'.
   -i, --inputs_path PATH      Inputs path location, defaults to current root.
+  -x, --no_experienced_plans  Switch for turning off Experienced Plans. Set to
+                              use output_plans instead.
   -n, --name TEXT             Scenario name, defaults to root dir name.
   -d, --debug                 Switch on debug verbosity.
   --help                      Show this message and exit.
@@ -460,6 +462,13 @@ You can also name your handler, which will be added to the output file names:
 
 ```{.toml}
 trip_activity_mode_shares = {name = "commuters", destination_activity_filters = ["work"]}
+```
+
+Tabular (csv) outputs of the event and plan handlers can optionally be exported to a compressed format, by passing the `compression` option:
+
+```{.toml}
+[event_handlers]
+link_vehicle_counts = {modes = ["car","bus"], compression = "gzip"}
 ```
 
 ### Letting Elara Deal With Dependancies
