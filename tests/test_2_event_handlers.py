@@ -457,7 +457,7 @@ def link_vehicle_capacity_handler_bus(test_config, input_manager):
     return handler
 
 
-def link_vehicle_capacity_handler_single_event_bus(
+def test_link_vehicle_capacity_handler_single_event_bus(
         link_vehicle_capacity_handler_bus,
         bus_enters_link_event
 ):
@@ -471,17 +471,17 @@ def link_vehicle_capacity_handler_single_event_bus(
     assert handler.counts[link_index][class_index][period] == 70
 
 
-def link_vehicle_capacity_handler_process_single_event_not_bus(
+def test_link_vehicle_capacity_handler_process_single_event_not_bus(
         link_vehicle_capacity_handler_bus,
         car_enters_link_event
 ):
-    handler = bus_link_vehicle_capacity_handler
+    handler = link_vehicle_capacity_handler_bus
     elem = car_enters_link_event
     handler.process_event(elem)
     assert np.sum(handler.counts) == 0
 
 
-def link_vehicle_capacity_handler_process_events_bus(link_vehicle_capacity_handler_bus, events):
+def test_link_vehicle_capacity_handler_process_events_bus(link_vehicle_capacity_handler_bus, events):
     handler = link_vehicle_capacity_handler_bus
     for elem in events:
         handler.process_event(elem)
@@ -492,7 +492,7 @@ def link_vehicle_capacity_handler_process_events_bus(link_vehicle_capacity_handl
     assert handler.counts[link_index][class_index][period] == 70
 
 
-def link_vehicle_capacity_handler_finalise_bus(link_vehicle_capacity_handler_bus, events):
+def test_link_vehicle_capacity_handler_finalise_bus(link_vehicle_capacity_handler_bus, events):
     handler = link_vehicle_capacity_handler_bus
     for elem in events:
         handler.process_event(elem)
@@ -513,7 +513,7 @@ def link_vehicle_capacity_handler_finalise_bus(link_vehicle_capacity_handler_bus
         if 'subpopulation' in gdf.columns:
             assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
 
-def link_vehicle_capacity_handler_rejects_car_as_mode():
+def test_link_vehicle_capacity_handler_rejects_car_as_mode():
     with pytest.raises(UserWarning) as ex_info:
         event_handlers.LinkVehicleCapacity(config=test_config, mode='car')
     assert "Invalid mode option: car at tool" in str(ex_info.value)            
