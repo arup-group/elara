@@ -436,6 +436,88 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         if 'subpopulation' in gdf.columns:
             assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
 
+# Link Vehicle Capacity Counts 
+
+# bus
+@pytest.fixture
+def link_vehicle_capacity_handler_bus(test_config, input_manager):
+    handler = event_handlers.LinkVehicleCapacity(test_config, mode='bus', groupby_person_attribute="subpopulation")
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert None in handler.classes
+    assert set(handler.class_indices.keys()) == handler.classes
+    assert len(handler.elem_ids) == len(resources['network'].link_gdf)
+    assert list(handler.elem_indices.keys()) == handler.elem_ids
+    assert handler.counts.shape == (
+        len(resources['network'].link_gdf), 3, periods)
+    return handler
+
+
+def link_vehicle_capacity_handler_single_event_bus(
+        link_vehicle_capacity_handler_bus,
+        bus_enters_link_event
+):
+    handler = link_vehicle_capacity_handler_bus
+    elem = bus_enters_link_event
+    handler.process_event(elem)
+    assert np.sum(handler.counts) == 70 # total capacity of 1 bus (seating+ standing) according to the output_transitVehicles.xml
+    link_index = handler.elem_indices['1-2']
+    class_index = handler.class_indices[None]
+    period = 6
+    assert handler.counts[link_index][class_index][period] == 70
+
+
+def link_vehicle_capacity_handler_process_single_event_not_bus(
+        link_vehicle_capacity_handler_bus,
+        car_enters_link_event
+):
+    handler = bus_link_vehicle_capacity_handler
+    elem = car_enters_link_event
+    handler.process_event(elem)
+    assert np.sum(handler.counts) == 0
+
+
+def link_vehicle_capacity_handler_process_events_bus(link_vehicle_capacity_handler_bus, events):
+    handler = link_vehicle_capacity_handler_bus
+    for elem in events:
+        handler.process_event(elem)
+    assert np.sum(handler.counts) == 12*70 # sum of 12 buses, each having a total capacity of 70
+    link_index = handler.elem_indices['1-2']
+    class_index = handler.class_indices[None]
+    period = 7
+    assert handler.counts[link_index][class_index][period] == 70
+
+
+def link_vehicle_capacity_handler_finalise_bus(link_vehicle_capacity_handler_bus, events):
+    handler = link_vehicle_capacity_handler_bus
+    for elem in events:
+        handler.process_event(elem)
+
+    assert handler.mode.lower() == 'bus'
+    assert handler.config.scale_factor == 0.0001
+
+    handler.finalise()
+    assert len(handler.result_dfs) == 2
+    for name, gdf in handler.result_dfs.items():
+        cols = list(range(handler.config.time_periods))
+        for c in cols:
+            assert c in gdf.columns
+            assert 'total' in gdf.columns
+        df = gdf.loc[:, cols]
+        assert np.sum(df.values) == 12*70 # sum of 12 buses, each having a total capacity of 70
+        assert np.sum(df.values) == gdf.total.sum()
+        if 'subpopulation' in gdf.columns:
+            assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
+
+def link_vehicle_capacity_handler_rejects_car_as_mode():
+    with pytest.raises(UserWarning) as ex_info:
+        event_handlers.LinkVehicleCapacity(config=test_config, mode='car')
+    assert "Invalid mode option: car at tool" in str(ex_info.value)            
+            
 # Link Speeds
 # Car
 # With subpopulation attribute groups
