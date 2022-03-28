@@ -1,8 +1,10 @@
 fixtures
 outputs
+test_outputs
 elara_out
 .idea/
 *.ipynb
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
