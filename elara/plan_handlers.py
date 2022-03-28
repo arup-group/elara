@@ -313,7 +313,6 @@ class PlanModes(ModeShares):
 
                 if plan_modes: # stay-home agents have no legs/modes
                     mode = self.get_furthest_mode(plan_modes)
-
                     x, y, z = self.mode_table_position(
                         mode,
                         attribute_class,

@@ -578,7 +578,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         Iteratively aggregate 'vehicle enters traffic' and 'vehicle leaves traffic'
         events to determine average time spent on links. Units are converted from m/s to kph
         as a last step in the finalise method.
-        
+
         :param elem: Event XML element
 
         The events of interest to this handler look like:
@@ -599,7 +599,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
                  relativePosition="1.0"/>
 
         Because vehicles can enter or leave traffic at the downstream node
-        of a link when accessing facilities, we explicity ignore or exclude 
+        of a link when accessing facilities, we explicity ignore or exclude
         the following patterns:
             ENTERED LINK -> VEHICLE LEAVES TRAFFIC
             VEHICLE ENTERS TRAFFIC -> LEFT LINK
@@ -669,8 +669,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
 
         def calc_average_speed(self, counts_link:pd.DataFrame, duration_link:pd.DataFrame)->pd.DataFrame:
             """
-            Calculate link average speed. 
-            Average speed = (total distance travelled) / (total travel duration) = 
+            Calculate link average speed.
+            Average speed = (total distance travelled) / (total travel duration) =
                             (n * link_distance) / sum(travel duration)
             """
             # number of vehicles divided by the total travel time on the link (n/Σ(t_i))
@@ -710,7 +710,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
             df = df.unstack(level='hour').sort_index()
             return df
 
-        def multiply_distance(self, df): 
+        def multiply_distance(self, df):
             """
             Multiplies time period columns (ie hour 0...23) by link length
             """
@@ -721,8 +721,8 @@ class LinkVehicleSpeeds(EventHandlerTool):
         if self.groupby_person_attribute:
             # Calc average speed at subpopulation level
             key = f"{self.name}_average_{self.groupby_person_attribute}"
-            counts_link_subpop = flatten_subpops(self, self.counts)   
-            duration_link_subpop = flatten_subpops(self, self.duration_sum)    
+            counts_link_subpop = flatten_subpops(self, self.counts)
+            duration_link_subpop = flatten_subpops(self, self.duration_sum)
             average_speeds = calc_average_speed(self, counts_link_subpop, duration_link_subpop)
 
             average_speeds.index.name = "id"
@@ -734,7 +734,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         counts_link_pop = pd.DataFrame(
             data=self.counts.sum(1), index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index().rename_axis('elem')
-        # sum of link travel duration by hour 
+        # sum of link travel duration by hour
         duration_link_pop = pd.DataFrame(
             data=self.duration_sum.sum(1), index=self.elem_ids, columns=range(0, self.config.time_periods)
             ).sort_index().rename_axis('elem')
@@ -1765,11 +1765,18 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         """
         # TODO this is a mess. requires some forcing to string hacks for None. The pd ops are forcing None to np.nan
         del self.veh_occupancy
-        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
-        counts_df = pd.Series(self.counts)
 
+        # Check if counts dictionary exists
+        if not self.counts:
+            self.logger.warning('Vehicle counts dictionary is empty.')
+            return None
+
+        names = ['from_stop', 'to_stop', 'veh_id', str(self.groupby_person_attribute)]
+
+        counts_df = pd.Series(self.counts)
         # include vehicle counts (in case a vehicle arrives at a stop more than once)
         counts_df = pd.concat([counts_df, pd.Series(self.veh_counts)], axis=1)
+
         counts_df.index.names = names + ['to_stop_arrival_hour']
         counts_df.columns = ['pax_counts', 'veh_counts']
         # move vehicle counts to the series index
@@ -1814,7 +1821,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
             key = f"{self.name}_{self.groupby_person_attribute}"
             self.result_dfs[key] = counts_df
 
-        # # calc sum across all recorded attribute classes
+        # calc sum across all recorded attribute classes
         totals_df = counts_df.reset_index().groupby(['from_stop', 'to_stop', 'veh_id', 'route', 'veh_counts']).sum()
 
         # Join stop data and build geometry
