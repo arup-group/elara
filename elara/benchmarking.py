@@ -1399,6 +1399,7 @@ class InputModeComparison(BenchmarkTool):
     requirements = ['input_trip_logs', 'trip_logs']
     options_enabled = True
     weight = 1
+    plot = True
 
     def __str__(self):
         return f'{self.__class__.__name__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
@@ -1469,7 +1470,40 @@ class InputModeComparison(BenchmarkTool):
         # score = percent correct
         count_no_shift = len(results_table.loc[results_table.prev_mode == results_table.new_mode])
         score = {'pct': (count_no_shift / len(results_table))}
+
+        if self.plot:
+            self.plot_heatmap(results_matrix_pcts)
+
         return score
+
+    def plot_heatmap(self, df, result_name="_matrix_pct") -> None:
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12,12))
+
+        ax.imshow(df, cmap='YlGnBu', alpha=0.8)
+
+        # set up ticks and lables
+        ax.set_xticks(np.arange(len(df.columns)))
+        ax.set_xticklabels(list(df.columns))
+        ax.set_yticks(np.arange(len(df.index)))
+        ax.set_yticklabels(list(df.index))
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                rotation_mode="anchor")
+
+        # add labels
+        for i, idx in enumerate(df.index):
+            for j, col in enumerate(df.columns):
+                val = df.loc[idx, col]
+                val_string = f"{val:.2%}"
+                set_val = ax.text(
+                    j, i, val_string, ha="center", va="center",
+                    color='k', fontweight='normal', fontsize=12
+                )
+
+        plt.ylabel("Original Mode", fontsize=14)
+        plt.xlabel("Simulation Mode", fontsize=14)
+
+        plt.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}{result_name}.png'))
+
 
 # ========================== Old style BMs below ==========================
 
@@ -1651,7 +1685,7 @@ class Cordon(BenchmarkTool):
                 links_df
             ))
 
-    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
+    def build(self, resource: dict, write_path: Optional[str]=None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
