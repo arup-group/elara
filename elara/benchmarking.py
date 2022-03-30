@@ -1405,8 +1405,9 @@ class InputModeComparison(BenchmarkTool):
 
     def __init__(self, config, benchmark_data_path=None, **kwargs) -> None:
         """
-        Link volume benchmarker for json formatted {mode: {id: {dir: {links: [], counts: {}}}}}.
+        Creates a table and confusion matrix for input modes compared to post-simulation modes.
         :param config: Config object
+        :returns score: dict, {'pct': float}
         """
 
         # from input_plan_handler
