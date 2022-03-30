@@ -499,15 +499,20 @@ def test_link_vehicle_capacity_handler_process_single_event_not_bus(
     assert np.sum(handler.counts) == 0
 
 
-def test_link_vehicle_capacity_handler_process_events_bus(link_vehicle_capacity_handler_bus, events):
+def test_link_vehicle_capacity_handler_process_events_bus(test_config, link_vehicle_capacity_handler_bus, events):
     handler = link_vehicle_capacity_handler_bus
+
     for elem in events:
         handler.process_event(elem)
-    assert np.sum(handler.counts) == 12*70 # sum of 12 buses, each having a total capacity of 70
+
+    number_of_buses = 12  # why is it 12?
+    bus_capacity = get_vehicle_capacity_from_config(test_config, 'Bus')
+    expected_total_capacity = number_of_buses * bus_capacity
+    assert np.sum(handler.counts) == expected_total_capacity
     link_index = handler.elem_indices['1-2']
     class_index = handler.class_indices[None]
     period = 7
-    assert handler.counts[link_index][class_index][period] == 70
+    assert handler.counts[link_index][class_index][period] == bus_capacity
 
 
 def test_link_vehicle_capacity_handler_finalise_bus(test_config, link_vehicle_capacity_handler_bus, events):
