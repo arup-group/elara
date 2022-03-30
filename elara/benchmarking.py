@@ -1458,7 +1458,7 @@ class InputModeComparison(BenchmarkTool):
 
         # score = percent correct
         count_no_shift = len(joined.loc[joined.prev_mode == joined.new_mode])
-        score = {'mode_shift': (count_no_shift / len(joined)}
+        score = {'mode_shift': (count_no_shift / len(joined))}
         return score
 
 # ========================== Old style BMs below ==========================
