@@ -1414,13 +1414,14 @@ class InputModeComparison(BenchmarkTool):
             config.output_path,
             'input_trip_logs_all_trips.csv'
         )
+
         # from plan_handler
         self.simulation_data_path = os.path.join(
             config.output_path,
             'trip_logs_all_trips.csv'
         )
 
-        super.__init__(config, **kwargs)
+        super().__init__(config, **kwargs)
 
         # Always uses Elara output, issue warning if bm path specified
         # TODO remove this requirement and move all tools into separate module
@@ -1434,31 +1435,38 @@ class InputModeComparison(BenchmarkTool):
         usecols = ['agent', 'seq', 'mode']
         indexcols = ['agent', 'seq']
 
-        trips_input = pd.read_csv(self.benchmark_data_path, usecols=usecols).set_index(indexcols)
-        trips_output = pd.read_csv(self.benchmark_data_path, usecols=usecols).set_index(indexcols)
+        trips_input = pd.read_csv(self.benchmark_data_path, usecols=usecols, header=0).set_index(indexcols)
+        trips_output = pd.read_csv(self.simulation_data_path, usecols=usecols, header=0).set_index(indexcols)
 
         trips_input.rename({'mode': 'prev_mode'}, axis=1, inplace=True)
-        trips_output.rename({'mode': 'prev_mode'}, axis=1, inplace=True)
+        trips_output.rename({'mode': 'new_mode'}, axis=1, inplace=True)
 
         results_table = trips_input.join(trips_output, how='left')
 
-        # build confusion matrix representations; keep NaNs (no match) for QAQC
-        results_matrix_counts = results_table.value_counts(
-            subset=['prev_mode', 'new_mode'], dropna=False
-        ).unstack()
+        # handle unjoined records (plans cannot be completed in full)
+        # avoiding nan column name
+        results_table['new_mode'].fillna('unmatched', inplace=True)
 
-        results_matrix_pcts = results_matrix_counts.div(
-            results_matrix_counts.sum(1), axis=0
-        )
+        # build confusion matrix representations
+        results_matrix_counts = results_table.value_counts(subset=['prev_mode', 'new_mode']).unstack()
+        results_matrix_pcts = results_matrix_counts.div(results_matrix_counts.sum(1), axis=0)
 
         # write results
         csv_name = f'{self.name}.csv'
         csv_path = os.path.join('benchmarks', csv_name)
-        self.write_csv(resuts_table, csv_path, write_path=write_path)
+        self.write_csv(results_table, csv_path, write_path=write_path)
+
+        csv_name = f'{self.name}_counts_matrix.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(results_matrix_counts, csv_path, write_path=write_path)
+
+        csv_name = f'{self.name}_pct_matrix.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(results_matrix_pcts, csv_path, write_path=write_path)
 
         # score = percent correct
-        count_no_shift = len(joined.loc[joined.prev_mode == joined.new_mode])
-        score = {'mode_shift': (count_no_shift / len(joined))}
+        count_no_shift = len(results_table.loc[results_table.prev_mode == results_table.new_mode])
+        score = {'pct': (count_no_shift / len(results_table))}
         return score
 
 # ========================== Old style BMs below ==========================
