@@ -1476,10 +1476,18 @@ class InputModeComparison(BenchmarkTool):
 
         return score
 
-    def plot_heatmap(self, df, result_name="_matrix_pct") -> None:
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12,12))
+    def plot_heatmap(
+        self,
+        df,
+        result_name="_matrix_pct",
+        cmap='summer',
+        figsize=(12,12),
+        val_label_size=12
+    ) -> None:
 
-        ax.imshow(df, cmap='YlGnBu', alpha=0.8)
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+
+        ax.imshow(df, cmap=cmap, alpha=0.7)
 
         # set up ticks and lables
         ax.set_xticks(np.arange(len(df.columns)))
@@ -1496,7 +1504,7 @@ class InputModeComparison(BenchmarkTool):
                 val_string = f"{val:.2%}"
                 set_val = ax.text(
                     j, i, val_string, ha="center", va="center",
-                    color='k', fontweight='normal', fontsize=12
+                    color='k', fontweight='normal', fontsize=val_label_size
                 )
 
         plt.ylabel("Original Mode", fontsize=14)
