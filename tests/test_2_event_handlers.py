@@ -458,17 +458,35 @@ def link_vehicle_capacity_handler_bus(test_config, input_manager):
 
 
 def test_link_vehicle_capacity_handler_single_event_bus(
+        test_config,
         link_vehicle_capacity_handler_bus,
         bus_enters_link_event
 ):
     handler = link_vehicle_capacity_handler_bus
     elem = bus_enters_link_event
+
     handler.process_event(elem)
-    assert np.sum(handler.counts) == 70 # total capacity of 1 bus (seating+ standing) according to the output_transitVehicles.xml
+
+    bus_capacity = get_vehicle_capacity_from_config(test_config, 'Bus')
+    assert np.sum(handler.counts) == bus_capacity
     link_index = handler.elem_indices['1-2']
     class_index = handler.class_indices[None]
     period = 6
-    assert handler.counts[link_index][class_index][period] == 70
+    assert handler.counts[link_index][class_index][period] == bus_capacity
+
+
+def get_vehicle_capacity_from_config(config, vehicleType):
+    root_elem = etree.parse(config.transit_vehicles_path).getroot()
+    schema_version = root_elem.attrib['{http://www.w3.org/2001/XMLSchema-instance}schemaLocation'].split()[-1]
+    vehicle_elem = root_elem.find('{{*}}vehicleType[@id="{}"]'.format(vehicleType))
+    if schema_version.endswith('v1.0.xsd'):
+        capacity_elem = vehicle_elem.find("{*}capacity")
+        seated_capacity = int(capacity_elem.find("{*}seats").attrib['persons'])
+        standing_capacity = int(capacity_elem.find("{*}standingRoom").attrib['persons'])
+    else:
+        seated_capacity = int(vehicle_elem.xpath("{*}capacity/@seats")[0])
+        standing_capacity = int(vehicle_elem.xpath("{*}capacity/@standingRoomInPersons")[0])
+    return seated_capacity + standing_capacity
 
 
 def test_link_vehicle_capacity_handler_process_single_event_not_bus(
