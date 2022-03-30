@@ -720,7 +720,7 @@ The currenly supported set of handlers includes:
 - Trip durations (seconds)
 - Activity start times (seconds since start of simulation)
 - Activity durations (seconds)
-- Mode comparisons (same/different modes)
+- Mode comparisons (identifies modeshifts at the trip level, using the longest-distance mode)
 
 These handlers have two two requirements: TripLogs and InputTripLogs -- which mirror the trip logs, but are built from the input data rather than output data. To use these handlers you must specify an additional `input_plans` path in your `config.toml` file, eg.
 
