@@ -1449,6 +1449,7 @@ class InputModeComparison(BenchmarkTool):
 
         # build confusion matrix representations
         results_matrix_counts = results_table.value_counts(subset=['prev_mode', 'new_mode']).unstack()
+        results_matrix_counts.fillna(0, inplace=True) # unobserved pairs = 0
         results_matrix_pcts = results_matrix_counts.div(results_matrix_counts.sum(1), axis=0)
 
         # write results
