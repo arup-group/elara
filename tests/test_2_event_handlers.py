@@ -510,26 +510,30 @@ def test_link_vehicle_capacity_handler_process_events_bus(link_vehicle_capacity_
     assert handler.counts[link_index][class_index][period] == 70
 
 
-def test_link_vehicle_capacity_handler_finalise_bus(link_vehicle_capacity_handler_bus, events):
+def test_link_vehicle_capacity_handler_finalise_bus(test_config, link_vehicle_capacity_handler_bus, events):
     handler = link_vehicle_capacity_handler_bus
     for elem in events:
         handler.process_event(elem)
-
     assert handler.mode.lower() == 'bus'
     assert handler.config.scale_factor == 0.0001
 
     handler.finalise()
+
     assert len(handler.result_dfs) == 2
+    bus_capacity = get_vehicle_capacity_from_config(test_config, 'Bus')
+    number_of_buses = 12 # why is it 12?
+    expected_total_capacity = number_of_buses * bus_capacity
     for name, gdf in handler.result_dfs.items():
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
             assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
-        assert np.sum(df.values) == 12*70 # sum of 12 buses, each having a total capacity of 70
+        assert np.sum(df.values) == expected_total_capacity
         assert np.sum(df.values) == gdf.total.sum()
         if 'subpopulation' in gdf.columns:
             assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
+
 
 def test_link_vehicle_capacity_handler_rejects_car_as_mode():
     with pytest.raises(UserWarning) as ex_info:
