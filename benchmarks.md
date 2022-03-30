@@ -176,7 +176,7 @@ trip_activity_mode_shares_comparison = {benchmark_data_path = PATH, destination_
 - `benchmark_data_path` (required) path to observed data for comparison
 - `destination_activity_filters` (required) list of destination activity types to filter
 - `modes` must be set to `modes = ["all"]`, (this is the default)
-- `groupby_person_attributes` may be optionally set as a list with a **single** agent attribute key, eg `groupby_person_attributes = ["subpopulation"]`, default is `None` 
+- `groupby_person_attributes` may be optionally set as a list with a **single** agent attribute key, eg `groupby_person_attributes = ["subpopulation"]`, default is `None`
 
 ### Benchmark (Observed) Data Format
 
@@ -711,7 +711,7 @@ Note that unrecognised or missing keys will be quietly ignored. This includes li
 
 # Input Plan Comparisons
 
-This is a special class of pseudo-benchmarks which compares simulation input plans to simulation output plans. 
+This is a special class of pseudo-benchmarks which compares simulation input plans to simulation output plans.
 
 The purpose of these benchmarks is to allow modellers to understand where and how agents have altered their plans as a result of a MATSim simulation.
 
@@ -720,6 +720,7 @@ The currenly supported set of handlers includes:
 - Trip durations (seconds)
 - Activity start times (seconds since start of simulation)
 - Activity durations (seconds)
+- Mode comparisons (same/different modes)
 
 These handlers have two two requirements: TripLogs and InputTripLogs -- which mirror the trip logs, but are built from the input data rather than output data. To use these handlers you must specify an additional `input_plans` path in your `config.toml` file, eg.
 
@@ -739,6 +740,8 @@ This group of handlers do not support `group_by_person_attributes` or `destinati
 
 ## input_plan_comparison_activity_duration
 
+## input_mode_comparison
+
 ### Example Configuration
 
 ```
@@ -747,6 +750,7 @@ input_plan_comparison_trip_duration = ["all"]
 input_plan_comparison_trip_start = ["all"]
 input_plan_comparison_activity_start = ["all"]
 input_plan_comparison_activity_duration = ["all"]
+input_mode_comparison = ["all"]
 ```
 
 - `benchmark_data_path` is not required and will be overwritten.
