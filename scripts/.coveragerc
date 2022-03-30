@@ -3,4 +3,4 @@ branch = True
 omit = venv/*, tests/*, elara/tool_templates.py, scripts/*
 
 [report]
-fail_under = 84
+fail_under = 86
