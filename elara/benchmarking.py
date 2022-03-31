@@ -2153,7 +2153,7 @@ class BenchmarkWorkStation(WorkStation):
         "input_plan_comparison_activity_start": InputPlanComparisonActivityStart,
         "plan_comparison_activity_duration": PlanComparisonActivityDuration,
         "input_plan_comparison_activity_duration": InputPlanComparisonActivityDuration,
-        "input_mode_comparison": InputModeComparison
+        "input_mode_comparison": InputModeComparison,
 
         # new benchmarks - link speeds, trip durations
         "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
