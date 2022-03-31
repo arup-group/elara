@@ -31,7 +31,7 @@ class BenchmarkTool(Tool):
             self.benchmark_data_path = proposed_bm_path
 
         super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
-        
+
         self.logger = logging.getLogger(__name__)
         self.logger.debug(f"Initiating: {str(self)} with name: {self.name}")
         self.logger.debug(f"groupby_person_attribute={groupby_person_attribute}, benchmark_data_path={self.benchmark_data_path}, kwargs={kwargs}")
@@ -109,7 +109,7 @@ class TripDurationsComparison(CsvComparison):
 
     'agent' is agent_id.
     'seq' is the agent trip sequence number (the current convention starts countimg from 1).
-    By setting a kwarg "mode_consistency = true", mode is used to ensure only trips with 
+    By setting a kwarg "mode_consistency = true", mode is used to ensure only trips with
     matching mode are compared. Default is false.
     The value field 'duration_s' is the trip duartion in seconds.
 
@@ -153,7 +153,7 @@ class LinkVehicleSpeedsComparison(CsvComparison):
     5-1,10.0
 
     or
-    
+
     id,8,17
     1-5,10.0,9.5
     5-1,10.0,9.8
@@ -178,7 +178,7 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         ):
         self.requirements = ['link_vehicle_speeds']
         self.invalid_modes = ['all']
-        
+
         # get required time-slice from kwargs
         time_slice = kwargs.pop("time_slice", None)  # this is the required column field, typically hour of day
         if time_slice is None:
@@ -540,7 +540,7 @@ class LinkCounterComparison(BenchmarkTool):
 
         missing_counters = 0
         total_counters = 0
-        
+
         mode_counts = self.counts.get(self.mode)
         if self.mode is None:
             raise UserWarning(
@@ -556,7 +556,7 @@ class LinkCounterComparison(BenchmarkTool):
                 total_counters += 1
 
                 links = counter['links']
-                if not links:      
+                if not links:
                     missing_counters += 1
                     self.logger.warning(
                         f"Benchmark data has no links - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
@@ -574,7 +574,7 @@ class LinkCounterComparison(BenchmarkTool):
                 f"{str(self)} has more than 50% ({missing*100}%) BMs with no links."
                 )
 
-    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
+    def build(self, resource: dict, write_path: Optional[str]=None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         :return: Dictionary of scores {'name': float}
@@ -814,7 +814,7 @@ class TransitInteractionComparison(BenchmarkTool):
                 total_counters += 1
 
                 stops = counter['stop_ids']
-                if not stops:      
+                if not stops:
                     missing_counters += 1
                     self.logger.debug(
                         f"Benchmark data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
@@ -902,7 +902,7 @@ class TransitInteractionComparison(BenchmarkTool):
                         f"results.columns: {model_results[direction].columns}")
 
                 # combine mode stop counts
-                  
+
                 for stop_id in stops:
                     if str(stop_id) not in model_results[direction].index:
                         failed_snaps += 1
@@ -1294,7 +1294,7 @@ class PlanComparisonTripStart(CsvComparison):
 class InputPlanComparisonTripStart(PlanComparisonTripStart):
     requirements = ['trip_logs', 'input_trip_logs']
 
-    def __init__(self, config, **kwargs) -> None: 
+    def __init__(self, config, **kwargs) -> None:
         self.benchmark_data_path = os.path.join(
             config.output_path,
             'input_trip_logs_all_trips.csv'
@@ -1351,7 +1351,7 @@ class PlanComparisonActivityStart(CsvComparison):
 class InputPlanComparisonActivityStart(PlanComparisonActivityStart):
     requirements = ['trip_logs', 'input_trip_logs']
 
-    def __init__(self, config, **kwargs) -> None: 
+    def __init__(self, config, **kwargs) -> None:
         self.benchmark_data_path = os.path.join(
             config.output_path,
             'input_trip_logs_all_activities.csv'
@@ -1379,7 +1379,7 @@ class PlanComparisonActivityDuration(CsvComparison):
 class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
     requirements = ['trip_logs', 'input_trip_logs']
 
-    def __init__(self, config, **kwargs) -> None: 
+    def __init__(self, config, **kwargs) -> None:
         self.benchmark_data_path = os.path.join(
             config.output_path,
             'input_trip_logs_all_activities.csv'
@@ -1392,6 +1392,125 @@ class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
             self.logger.warning(
                 f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
             )
+
+
+class InputModeComparison(BenchmarkTool):
+
+    requirements = ['input_trip_logs', 'trip_logs']
+    options_enabled = True
+    weight = 1
+    plot = True
+
+    def __str__(self):
+        return f'{self.__class__.__name__}: {self.mode}: {self.name}: {self.benchmark_data_path}'
+
+    def __init__(self, config, benchmark_data_path=None, **kwargs) -> None:
+        """
+        Creates a table and confusion matrix for input modes compared to post-simulation modes.
+        :param config: Config object
+        :returns score: dict, {'pct': float}
+        """
+
+        # from input_plan_handler
+        self.benchmark_data_path = os.path.join(
+            config.output_path,
+            'input_trip_logs_all_trips.csv'
+        )
+
+        # from plan_handler
+        self.simulation_data_path = os.path.join(
+            config.output_path,
+            'trip_logs_all_trips.csv'
+        )
+
+        super().__init__(config, **kwargs)
+
+        # Always uses Elara output, issue warning if bm path specified
+        # TODO remove this requirement and move all tools into separate module
+        data_path_from_config = kwargs.get('benchmark_data_path', None)
+        if data_path_from_config is not None:
+            self.logger.warning(
+                f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
+            )
+
+    def build(self, resources: dict, write_path: Optional[str]=None) -> dict:
+        usecols = ['agent', 'seq', 'mode']
+        indexcols = ['agent', 'seq']
+
+        trips_input = pd.read_csv(self.benchmark_data_path, usecols=usecols, header=0).set_index(indexcols)
+        trips_output = pd.read_csv(self.simulation_data_path, usecols=usecols, header=0).set_index(indexcols)
+
+        trips_input.rename({'mode': 'prev_mode'}, axis=1, inplace=True)
+        trips_output.rename({'mode': 'new_mode'}, axis=1, inplace=True)
+
+        results_table = trips_input.join(trips_output, how='left')
+
+        # handle unjoined records (plans cannot be completed in full)
+        # avoiding nan column name
+        results_table['new_mode'].fillna('unmatched', inplace=True)
+
+        # build confusion matrix representations
+        results_matrix_counts = results_table.value_counts(subset=['prev_mode', 'new_mode']).unstack()
+        results_matrix_counts.fillna(0, inplace=True) # unobserved pairs = 0
+        results_matrix_pcts = results_matrix_counts.div(results_matrix_counts.sum(1), axis=0)
+
+        # write results
+        csv_name = f'{self.name}.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(results_table, csv_path, write_path=write_path)
+
+        csv_name = f'{self.name}_counts_matrix.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(results_matrix_counts, csv_path, write_path=write_path)
+
+        csv_name = f'{self.name}_pct_matrix.csv'
+        csv_path = os.path.join('benchmarks', csv_name)
+        self.write_csv(results_matrix_pcts, csv_path, write_path=write_path)
+
+        # score = percent correct
+        count_no_shift = len(results_table.loc[results_table.prev_mode == results_table.new_mode])
+        score = {'pct': (count_no_shift / len(results_table))}
+
+        if self.plot:
+            self.plot_heatmap(results_matrix_pcts)
+
+        return score
+
+    def plot_heatmap(
+        self,
+        df,
+        result_name="_matrix_pct",
+        cmap='summer',
+        figsize=(12,12),
+        val_label_size=12
+    ) -> None:
+
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+
+        ax.imshow(df, cmap=cmap, alpha=0.7)
+
+        # set up ticks and lables
+        ax.set_xticks(np.arange(len(df.columns)))
+        ax.set_xticklabels(list(df.columns))
+        ax.set_yticks(np.arange(len(df.index)))
+        ax.set_yticklabels(list(df.index))
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                rotation_mode="anchor")
+
+        # add labels
+        for i, idx in enumerate(df.index):
+            for j, col in enumerate(df.columns):
+                val = df.loc[idx, col]
+                val_string = f"{val:.2%}"
+                set_val = ax.text(
+                    j, i, val_string, ha="center", va="center",
+                    color='k', fontweight='normal', fontsize=val_label_size
+                )
+
+        plt.ylabel("Original Mode", fontsize=14)
+        plt.xlabel("Simulation Mode", fontsize=14)
+
+        plt.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}{result_name}.png'))
 
 
 # ========================== Old style BMs below ==========================
@@ -1574,7 +1693,7 @@ class Cordon(BenchmarkTool):
                 links_df
             ))
 
-    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
+    def build(self, resource: dict, write_path: Optional[str]=None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
@@ -1841,7 +1960,7 @@ class OldModeSharesComparison(BenchmarkTool):
     requirements = ["mode_shares"]
     valid_modes = ['all']
     options_enabled = True
-    
+
     def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
         """
         ModeStat parent object for benchmarking with mode share data.
@@ -2007,7 +2126,7 @@ class BenchmarkWorkStation(WorkStation):
         "trip_activity_mode_shares_comparison": TripActivityModeSharesComparison,
         "trip_mode_counts_comparison": TripModeCountsComparison,
         "trip_activity_mode_counts_comparison": TripActivityModeCountsComparison,
-        
+
         # plan mode shares and counts
         "plan_mode_shares_comparison": PlanModeSharesComparison,
         "plan_activity_mode_shares_comparison": PlanActivityModeSharesComparison,
@@ -2034,7 +2153,8 @@ class BenchmarkWorkStation(WorkStation):
         "input_plan_comparison_activity_start": InputPlanComparisonActivityStart,
         "plan_comparison_activity_duration": PlanComparisonActivityDuration,
         "input_plan_comparison_activity_duration": InputPlanComparisonActivityDuration,
-      
+        "input_mode_comparison": InputModeComparison,
+
         # new benchmarks - link speeds, trip durations
         "link_vehicle_speeds_comparison": LinkVehicleSpeedsComparison,
         "trip_durations_comparison": TripDurationsComparison,
@@ -2068,7 +2188,7 @@ class BenchmarkWorkStation(WorkStation):
         """
         summary = {}
         flat_summary = []
-        
+
         self.logger.info('--BENCHMARK SCORES--')
 
         for benchmark_name, benchmark in self.resources.items():
@@ -2111,10 +2231,10 @@ def merge_summary_stats(bm_results_summary):
 
     for record in data:
         record_type = record['source']
-        
+
         record.pop("score")
         record.pop("source")
-        
+
         if record_type != "difference":
             for measurement in list(record):
                 results.append(
@@ -2138,6 +2258,6 @@ def comparative_plots(results):
 def comparative_column_plots(results):
     plot = ggplot(
         aes(y="modeshare", x="mode", fill="type"),
-        data=results) + geom_col(position="dodge") + labs(y="Mode Share", 
+        data=results) + geom_col(position="dodge") + labs(y="Mode Share",
         x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
     return  plot
