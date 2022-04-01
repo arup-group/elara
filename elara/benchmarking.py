@@ -1510,6 +1510,8 @@ class InputModeComparison(BenchmarkTool):
         plt.ylabel("Original Mode", fontsize=14)
         plt.xlabel("Simulation Mode", fontsize=14)
 
+        plt.tight_layout()
+
         plt.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}{result_name}.png'))
 
 
