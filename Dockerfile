@@ -8,6 +8,6 @@ RUN apt-get update \
 
 COPY . .
 
-RUN pip3 install -e .
+RUN pip3 install --no-cache-dir --compile -e .
 
 ENTRYPOINT ["elara"]

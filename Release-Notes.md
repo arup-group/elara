@@ -4,4 +4,4 @@
 
 2.0.0 - the great renaming
 
-3.0.0 - open sorcing. Principally removal of data and addition of liscense etc
+3.0.0 - open sourcing. Principally removal of data and addition of license etc
