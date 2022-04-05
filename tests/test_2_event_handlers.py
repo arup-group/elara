@@ -1410,7 +1410,7 @@ def test_link_vehicle_speeds_events_file(test_config, input_manager):
     data_cols = [i for i in range(0, test_config.time_periods)]
 
     for  df in handler.result_dfs.values():
-        df = df[data_cols]
+        df = df[data_cols].copy()
         df.replace(0, np.nan, inplace=True)
         min_speed = df.min().min() # min value across all time columns
         assert min_speed >= 10
