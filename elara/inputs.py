@@ -463,14 +463,13 @@ class TransitVehicles(InputTool):
         """
         strip_namespace(elem)  # TODO only needed for this input = janky
         ident = elem.xpath("@id")[0]
-        
-        ### # changed below for nz transit vehicle files which has tags seats and standingRoomInPersons instead of the original - need to check if it's matsim structure update 
-
-        if len(elem.xpath("capacity/seats/@persons")) > 0: #old structure           
+        if len(elem.xpath("capacity/seats/@persons")) > 0:
+            # https://www.matsim.org/files/dtd/vehicleDefinitions_v1.0.xsd
             seated_capacity = float(elem.xpath("capacity/seats/@persons")[0]) 
             standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
         else:
-            seated_capacity = float(elem.xpath("capacity/@seats")[0])  # new structure 
+            # https://www.matsim.org/files/dtd/vehicleDefinitions_v2.0.xsd
+            seated_capacity = float(elem.xpath("capacity/@seats")[0])
             standing_capacity = float(elem.xpath("capacity/@standingRoomInPersons")[0])
         return ident, seated_capacity + standing_capacity
 

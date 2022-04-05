@@ -9,10 +9,11 @@ from elara import inputs
 from elara import event_handlers
 from elara.event_handlers import EventHandlerWorkStation, LinkVehicleCounts
 
+from tests.test_helpers import get_vehicle_capacity_from_vehicles_xml_file
+
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(root_dir)
-
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
 test_outputs = os.path.join(test_dir, "test_outputs")
@@ -467,26 +468,13 @@ def test_link_vehicle_capacity_handler_single_event_bus(
 
     handler.process_event(elem)
 
-    bus_capacity = get_vehicle_capacity_from_config(test_config, 'Bus')
+    schema_version, vehicle_elem, bus_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(test_config.transit_vehicles_path, 'Bus')
     assert np.sum(handler.counts) == bus_capacity
     link_index = handler.elem_indices['1-2']
     class_index = handler.class_indices[None]
     period = 6
     assert handler.counts[link_index][class_index][period] == bus_capacity
-
-
-def get_vehicle_capacity_from_config(config, vehicleType):
-    root_elem = etree.parse(config.transit_vehicles_path).getroot()
-    schema_version = root_elem.attrib['{http://www.w3.org/2001/XMLSchema-instance}schemaLocation'].split()[-1]
-    vehicle_elem = root_elem.find('{{*}}vehicleType[@id="{}"]'.format(vehicleType))
-    if schema_version.endswith('v1.0.xsd'):
-        capacity_elem = vehicle_elem.find("{*}capacity")
-        seated_capacity = int(capacity_elem.find("{*}seats").attrib['persons'])
-        standing_capacity = int(capacity_elem.find("{*}standingRoom").attrib['persons'])
-    else:
-        seated_capacity = int(vehicle_elem.xpath("{*}capacity/@seats")[0])
-        standing_capacity = int(vehicle_elem.xpath("{*}capacity/@standingRoomInPersons")[0])
-    return seated_capacity + standing_capacity
 
 
 def test_link_vehicle_capacity_handler_process_single_event_not_bus(
@@ -506,7 +494,8 @@ def test_link_vehicle_capacity_handler_process_events_bus(test_config, link_vehi
         handler.process_event(elem)
 
     number_of_buses = 12  # why is it 12?
-    bus_capacity = get_vehicle_capacity_from_config(test_config, 'Bus')
+    schema_version, vehicle_elem, bus_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(test_config.transit_vehicles_path, 'Bus')
     expected_total_capacity = number_of_buses * bus_capacity
     assert np.sum(handler.counts) == expected_total_capacity
     link_index = handler.elem_indices['1-2']
@@ -525,7 +514,8 @@ def test_link_vehicle_capacity_handler_finalise_bus(test_config, link_vehicle_ca
     handler.finalise()
 
     assert len(handler.result_dfs) == 2
-    bus_capacity = get_vehicle_capacity_from_config(test_config, 'Bus')
+    schema_version, vehicle_elem, bus_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(test_config.transit_vehicles_path, 'Bus')
     number_of_buses = 12 # why is it 12?
     expected_total_capacity = number_of_buses * bus_capacity
     for name, gdf in handler.result_dfs.items():
