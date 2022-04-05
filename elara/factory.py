@@ -1,6 +1,7 @@
 from typing import Dict, List, Union, Optional
 import pandas as pd
 import geopandas as gpd
+import pyarrow as pa
 import os
 import json
 import logging
@@ -65,7 +66,7 @@ class Tool:
         class_name = self.__class__.__name__.split('.')[-1]
         suffix = ""
         if self.mode:
-            suffix += f"_{self.mode}" 
+            suffix += f"_{self.mode}"
         if self.kwargs:  # add other options to ensure unique name
             for value in self.kwargs.values():
                 if isinstance(value, str) and os.path.isfile(value):  # if arg is a path then get file name minus extension
@@ -144,7 +145,7 @@ class Tool:
             raise ValueError(f'Unsupported compression method: {compression} at tool: {self}')
         return compression
 
-    def start_chunk_writer(self, csv_name: str, write_path=None, compression=None):
+    def start_csv_chunk_writer(self, csv_name: str, write_path=None, compression=None):
         """
         Return a simple csv ChunkWriter, default to config path if write_path (used for testing)
         not given.
@@ -157,7 +158,19 @@ class Tool:
         if compression is not None:
             path = path_compressed(path, compression)
 
-        return ChunkWriter(path, compression)
+        return CSVChunkWriter(path, compression)
+
+    def start_arrow_chunk_writer(self, file_name: str, write_path=None):
+        """
+        Return a simple arrow ChunkWriter, default to config path if write_path (used for testing)
+        not given.
+        """
+        if write_path:
+            path = os.path.join(write_path, file_name)
+        else:
+            path = os.path.join(self.config.output_path, file_name)
+
+        return ArrowChunkWriter(path)
 
     def write_csv(
             self,
@@ -171,7 +184,7 @@ class Tool:
         """
         if compression:
             csv_name = path_compressed(csv_name, compression)
-            
+
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
             self.logger.warning(f'path overwritten to {csv_path}')
@@ -360,7 +373,7 @@ class WorkStation:
         # loop tool first looking for matches so that tool order is preserved
         else:
             for tool_name, tool in self.tools.items():
-                
+
                 for manager_requirement, options in manager_requirements.items():
 
                     if len(manager_requirement.split("--")) > 1:
@@ -371,7 +384,7 @@ class WorkStation:
                             # split options between modes and optional arguments
                             modes = options.get("modes")
                             groupby_person_attributes = options.get("groupby_person_attributes")
-                            
+
                             if len(groupby_person_attributes) > 1 and None in groupby_person_attributes:
                                 # then can remove None as it exits as a default in all cases
                                 groupby_person_attributes.remove(None)
@@ -379,7 +392,7 @@ class WorkStation:
                             optional_args = {
                                 key : options[key] for key in options if key not in ["modes", "groupby_person_attributes"]
                                 }
-                            
+
                             optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
 
                             for mode in modes:
@@ -389,7 +402,7 @@ class WorkStation:
                                         key = tool_name
                                     else:
                                         key = f"{tool_name}:{mode}:{groupby_person_attribute}:{optional_arg_values_string}"
-                                    
+
                                     self.resources[key] = tool(
                                         config=self.config,
                                         mode=mode,
@@ -435,7 +448,7 @@ class WorkStation:
                 if not supplier.tools:
                     continue
                 supplier_tools.update(supplier.tools)
-        
+
         # clean requirments
         clean_requirements = [r.split("--")[0] for r in self.requirements]
 
@@ -582,9 +595,9 @@ class WorkStation:
             )
 
 
-class ChunkWriter:
+class CSVChunkWriter:
     """
-    Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
+    Extend a list of lines (dicts) that are saved to drive once they reach a certain length.
     """
 
     def __init__(self, path, compression = None, chunksize=1000) -> None:
@@ -593,7 +606,6 @@ class ChunkWriter:
         self.chunksize = chunksize
 
         self.chunk = []
-        self.chunk_count = 0 # used for hd5
         self.idx = 0
 
         self.logger = logging.getLogger(__name__)
@@ -624,19 +636,65 @@ class ChunkWriter:
             self.idx += len(self.chunk)
         del chunk_df
         self.chunk = []
-        self.chunk_count += 1
 
     def finish(self) -> None:
         self.write()
         self.logger.info(f'Chunkwriter finished for {self.path}')
-    
-    @property
-    def _chunk_key(self):
-        """a key for h5 stores"""
-        return f't{self.chunk_count}'
 
     def __len__(self):
         return self.idx + len(self.chunk)
+
+class ArrowChunkWriter:
+    """
+    Extend a list of lines (dicts) that are saved to drive once they reach a certain length.
+    """
+
+    def __init__(self, path, chunksize=1000) -> None:
+        self.path = path
+        self.chunksize = chunksize
+        self.writer = None
+
+        self.chunk = []
+        self.idx = 0
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
+
+
+    def add(self, lines: list) -> None:
+        """
+        Add a list of lines (dicts) to the chunk.
+        If chunk exceeds chunksize, then write to disk.
+        :param lines: list of dicts
+        :return: None
+        """
+        self.chunk.extend(lines)
+        if len(self.chunk) >= self.chunksize:
+            self.write()
+
+    def write(self) -> None:
+        """
+        Convert chunk to dataframe and write to arrow.
+        """
+        table = pa.Table.from_pandas(pd.DataFrame(self.chunk))  # TODO loose the pandas intermediate
+        if not self.idx:
+            self.writer = pa.ipc.RecordBatchStreamWriter(self.path, table.schema)
+            self.writer.write(table)
+            self.idx += len(self.chunk)
+        else:
+            self.writer.write(table)
+            self.idx += len(self.chunk)
+        del table
+        self.chunk = []
+
+    def finish(self) -> None:
+        self.write()
+        self.logger.info(f'Chunkwriter finished for {self.path}')
+        self.writer.close()
+
+    def __len__(self):
+        return self.idx + len(self.chunk)
+
 
 def build(start_node: WorkStation, write_path=None) -> list:
     """
@@ -968,7 +1026,7 @@ def path_compressed(path:str, compression:str)->str:
     """
     Add an appropriate suffix to a compressed file path.
     :param path: Csv output filepath
-    :param compression: Compression type 
+    :param compression: Compression type
     """
     if compression == 'gzip':
         path = f'{path}.gz'
