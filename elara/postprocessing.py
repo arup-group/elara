@@ -44,7 +44,7 @@ class PostProcessor(Tool):
             breakdown_df[colnames[1]] /= self.config.scale_factor
 
         # Export breakdown
-        self.write_csv(breakdown_df, csv_breakdown_name, write_path=write_path)
+        self.write_csv(breakdown_df, csv_breakdown_name, write_path=write_path, compression=self.compression)
 
     @staticmethod
     def check_prerequisites():
@@ -92,12 +92,12 @@ class PlanTimeSummary(PostProcessor):
         fig_name = f"{self.name}_legs.png"
         self.write_png(leg_figure, fig_name, write_path=write_path)
         csv_name = f"{self.name}_legs.csv"
-        self.write_csv(leg_summary_df, csv_name, write_path=write_path)
+        self.write_csv(leg_summary_df, csv_name, write_path=write_path, compression=self.compression)
 
         fig_name = f"{self.name}_activities.png"
         self.write_png(act_figure, fig_name, write_path=write_path)
         csv_name = f"{self.name}_activities.csv"
-        self.write_csv(act_summary_df, csv_name, write_path=write_path)
+        self.write_csv(act_summary_df, csv_name, write_path=write_path, compression=self.compression)
 
     def time_binner(self, data):
         """
@@ -242,7 +242,7 @@ class VKT(PostProcessor):
             csv_name = f"{self.name}_{self.groupby_person_attribute}.csv"
             geojson_name = f"{self.name}_{self.groupby_person_attribute}.geojson"
 
-            self.write_csv(vkt_gdf, csv_name, write_path=write_path)
+            self.write_csv(vkt_gdf, csv_name, write_path=write_path, compression=self.compression)
             self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
 
         file_name = f"link_vehicle_counts_{self.mode}.geojson"
@@ -252,7 +252,7 @@ class VKT(PostProcessor):
 
         csv_name = f"{self.name}.csv"
         geojson_name = f"{self.name}.geojson"
-        self.write_csv(vkt_gdf, csv_name, write_path=write_path)
+        self.write_csv(vkt_gdf, csv_name, write_path=write_path, compression=self.compression)
         self.write_geojson(vkt_gdf, geojson_name, write_path=write_path)
 
     def calculate_vkt(self, link_volume_counts):

@@ -5,7 +5,7 @@ set -e
 pushd "${0%/*}"
 pushd ..
 
-python3 -m pytest -vv \
+python3 -m pytest -n auto -vv \
 --cov=. \
 --cov-report=html:reports/coverage \
 --cov-report=xml:reports/coverage/coverage.xml \

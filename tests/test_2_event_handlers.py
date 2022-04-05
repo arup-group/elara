@@ -579,12 +579,12 @@ def test_link_speed_process_events_car(test_car_link_speed_handler, car_link_pai
     for elem in car_link_pair_event:
         handler.process_event(elem)
     assert np.sum(handler.counts) == 3
-    assert np.sum(handler.inverseduration_sum)== 0.11
+    assert np.sum(handler.duration_sum)== 95
     link_index = handler.elem_indices['1-2']
     class_index = handler.class_indices['poor']
     period = 6
     assert handler.counts[link_index][class_index][period] == 2
-    assert handler.inverseduration_sum[link_index][class_index][period] == 1/50+1/25
+    assert handler.duration_sum[link_index][class_index][period] == 50+25
 
 
 def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_event):
@@ -599,9 +599,9 @@ def test_link_speed_finalise_car(test_car_link_speed_handler, car_link_pair_even
             assert c in gdf.columns
         df = gdf.loc[:, cols]
         if name == "link_vehicle_speeds_car_average":
-            assert np.sum(df.values) == (2+5+4)/3 * 3.6
+            assert np.sum(df.values) == 3 / (1/2 + 1/5 + 1/4) * 3.6
         elif name == "link_vehicle_speeds_car_average_subpopulation":
-            assert np.sum(df.values) == (2+5+4) * 3.6
+            assert np.sum(df.values) == 18 + 9.6
         elif name == "link_vehicle_speeds_car_min":
             assert np.sum(df.values) == 2 * 3.6
         elif name == "link_vehicle_speeds_car_min_subpopulation": # TODO something wrong here
@@ -1434,6 +1434,19 @@ def test_vehicle_link_log(test_config, input_manager):
         'entry_time': 59401,
         'exit_time': 59406
     } 
+
+
+# Vehicle link logs compressed output test 
+def test_vehicle_link_log_compressed(test_config, input_manager):
+    handler = event_handlers.VehicleLinkLog(test_config, mode="all", compression = "gzip")
+    handler.build(input_manager.resources, write_path=test_outputs)
+            
+    for elem in handler.resources['events'].elems:
+        handler.process_event(elem)
+
+    handler.finalise()
+    df_log = pd.read_csv(os.path.join(test_outputs, 'vehicle_link_log_all.csv.gz'))
+    assert len(df_log) == 10
 
 # Vehicle passenger boardings/alightings test
 def test_vehicle_passenger_boarding(test_config, input_manager):

@@ -40,16 +40,19 @@ class Tool:
             self, config,
             mode: Union[None, str] = 'all',
             groupby_person_attribute: Union[None, str] = None,
+            compression: Optional[str] = None,
             **kwargs
     ) -> None:
         """
         Initiate a tool instance with optional option (ie: 'bus').
         :param mode: optional mode, typically assumed to be str
         :param groupby_person_attribute: optional key for person attribute, str
+        :param compression: compression used for output (csv) files. Can be one of: 'infer', 'gzip', 'zip', 'bz2', 'zstd', None
         """
         self.config = config
         self.mode = self._validate_mode(mode)
         self.groupby_person_attribute = groupby_person_attribute
+        self.compression = self._validate_compression_method(compression)
         self.kwargs = kwargs
 
     def __str__(self):
@@ -130,7 +133,18 @@ class Tool:
                 raise UserWarning(f'Invalid mode option: {mode} at tool: {self}')
         return mode
 
-    def start_chunk_writer(self, csv_name: str, write_path=None):
+    def _validate_compression_method(self, compression: str) -> str:
+        """
+        Validate output file compression method.
+        :param compression: compression method used by the pandas.to_csv method.
+        :return: str
+        """
+        valid_compression_methods = [None, 'bz2', 'gzip', 'xz', 'zip']
+        if compression not in valid_compression_methods:
+            raise ValueError(f'Unsupported compression method: {compression} at tool: {self}')
+        return compression
+
+    def start_chunk_writer(self, csv_name: str, write_path=None, compression=None):
         """
         Return a simple csv ChunkWriter, default to config path if write_path (used for testing)
         not given.
@@ -140,18 +154,24 @@ class Tool:
         else:
             path = os.path.join(self.config.output_path, csv_name)
 
-        return ChunkWriter(path)
+        if compression is not None:
+            path = path_compressed(path, compression)
+
+        return ChunkWriter(path, compression)
 
     def write_csv(
             self,
             write_object: Union[pd.DataFrame, gpd.GeoDataFrame],
             csv_name: str,
+            compression = None,
             write_path=None
     ):
         """
         Simple write to csv, default to config path if write_path (used for testing) not given.
         """
-
+        if compression:
+            csv_name = path_compressed(csv_name, compression)
+            
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
             self.logger.warning(f'path overwritten to {csv_path}')
@@ -481,11 +501,15 @@ class WorkStation:
             self,
             write_object: Union[pd.DataFrame, gpd.GeoDataFrame],
             csv_name: str,
-            write_path=None
+            write_path=None,
+            compression = None,
     ):
         """
         Simple write to csv, default to config path if write_path (used for testing) not given.
         """
+
+        if compression:
+            csv_name = path_compressed(csv_name, compression)
 
         if write_path:
             csv_path = os.path.join(write_path, csv_name)
@@ -563,8 +587,9 @@ class ChunkWriter:
     Extend a list of lines (dicts) that are saved to drive as csv once they reach a certain length.
     """
 
-    def __init__(self, path, chunksize=1000) -> None:
+    def __init__(self, path, compression = None, chunksize=1000) -> None:
         self.path = path
+        self.compression = compression
         self.chunksize = chunksize
 
         self.chunk = []
@@ -592,10 +617,10 @@ class ChunkWriter:
         """
         chunk_df = pd.DataFrame(self.chunk, index=range(self.idx, self.idx + len(self.chunk)))
         if not self.idx:
-            chunk_df.to_csv(self.path)
+            chunk_df.to_csv(self.path, compression=self.compression)
             self.idx += len(self.chunk)
         else:
-            chunk_df.to_csv(self.path, header=None, mode="a")
+            chunk_df.to_csv(self.path, header=None, mode="a", compression=self.compression)
             self.idx += len(self.chunk)
         del chunk_df
         self.chunk = []
@@ -938,3 +963,16 @@ def equals(d1, d2):
         if not list_equals(d1v, d2[d1k]):
             return False
     return True
+
+def path_compressed(path:str, compression:str)->str:
+    """
+    Add an appropriate suffix to a compressed file path.
+    :param path: Csv output filepath
+    :param compression: Compression type 
+    """
+    if compression == 'gzip':
+        path = f'{path}.gz'
+    else:
+        path = f'{path}.{compression}'
+
+    return path

@@ -1,5 +1,7 @@
+from io import StringIO
 import sys
 import os
+import pandas as pd
 import pytest
 
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
@@ -102,7 +104,7 @@ def test_pt_volume_counter_bus():
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['counters'] == 0
-    
+
 
 def test_pt_interactions_counter_bus():
     benchmark = benchmarking.TransitInteractionComparison
@@ -416,6 +418,47 @@ def test_input_plan_comparison_activity_duration_zero():
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
+
+@pytest.fixture
+def input_mode_table():
+    data = StringIO("""
+        ,agent,seq,mode
+        0,fred,1,bike
+        1,fred,2,bike
+        2,fred,3,walk
+        3,chris,1,car
+        4,chris,2,car
+        """
+    )
+
+    return data
+
+@pytest.fixture
+def output_mode_table():
+    data = StringIO("""
+        ,agent,seq,mode
+        0,fred,1,walk
+        1,fred,2,walk
+        2,fred,3,bike
+        3,chris,1,car
+        4,chris,2,car
+        """
+    )
+
+    return data
+
+
+def test_input_mode_comparison_scores(input_mode_table, output_mode_table):
+    benchmark = benchmarking.InputModeComparison
+    test_bm = benchmark(config)
+
+    # set inputs to test data[StringIO] instead of csv paths
+    test_bm.benchmark_data_path = input_mode_table
+    test_bm.simulation_data_path = output_mode_table
+
+    score = test_bm.build({}, write_path=test_outputs)
+
+    assert score['pct'] == 0.4
 
 
 def test_euclid_distance_comparison_score_zero_filepath():

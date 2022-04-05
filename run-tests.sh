@@ -5,7 +5,7 @@ set -e
 
 echo "Executing tests"
 
-python3 -m pytest -vv tests
+python3 -m pytest -n auto -vv tests
 
 echo "Tests complete"
 

@@ -1,8 +1,10 @@
 fixtures
 outputs
+test_outputs
 elara_out
 .idea/
 *.ipynb
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -11,6 +13,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.swp
 
 # Distribution / packaging
 .Python
@@ -89,6 +92,9 @@ target/
 profile_default/
 ipython_config.py
 
+# config files
+config_test.toml
+
 # pyenv
 .python-version
 
@@ -129,5 +135,4 @@ dmypy.json
 tests/test_outputs/
 test_chunks.csv
 reports/
-
 tests_TC
