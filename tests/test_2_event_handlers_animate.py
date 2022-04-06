@@ -104,8 +104,8 @@ def test_get_color(mode, color):
 def test_get_coords(vehcile_links_animate_handler):
     handler = vehcile_links_animate_handler
 
-    assert handler.get_entry_coords("1-2") == [-7.557256, 49.766735]
-    assert handler.get_exit_coords("1-2") == [-7.556523, 49.767286]
+    assert handler.get_entry_coords("1-2") == [49.766807, -7.55716]
+    assert handler.get_exit_coords("1-2") == [49.766874, -7.555778]
 
 
 def test_vehiile_links_animate_handler_simple_case(
@@ -117,7 +117,7 @@ def test_vehiile_links_animate_handler_simple_case(
         handler.process_event(elem)
     assert handler.vehicle_staging == {"chris": {"veh_mode": "car", "color": [0,0,0]}}
     assert handler.traces == {"chris": [
-        [-7.557256, 49.766735], [-7.556523, 49.767286], [-7.556523, 49.767286]
+        [49.766807, -7.55716], [49.766874, -7.555778], [49.773375, -7.418928]
     ]}
     assert handler.timestamps == {"chris": [1649116800, 1649116801, 1649116802]}
     assert len(handler.vehicle_trips) == 0
@@ -140,10 +140,10 @@ def test_vehicle_links_animate_handler_complete_case(
             "veh_mode": "car",
             "color": [0,0,0],
             "path": [
-                [-7.557256, 49.766735],
-                [-7.556523, 49.767286],
-                [-7.556523, 49.767286],
-                [-7.556523, 49.767286]
+                [49.766807, -7.55716],
+                [49.766874, -7.555778],
+                [49.773375, -7.418928],
+                [49.77344, -7.417546]
                 ],
             "timestamps": [1649116800, 1649116801, 1649116802, 1649116803],
             "vid": "chris",
@@ -170,10 +170,10 @@ def test_vehicle_links_animate_handler_finalise(
             "veh_mode": ["car"],
             "color": [[0,0,0]],
             "path": [[
-                [-7.557256, 49.766735],
-                [-7.556523, 49.767286],
-                [-7.556523, 49.767286],
-                [-7.556523, 49.767286]
+                [49.766807, -7.55716],
+                [49.766874, -7.555778],
+                [49.773375, -7.418928],
+                [49.77344, -7.417546]
                 ]],
             "timestamps": [[1649116800, 1649116801, 1649116802, 1649116803]],
             "vid": ["chris"],

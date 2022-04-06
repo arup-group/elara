@@ -2287,16 +2287,12 @@ class VehicleLinksAnimate(EventHandlerTool):
         return self.cmap.get(mode, [128, 128, 128])  # (gray)
 
     def get_entry_coords(self, link_id):
-        # todo this potentially transform the network again and repeats, should do cache
-        x, y = self.resources["network"].link_gdf["geometry"][link_id].coords.xy[0]
-        lon, lat = self.transformer.transform(x, y)
-        return [round(lat, 6), round(lon, 6)]
+        x, y = self.resources["network"].link_gdf["geometry"][link_id].coords[0]
+        return [round(y, 6), round(x, 6)]
 
     def get_exit_coords(self, link_id):
-        # todo this potentially transform the network again and repeats, should do cache
-        x, y = self.resources["network"].link_gdf["geometry"][link_id].coords.xy[1]
-        lon, lat = self.transformer.transform(x, y)
-        return [round(lat, 6), round(lon, 6)]
+        x, y = self.resources["network"].link_gdf["geometry"][link_id].coords[-1]
+        return [round(y, 6), round(x, 6)]
 
     def get_timestamp(self, time):
         return time + self.start_time
