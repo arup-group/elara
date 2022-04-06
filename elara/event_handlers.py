@@ -2197,7 +2197,7 @@ class VehicleLinksAnimate(EventHandlerTool):
 
     requirements = ['events', 'transit_schedule', 'network']
     cmap = {
-        "car": [0,0,0],
+        "car": [200, 200, 200],
         "bus": [255, 40, 40],
         "train": [0, 128, 255],
         "rail": [0, 128, 255],
@@ -2228,7 +2228,7 @@ class VehicleLinksAnimate(EventHandlerTool):
             file_name, write_path=write_path
         )
 
-        self.vehicle_staging = {}
+        self.vehicles = {}
         self.traces = {}
         self.timestamps = {}
 
@@ -2247,7 +2247,7 @@ class VehicleLinksAnimate(EventHandlerTool):
             time = int(float(elem.get("time")))
 
             if veh_mode == self.mode or self.mode == "all":
-                self.vehicle_staging[veh_id] = {
+                self.vehicles[veh_id] = {
                     "veh_mode": veh_mode,
                     "color": self.get_color(veh_mode)
                     }
@@ -2256,7 +2256,7 @@ class VehicleLinksAnimate(EventHandlerTool):
 
         if event_type == "left link":
             veh_id = elem.get("vehicle")
-            if veh_id in self.vehicle_staging:
+            if veh_id in self.vehicles:
                 link_id = elem.get("link")
                 time = int(float(elem.get("time")))
                 self.traces[veh_id].append(self.get_exit_coords(link_id))
@@ -2264,14 +2264,14 @@ class VehicleLinksAnimate(EventHandlerTool):
 
         if event_type == "vehicle leaves traffic":
             veh_id = elem.get("vehicle")
-            if veh_id in self.vehicle_staging:
+            if veh_id in self.vehicles:
                 link_id = elem.get("link")
                 time = int(float(elem.get("time")))
 
                 self.traces[veh_id].append(self.get_exit_coords(link_id))
                 self.timestamps[veh_id].append(self.get_timestamp(time))
 
-                vehicle_trip = self.vehicle_staging.pop(veh_id, {})
+                vehicle_trip = self.vehicles.pop(veh_id, {})
                 vehicle_trip["path"] = self.traces.pop(veh_id, [])
                 vehicle_trip["timestamps"] = self.timestamps.pop(veh_id, [])
 
