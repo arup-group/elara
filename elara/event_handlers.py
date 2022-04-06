@@ -69,6 +69,19 @@ class EventHandlerTool(Tool):
         else:
             return 'unknown_route'
 
+    def vehicle_capacity(self, vehicle_id: str) -> float:
+        """
+        Given a vehicle's ID, return its capacity.
+        :param vehicle_id: Vehicle ID string
+        :return: Vehicle capacity float
+        """
+        if vehicle_id in self.resources['transit_vehicles'].veh_id_veh_type_map.keys():
+            veh_type = self.resources['transit_vehicles'].veh_id_veh_type_map[vehicle_id]
+            veh_capacity = self.resources['transit_vehicles'].veh_type_capacity_map[veh_type]
+            return veh_capacity
+        else:
+            return 5.0
+
     def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Remove rows from given results dataframe if time period columns only contain
@@ -497,6 +510,155 @@ class LinkVehicleCounts(EventHandlerTool):
         )
         self.result_dfs[key] = totals_df
 
+class LinkVehicleCapacity(EventHandlerTool):
+    """
+    Extract capacity for mode per link on given network. 
+    """
+
+    requirements = [
+        'events',
+        'network',
+        'transit_schedule',
+        'transit_vehicles',
+        'attributes',
+    ]
+    invalid_modes = ['car']
+    
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
+        """
+        Initiate class, creates results placeholders.
+        :param config: Config object
+        :param mode: str, mode
+        """
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+
+        self.groupby_person_attribute = groupby_person_attribute
+        self.classes = None
+        self.class_indices = None
+        self.elem_gdf = None
+        self.elem_ids = None
+        self.elem_indices = None
+        self.counts = None
+
+        # Initialise results storage
+        self.result_dfs = dict()  # Result geodataframes ready to export
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        super().build(resources, write_path=write_path)
+
+        # Check for car
+        if self.mode == 'car':
+            raise ValueError("This handler not intended for use with mode type = car")
+
+        # Initialise class attributes
+        self.attributes, found_attributes = self.extract_attributes()
+        self.classes, self.class_indices = self.generate_elem_ids(found_attributes)
+        self.logger.debug(f'available population {self.groupby_person_attribute} values = {self.classes}')
+
+        # generate index and map for network link dimension
+        self.elem_gdf = self.resources['network'].link_gdf
+
+        links = resources['network'].mode_to_links_map.get(self.mode)
+        if links is None:
+            self.logger.warning(
+                f"""
+                No viable links found for mode:{self.mode} in Network,
+                this may be because the Network modes do not match the configured
+                modes. Elara will continue with all links found in network.
+                """
+                )
+        else:
+            self.logger.debug(f'Selecting links for mode:{self.mode}.')
+            self.elem_gdf = self.elem_gdf.loc[links, :]
+
+        self.elem_ids, self.elem_indices = self.generate_elem_ids(self.elem_gdf)
+
+        # Initialise volume count table
+        self.counts = np.zeros((len(self.elem_indices),
+                                len(self.classes),
+                                self.config.time_periods))
+
+    def process_event(self, elem) -> None:
+        """
+        Iteratively aggregate 'vehicle enters traffic' and 'vehicle exits traffic'
+        events to determine link volume counts.
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+        if (event_type == "vehicle enters traffic") or (event_type == "entered link"):
+            ident = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(ident)
+            if veh_mode == self.mode:
+                # look for attribute_class, if not found assume pt and use mode
+                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+                link = elem.get("link")
+                time = float(elem.get("time"))
+                veh_capacity = self.vehicle_capacity(ident)
+                x, y, z = table_position(
+                    self.elem_indices,
+                    self.class_indices,
+                    self.config.time_periods,
+                    link,
+                    attribute_class,
+                    time
+                )
+                self.counts[x, y, z] += veh_capacity
+
+    def finalise(self) -> None:
+        """
+        Following event processing, the raw events table will contain counts by link
+        by time slice. The only thing left to do is scale by the sample size and
+        create dataframes.
+        """
+
+        # Overwrite the scale factor for public transport vehicles (these do not need to
+        # be expanded.
+        scale_factor = self.config.scale_factor
+        if self.mode != "car":
+            scale_factor = 1.0
+
+        # Scale final counts
+        self.counts *= 1.0 / scale_factor
+
+        if self.groupby_person_attribute:
+            names = ['elem', self.groupby_person_attribute, 'hour']
+            indexes = [self.elem_ids, self.classes, range(self.config.time_periods)]
+            index = pd.MultiIndex.from_product(indexes, names=names)
+            counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
+            counts_df = counts_df.unstack(level='hour').sort_index()
+            counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
+
+            counts_df['total'] = counts_df.sum(1)
+            counts_df = counts_df.reset_index().set_index('elem')
+
+            key = f"{self.name}_{self.groupby_person_attribute}"
+            counts_df = self.elem_gdf.join(
+                counts_df, how="left"
+            )
+            self.result_dfs[key] = counts_df
+
+        # calc sum across all recorded attribute classes
+        self.counts = self.counts.sum(1)
+
+        totals_df = pd.DataFrame(
+            data=self.counts, index=self.elem_ids, columns=range(0, self.config.time_periods)
+        ).sort_index()
+        totals_df['total'] = totals_df.sum(1)
+
+        del self.counts
+
+        key = f"{self.name}"
+        totals_df = self.elem_gdf.join(
+            totals_df, how="left"
+        )
+        self.result_dfs[key] = totals_df
+        
 
 class LinkVehicleSpeeds(EventHandlerTool):
     """
@@ -2197,6 +2359,7 @@ class EventHandlerWorkStation(WorkStation):
     tools = {
         "link_vehicle_speeds": LinkVehicleSpeeds,
         "link_vehicle_counts": LinkVehicleCounts,
+        "link_vehicle_capacity":LinkVehicleCapacity,
         "link_passenger_counts": LinkPassengerCounts,
         "route_passenger_counts": RoutePassengerCounts,
         "stop_passenger_counts": StopPassengerCounts,

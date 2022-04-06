@@ -111,6 +111,7 @@ These are processed by streaming (in order) through all output events from simul
 Currently supported handlers include:
 
 * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice. Counts **vehicles** entering link (PT vehicles counted once).
+* ``link_vehicle_capacity``: Produce link capacity counts by time slice for understanding PT crowding. Sums the vehicle capacities of all **vehicles** entering link for the particular PT mode. 
 * ``link_passenger_counts``: Produce link passenger counts by time slice. Counts **agents** entering link.
 * ``link_vehicle_speeds``: Produce average vehicle speeds across link (in kilometers per hour).
 * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.

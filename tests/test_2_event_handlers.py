@@ -9,10 +9,11 @@ from elara import inputs
 from elara import event_handlers
 from elara.event_handlers import EventHandlerWorkStation, LinkVehicleCounts
 
+from tests.test_helpers import get_vehicle_capacity_from_vehicles_xml_file
+
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(root_dir)
-
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
 test_outputs = os.path.join(test_dir, "test_outputs")
@@ -436,6 +437,104 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         if 'subpopulation' in gdf.columns:
             assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
 
+# Link Vehicle Capacity Counts 
+
+# bus
+@pytest.fixture
+def link_vehicle_capacity_handler_bus(test_config, input_manager):
+    handler = event_handlers.LinkVehicleCapacity(test_config, mode='bus', groupby_person_attribute="subpopulation")
+
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert None in handler.classes
+    assert set(handler.class_indices.keys()) == handler.classes
+    assert len(handler.elem_ids) == len(resources['network'].link_gdf)
+    assert list(handler.elem_indices.keys()) == handler.elem_ids
+    assert handler.counts.shape == (
+        len(resources['network'].link_gdf), 3, periods)
+    return handler
+
+
+def test_link_vehicle_capacity_handler_single_event_bus(
+        test_config,
+        link_vehicle_capacity_handler_bus,
+        bus_enters_link_event
+):
+    handler = link_vehicle_capacity_handler_bus
+    elem = bus_enters_link_event
+
+    handler.process_event(elem)
+
+    schema_version, vehicle_elem, bus_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(test_config.transit_vehicles_path, 'Bus')
+    assert np.sum(handler.counts) == bus_capacity
+    link_index = handler.elem_indices['1-2']
+    class_index = handler.class_indices[None]
+    period = 6
+    assert handler.counts[link_index][class_index][period] == bus_capacity
+
+
+def test_link_vehicle_capacity_handler_process_single_event_not_bus(
+        link_vehicle_capacity_handler_bus,
+        car_enters_link_event
+):
+    handler = link_vehicle_capacity_handler_bus
+    elem = car_enters_link_event
+    handler.process_event(elem)
+    assert np.sum(handler.counts) == 0
+
+
+def test_link_vehicle_capacity_handler_process_events_bus(test_config, link_vehicle_capacity_handler_bus, events):
+    handler = link_vehicle_capacity_handler_bus
+
+    for elem in events:
+        handler.process_event(elem)
+
+    number_of_buses = 12  # why is it 12?
+    schema_version, vehicle_elem, bus_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(test_config.transit_vehicles_path, 'Bus')
+    expected_total_capacity = number_of_buses * bus_capacity
+    assert np.sum(handler.counts) == expected_total_capacity
+    link_index = handler.elem_indices['1-2']
+    class_index = handler.class_indices[None]
+    period = 7
+    assert handler.counts[link_index][class_index][period] == bus_capacity
+
+
+def test_link_vehicle_capacity_handler_finalise_bus(test_config, link_vehicle_capacity_handler_bus, events):
+    handler = link_vehicle_capacity_handler_bus
+    for elem in events:
+        handler.process_event(elem)
+    assert handler.mode.lower() == 'bus'
+    assert handler.config.scale_factor == 0.0001
+
+    handler.finalise()
+
+    assert len(handler.result_dfs) == 2
+    schema_version, vehicle_elem, bus_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(test_config.transit_vehicles_path, 'Bus')
+    number_of_buses = 12 # why is it 12?
+    expected_total_capacity = number_of_buses * bus_capacity
+    for name, gdf in handler.result_dfs.items():
+        cols = list(range(handler.config.time_periods))
+        for c in cols:
+            assert c in gdf.columns
+            assert 'total' in gdf.columns
+        df = gdf.loc[:, cols]
+        assert np.sum(df.values) == expected_total_capacity
+        assert np.sum(df.values) == gdf.total.sum()
+        if 'subpopulation' in gdf.columns:
+            assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
+
+
+def test_link_vehicle_capacity_handler_rejects_car_as_mode():
+    with pytest.raises(UserWarning) as ex_info:
+        event_handlers.LinkVehicleCapacity(config=test_config, mode='car')
+    assert "Invalid mode option: car at tool" in str(ex_info.value)            
+            
 # Link Speeds
 # Car
 # With subpopulation attribute groups
@@ -1311,7 +1410,7 @@ def test_link_vehicle_speeds_events_file(test_config, input_manager):
     data_cols = [i for i in range(0, test_config.time_periods)]
 
     for  df in handler.result_dfs.values():
-        df = df[data_cols]
+        df = df[data_cols].copy()
         df.replace(0, np.nan, inplace=True)
         min_speed = df.min().min() # min value across all time columns
         assert min_speed >= 10

@@ -1,8 +1,8 @@
-import sys
 import os
+
+import geopandas as gpd
 import pytest
 from shapely.geometry import Point
-import geopandas as gpd
 
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -10,6 +10,7 @@ os.chdir(root_dir)
 
 from elara.config import Config, PathFinderWorkStation
 from elara import inputs
+from tests.test_helpers import get_vehicle_capacity_from_vehicles_xml_file
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -503,3 +504,29 @@ def test_load_input_manager(test_xml_config, test_paths):
     assert input_workstation.resources['plans']
     assert input_workstation.resources['input_plans']
     assert input_workstation.resources['mode_map']
+
+
+def test_parses_vehicle_capacity_from_file_using_vehicle_definitions_1_schema():
+    vehicle_type = 'Bus'
+    transit_vehicles_file = os.path.join(test_dir, "test_fixtures/output_transitVehicles.xml.gz")
+    schema_version, vehicle_type_elem, expected_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(transit_vehicles_file, vehicle_type)
+    assert schema_version.endswith('v1.0.xsd')
+
+    parsed_vehicle_type, capacity = inputs.TransitVehicles.transform_veh_type_elem(vehicle_type_elem)
+
+    assert capacity == expected_capacity
+    assert parsed_vehicle_type == vehicle_type
+
+
+def test_parses_vehicle_capacity_from_file_using_vehicle_definitions_2_schema():
+    vehicle_type = 'Bus'
+    transit_vehicles_file = os.path.join(test_dir, "test_fixtures/output_transitVehicles_schema_version2.xml.gz")
+    schema_version, vehicle_type_elem, expected_capacity = \
+        get_vehicle_capacity_from_vehicles_xml_file(transit_vehicles_file, vehicle_type)
+    assert schema_version.endswith('v2.0.xsd')
+
+    parsed_vehicle_type, capacity = inputs.TransitVehicles.transform_veh_type_elem(vehicle_type_elem)
+
+    assert capacity == expected_capacity
+    assert parsed_vehicle_type == vehicle_type

@@ -257,7 +257,25 @@ def link_vehicle_counts(
     config = Config(override=override)
     main(config)
 
+@event_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def link_vehicle_capacity(
+        modes, debug, no_experienced_plans, name, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+):
+    """
+    Create a link capacity output for a given mode or modes. Example invocation for "car" and "bus"
+    modes with name "test" and scale factor at 20% is:
 
+    $ elara event-handlers link-vehicle-counts car bus -n test -s .2
+    """
+    override = common_override(
+        debug, name, no_experienced_plans, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    override["event_handlers"]["link_vehicle_capacity"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+    
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options

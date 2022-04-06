@@ -463,8 +463,14 @@ class TransitVehicles(InputTool):
         """
         strip_namespace(elem)  # TODO only needed for this input = janky
         ident = elem.xpath("@id")[0]
-        seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
-        standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
+        if len(elem.xpath("capacity/seats/@persons")) > 0:
+            # https://www.matsim.org/files/dtd/vehicleDefinitions_v1.0.xsd
+            seated_capacity = float(elem.xpath("capacity/seats/@persons")[0]) 
+            standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
+        else:
+            # https://www.matsim.org/files/dtd/vehicleDefinitions_v2.0.xsd
+            seated_capacity = float(elem.xpath("capacity/@seats")[0])
+            standing_capacity = float(elem.xpath("capacity/@standingRoomInPersons")[0])
         return ident, seated_capacity + standing_capacity
 
 
