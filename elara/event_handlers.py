@@ -7,6 +7,8 @@ import os
 import networkx as nx
 from shapely.geometry import LineString
 from math import floor
+from pyproj import Transformer
+
 from elara.factory import WorkStation, Tool
 
 
@@ -268,7 +270,7 @@ class StopPassengerWaiting(EventHandlerTool):
         self.agent_attributes, _ = self.extract_attributes()
 
         csv_name = f"{str(self)}.csv"
-        self.waiting_time_log = self.start_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
+        self.waiting_time_log = self.start_csv_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
 
     def process_event(self, elem) -> None:
         """
@@ -2030,7 +2032,7 @@ class VehicleDepartureLog(EventHandlerTool):
 
         pt_csv_name = f"{self.name}.csv"
 
-        self.vehicle_departure_log = self.start_chunk_writer(
+        self.vehicle_departure_log = self.start_csv_chunk_writer(
             pt_csv_name, write_path=write_path, compression=self.compression
             )
 
@@ -2094,7 +2096,7 @@ class VehiclePassengerLog(EventHandlerTool):
         pt_csv_name = f"{self.name}.csv"
         self.veh_tracker = dict()  # {veh_id: last_stop}
 
-        self.vehicle_passenger_log = self.start_chunk_writer(
+        self.vehicle_passenger_log = self.start_csv_chunk_writer(
             pt_csv_name, write_path=write_path, compression=self.compression
             )
 
@@ -2165,7 +2167,7 @@ class VehicleLinkLog(EventHandlerTool):
 
         file_name = f"{self.name}.csv"
 
-        self.vehicle_link_log = self.start_chunk_writer(
+        self.vehicle_link_log = self.start_csv_chunk_writer(
             file_name, write_path=write_path, compression=self.compression
         )
 
@@ -2252,7 +2254,7 @@ class AgentTollsLog(EventHandlerTool):
 
         file_name = f'{self.name}.csv'
 
-        self.agent_tolls_log = self.start_chunk_writer(
+        self.agent_tolls_log = self.start_csv_chunk_writer(
             file_name, write_path=write_path, compression=self.compression
         )
 
@@ -2350,6 +2352,114 @@ class AgentTollsLog(EventHandlerTool):
         del self.toll_log_summary
 
 
+class VehicleLinksAnimate(EventHandlerTool):
+    """
+    Extract all vehicle trips as Arrow format.
+    """
+
+    requirements = ['events', 'transit_schedule', 'network']
+    cmap = {
+        "car": [200, 200, 200],
+        "bus": [255, 40, 40],
+        "train": [0, 128, 255],
+        "rail": [0, 128, 255],
+        "subway": [153, 51, 255],
+        "underground": [153, 51, 255],
+        "metro": [153, 51, 255]
+    }
+    start_time = 1649116800  # 22/04/05
+
+    def __init__(self, config, mode=None, **kwargs):
+        super().__init__(config, mode, **kwargs)
+        self.vehicle_trips = None
+        self.transformer = Transformer.from_crs(config.crs, 4326)
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+
+        super().build(resources, write_path=write_path)
+
+        file_name = f"{self.name}.arrow"
+
+        self.vehicle_trips = self.start_arrow_chunk_writer(
+            file_name, write_path=write_path
+        )
+
+        self.vehicles = {}
+        self.traces = {}
+        self.timestamps = {}
+
+    def process_event(self, elem) -> None:
+        """
+        Events are closed only when a vehicle enters then exits a link
+        Events are staged on entry, then added to chunk writer when closed
+        :param elem: Event XML element
+        """
+        event_type = elem.get("type")
+
+        if event_type == "vehicle enters traffic":
+            veh_id = elem.get("vehicle")
+            veh_mode = self.vehicle_mode(veh_id)
+            link_id = elem.get("link")
+            time = int(float(elem.get("time")))
+
+            if veh_mode == self.mode or self.mode == "all":
+                self.vehicles[veh_id] = {
+                    "veh_mode": veh_mode,
+                    "color": self.get_color(veh_mode)
+                    }
+                self.traces[veh_id] = [self.get_entry_coords(link_id)]
+                self.timestamps[veh_id] = [self.get_timestamp(time)]
+
+        if event_type == "left link":
+            veh_id = elem.get("vehicle")
+            if veh_id in self.vehicles:
+                link_id = elem.get("link")
+                time = int(float(elem.get("time")))
+                self.traces[veh_id].append(self.get_exit_coords(link_id))
+                self.timestamps[veh_id].append(self.get_timestamp(time))
+
+        if event_type == "vehicle leaves traffic":
+            veh_id = elem.get("vehicle")
+            if veh_id in self.vehicles:
+                link_id = elem.get("link")
+                time = int(float(elem.get("time")))
+
+                self.traces[veh_id].append(self.get_exit_coords(link_id))
+                self.timestamps[veh_id].append(self.get_timestamp(time))
+
+                vehicle_trip = self.vehicles.pop(veh_id, {})
+                vehicle_trip["path"] = self.traces.pop(veh_id, [])
+                vehicle_trip["timestamps"] = self.timestamps.pop(veh_id, [])
+
+                vehicle_trip["vid"] = veh_id
+                self.vehicle_trips.add([vehicle_trip])
+
+        return None
+
+    def finalise(self):
+        self.vehicle_trips.finish()
+
+    def get_color(self, mode):
+        return self.cmap.get(mode, [128, 128, 128])  # (gray)
+
+    def get_entry_coords(self, link_id):
+        x, y = self.resources["network"].link_gdf["geometry"][link_id].coords[0]
+        return [round(y, 6), round(x, 6)]
+
+    def get_exit_coords(self, link_id):
+        x, y = self.resources["network"].link_gdf["geometry"][link_id].coords[-1]
+        return [round(y, 6), round(x, 6)]
+
+    def get_timestamp(self, time):
+        return time + self.start_time
+
+
 class EventHandlerWorkStation(WorkStation):
 
     """
@@ -2370,7 +2480,8 @@ class EventHandlerWorkStation(WorkStation):
         "vehicle_departure_log": VehicleDepartureLog,
         "vehicle_passenger_log": VehiclePassengerLog,
         "vehicle_link_log": VehicleLinkLog,
-        "agent_tolls_log": AgentTollsLog
+        "agent_tolls_log": AgentTollsLog,
+        "vehicle_links_animate": VehicleLinksAnimate
     }
 
     def __init__(self, config):

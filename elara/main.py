@@ -43,13 +43,13 @@ def run(config_path, path_override, root, output_directory_override):
 
     if path_override:
         config.override(path_override)
-    
+
     if root:
         config.set_paths_root(root)
 
     if output_directory_override:
         config.output_directory_override(output_directory_override)
-        
+
     main(config)
 
 
@@ -188,7 +188,7 @@ def common_options(func):
     )(func)
 
     func = click.option(
-        '-x', '--no_experienced_plans', is_flag=True, default=False, 
+        '-x', '--no_experienced_plans', is_flag=True, default=False,
         help="Switch for turning off Experienced Plans. Set to use output_plans instead."
     )(func)
 
@@ -355,6 +355,7 @@ def stop_to_stop_passenger_counts(
     config = Config(override=override)
     main(config)
 
+
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options
@@ -364,12 +365,31 @@ def vehicle_link_log(
     """
     create a vehicle link log
 
-    $ elara event-handlers stop_to_stop_passenger_counts train bus -n test -s .2
+    $ elara event-handlers vehicle_link_log train bus -n test
     """
     override = common_override(
         debug, name, no_experienced_plans, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
     )
     override["event_handlers"]["vehicle_link_log"] = {'modes': list(modes)}
+    config = Config(override=override)
+    main(config)
+
+
+@event_handlers.command()
+@click.argument('modes', nargs=-1, type=click.STRING, required=True)
+@common_options
+def vehicle_links_animate(
+        modes, debug, name, no_experienced_plans, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+):
+    """
+    create a vehicle animation arrow format file
+
+    $ elara event-handlers vehicle_links_animate all -n test
+    """
+    override = common_override(
+        debug, name, no_experienced_plans, inputs_path, outputs_path, time_periods, scale_factor, version, epsg, full
+    )
+    override["event_handlers"]["vehicle_links_animate"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
 
