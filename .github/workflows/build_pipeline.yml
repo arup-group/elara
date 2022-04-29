@@ -66,6 +66,10 @@ jobs:
           echo $release_name > release_name
           echo "Created a release_name file"
         fi
+        version_num=`grep -i version elara/__init__.py | awk -F '"' '{print $2}'`
+        version_tag=elara-$version_num-$GITHUB_SHA-$branch
+        echo "Image version tag: $version_tag"
+        echo $version_tag > image_tags
         zip -r app.zip .
         aws s3 cp app.zip s3://arup-arup-ukimea-tcs-dev-test-code/$repo_slug.zip
     - name: Send build success notification
