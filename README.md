@@ -591,6 +591,8 @@ Sometimes:
 
 ## Adding Features
 
+**NOTE**: Pushing code to this repository is temporarily restricted while we undergo some spring cleaning during April/May 2022. If you wish to contribute code, please contact one of the owners for permisison. 
+
 Elara is designed to be extendable, primarily with new tools such as handlers or benchmarks.
 
 Where new tools are new classes that implement some process that fits within the implementation (both in terms of code and also abstractly) of a WorkStation. New tools must be added to the relevant workstations 'roster' of tools (ie `.tools`).
@@ -614,12 +616,12 @@ Where possible please name new handlers/tools based on the following:
 For example: `LinkPassengerCounts` or `StopPassengerCounts`.
 
 ## Todo
-
+* Add support for all available handlers to CLI
 * More descriptive generated column headers in handler results. Right now column headers are simply numbers mapped to the particular time slice during the modelled day.
 * Try and move away from test_data towards unit tests.
 * More outputs, ie mode distances/times/animations.
 * S3 integration (read and write).
-* automatic discovery of inputs in directory.
+* Clean up docstrings and add "read the docs" style documentation.
 
 ## What does the name mean?
 
