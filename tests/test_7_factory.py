@@ -604,6 +604,22 @@ def test_convert_to_unique_keys():
     assert keys == ['req1:1', 'req1:2', 'req2:1', 'req3']
 
 
+def test_list_equals():
+    assert factory.list_equals(None, None) == True
+    assert factory.list_equals(None, []) == False
+    assert factory.list_equals([], []) == True
+    assert factory.list_equals([1,2], [1,2]) == True
+    assert factory.list_equals([1,2], [2,1]) == True
+    assert factory.list_equals([1,2,3], [1,2]) == False
+
+
+def test_dict_equals():
+    assert factory.equals({}, {}) == True
+    assert factory.equals({1:[1]}, {1:[1]}) == True
+    assert factory.equals({2:[1]}, {1:[1]}) == False
+    assert factory.equals({1:[1]}, {1:[2]}) == False
+
+
 def test_write_geojson(tmpdir):
     df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
     poly = Polygon(((0,0), (1,0), (1,1), (0,1)))
@@ -728,7 +744,7 @@ def test_write_json_tool_no_path(tmpdir):
 def test_write_png_tool(tmpdir):
     df = pd.DataFrame({1:[1,2,3], 2: [4,5,6]})
     ax = df.plot()
-    fig = ax.get_figure()   
+    fig = ax.get_figure()
     tool = factory.Tool(config=None)
     tool.logger = logging.getLogger(__name__)
     tool.write_png(

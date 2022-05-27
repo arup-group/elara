@@ -1,6 +1,6 @@
 [run]
 branch = True
-omit = venv/*, tests/*, elara/tool_templates.py, scripts/*
+omit = venv/*, tests/*, elara/tool_templates.py, scripts/*, elara/setup.py
 
 [report]
 fail_under = 86

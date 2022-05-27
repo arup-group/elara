@@ -1639,12 +1639,12 @@ class PointsCounter(BenchmarkTool):
         bm_results_summary = bm_results_df.groupby('source').sum()
 
         # write results
-        csv_name = '{}_{}_bm.csv'.format(self.config.name, self.name)
+        csv_name = f'{self.name}_bm.csv'
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_df, csv_path, write_path=write_path)
 
         # write results
-        csv_name = '{}_{}_bm_summary.csv'.format(self.config.name, self.name)
+        csv_name = 'f{self.name}_bm_summary.csv'
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(bm_results_summary, csv_path, write_path=write_path)
 
@@ -2002,14 +2002,14 @@ class OldModeSharesComparison(BenchmarkTool):
         summary_df.loc[:, 'diff'] = summary_df.model - summary_df.benchmark
 
         # write results
-        csv_name = '{}_modeshare_results.csv'.format(self.config.name)
+        csv_name = 'modeshare_results.csv'
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(summary_df, csv_path, write_path=write_path)
 
         #plot
         summary_df_plot = pd.melt(summary_df.reset_index(), id_vars=['mode'], value_vars = ['benchmark','model'], var_name = 'type', value_name='modeshare')
         bm_results_summary_plot = comparative_column_plots(summary_df_plot)
-        plot_name = '{}_modeshare_results.png'.format(self.config.name)
+        plot_name = 'modeshare_results.png'
         bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
         plt.close()
 
