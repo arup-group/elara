@@ -68,12 +68,16 @@ def run(config_path, path_override, root, output_directory_override, dry_run):
     :param config: Session configuration object
     """
     logger.info('Starting')
+    main(config=config, logger=logger, dry_run=dry_run)
+    logger.info('Done')
+
+
+def main(config, logger, dry_run=False) -> None:
     requirements = define_and_connect_workstations(config, logger)
     if dry_run:
         factory.dry_run_build(requirements)
     else:
         factory.build(requirements)
-    logger.info('Done')
 
 
 def define_and_connect_workstations(config, logger):
