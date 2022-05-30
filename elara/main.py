@@ -23,18 +23,18 @@ def cli():
 
 @cli.command()
 @click.argument("config_path", type=click.Path(exists=True))
-@click.option("--path_override", '-o', default=None)
-@click.option("--root", '-r', default=None)
-@click.option("--output_directory_override", default=None)
-@click.option("--dry_run", "-d", is_flag=True)
-def run(config_path, path_override, root, output_directory_override, dry_run):
+@click.option("--dry", "-d", is_flag=True, help="test run a config file.")
+@click.option("--path_override", '-o', default=None, help="over-ride input path root.")
+@click.option("--root", '-r', default=None, help="over-ride all path roots.")
+@click.option("--output_directory_override", default=None, help="over-ride output directory to new path.")
+def run(config_path, dry, path_override, root, output_directory_override):
     """
     Run Elara using a config.
     :param config_path: Configuration file path
     :param path_override: containing directory to update for [inputs], outputs.path in toml
     :param root: add root to all paths (assumes that paths in config are relative)
-    :param output_directory_override: change output directory
-    :param dry_run: flag to initiate a run test
+    :param output_directory_override: change outputs directory
+    :param dry: flag to initiate a run test
     """
 
     if path_override and root:
@@ -68,7 +68,7 @@ def run(config_path, path_override, root, output_directory_override, dry_run):
     :param config: Session configuration object
     """
     logger.info('Starting')
-    main(config=config, logger=logger, dry_run=dry_run)
+    main(config=config, logger=logger, dry_run=dry)
     logger.info('Done')
 
 

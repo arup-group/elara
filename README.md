@@ -111,7 +111,7 @@ These are processed by streaming (in order) through all output events from simul
 Currently supported handlers include:
 
 * ``link_vehicle_counts``: Produce link volume counts and volume capacity ratios by time slice. Counts **vehicles** entering link (PT vehicles counted once).
-* ``link_vehicle_capacity``: Produce link capacity counts by time slice for understanding PT crowding. Sums the vehicle capacities of all **vehicles** entering link for the particular PT mode. 
+* ``link_vehicle_capacity``: Produce link capacity counts by time slice for understanding PT crowding. Sums the vehicle capacities of all **vehicles** entering link for the particular PT mode.
 * ``link_passenger_counts``: Produce link passenger counts by time slice. Counts **agents** entering link.
 * ``link_vehicle_speeds``: Produce average vehicle speeds across link (in kilometers per hour).
 * ``route_passenger_counts``: (WIP) Produce vehicle occupancies by transit routes.
@@ -209,6 +209,10 @@ You can run this config on some toy data: `elara run example_configs/config.toml
 
 If your MATSim outputs use default names and are in the same directory, you may optionally pass the path of this directory as single argument to `[inputs]` using, e.g. `inputs_directory = "./tests/test_fixtures/"`. **NB:** If using the ``toll_log`` plan handler, you must still provide the `road_pricing` path separately.
 
+### Configuration dry run
+
+`elara run` supports some optional flags and arguments which can be discovered with `elara run --help`, most useful is `elara run -d` (or `elara run --dry`) which can be use to test a config without providing valid inputs or unertaking the processing.
+
 ## Command Line Reference
 
 Elara can also be more generally used via the CLI to process individual outputs. Used in this manner the CLI should be pretty discoverable, once installed, try the command `elara` in your terminal to find out about the available options:
@@ -259,10 +263,10 @@ Options:
   --help                      Show this message and exit.
 ```
 
-*Note that defaults will not always be suitable for your scenario. `-s` `--scale_factor` in 
+*Note that defaults will not always be suitable for your scenario. `-s` `--scale_factor` in
 particular, should be updated accordingly.*
 
-*Similarly, note that the CLI assumes inputs will have standard (at the time of writing) MATSim 
+*Similarly, note that the CLI assumes inputs will have standard (at the time of writing) MATSim
 names, ie `output_plans.xml.gz`, `output_personAttributes.xml.gz`, `output_config.xml` and so on.*
 
 ### Example CLI Usage
@@ -275,10 +279,10 @@ or, more succinctly:
 
 `elara post-processors vkt car -i ~/DIFFERENT/DATA/LOCATION`
 
-To reduce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was 
+To reduce **volume counts for cars and buses** using a New Zealand projection (2113). The scenario was
 a 1% sample. You'd like to prefix the outputs as 'nz_test' in a new directory '~/Data/nz_test':
 
-`elara event-handlers volume-counts car bus -epsg EPSG:2113 -scale_factor .01 -name nz_test 
+`elara event-handlers volume-counts car bus -epsg EPSG:2113 -scale_factor .01 -name nz_test
 -outputs_path ~/Data/nz_test`
 
 or, much more succinctly:
@@ -309,7 +313,7 @@ The name of the scenario being processed.
 
 **time_periods** *integer* *(required)*
 
-The number of time slices used to split a 24-hour period for the purposes of reporting. A value 
+The number of time slices used to split a 24-hour period for the purposes of reporting. A value
 of ``24`` will produce summary metrics for each our of the day. Similarly, a value of ``96`` will produce 15-minute summaries.
 
 **scale_factor** *float* *(required)*
@@ -416,7 +420,7 @@ plan_summary = ["all"]
 trip_duration_breakdown = ["all"]
 ```
 
-The associated list attached to each handler allows specification of which modes of transport 
+The associated list attached to each handler allows specification of which modes of transport
 should be processed using that handler.
 
 * modes should be supplied as a list eg ``["car", "bus", "train", ...]`` or just ``["car"]``.
@@ -511,12 +515,12 @@ Elara assumes your MATSim run is configured to output agents' "experienced" plan
 ```{.toml}
 [scenario]
 ...
-using_experienced_plans = false 
+using_experienced_plans = false
 ```
 
 This option is set to `true` by default, and does not need to be included it in the config, although you may set it explicitly if you wish.
 
-When using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. In turn, this prevents elara from providing outputs grouped by person attributes (ie those that use the `groupby_person_attributes` option). 
+When using MATSim "experienced" plans from versions 12 and up you will find that these (currently) do not include the person attributes. In turn, this prevents elara from providing outputs grouped by person attributes (ie those that use the `groupby_person_attributes` option).
 
 If such outputs are required when using experienced plans, provide the standard MATSim 'output_plans' as the attributes input:
 
@@ -550,7 +554,7 @@ To generate XML & HTML coverage reports to `reports/coverage`:
 
 ## Debug
 
-Logging level can be set in the config or via the cli, or otherwise defaults to False (INFO). We 
+Logging level can be set in the config or via the cli, or otherwise defaults to False (INFO). We
 currently support the following levels: DEBUG, INFO.
 
 Note that the configured or default logging level can be overwritten to debug using an env variable:
@@ -572,7 +576,7 @@ Elara defines a graph of connected `WorkStations`, each responsible for building
 Elara uses this **DAG** to provide:
 
 * **Minimal** dependency processing
-* **Early validation** of all intermediate requirements 
+* **Early validation** of all intermediate requirements
 * **Early Failure**/Ordering
 
 Elara does this by traversing the DAG in three stages:
@@ -591,13 +595,13 @@ Sometimes:
 
 ## Adding Features
 
-**NOTE**: Pushing code to this repository is temporarily restricted while we undergo some spring cleaning during April/May 2022. If you wish to contribute code, please contact one of the owners for permisison. 
+**NOTE**: Pushing code to this repository is temporarily restricted while we undergo some spring cleaning during April/May 2022. If you wish to contribute code, please contact one of the owners for permisison.
 
 Elara is designed to be extendable, primarily with new tools such as handlers or benchmarks.
 
 Where new tools are new classes that implement some process that fits within the implementation (both in terms of code and also abstractly) of a WorkStation. New tools must be added to the relevant workstations 'roster' of tools (ie `.tools`).
 
-New tool classes must correctly inherit and implement a number of values and methods so that they 
+New tool classes must correctly inherit and implement a number of values and methods so that they
 play well with their respective workstation:
 
 * ``.__init__(self, config, mode)``: Used for early validation of mode and subsequent requirements.
