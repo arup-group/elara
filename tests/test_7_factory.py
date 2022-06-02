@@ -772,3 +772,31 @@ def test_write_png_tool(tmpdir):
     )
     path = os.path.join(tmpdir, 'test2.png')
     assert os.path.exists(path)
+
+
+
+def test_build_helpful_error_string_for_events(test_config):
+    """This test is likely to break if more tools are added with 'log' in the name. Sorry"""
+    requirements = RequirementsWorkStation(test_config)
+    event_handlers = EventHandlerWorkStation(test_config)
+
+    requirements.connect(None, [event_handlers])
+    assert requirements.build_helpful_error_string(["log"]) == """
+RequirementsWorkStation workstation cannot find requirement: 'log'.
+\tdid you mean: 'vehicle_departure_log' (EventHandlerWorkStation)
+\tdid you mean: 'vehicle_passenger_log' (EventHandlerWorkStation)
+\tdid you mean: 'vehicle_link_log' (EventHandlerWorkStation)"""
+
+
+
+def test_build_helpful_error_string_for_plans(test_config):
+    """This test is likely to break if more tools are added with 'mode' in the name. Sorry"""
+    requirements = RequirementsWorkStation(test_config)
+    plan_handlers = PlanHandlerWorkStation(test_config)
+
+    requirements.connect(None, [plan_handlers])
+    assert requirements.build_helpful_error_string(["mode"]) == """
+RequirementsWorkStation workstation cannot find requirement: 'mode'.
+\tdid you mean: 'trip_modes' (PlanHandlerWorkStation)
+\tdid you mean: 'trip_activity_modes' (PlanHandlerWorkStation)
+\tdid you mean: 'plan_modes' (PlanHandlerWorkStation)"""

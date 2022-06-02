@@ -6,6 +6,7 @@ import os
 import json
 import logging
 from matplotlib.figure import Figure
+from fuzzywuzzy import process
 
 from elara.helpers import camel_to_snake
 
@@ -454,12 +455,27 @@ class WorkStation:
 
         # check for missing requirements
         missing = set(clean_requirements) - set(supplier_tools)
-        missing_names = [str(m) for m in missing]
         if missing:
-            supplier_resources_string = " & ".join([f"{s} (has available tools: {list(s.tools)})" for s in self.suppliers])
-            raise ValueError(
-                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {supplier_resources_string}.'
-            )
+            helpful_error_string = self.build_helpful_error_string(missing)
+            raise ValueError(f"Failure to find at least one requirement, this may be an error with your config:{helpful_error_string}")
+
+    def build_helpful_error_string(self, missing: List[str]) -> str:
+        """
+        Create a useful message for unfound "missing" requirements.
+
+        Args:
+            missing (list): list of missing requirements
+
+        Returns:
+            str: message
+        """
+        error_string = ""
+        for m in missing:
+            error_string += f"\n{self} workstation cannot find requirement: '{m}'."
+            for workstation in self.suppliers:
+                for s in get_closest(m, list(workstation.tools)):
+                    error_string += f"\n\tdid you mean: '{s}' ({workstation})"
+        return error_string
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:
         """
@@ -1048,3 +1064,7 @@ def path_compressed(path:str, compression:str)->str:
         path = f'{path}.{compression}'
 
     return path
+
+
+def get_closest(target, choices, limit=3, score=75) -> list:
+    return [f[0] for f in process.extract(target, choices, limit=limit) if f[1] > score]
