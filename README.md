@@ -211,7 +211,7 @@ If your MATSim outputs use default names and are in the same directory, you may 
 
 ### Configuration dry run
 
-`elara run` supports some optional flags and arguments which can be discovered with `elara run --help`, most useful is `elara run -d` (or `elara run --dry`) which can be use to test a config without providing valid inputs or unertaking the processing.
+`elara run` supports some optional flags and arguments which can be discovered with `elara run --help`, most useful is `elara run -d` (or `elara run --dry`) which can be use to test a config without providing valid inputs or undertaking the processing.
 
 ## Command Line Reference
 
