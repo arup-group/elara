@@ -462,12 +462,8 @@ class WorkStation:
     def build_helpful_error_string(self, missing: List[str]) -> str:
         """
         Create a useful message for unfound "missing" requirements.
-
-        Args:
-            missing (list): list of missing requirements
-
-        Returns:
-            str: message
+        :param missing: (list) list of missing requirements
+        :return: (str) message
         """
         error_string = ""
         for m in missing:
