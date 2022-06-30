@@ -23,23 +23,33 @@ def cli():
 
 @cli.command()
 @click.argument("config_path", type=click.Path(exists=True))
-@click.option("--path_override", '-o', default=None)
-@click.option("--root", '-r', default=None)
-@click.option("--output_directory_override", default=None)
-def run(config_path, path_override, root, output_directory_override):
+@click.option("--dry", "-d", is_flag=True, help="test run a config file.")
+@click.option("--path_override", '-o', default=None, help="over-ride input path root.")
+@click.option("--root", '-r', default=None, help="over-ride all path roots.")
+@click.option("--output_directory_override", default=None, help="over-ride output directory to new path.")
+def run(config_path, dry, path_override, root, output_directory_override):
     """
     Run Elara using a config.
     :param config_path: Configuration file path
     :param path_override: containing directory to update for [inputs], outputs.path in toml
     :param root: add root to all paths (assumes that paths in config are relative)
-    :param output_directory_override: change output directory
+    :param output_directory_override: change outputs directory
+    :param dry: flag to initiate a run test
     """
+
     if path_override and root:
         raise UserWarning(
             "Cannot run elara from config with both --path_override and --root options, please choose one."
             )
 
     config = Config(config_path)
+
+    logging.basicConfig(
+        level=config.logging,
+        format='%(asctime)s %(name)-12s %(levelname)-3s %(message)s',
+        datefmt='%m-%d %H:%M'
+    )
+    logger = logging.getLogger(__name__)
 
     if path_override:
         config.override(path_override)
@@ -50,10 +60,6 @@ def run(config_path, path_override, root, output_directory_override):
     if output_directory_override:
         config.output_directory_override(output_directory_override)
 
-    main(config)
-
-
-def main(config):
     """
     Main logic:
         1) define workstations
@@ -61,17 +67,21 @@ def main(config):
         3) build all resulting graph requirements
     :param config: Session configuration object
     """
-
-    logging.basicConfig(
-        level=config.logging,
-        format='%(asctime)s %(name)-12s %(levelname)-3s %(message)s',
-        datefmt='%m-%d %H:%M'
-    )
-    logger = logging.getLogger(__name__)
-
     logger.info('Starting')
+    main(config=config, logger=logger, dry_run=dry)
+    logger.info('Done')
 
-    # TODO
+
+def main(config, logger, dry_run=False) -> None:
+    requirements = define_and_connect_workstations(config, logger)
+    if dry_run:
+        factory.dry_run_build(requirements)
+    else:
+        factory.build(requirements)
+
+
+def define_and_connect_workstations(config, logger):
+
     config.experienced_plans_warning()
 
     # Create output folder if it does not exist
@@ -122,11 +132,7 @@ def main(config):
         managers=[input_workstation],
         suppliers=None
     )
-
-    # 3: Build all requirements
-    factory.build(config_requirements)
-
-    logger.info('Done')
+    return config_requirements
 
 
 def common_override(
@@ -275,7 +281,7 @@ def link_vehicle_capacity(
     override["event_handlers"]["link_vehicle_capacity"] = {'modes': list(modes)}
     config = Config(override=override)
     main(config)
-    
+
 @event_handlers.command()
 @click.argument('modes', nargs=-1, type=click.STRING, required=True)
 @common_options

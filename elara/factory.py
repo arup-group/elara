@@ -6,6 +6,7 @@ import os
 import json
 import logging
 from matplotlib.figure import Figure
+from fuzzywuzzy import process
 
 from elara.helpers import camel_to_snake
 
@@ -454,12 +455,23 @@ class WorkStation:
 
         # check for missing requirements
         missing = set(clean_requirements) - set(supplier_tools)
-        missing_names = [str(m) for m in missing]
         if missing:
-            supplier_resources_string = " & ".join([f"{s} (has available tools: {list(s.tools)})" for s in self.suppliers])
-            raise ValueError(
-                f'{self} workstation cannot find some requirements: {missing_names} from suppliers: {supplier_resources_string}.'
-            )
+            helpful_error_string = self.build_helpful_error_string(missing)
+            raise ValueError(f"Failure to find at least one requirement, this may be an error with your config:{helpful_error_string}")
+
+    def build_helpful_error_string(self, missing: List[str]) -> str:
+        """
+        Create a useful message for unfound "missing" requirements.
+        :param missing: (list) list of missing requirements
+        :return: (str) message
+        """
+        error_string = ""
+        for m in missing:
+            error_string += f"\n{self} workstation cannot find requirement: '{m}'."
+            for workstation in self.suppliers:
+                for s in get_closest(m, list(workstation.tools)):
+                    error_string += f"\n\tdid you mean: '{s}' ({workstation})"
+        return error_string
 
     def gather_manager_requirements(self) -> Dict[str, List[str]]:
         """
@@ -718,9 +730,19 @@ def build(start_node: WorkStation, write_path=None) -> list:
     :param write_path: Optional output path overwrite
     :return: list, sequence of visits for stages 2 (initiation and validation) and 3 (building)
     """
-    logger = logging.getLogger(__name__)
+    assemble_dag(start_node=start_node)
+    queue = initiate_dag(start_node=start_node)
+    return build_dag(queue=queue, write_path=write_path)
 
+
+def dry_run_build(start_node: WorkStation) -> None:
+    assemble_dag(start_node=start_node)
+    queue = initiate_dag(start_node=start_node)
+
+
+def assemble_dag(start_node: WorkStation) -> None:
     # stage 1:
+    logger = logging.getLogger(__name__)
     logger.debug(f'Starting DAG')
 
     if is_cyclic(start_node):
@@ -734,32 +756,36 @@ def build(start_node: WorkStation, write_path=None) -> list:
 
     logger.debug(f'DAG prepared')
 
+def initiate_dag(start_node: WorkStation) -> list:
     # stage 2:
+    logger = logging.getLogger(__name__)
     logger.debug(f'Initiating DAG')
 
-    visited = list()
     queue = list()
+    to_visit = list()
+    to_visit.append(start_node)
     queue.append(start_node)
-    visited.append(start_node)
 
-    while queue:
-        current = queue.pop(0)
+    while to_visit:
+        current = to_visit.pop(0)
         current.engage()
 
         if current.suppliers:
             current.validate_suppliers()
 
             for supplier in order_by_distance(current.suppliers):
-                if supplier not in visited:
+                if supplier not in queue:
+                    to_visit.append(supplier)
                     queue.append(supplier)
-                    visited.append(supplier)
 
     logger.info(f'All Workstations Initiated and Validated')
+    return queue
 
+def build_dag(queue, write_path=None) -> list:
     # stage 3:
+    logger = logging.getLogger(__name__)
     logger.info(f'Initiating Build')
-    sequence = visited
-    return_queue = visited[::-1]
+    return_queue = queue[::-1]
     visited = []
     while return_queue:
         current = return_queue.pop(0)
@@ -767,7 +793,7 @@ def build(start_node: WorkStation, write_path=None) -> list:
         visited.append(current)
 
     # return full sequence for testing
-    return sequence + visited
+    return queue + visited
 
 
 def is_cyclic(start):
@@ -1034,3 +1060,7 @@ def path_compressed(path:str, compression:str)->str:
         path = f'{path}.{compression}'
 
     return path
+
+
+def get_closest(target, choices, limit=3, score=75) -> list:
+    return [f[0] for f in process.extract(target, choices, limit=limit) if f[1] > score]

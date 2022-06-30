@@ -11,7 +11,6 @@ class Config:
     default_settings = {
         "scenario":
             {
-                "name": 'default',
                 "time_periods": 24,
                 "scale_factor": .1,
                 "crs": "EPSG:27700",
@@ -43,7 +42,6 @@ class Config:
         :param path: Path to scenario configuration TOML file
         """
         self.logger = logging.getLogger(__name__)
-        self.name = None
         self.time_periods = None
         self.scale_factor = None
         self.version = None
@@ -58,8 +56,7 @@ class Config:
         self.contract = None
 
         if path:
-            self.logger.debug(f' Loading config from {path}')
-            self.settings = toml.load(path, _dict=dict)
+            self.load_toml(path)
         elif override:
             self.logger.debug(f' Loading config from dict override')
             self.settings = override
@@ -76,7 +73,7 @@ class Config:
                     # check for name and add to options
                     if len(handler.split("--")) > 1:
                         options["name"] = handler.split("--")[1]
-                    
+
                     if not options:
                         self.settings[handler_group][handler] = {'modes': ["all"]}
                     elif isinstance(options, list):
@@ -86,9 +83,8 @@ class Config:
                         if 'modes' not in options:
                             self.settings[handler_group][handler]["modes"] = ['all']
 
-
         self.load_required_settings()
-        
+
         # load inputs input directory if provided
         if self.inputs_directory:
             self.logger.info(f"Using directory {self.inputs_directory} for inputs")
@@ -103,7 +99,6 @@ class Config:
             self.logger.info(f'Creating output path: {benchmarks_path}')
             os.mkdir(benchmarks_path)
 
-        self.logger.debug(f'Scenario name = {self.name}')
         self.logger.debug(f'Output Path = {self.output_path}')
         self.logger.debug(f'Scenario time periods = {self.time_periods}')
         self.logger.debug(f'Scale factor = {self.scale_factor}')
@@ -117,12 +112,28 @@ class Config:
         self.logger.debug(f'Contract = {self.contract}')
         self.check_handler_renamed()
 
+    def load_toml(self, path):
+        self.logger.debug(f' Loading config from {path}')
+        try:
+            self.settings = toml.load(path, _dict=dict)
+        except toml.TomlDecodeError:
+            raise UserWarning(
+"""
+Duplicate keys found in toml config, this is not an accepted toml feature,
+if you wish to use the same handler/tool twice or more (this is common),
+you may either or both the keys using HANDLER--NAME, for example:
+
+    [plan_handlers]
+        trip_modes = ["all"]
+        trip_modes--subpopulations = {groupby_person_attributes=["subpopulation"]}
+"""
+            )
+
     def load_required_settings(self):
 
         # Scenario settings
         self.logger.debug(f'Loading and validating required settings')
 
-        self.name = self.settings["scenario"]["name"]
         self.time_periods = self.valid_time_periods(
             self.settings["scenario"]["time_periods"]
         )
@@ -189,7 +200,7 @@ class Config:
         return self.valid_path(
             self.settings["inputs"]["plans"], "plans"
         )
-    
+
     @property
     def input_plans_path(self):
         return self.valid_path(
@@ -241,7 +252,7 @@ class Config:
         :param path: a path containing matsim outputs
         :return: str with path to either xml or gz file
         """
-        if os.path.isfile(xml_path): 
+        if os.path.isfile(xml_path):
             return xml_path
         return xml_path + '.gz'
 
@@ -389,14 +400,14 @@ class Config:
         )
         if not self.using_experienced_plans:
             self.settings['inputs']['plans'] = 'output_plans.xml'
-        
+
         if self.version == 12:
             self.settings['inputs']['attributes'] = 'output_plans.xml'
         else:
             self.settings['inputs']['attributes'] = 'output_personAttributes.xml'
 
         for input, path in self.settings['inputs'].items():
-            if input in ['road_pricing', 'inputs_directory']: 
+            if input in ['road_pricing', 'inputs_directory']:
                 # do not override listed files
                 continue
             else:

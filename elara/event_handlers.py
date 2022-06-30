@@ -514,7 +514,7 @@ class LinkVehicleCounts(EventHandlerTool):
 
 class LinkVehicleCapacity(EventHandlerTool):
     """
-    Extract capacity for mode per link on given network. 
+    Extract capacity for mode per link on given network.
     """
 
     requirements = [
@@ -525,7 +525,7 @@ class LinkVehicleCapacity(EventHandlerTool):
         'attributes',
     ]
     invalid_modes = ['car']
-    
+
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
         """
         Initiate class, creates results placeholders.
@@ -569,11 +569,11 @@ class LinkVehicleCapacity(EventHandlerTool):
         links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
-                f"""
-                No viable links found for mode:{self.mode} in Network,
-                this may be because the Network modes do not match the configured
-                modes. Elara will continue with all links found in network.
-                """
+f"""
+No viable links found for mode:{self.mode} in Network,
+this may be because the Network modes do not match the configured
+modes. Elara will continue with all links found in network.
+"""
                 )
         else:
             self.logger.debug(f'Selecting links for mode:{self.mode}.')
@@ -660,7 +660,7 @@ class LinkVehicleCapacity(EventHandlerTool):
             totals_df, how="left"
         )
         self.result_dfs[key] = totals_df
-        
+
 
 class LinkVehicleSpeeds(EventHandlerTool):
     """
@@ -713,11 +713,11 @@ class LinkVehicleSpeeds(EventHandlerTool):
         links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
-                f"""
-                No viable links found for mode:{self.mode} in Network,
-                this may be because the Network modes do not match the configured
-                modes. Elara will continue with all links found in network.
-                """
+f"""
+No viable links found for mode:{self.mode} in Network,
+this may be because the Network modes do not match the configured
+modes. Elara will continue with all links found in network.
+"""
                 )
         else:
             self.logger.debug(f'Selecting links for mode:{self.mode}.')
@@ -1007,11 +1007,11 @@ class LinkPassengerCounts(EventHandlerTool):
         links = resources['network'].mode_to_links_map.get(self.mode)
         if links is None:
             self.logger.warning(
-                f"""
-                No viable links found for mode:{self.mode} in Network,
-                this may be because the Network modes do not match the configured
-                modes. Elara will continue with all links found in network.
-                """
+f"""
+No viable links found for mode:{self.mode} in Network,
+this may be because the Network modes do not match the configured
+modes. Elara will continue with all links found in network.
+"""
                 )
         else:
             self.logger.debug(f'Selecting links for mode:{self.mode}.')
@@ -1205,11 +1205,11 @@ class RoutePassengerCounts(EventHandlerTool):
         routes = resources['transit_schedule'].mode_to_routes_map.get(self.mode)
         if routes is None:
             self.logger.warning(
-                f"""
-                No viable routes found for mode:{self.mode} in TransitSchedule,
-                this may be because the Schedule modes do not match the configured
-                modes. Elara will continue with all routes found in schedule.
-                """
+f"""
+No viable routes found for mode:{self.mode} in TransitSchedule,
+this may be because the Schedule modes do not match the configured
+modes. Elara will continue with all routes found in schedule.
+"""
                 )
 
         self.elem_ids, self.elem_indices = self.generate_elem_ids(list(routes))
@@ -1578,11 +1578,11 @@ class StopToStopPassengerCounts(EventHandlerTool):
         viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
         if viable_stops is None:
             self.logger.warning(
-                f"""
-                No viable stops found for mode:{self.mode} in TransitSchedule,
-                this may be because the Schedule modes do not match the configured
-                modes. Elara will continue with all stops found in schedule.
-                """
+f"""
+No viable stops found for mode:{self.mode} in TransitSchedule,
+this may be because the Schedule modes do not match the configured
+modes. Elara will continue with all stops found in schedule.
+"""
                 )
         else:
             self.logger.debug(f'Filtering stops for mode:{self.mode}.')
@@ -1823,11 +1823,11 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         viable_stops = resources['transit_schedule'].mode_to_stops_map.get(self.mode)
         if viable_stops is None:
             self.logger.warning(
-                f"""
-                No viable stops found for mode:{self.mode} in TransitSchedule,
-                this may be because the Schedule modes do not match the configured
-                modes. Elara will continue with all stops found in schedule.
-                """
+f"""
+No viable stops found for mode:{self.mode} in TransitSchedule,
+this may be because the Schedule modes do not match the configured
+modes. Elara will continue with all stops found in schedule.
+"""
                 )
         else:
             self.logger.debug(f'Filtering stops for mode:{self.mode}.')

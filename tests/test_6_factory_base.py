@@ -6,7 +6,8 @@ import logging
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.factory import WorkStation, Tool, complex_combine_reqs, equals, build, build_graph_depth, combine_reqs, complex_combine_reqs
+from elara.factory import WorkStation, Tool
+from elara.factory import complex_combine_reqs, equals, build, build_graph_depth, combine_reqs, complex_combine_reqs, get_closest
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -269,7 +270,7 @@ def test_requirements(
         inputs_process.gather_manager_requirements(),
         {'events': {'groupby_person_attributes': {None}, 'modes': {None}}, 'network': {'groupby_person_attributes': {None}, 'modes': {None}}, 'plans': {'groupby_person_attributes': {None}, 'modes': {None}}}
     )
-    assert equals(  
+    assert equals(
         config_paths.gather_manager_requirements(),
         {'events_path': {'groupby_person_attributes': {None}, 'modes': {None}}, 'network_path': {'groupby_person_attributes': {None}, 'modes': {None}}, 'plans_path': {'groupby_person_attributes': {None}, 'modes': {None}}}
     )
@@ -372,3 +373,8 @@ def test_engage_supply_chain(
     assert set(plan_handler_process.resources) == {'mode_share:all:region:'}
     assert set(inputs_process.resources) == {'events', 'network', 'plans'}
     assert set(config_paths.resources) == {'events_path', 'network_path', 'plans_path'}
+
+
+def test_get_closest():
+    assert get_closest("hell", ["hello", ""], limit=3, score=75) == ["hello"]
+    assert len(get_closest("hell", ["hello","help","hella","helli","helm"], limit=3, score=75)) == 3
