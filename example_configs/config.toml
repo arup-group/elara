@@ -30,7 +30,7 @@ vehicle_stop_to_stop_passenger_counts = ["bus"]
 
 [plan_handlers]
 trip_modes = {attributes=["age"]}
-trip_activity_modes = {destination_activity_filters=["pt interaction"], attributes=["age"]}
+trip_activity_modes = {destination_activity_filters=["work"], attributes=["age"]}
 plan_modes = {attributes=["age"]}
 plan_activity_modes = {destination_activity_filters=["work"], attributes=["age"]}
 trip_logs = ["all"]
