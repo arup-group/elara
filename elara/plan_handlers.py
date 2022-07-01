@@ -307,10 +307,6 @@ class PlanModes(ModeShares):
                         mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
                         plan_modes[mode] = plan_modes.get(mode, 0) + distance
 
-                    # elif stage.tag == 'activity':
-                    #     if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
-                    #         continue
-
                 if plan_modes: # stay-home agents have no legs/modes
                     mode = self.get_furthest_mode(plan_modes)
                     x, y, z = self.mode_table_position(
@@ -362,8 +358,6 @@ class TripActivityModes(ModeShares):
 
                     elif stage.tag == 'activity':
                         activity = stage.get('type')
-                        # if 'pt interaction' not in self.destination_activity_filters and activity == 'pt interaction':
-                        #     continue
 
                         # only add activity modes when there has been previous activity
                         # (ie trip start time) AND the activity is in specified list
