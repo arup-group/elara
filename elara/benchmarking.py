@@ -627,6 +627,7 @@ class LinkCounterComparison(BenchmarkTool):
                 links = counter['links']
                 if links==[]:
                     continue # some links are empty lists, we skip them
+                links = [str(link) for link in links]  # force all ids to strings
                 bm_hours = [str(h) for h in list(counter['counts'])]
                 counts_array = np.array(list(counter['counts'].values()))
 
@@ -642,7 +643,7 @@ class LinkCounterComparison(BenchmarkTool):
 
                 # combine mode link counts
                 for link_id in links:
-                    if str(link_id) not in results_df.index:
+                    if link_id not in results_df.index:
                         failed_snaps += 1
                         self.logger.warning(
                             f" Missing model link: {link_id}, zero filling count for benchmark: "
