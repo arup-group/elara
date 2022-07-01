@@ -307,9 +307,9 @@ class PlanModes(ModeShares):
                         mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
                         plan_modes[mode] = plan_modes.get(mode, 0) + distance
 
-                    elif stage.tag == 'activity':
-                        if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
-                            continue
+                    # elif stage.tag == 'activity':
+                    #     if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
+                    #         continue
 
                 if plan_modes: # stay-home agents have no legs/modes
                     mode = self.get_furthest_mode(plan_modes)
@@ -362,8 +362,8 @@ class TripActivityModes(ModeShares):
 
                     elif stage.tag == 'activity':
                         activity = stage.get('type')
-                        if activity == 'pt interaction':  # ignore pt interaction activities
-                            continue
+                        # if 'pt interaction' not in self.destination_activity_filters and activity == 'pt interaction':
+                        #     continue
 
                         # only add activity modes when there has been previous activity
                         # (ie trip start time) AND the activity is in specified list
@@ -376,10 +376,12 @@ class TripActivityModes(ModeShares):
                                     end_time
                                 )
                                 self.mode_counts[x, y, z] += 1
-                            # reset modes
+                                # reset modes
+                                trip_modes = {}
+                        if not activity == 'pt interaction':  # reset modes at end of trip
                             trip_modes = {}
-                        # update endtime for next activity
-                        end_time = convert_time_to_seconds(stage.get('end_time'))
+                            # update endtime for next activity
+                            end_time = convert_time_to_seconds(stage.get('end_time'))
 
 
 class PlanActivityModes(ModeShares):
@@ -409,8 +411,6 @@ class PlanActivityModes(ModeShares):
 
                     elif stage.tag == 'activity':
                         activity = stage.get('type')
-                        if activity == 'pt interaction':  # ignore pt interaction activities
-                            continue
 
                         # only add activity modes when there has been previous activity
                         # (ie trip start time) AND the activity is in specified list
@@ -421,9 +421,10 @@ class PlanActivityModes(ModeShares):
                                     plan_modes[mode] = plan_modes.get(mode, 0) + distance
                             # reset modes
                             trip_modes = {}
-
-                        # update endtime for next activity
-                        end_time = convert_time_to_seconds(stage.get('end_time'))
+                        if not activity == 'pt interaction':  # reset modes at end of trip
+                            trip_modes = {}
+                            # update endtime for next activity
+                            end_time = convert_time_to_seconds(stage.get('end_time'))
 
                 if plan_modes:
                     mode = self.get_furthest_mode(plan_modes)
