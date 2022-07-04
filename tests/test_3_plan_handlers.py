@@ -141,7 +141,7 @@ def test_extract_mode_from_v11_route_elem(base_handler):
         route_to_mode_map = {"a":"bus"}
     base_handler.resources['transit_schedule'] = Resource()
     string = """
-    <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" 
+    <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42"
     distance="10100.0">PT1===home_stop_out===city_line===a===work_stop_in</route>
     """
     elem = etree.fromstring(string)
@@ -153,7 +153,7 @@ def test_extract_routeid_from_v12_route_elem(base_handler):
         route_to_mode_map = {"a":"bus"}
     base_handler.resources['transit_schedule'] = Resource()
     string = """
-    <route type="default_pt" start_link="1" 
+    <route type="default_pt" start_link="1"
     end_link="2" trav_time="00:33:03" distance="2772.854305426653">
     {"transitRouteId":"a","boardingTime":"09:15:00","transitLineId":"b",
     "accessFacilityId":"1","egressFacilityId":"2"}</route>
@@ -167,7 +167,7 @@ def test_extract_mode_from_route_elem_v11(base_handler):
         route_to_mode_map = {"a":"bus"}
     base_handler.resources['transit_schedule'] = Resource()
     string = """
-    <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42" 
+    <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42"
     distance="10100.0">PT1===home_stop_out===city_line===a===work_stop_in</route>
     """
     elem = etree.fromstring(string)
@@ -179,7 +179,7 @@ def test_extract_mode_from_route_elem_v12(base_handler_v12):
         route_to_mode_map = {"a":"bus"}
     base_handler_v12.resources['transit_schedule'] = Resource()
     string = """
-    <route type="default_pt" start_link="1" 
+    <route type="default_pt" start_link="1"
     end_link="2" trav_time="00:33:03" distance="2772.854305426653">
     {"transitRouteId":"a","boardingTime":"09:15:00","transitLineId":"b",
     "accessFacilityId":"1","egressFacilityId":"2"}</route>
@@ -437,7 +437,7 @@ def toll_log_handler(test_config, input_manager):
     return handler
 
 #paying single toll
-def test_toll_onelink(toll_log_handler): 
+def test_toll_onelink(toll_log_handler):
     handler = toll_log_handler
 
     person = """
@@ -458,8 +458,8 @@ def test_toll_onelink(toll_log_handler):
     assert len(handler.toll_log) == 1
     assert handler.toll_log.iloc[0]['toll']=='10.0'
 
-#using two adjacent toll links consecutively should only incur one charge 
-def test_toll_consecutivelinks(toll_log_handler): 
+#using two adjacent toll links consecutively should only incur one charge
+def test_toll_consecutivelinks(toll_log_handler):
     handler = toll_log_handler
 
     person = """
@@ -481,7 +481,7 @@ def test_toll_consecutivelinks(toll_log_handler):
     assert handler.toll_log.iloc[0]['toll']=='10.0'
 
 #using two adjacent toll links non-consecutively should incur charge twice
-def test_toll_nonconsecutivelinks(toll_log_handler): 
+def test_toll_nonconsecutivelinks(toll_log_handler):
     handler = toll_log_handler
 
     person = """
@@ -502,7 +502,7 @@ def test_toll_nonconsecutivelinks(toll_log_handler):
     assert len(handler.toll_log) == 2
     assert float(handler.toll_log.iloc[0]['toll'])+ float(handler.toll_log.iloc[1]['toll'])== 20
 
-def test_toll_finalise(toll_log_handler): 
+def test_toll_finalise(toll_log_handler):
     handler = toll_log_handler
 
     person = """
@@ -1236,7 +1236,7 @@ def test_finalised_trip_mode_counts(test_trip_modeshares_handler_finalised):
             if isinstance(result, pd.DataFrame):
                 assert result["count"].sum() == 10 / handler.config.scale_factor
             else:
-                assert result.sum() == 10 / handler.config.scale_factor 
+                assert result.sum() == 10 / handler.config.scale_factor
 
         else:
             if isinstance(result, pd.DataFrame):
@@ -1249,7 +1249,7 @@ def test_finalised_trip_mode_counts(test_trip_modeshares_handler_finalised):
 @pytest.fixture
 def test_trip_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
     handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
-    
+
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
 
@@ -1262,6 +1262,25 @@ def test_trip_activity_modeshare_handler_without_attribute_slice(test_config_v12
     assert handler.mode_counts.shape == (6, 1, 24)
 
     return handler
+
+
+@pytest.fixture
+def test_trip_pt_interaction_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
+    handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["pt interaction"])
+
+    resources = input_manager_v12.resources
+    handler.build(resources, write_path=test_outputs)
+
+    periods = 24
+
+    assert list(handler.mode_indices.keys()) == handler.modes
+    assert len(handler.classes) == 1
+    assert list(handler.class_indices.keys()) == [None]
+
+    assert handler.mode_counts.shape == (6, 1, 24)
+
+    return handler
+
 
 def test_trip_activity_mode_share_without_attribute_slice_with_activities_simple(test_trip_activity_modeshare_handler_without_attribute_slice):
     handler = test_trip_activity_modeshare_handler_without_attribute_slice
@@ -1288,6 +1307,7 @@ def test_trip_activity_mode_share_without_attribute_slice_with_activities_simple
     person = etree.fromstring(string)
     handler.process_plans(person)
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 1
+
 
 def test_trip_activity_mode_share_without_attribute_slice_with_activities_complex(test_trip_activity_modeshare_handler_without_attribute_slice):
     handler = test_trip_activity_modeshare_handler_without_attribute_slice
@@ -1394,7 +1414,7 @@ def test_trip_activity_mode_share_without_attribute_slice_with_activities_comple
                     <attribute name="routingMode" class="java.lang.String">bus</attribute>
                 </attributes>
                 <route type="generic" start_link="3-4" end_link="4-3" trav_time="00:01:18" distance="10100.0"></route>
-            </leg>            
+            </leg>
             <activity type="work_b" link="4-3" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -1405,6 +1425,62 @@ def test_trip_activity_mode_share_without_attribute_slice_with_activities_comple
 
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
     assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 3
+
+def test_trip_activity_mode_share_without_attribute_slice_with_activities_pt_interaction(test_trip_pt_interaction_modeshare_handler_without_attribute_slice):
+    handler = test_trip_pt_interaction_modeshare_handler_without_attribute_slice
+
+    string = """
+    <person id="george">
+        <attributes>
+            <attribute name="subpopulation" class="java.lang.String">poor</attribute>
+            <attribute name="age" class="java.lang.String">no</attribute>
+        </attributes>
+        <plan score="129.592238766919" selected="yes">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="car" dep_time="08:00:00" trav_time="00:00:04">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">car</attribute>
+                </attributes>
+                <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work_a" link="1-5" x="0.0" y="10000.0" end_time="12:30:00" >
+            </activity>
+            <leg mode="walk" trav_time="00:01:18">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bus</attribute>
+                </attributes>
+                <route type="generic" start_link="1-5" end_link="1-3" trav_time="00:01:18" distance="10100.0"></route>
+            </leg>
+            <activity type="pt interaction" link="1-3" x="50.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+            <leg mode="bus" trav_time="00:43:42">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bus</attribute>
+                </attributes>
+                <route type="default_pt" start_link="1-3" end_link="3-4" trav_time="00:43:42" distance="10200.0">
+                {"transitRouteId":"work_bound","boardingTime":"08:30:00","transitLineId":"city_line","accessFacilityId":"home_stop_out","egressFacilityId":"work_stop_in"}
+                </route>
+            </leg>
+            <activity type="pt interaction" link="3-4" x="130.0" y="0.0" max_dur="00:00:00" >
+            </activity>
+           <leg mode="walk" trav_time="00:01:18">
+                <attributes>
+                    <attribute name="routingMode" class="java.lang.String">bus</attribute>
+                </attributes>
+                <route type="generic" start_link="3-4" end_link="4-3" trav_time="00:01:18" distance="10100.0"></route>
+            </leg>
+            <activity type="work_b" link="4-3" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 0
+    assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 1
+    assert np.sum(handler.mode_counts[handler.mode_indices['bus']]) == 1
 
 
 @pytest.fixture
@@ -1512,7 +1588,7 @@ def test_trip_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
 
     assert len(handler.classes) == 3
     assert set(handler.classes) == {"yes", "no", None}
-    
+
     assert handler.mode_counts.shape == (6, 3, 24)
 
     return handler
@@ -1633,7 +1709,7 @@ def test_trip_activity_finalised_mode_counts(test_trip_activity_modeshare_plan_h
             if isinstance(result, pd.DataFrame):
                 assert result["count"].sum() == 2 / handler.config.scale_factor
             else:
-                assert result.sum() == 2 / handler.config.scale_factor 
+                assert result.sum() == 2 / handler.config.scale_factor
 
         else:
             if isinstance(result, pd.DataFrame):
@@ -1958,7 +2034,7 @@ def test_finalised_plan_mode_counts(test_plan_handler_finalised):
             if isinstance(result, pd.DataFrame):
                 assert result["count"].sum() == 5 / handler.config.scale_factor
             else:
-                assert result.sum() == 5 / handler.config.scale_factor 
+                assert result.sum() == 5 / handler.config.scale_factor
 
         else:
             if isinstance(result, pd.DataFrame):
@@ -1971,7 +2047,7 @@ def test_finalised_plan_mode_counts(test_plan_handler_finalised):
 @pytest.fixture
 def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
     handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
-    
+
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
 
@@ -2116,7 +2192,7 @@ def test_activity_plan_mode_share_without_attribute_slice_with_activities_comple
                     <attribute name="routingMode" class="java.lang.String">bus</attribute>
                 </attributes>
                 <route type="generic" start_link="3-4" end_link="4-3" trav_time="00:01:18" distance="10100.0"></route>
-            </leg>            
+            </leg>
             <activity type="work_b" link="4-3" x="0.0" y="10000.0" end_time="17:30:00" >
             </activity>
         </plan>
@@ -2234,12 +2310,12 @@ def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
 
     assert len(handler.classes) == 3
     assert set(handler.classes) == {"yes", "no", None}
-    
+
     assert handler.mode_counts.shape == (6, 3, 24)
 
     return handler
 
-def test_plan_ctivity_mode_share_with_attribute_slice(test_plan_activity_modeshare_handler_age_attribute_slice):
+def test_plan_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_handler_age_attribute_slice):
     handler = test_plan_activity_modeshare_handler_age_attribute_slice
     string = """
     <person id="nick">
@@ -2363,7 +2439,7 @@ def test_plan_activity_finalised_mode_counts(test_plan_activity_modeshare_plan_h
             if isinstance(result, pd.DataFrame):
                 assert result["count"].sum() == 2 / handler.config.scale_factor
             else:
-                assert result.sum() == 2 / handler.config.scale_factor 
+                assert result.sum() == 2 / handler.config.scale_factor
 
         else:
             if isinstance(result, pd.DataFrame):
