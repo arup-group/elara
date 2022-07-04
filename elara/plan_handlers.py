@@ -323,6 +323,16 @@ class TripActivityModes(ModeShares):
     Extract mode shares for specified activities from plans.
     This handler takes a list of activities and computes the mode shares for each independent activity trip.
     """
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        if not kwargs.get("destination_activity_filters"):
+            raise UserWarning(
+                "You must configure 'destination_activity_filters' for the 'trip_activity_modes' tool, eg '['work']."
+                )
+        if not isinstance(kwargs.get("destination_activity_filters"), list):
+            raise UserWarning(
+                "You must configure 'destination_activity_filters' for the 'trip_activity_modes' tool as a list, eg '['work']."
+                )
 
     def process_plans(self, elem):
         """
@@ -379,6 +389,17 @@ class TripActivityModes(ModeShares):
 
 
 class PlanActivityModes(ModeShares):
+
+    def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        if not kwargs.get("destination_activity_filters"):
+            raise UserWarning(
+                "You must configure 'destination_activity_filters' for the 'plan_activity_modes' tool, eg '['work']."
+                )
+        if not isinstance(kwargs.get("destination_activity_filters"), list):
+            raise UserWarning(
+                "You must configure 'destination_activity_filters' for the 'plan_activity_modes' tool as a list, eg '['work']."
+                )
 
     def process_plans(self, elem):
         """
