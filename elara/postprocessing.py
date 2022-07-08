@@ -26,8 +26,8 @@ class PostProcessor(Tool):
         :params Pandas Series groupby_data: A categorical set to cross tabulate distance by
         :params bool, default True, scale outputs based on config scale
 
-        :returns: None 
-        """        
+        :returns: None
+        """
         # bin
         if groupby_field:
             breakdown_df = pd.concat([data, groupby_data, pd.cut(data, bins=bins, labels=labels)], axis=1)
@@ -38,7 +38,7 @@ class PostProcessor(Tool):
             breakdown_df = pd.cut(data, bins=bins, labels=labels).value_counts().sort_index().reset_index()
             breakdown_df.columns = colnames
             csv_breakdown_name = f"{self.name}.csv"
-        
+
         # scale counts
         if scale:
             breakdown_df[colnames[1]] /= self.config.scale_factor
@@ -105,7 +105,7 @@ class PlanTimeSummary(PostProcessor):
         """
         bins = list(range(0, 24*60*60+1, 15*60))
         bins[-1] = 100*60*60
-        labels = pd.timedelta_range(start='00:00:00', periods=96, freq='15min')  
+        labels = pd.timedelta_range(start='00:00:00', periods=96, freq='15min')
         binned = pd.DataFrame(index=pd.timedelta_range(start='00:00:00', periods=96, freq='15min'))
         binned['duration'] = pd.cut(data.duration_s, bins, labels=labels, right=False).value_counts()
         binned['end'] = pd.cut(data.end_s, bins, labels=labels, right=False).value_counts()
@@ -114,7 +114,7 @@ class PlanTimeSummary(PostProcessor):
         return binned
 
     def plot_time_bins(self, data, sub_col):
-    
+
         subs = set(data[sub_col])
 
         if len(subs) == 1:
@@ -145,7 +145,7 @@ class PlanTimeSummary(PostProcessor):
                 for pos in ['right','top','bottom','left']:
                     ax.spines[pos].set_visible(False)
                 ax.set_ylabel(sub.title(), fontsize='medium')
-                
+
         return fig
 
 
@@ -154,7 +154,7 @@ class TripDurationBreakdown(PostProcessor):
     Provide summary breakdowns of trip data:
         - by duration
         - by distance band
-        - ... 
+        - ...
     """
     requirements = ['trip_logs']
     valid_modes = ['all']
@@ -180,8 +180,8 @@ class TripDurationBreakdown(PostProcessor):
                 labels = ['0 to 5 min', '5 to 10 min', '10 to 15 min', '15 to 30 min', '30 to 45 min', '45 to 60 min', '60 to 90 min', '90 to 120 min', '120+ min'],
                 colnames = ['duration', 'trips'],
                 write_path = write_path,
-                groupby_field = key,  
-                groupby_data = cross_tab_dict[key]  
+                groupby_field = key,
+                groupby_data = cross_tab_dict[key]
             )
 
 
@@ -203,7 +203,7 @@ class TripEuclidDistanceBreakdown(PostProcessor):
         file_name = f"trip_logs_{self.mode}_trips.csv"
         file_path = os.path.join(self.config.output_path, file_name)
         trips_df = pd.read_csv(file_path)
-        
+
         # euclidean distance breakdown
         trips_df['euclidean_distance'] = ((trips_df.ox - trips_df.dx) ** 2 + (trips_df.oy - trips_df.dy) ** 2) ** 0.5
 
@@ -219,7 +219,7 @@ class TripEuclidDistanceBreakdown(PostProcessor):
                 labels = ['0 to 1 km', '1 to 5 km', '5 to 10 km', '10 to 25 km', '25 to 50 km', '50 to 100 km', '100 to 200 km', '200+ km'],
                 colnames = ['euclidean_distance', 'trips'],
                 write_path = write_path,
-                groupby_field = key,  
+                groupby_field = key,
                 groupby_data = cross_tab_dict[key]
         )
 
@@ -263,6 +263,7 @@ class VKT(PostProcessor):
         volumes = link_volume_counts[period_headers]
         link_lengths = link_volume_counts["length"].values / 1000  # Conversion to kilometres
         vkt = volumes.multiply(link_lengths, axis=0)
+        vkt["total"] = vkt[period_headers].sum(1) # update total column (still storing volume)
         return pd.concat([link_volume_counts.drop(period_headers, axis=1), vkt], axis=1)
 
 
