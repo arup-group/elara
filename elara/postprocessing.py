@@ -263,8 +263,8 @@ class VKT(PostProcessor):
         volumes = link_volume_counts[period_headers]
         link_lengths = link_volume_counts["length"].values / 1000  # Conversion to kilometres
         vkt = volumes.multiply(link_lengths, axis=0)
-        vkt["total"] = vkt[period_headers].sum(1) # update total column (still storing volume)
-        return pd.concat([link_volume_counts.drop(period_headers, axis=1), vkt], axis=1)
+        vkt["total"] = vkt[period_headers].sum(1) # create new total column
+        return pd.concat([link_volume_counts.drop([period_headers, "total"], axis=1), vkt], axis=1)
 
 
 def generate_period_headers(time_periods):
