@@ -604,11 +604,9 @@ class LinkCounterComparison(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = f"link_vehicle_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=0, dtype={0:str})
+        results_df = pd.read_csv(results_path)
+        results_df.index = results_df.link_id.map(str)  # indices converted to strings
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
-        results_df.index = results_df.index.map(str)  # indices converted to strings
-        results_df.index.name = 'link_id'
-        results_df.index = results_df.index.map(str)
 
         # build benchmark results
         snaps = 0
@@ -1572,13 +1570,10 @@ class PointsCounter(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = "link_vehicle_counts_{}.csv".format(self.mode)
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=0,dtype={0:str})
-
-        results_df = results_df.groupby(results_df.index).sum()  # remove class dis-aggregation
+        results_df = pd.read_csv(results_path)
+        results_df.index = results_df.link_id.map(str)
 
         results_df = results_df[[str(h) for h in range(24)]]  # just keep counts
-
-        results_df.index.name = 'link_id'
 
         # build benchmark results
         bm_results = []
