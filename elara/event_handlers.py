@@ -485,7 +485,6 @@ class LinkVehicleCounts(EventHandlerTool):
             index = pd.MultiIndex.from_product(indexes, names=names)
             counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
             counts_df = counts_df.unstack(level='hour').sort_index()
-            counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
 
             counts_df['total'] = counts_df.sum(1)
             counts_df = counts_df.reset_index().set_index('elem')
@@ -494,6 +493,9 @@ class LinkVehicleCounts(EventHandlerTool):
             counts_df = self.elem_gdf.join(
                 counts_df, how="left"
             )
+            counts_df.index = counts_df.index.set_names(['link_id'])
+            counts_df.reset_index(inplace=True)
+
             self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -507,10 +509,14 @@ class LinkVehicleCounts(EventHandlerTool):
         del self.counts
 
         key = f"{self.name}"
+
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
+        totals_df.index = totals_df.index.set_names(['link_id'])
+        totals_df.reset_index(inplace=True)
         self.result_dfs[key] = totals_df
+
 
 class LinkVehicleCapacity(EventHandlerTool):
     """
