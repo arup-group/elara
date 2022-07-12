@@ -44,13 +44,6 @@ def run(config_path, dry, path_override, root, output_directory_override):
 
     config = Config(config_path)
 
-    logging.basicConfig(
-        level=config.logging,
-        format='%(asctime)s %(name)-12s %(levelname)-3s %(message)s',
-        datefmt='%m-%d %H:%M'
-    )
-    logger = logging.getLogger(__name__)
-
     if path_override:
         config.override(path_override)
 
@@ -67,17 +60,24 @@ def run(config_path, dry, path_override, root, output_directory_override):
         3) build all resulting graph requirements
     :param config: Session configuration object
     """
+
+    main(config=config, dry_run=dry)
+
+
+def main(config, dry_run=False) -> None:
+    logging.basicConfig(
+        level=config.logging,
+        format='%(asctime)s %(name)-12s %(levelname)-3s %(message)s',
+        datefmt='%m-%d %H:%M'
+    )
+    logger = logging.getLogger(__name__)
     logger.info('Starting')
-    main(config=config, logger=logger, dry_run=dry)
-    logger.info('Done')
-
-
-def main(config, logger, dry_run=False) -> None:
     requirements = define_and_connect_workstations(config, logger)
     if dry_run:
         factory.dry_run_build(requirements)
     else:
         factory.build(requirements)
+    logger.info('Done')
 
 
 def define_and_connect_workstations(config, logger):
