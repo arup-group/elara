@@ -117,6 +117,10 @@ class CsvComparison(BenchmarkTool):
                 return None
             groups = [(m, g) for m, g in df.groupby(df.index.get_level_values(-1))]
             n = len(groups)
+            if n == 1:
+                try_sort_on_numeric_index(df)
+                return df.plot(figsize=(12,5), kind=kind).get_figure()
+
             fig, axs = plt.subplots(n, figsize=(12, 5*n), sharex=True)
             for (m, data), ax in zip(groups, axs):
                 data.index = data.index.get_level_values(0)
