@@ -645,6 +645,8 @@ class LinkCounterComparison(BenchmarkTool):
         results_name = f"link_vehicle_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path)
+        print("======================")
+        print(results_df.head())
         results_df.index = results_df.link_id.map(str)  # indices converted to strings
         results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
 
