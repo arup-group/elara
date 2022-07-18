@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 
 from elara.factory import WorkStation, Tool
 from elara import get_benchmark_data
+from elara.helpers import try_sort_on_numeric_index
 
 
 class BenchmarkTool(Tool):
@@ -17,13 +18,13 @@ class BenchmarkTool(Tool):
     options_enabled = True
     weight = 1
     benchmark_data_path = None
-    plot_type = None
+    plot_types = []
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
 
         # override default plot type if supplied, remove from kwargs as these don't affect suppliers
-        if "plot_type" in kwargs:
-            self.plot_type = kwargs.pop("plot_type", None)
+        if "plot_types" in kwargs:
+            self.plot_types = kwargs.pop("plot_types", [])
 
         # override default path if supplied, remove from kwargs as these don't affect suppliers
         proposed_bm_path = kwargs.pop("benchmark_data_path", None)
@@ -42,7 +43,6 @@ class BenchmarkTool(Tool):
 
 class CsvComparison(BenchmarkTool):
 
-    plot = True
     output_value_fields = ['trips_benchmark', 'trip_simulation']
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
@@ -63,8 +63,7 @@ class CsvComparison(BenchmarkTool):
         bm_df.columns = self.output_value_fields
         bm_df.dropna(0, inplace=True)
 
-        if self.plot is True:
-            self.plot_comparison(bm_df)
+        self.plot_comparisons(bm_df)
 
         bm_df['difference'] = bm_df[self.output_value_fields[0]] - bm_df[self.output_value_fields[1]]
         bm_df['abs_difference'] = bm_df.difference.abs()
@@ -82,18 +81,55 @@ class CsvComparison(BenchmarkTool):
 
         return scores
 
-    def plot_comparison(self, df):
-        if self.plot_type == "bar":
-            self.plot_bar(df)
+    def plot_comparisons(self, df):
+        for kind in self.plot_types:
+            figure = self.plot(df, kind=kind)
+            if figure is not None:
+                figure.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}_{kind}.png'))
 
-    def plot_bar(self, df):
+    def plot(self, df:pd.DataFrame, kind:str) -> plt.figure:
         """
-        Bar comparison plot
+        Comparison plot, either bar, line or histograms supported.
         """
-        fig, ax = plt.subplots()
-        df.plot(ax=ax, kind="bar", figsize=(17,12)).get_figure().\
-            savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}.png'))
-        plt.close()
+        if kind == "hist":
+            return df.plot.hist(figsize=(12,6)).get_figure()
+        if kind == "bar":
+            return self.barline(df, kind="bar")
+        if kind == "line":
+            return self.barline(df, kind="line")
+
+        self.logger.warning(f"Unknown plot type '{kind}', returning 'None'.")
+        return None
+
+    def barline(self, df: pd.DataFrame, kind: str):
+        """
+        Plot a bar or line figure.
+        Can handle multi indices of size 2 using subplots.
+        Will attempt a sensible sort of x axis.
+
+        :param pd.DataFrame df: data to plot
+        :param str kind: ['bar','line','hist']
+        :return plt.Figure: figure
+        """
+        if isinstance(df.index, pd.MultiIndex):
+            if not len(df.index.levels) == 2:
+                self.logger.warning(f"{self} cannot handle multi index > 2, returning None.")
+                return None
+            groups = [(m, g) for m, g in df.groupby(df.index.get_level_values(-1))]
+            n = len(groups)
+            if n == 1:
+                try_sort_on_numeric_index(df)
+                return df.plot(figsize=(12,5), kind=kind).get_figure()
+
+            fig, axs = plt.subplots(n, figsize=(12, 5*n), sharex=True)
+            for (m, data), ax in zip(groups, axs):
+                data.index = data.index.get_level_values(0)
+                try_sort_on_numeric_index(data)
+                data.plot(ax=ax, title=m, kind=kind)
+            return fig
+        else:
+            try_sort_on_numeric_index(df)
+            return df.plot(figsize=(12,5), kind=kind).get_figure()
 
 
 class TripDurationsComparison(CsvComparison):
@@ -114,6 +150,8 @@ class TripDurationsComparison(CsvComparison):
     The value field 'duration_s' is the trip duartion in seconds.
 
     """
+
+    plot_types = ["hist"]
 
     def __init__(
         self,
@@ -169,6 +207,8 @@ class LinkVehicleSpeedsComparison(CsvComparison):
     Class can be used with the groupby_person_attribute option.
     """
 
+    plot_types = ["hist"]
+
     def __init__(
         self,
         config,
@@ -206,7 +246,7 @@ class LinkVehicleSpeedsComparison(CsvComparison):
 
 class TripModeSharesComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(
         self,
@@ -239,7 +279,7 @@ class TripModeSharesComparison(CsvComparison):
 
 class TripModeCountsComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(
         self,
@@ -272,7 +312,7 @@ class TripModeCountsComparison(CsvComparison):
 
 class TripActivityModeSharesComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['trip_activity_modes']
@@ -297,7 +337,7 @@ class TripActivityModeSharesComparison(CsvComparison):
 
 class TripActivityModeCountsComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['trip_activity_modes']
@@ -322,7 +362,7 @@ class TripActivityModeCountsComparison(CsvComparison):
 
 class PlanModeSharesComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(
         self,
@@ -355,7 +395,7 @@ class PlanModeSharesComparison(CsvComparison):
 
 class PlanModeCountsComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(
         self,
@@ -388,7 +428,7 @@ class PlanModeCountsComparison(CsvComparison):
 
 class PlanActivityModeSharesComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['plan_activity_modes']
@@ -413,7 +453,7 @@ class PlanActivityModeSharesComparison(CsvComparison):
 
 class PlanActivityModeCountsComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar"]
 
     def __init__(self, config, mode, **kwargs):
         self.requirements = ['plan_activity_modes']
@@ -438,7 +478,7 @@ class PlanActivityModeCountsComparison(CsvComparison):
 
 class DurationBreakdownComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar", "line"]
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         super().__init__(config, mode=mode, **kwargs)
@@ -454,7 +494,7 @@ class DurationBreakdownComparison(CsvComparison):
 
 class DurationModeBreakdownComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar", "line"]
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         super().__init__(config, mode=mode, **kwargs)
@@ -470,7 +510,7 @@ class DurationModeBreakdownComparison(CsvComparison):
 
 class DurationDestinationActivityBreakdownComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar", "line"]
 
     def __init__(self, config, mode, benchmark_data_path=None, **kwargs):
         super().__init__(config, mode=mode, **kwargs)
@@ -486,7 +526,7 @@ class DurationDestinationActivityBreakdownComparison(CsvComparison):
 
 class EuclideanDistanceBreakdownComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar", "line"]
     requirements = ['trip_euclid_distance_breakdown']
     valid_modes = ['all']
 
@@ -498,7 +538,7 @@ class EuclideanDistanceBreakdownComparison(CsvComparison):
 
 class EuclideanDistanceModeBreakdownComparison(CsvComparison):
 
-    plot_type = "bar"
+    plot_types = ["bar", "line"]
     requirements = ['trip_euclid_distance_breakdown']
     valid_modes = ['all']
 
