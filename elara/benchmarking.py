@@ -92,7 +92,7 @@ class CsvComparison(BenchmarkTool):
         Comparison plot, either bar, line or histograms supported.
         """
         if kind == "hist":
-            return df.plot.hist(figsize=(12,6)).get_figure()
+            return df.plot.hist(figsize=(6,4)).get_figure()
         if kind == "bar":
             return self.barline(df, kind="bar")
         if kind == "line":
@@ -119,17 +119,22 @@ class CsvComparison(BenchmarkTool):
             n = len(groups)
             if n == 1:
                 try_sort_on_numeric_index(df)
-                return df.plot(figsize=(12,5), kind=kind).get_figure()
+                fig = df.plot(figsize=(6,4), kind=kind, rot=90).get_figure()
+                fig.tight_layout()
+                return fig
 
-            fig, axs = plt.subplots(n, figsize=(12, 5*n), sharex=True)
+            fig, axs = plt.subplots(n, figsize=(6, (2.5*n)+2), sharex=True)
             for (m, data), ax in zip(groups, axs):
                 data.index = data.index.get_level_values(0)
                 try_sort_on_numeric_index(data)
-                data.plot(ax=ax, title=m, kind=kind)
+                data.plot(ax=ax, title=m, kind=kind, rot=90)
+            fig.tight_layout()
             return fig
         else:
             try_sort_on_numeric_index(df)
-            return df.plot(figsize=(12,5), kind=kind).get_figure()
+            fig = df.plot(figsize=(6,4), kind=kind, rot=90).get_figure()
+            fig.tight_layout()
+            return fig
 
 
 class TripDurationsComparison(CsvComparison):
