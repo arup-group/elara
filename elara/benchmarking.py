@@ -45,10 +45,28 @@ class CsvComparison(BenchmarkTool):
 
     output_value_fields = ['trips_benchmark', 'trip_simulation']
 
+    def dry_build(self, resources: dict, write_path: Optional[str] = None) -> dict:
+        """
+        Check format of benchmark data
+        """
+        super().build(resources, write_path)
+
+        self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
+        self.logger.debug(f"Using indices '{self.index_fields}'")
+        if not os.path.exists(self.benchmark_data_path):
+            raise UserWarning(f"Unable to find benchmark {self.benchmark_data_path}.")
+        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+        if self.value_field not in benchmarks_df.columns:
+            raise UserWarning(f"Incorrectly formatted benchmarks, expected {self.value_field} column.")
+
+        return {}
+
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
         Compare two csv files (benchmark vs simulation), calculate and plot their differences
         """
+        super().build(resources, write_path)
+
         # Read benchmark and simulation csv files
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
         self.logger.debug(f"Using indices '{self.index_fields}'")
