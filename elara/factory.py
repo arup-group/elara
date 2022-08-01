@@ -7,7 +7,10 @@ import os
 import json
 import logging
 from matplotlib.figure import Figure
-from fuzzywuzzy import process
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from fuzzywuzzy import process
 
 from elara.helpers import camel_to_snake
 
@@ -519,7 +522,6 @@ class WorkStation:
 
         if self.resources:
             for tool_name, tool in self.resources.items():
-
                 tool.build(self.supplier_resources, write_path)
 
     def dry_build(self, write_path=None):
@@ -538,7 +540,6 @@ class WorkStation:
 
         if self.resources:
             for tool_name, tool in self.resources.items():
-
                 tool.dry_build(self.supplier_resources, write_path)
 
     def load_all_tools(self, mode=None, groupby_person_attribute=None) -> None:
