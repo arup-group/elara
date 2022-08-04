@@ -6,7 +6,10 @@ import os
 import json
 import logging
 from matplotlib.figure import Figure
-from fuzzywuzzy import process
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from fuzzywuzzy import process
 
 from elara.helpers import camel_to_snake
 
@@ -117,6 +120,21 @@ class Tool:
         :return: None
         """
         self.logger.debug(f'Building Tool {self.__str__()}')
+        self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
+        self.resources = resource
+
+    def dry_build(
+            self,
+            resource: Dict[str, list],
+            write_path: Optional[str] = None
+    ) -> None:
+        """
+        Default build self.
+        :param resource: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        self.logger.debug(f'Dry Building Tool {self.__str__()}')
         self.logger.debug(f'Resources handed to {self.__str__()} = {resource}')
         self.resources = resource
 
@@ -503,8 +521,25 @@ class WorkStation:
 
         if self.resources:
             for tool_name, tool in self.resources.items():
-
                 tool.build(self.supplier_resources, write_path)
+
+    def dry_build(self, write_path=None):
+        """
+        Gather resources from suppliers for current workstation and build() all resources in
+        order of .resources map.
+        :param write_path: Optional output path overwrite
+        :return: None
+        """
+        self.logger.debug(f'Building Workstation {self.__str__()}')
+
+        # gather resources
+        if self.suppliers:
+            for supplier in self.suppliers:
+                self.supplier_resources.update(supplier.resources)
+
+        if self.resources:
+            for tool_name, tool in self.resources.items():
+                tool.dry_build(self.supplier_resources, write_path)
 
     def load_all_tools(self, mode=None, groupby_person_attribute=None) -> None:
         """
@@ -735,9 +770,10 @@ def build(start_node: WorkStation, write_path=None) -> list:
     return build_dag(queue=queue, write_path=write_path)
 
 
-def dry_run_build(start_node: WorkStation) -> None:
+def dry_run_build(start_node: WorkStation, write_path=None) -> None:
     assemble_dag(start_node=start_node)
     queue = initiate_dag(start_node=start_node)
+    return dry_build_dag(queue=queue, write_path=write_path)
 
 
 def assemble_dag(start_node: WorkStation) -> None:
@@ -790,6 +826,21 @@ def build_dag(queue, write_path=None) -> list:
     while return_queue:
         current = return_queue.pop(0)
         current.build(write_path=write_path)
+        visited.append(current)
+
+    # return full sequence for testing
+    return queue + visited
+
+
+def dry_build_dag(queue, write_path=None) -> list:
+    # stage 3:
+    logger = logging.getLogger(__name__)
+    logger.info(f'Initiating Build')
+    return_queue = queue[::-1]
+    visited = []
+    while return_queue:
+        current = return_queue.pop(0)
+        current.dry_build(write_path=write_path)
         visited.append(current)
 
     # return full sequence for testing

@@ -29,7 +29,8 @@ def test_config():
     return config
 
 
-def test_main(test_config):
+@pytest.fixture
+def test_requirements(test_config):
     requirements = RequirementsWorkStation(test_config)
     postprocessing = PostProcessWorkStation(test_config)
     benchmarks = BenchmarkWorkStation(test_config)
@@ -71,8 +72,25 @@ def test_main(test_config):
         managers=[input_workstation],
         suppliers=None
     )
+    return requirements
 
-    factory.build(requirements, write_path=test_outputs)
+
+def test_main(test_requirements):
+
+    factory.build(test_requirements, write_path=test_outputs)
+
+    path = os.path.join(test_outputs, 'stop_passenger_counts_bus_boardings.csv')
+    test_town_boardings_bus = pd.read_csv(path)
+    assert test_town_boardings_bus.loc[:, [str(h) for h in range(24)]].sum().sum() == 40000
+
+    path = os.path.join(benchmarks_path, 'benchmark_scores.csv')
+    benchmark_scores = pd.read_csv(path)
+    assert benchmark_scores.score.sum() == 0
+
+
+def test_drybuild_main(test_requirements):
+
+    factory.dry_run_build(test_requirements, write_path=test_outputs)
 
     path = os.path.join(test_outputs, 'stop_passenger_counts_bus_boardings.csv')
     test_town_boardings_bus = pd.read_csv(path)

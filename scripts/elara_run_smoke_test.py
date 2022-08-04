@@ -21,8 +21,8 @@ def parse_args(cmd_args):
 
 def print_banner():
     banner = '''
-            _____ _                 
-            | ____| | __ _ _ __ __ _ 
+            _____ _
+            | ____| | __ _ _ __ __ _
             |  _| | |/ _` | '__/ _` |
             | |___| | (_| | | | (_| |
             |_____|_|\__,_|_|  \__,_|
@@ -40,12 +40,12 @@ def print_banner():
    8):::::(8  ,ad8""
    Yb:;;;:d888""
     "8ggg8P"
-  ____                  _          _____         _   
- / ___| _ __ ___   ___ | | _____  |_   _|__  ___| |_ 
+  ____                  _          _____         _
+ / ___| _ __ ___   ___ | | _____  |_   _|__  ___| |_
  \___ \| '_ ` _ \ / _ \| |/ / _ \   | |/ _ \/ __| __|
-  ___) | | | | | | (_) |   <  __/   | |  __/\__ \ |_ 
+  ___) | | | | | | (_) |   <  __/   | |  __/\__ \ |_
  |____/|_| |_| |_|\___/|_|\_\___|   |_|\___||___/\__|
-                                 
+
     '''
     print("{}{}{}".format(Fore.CYAN, banner, Style.RESET_ALL))
 
@@ -72,6 +72,17 @@ def run_config(config_path, output_directory):
         'elara', 'run',
         '"{}"'.format(config_path),
         '--output_directory_override', '"{}"'.format(output_directory)
+        ]
+    return run_shell_command(execute_notebook_cmd)
+
+
+def dryrun_config(config_path, output_directory):
+    print("Executing config '{}{}{}'...".format(Fore.YELLOW, config_path, Style.RESET_ALL))
+    execute_notebook_cmd = [
+        'elara', 'run',
+        '"{}"'.format(config_path),
+        '--output_directory_override', '"{}"'.format(output_directory),
+        '-d'
         ]
     return run_shell_command(execute_notebook_cmd)
 
@@ -134,6 +145,8 @@ if __name__ == '__main__':
         run_results = {}
         for config in configs:
             print('------------------------------------------------------')
+            return_code, cmd, run_time = dryrun_config(config, output_directory)
+            run_results[f'{config}-dry-run'] = (return_code, run_time)
             return_code, cmd, run_time = run_config(config, output_directory)
             run_results[config] = (return_code, run_time)
 
