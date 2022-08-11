@@ -137,7 +137,7 @@ def events(test_config, test_paths):
 def gerry_waiting_event():
     time = 6.5 * 60 * 60
     string = """
-        <event time="23400.0" type="waitingForPt" agent="gerry" atStop="home_stop_out" 
+        <event time="23400.0" type="waitingForPt" agent="gerry" atStop="home_stop_out"
         destinationStop="work_stop_in"  />
         """
     return etree.fromstring(string)
@@ -165,7 +165,7 @@ def gerry_enters_veh_event():
 def veh_departs_event():
     time = 6.5 * 60 * 60 + (15 * 60)
     string = """
-        <event time="24300.0" type="VehicleDepartsAtFacility" vehicle="bus1" 
+        <event time="24300.0" type="VehicleDepartsAtFacility" vehicle="bus1"
         facility="home_stop_out" delay="0.0"  />
         """
     return etree.fromstring(string)
@@ -319,7 +319,8 @@ def test_volume_count_finalise_car(test_car_volume_count_handler_with_subpopulat
         cols = list(range(handler.config.time_periods))
         for c in cols:
             assert c in gdf.columns
-            assert 'total' in gdf.columns
+        assert 'link_id' in gdf.columns
+        assert 'total' in gdf.columns
         df = gdf.loc[:, cols]
         assert np.sum(df.values) == 14 / handler.config.scale_factor
         assert np.sum(df.values) == gdf.total.sum()
@@ -437,7 +438,7 @@ def test_volume_count_finalise_bus(test_bus_volume_count_handler, events):
         if 'subpopulation' in gdf.columns:
             assert set(gdf.loc[:, 'subpopulation']) == {"poor", "rich", np.nan}
 
-# Link Vehicle Capacity Counts 
+# Link Vehicle Capacity Counts
 
 # bus
 @pytest.fixture
@@ -533,8 +534,8 @@ def test_link_vehicle_capacity_handler_finalise_bus(test_config, link_vehicle_ca
 def test_link_vehicle_capacity_handler_rejects_car_as_mode():
     with pytest.raises(UserWarning) as ex_info:
         event_handlers.LinkVehicleCapacity(config=test_config, mode='car')
-    assert "Invalid mode option: car at tool" in str(ex_info.value)            
-            
+    assert "Invalid mode option: car at tool" in str(ex_info.value)
+
 # Link Speeds
 # Car
 # With subpopulation attribute groups
@@ -899,7 +900,7 @@ def test_bus_passenger_interaction_handler(test_config, input_manager):
 def waiting_for_pt_event():
     time = 6.5 * 60 * 60
     string = """
-        <event time="23400.0" type="waitingForPt" agent="gerry" 
+        <event time="23400.0" type="waitingForPt" agent="gerry"
         atStop="home_stop_out" destinationStop="work_stop_in" />
         """
     return etree.fromstring(string)
@@ -909,7 +910,7 @@ def waiting_for_pt_event():
 def waiting2_for_pt_event():
     time = 6.5 * 60 * 60
     string = """
-        <event time="23401.0" type="waitingForPt" agent="chris" 
+        <event time="23401.0" type="waitingForPt" agent="chris"
         atStop="home_stop_out" destinationStop="work_stop_in" />
         """
     return etree.fromstring(string)
@@ -1260,7 +1261,7 @@ def test_vehicle_stop_to_stop_finalise_bus(
     ]
     for elem in events:
         handler.process_event(elem)
-    
+
     handler.finalise()
 
     gdf = handler.result_dfs["vehicle_stop_to_stop_passenger_counts_bus"]
@@ -1297,7 +1298,7 @@ def test_stop_to_stop_finalise_bus(
     ]
     for elem in events:
         handler.process_event(elem)
-    
+
     handler.finalise()
     gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus_subpopulation"]
     cols = list(range(handler.config.time_periods))
@@ -1363,7 +1364,7 @@ def test_stop_to_stop_finalise_bus_simple(
     ]
     for elem in events:
         handler.process_event(elem)
-    
+
     handler.finalise()
     assert len(handler.result_dfs) == 1
     gdf = handler.result_dfs["stop_to_stop_passenger_counts_bus"]
@@ -1379,7 +1380,7 @@ def test_stop_to_stop_finalise_bus_simple(
 def test_vehicle_departs_facility(test_config, input_manager):
     handler = event_handlers.VehicleDepartureLog(test_config, mode = "all")
     handler.build(input_manager.resources)
-            
+
     for elem in handler.resources['events'].elems:
         handler.process_event(elem)
 
@@ -1419,7 +1420,7 @@ def test_link_vehicle_speeds_events_file(test_config, input_manager):
 def test_vehicle_link_log(test_config, input_manager):
     handler = event_handlers.VehicleLinkLog(test_config, mode="all")
     handler.build(input_manager.resources)
-            
+
     for elem in handler.resources['events'].elems:
         handler.process_event(elem)
 
@@ -1433,14 +1434,14 @@ def test_vehicle_link_log(test_config, input_manager):
         'link_id': '4-3',
         'entry_time': 59401,
         'exit_time': 59406
-    } 
+    }
 
 
-# Vehicle link logs compressed output test 
+# Vehicle link logs compressed output test
 def test_vehicle_link_log_compressed(test_config, input_manager):
     handler = event_handlers.VehicleLinkLog(test_config, mode="all", compression = "gzip")
     handler.build(input_manager.resources, write_path=test_outputs)
-            
+
     for elem in handler.resources['events'].elems:
         handler.process_event(elem)
 
@@ -1456,7 +1457,7 @@ def test_vehicle_passenger_boarding(test_config, input_manager):
     for elem in handler.resources['events'].elems:
         handler.process_event(elem)
 
-    # there are 8 boardings (and 8 alightings) in the test outputs 
+    # there are 8 boardings (and 8 alightings) in the test outputs
     n_boardings = 0
     n_alightings = 0
     for i in handler.vehicle_passenger_log.chunk:
@@ -1469,12 +1470,12 @@ def test_vehicle_passenger_boarding(test_config, input_manager):
     assert n_alightings == 8
 
     assert handler.vehicle_passenger_log.chunk[6] == {
-        'agent_id': 'fred', 
-        'event_type': 'PersonEntersVehicle', 
-        'veh_id': 'bus2', 
-        'stop_id': 'home_stop_out', 
-        'time': '30601.0', 
-        'veh_mode': 'bus', 
+        'agent_id': 'fred',
+        'event_type': 'PersonEntersVehicle',
+        'veh_id': 'bus2',
+        'stop_id': 'home_stop_out',
+        'time': '30601.0',
+        'veh_mode': 'bus',
         'veh_route': 'work_bound'
     }
 
@@ -1529,7 +1530,7 @@ def test_agent_tolls_process_event_with_subpopulation(test_config, person_toll_e
         'fred': {'toll_total': 15, 'tolls_incurred': 2, 'class': 'poor'},
         'chris': {'toll_total': 1, 'tolls_incurred': 1, 'class': 'rich'}
     }
-    
+
     assert handler.toll_log_summary == target
 
 def test_agent_tolls_chunkwriter(test_config, person_toll_events, input_manager):
@@ -1538,7 +1539,7 @@ def test_agent_tolls_chunkwriter(test_config, person_toll_events, input_manager)
     handler.build(resources)
 
     events = person_toll_events
-        
+
     for elem in events:
         handler.process_event(elem)
 
@@ -1574,12 +1575,12 @@ def test_agent_tolls_finalise(test_config, person_toll_events, input_manager):
         'poor': {'toll_total': 15, 'avg_per_agent': 15, 'tolled_agents': 1, 'tolls_incurred': 2},
         'rich': {'toll_total': 1, 'avg_per_agent': 1, 'tolled_agents': 1, 'tolls_incurred': 1}
     }
-    
+
     results = handler.result_dfs[handler.name + '_summary'].to_dict(orient = 'index')
     results_grouped = handler.result_dfs[handler.name + '_summary_subpopulation'].to_dict(
         orient = 'index'
     )
-    
+
     assert results == target
     assert results_grouped == target_grouped
 
