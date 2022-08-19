@@ -30,6 +30,7 @@ class Tool:
     """
     requirements = []
     options_enabled = False
+    unsafe_load = False
 
     mode = "all"
     groupby_person_attribute = None

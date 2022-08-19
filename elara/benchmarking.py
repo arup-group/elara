@@ -54,6 +54,10 @@ class CsvComparison(BenchmarkTool):
         """
         super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
 
+        if self.unsafe_load:
+            self.logger.debug(f"Data path is {self.benchmark_data_path}")
+            return None
+
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
         self.logger.debug(f"Using indices '{self.index_fields}'")
         if self.benchmark_data_path is None:
@@ -1053,7 +1057,6 @@ class TransitInteractionComparison(BenchmarkTool):
                     'counter_id': counter_id,
                     'direction': direction,
                     'score': counter_score,
-
                 }
 
                 for i, time in enumerate(bm_hours):
@@ -1359,6 +1362,7 @@ class PlanComparisonTripStart(CsvComparison):
 
 class InputPlanComparisonTripStart(PlanComparisonTripStart):
     requirements = ['trip_logs', 'input_trip_logs']
+    unsafe_load = True
 
     def __init__(self, config, **kwargs) -> None:
         self.benchmark_data_path = os.path.join(
@@ -1387,6 +1391,7 @@ class PlanComparisonTripDuration(CsvComparison):
 
 class InputPlanComparisonTripDuration(PlanComparisonTripDuration):
     requirements = ['trip_logs', 'input_trip_logs']
+    unsafe_load = True
 
     def __init__(self, config, **kwargs) -> None:
 
@@ -1416,6 +1421,7 @@ class PlanComparisonActivityStart(CsvComparison):
 
 class InputPlanComparisonActivityStart(PlanComparisonActivityStart):
     requirements = ['trip_logs', 'input_trip_logs']
+    unsafe_load = True
 
     def __init__(self, config, **kwargs) -> None:
         self.benchmark_data_path = os.path.join(
@@ -1444,6 +1450,7 @@ class PlanComparisonActivityDuration(CsvComparison):
 
 class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
     requirements = ['trip_logs', 'input_trip_logs']
+    unsafe_load = True
 
     def __init__(self, config, **kwargs) -> None:
         self.benchmark_data_path = os.path.join(
@@ -1463,6 +1470,7 @@ class InputPlanComparisonActivityDuration(PlanComparisonActivityDuration):
 class InputModeComparison(BenchmarkTool):
 
     requirements = ['input_trip_logs', 'trip_logs']
+    unsafe_load = True
     options_enabled = True
     weight = 1
     plot = True
