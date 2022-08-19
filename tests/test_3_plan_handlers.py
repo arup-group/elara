@@ -2576,3 +2576,42 @@ def test_load_workstation_with_logs(test_config, test_paths):
 
     assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_trips.csv"))
     assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_activities.csv"))
+
+def test_non_zero_pt_interaction(agent_leg_log_handler):
+    """ PT interaction activity has non-zero duration """
+
+    handler = agent_leg_log_handler
+
+    person = """
+	<person id="interaction_duration">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+			<attribute name="age" class="java.lang.String">no</attribute>
+		</attributes>
+		<plan score="129.592238766919" selected="yes">
+			<activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+			</activity>
+			<leg mode="walk" dep_time="08:00:00" trav_time="00:00:04">
+				<attributes>
+					<attribute name="routingMode" class="java.lang.String">car</attribute>
+				</attributes>
+				<route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+			</leg>
+			<activity type="pt interaction" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+			</activity>
+			<leg mode="walk" dep_time="17:30:00" trav_time="00:07:34">
+				<attributes>
+					<attribute name="routingMode" class="java.lang.String">car</attribute>
+				</attributes>
+				<route type="links" start_link="1-5" end_link="1-2" trav_time="00:07:34" distance="10100.0">1-5 5-1 1-2</route>
+			</leg>
+			<activity type="home" link="1-2" x="0.0" y="0.0" >
+			</activity>
+		</plan>
+	</person>
+    """
+    person = etree.fromstring(person)
+    handler.process_plans(person)
+    print(handler.results)
+    assert handler.legs_log.chunk[-1]['start_s'] == 63000
+    handler.finalise()

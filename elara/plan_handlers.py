@@ -539,7 +539,7 @@ class LegLogs(PlanHandlerTool):
 
                         act_type = stage.get('type')
 
-                        if not act_type == 'pt interaction':
+                        if not (act_type == 'pt interaction' and (stage.get('end_time') is None)):
 
                             trip_seq_idx += 1  # increment for a new trip idx
 

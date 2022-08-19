@@ -136,3 +136,4 @@ tests/test_outputs/
 test_chunks.csv
 reports/
 tests_TC
+venv*
