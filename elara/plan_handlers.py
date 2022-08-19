@@ -739,7 +739,8 @@ class TripLogs(PlanHandlerTool):
                     if stage.tag == 'activity':
                         act_type = stage.get('type')
 
-                        if not act_type == 'pt interaction':
+                        # if not act_type == 'pt interaction':
+                        if not (act_type == 'pt interaction' and (stage.get('end_time') is None)):
 
                             act_seq_idx += 1  # increment for a new trip idx
                             trip_duration = activity_start_dt - activity_end_dt
