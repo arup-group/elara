@@ -802,6 +802,15 @@ class TripLogs(PlanHandlerTool):
 
                             activity_start_dt = activity_end_dt
 
+                        # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
+                        # then advance the next activity start time accordingly   
+                        elif stage.get('end_time'):
+                            end_time_str = stage.get('end_time')
+
+                            activity_start_dt = matsim_time_to_datetime(
+                                activity_start_dt, end_time_str, self.logger, idx=ident
+                            )
+
                     elif stage.tag == 'leg':
 
                         leg_mode = stage.get('mode')
@@ -999,7 +1008,7 @@ class PlanLogs(PlanHandlerTool):
                 if stage.tag == 'activity':
                     act_type = stage.get('type')
 
-                    if act_type == 'pt interaction':
+                    if not act_type == 'pt interaction':
 
                         end_time_str = stage.get('end_time', '23:59:59')
 
@@ -1049,6 +1058,16 @@ class PlanLogs(PlanHandlerTool):
                         in_transit = False
                         prev_x = x
                         prev_y = y
+                        arrival_dt = activity_end_dt
+
+                    # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
+                    # then advance the trip arrival time accordingly   
+                    elif stage.get('end_time'):
+                        end_time_str = stage.get('end_time')
+
+                        arrival_dt = matsim_time_to_datetime(
+                            arrival_dt, end_time_str, self.logger, idx=ident
+                        )
 
                 elif stage.tag == 'leg':
 
@@ -1063,7 +1082,7 @@ class PlanLogs(PlanHandlerTool):
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")
                     td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    arrival_dt = activity_end_dt + td
+                    arrival_dt = arrival_dt + td
 
             total_trips = len(trip_records)
             total_duration = sum([trip['act_duration'] for trip in trip_records])
