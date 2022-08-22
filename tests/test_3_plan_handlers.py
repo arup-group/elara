@@ -2610,18 +2610,18 @@ def test_non_zero_pt_interaction_legs(agent_leg_log_handler):
 		</plan>
 	</person>
     """
+
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert handler.legs_log.chunk[-1]['start_s'] == 63000
-    
 
-def test_non_zero_pt_interaction_trips(agent_trip_handler):
-    """ PT interaction activity has non-zero duration , trip logs"""
+def test_zero_pt_interaction_legs(agent_leg_log_handler):
+    """ PT interaction activity has zero duration (not 'end_time' attribute in the 'pt interaction' activity ) """
 
-    handler = agent_trip_handler
+    handler = agent_leg_log_handler
 
     person = """
-	<person id="interaction_duration">
+	<person id="zero_interaction_duration">
 		<attributes>
 			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
 			<attribute name="age" class="java.lang.String">no</attribute>
@@ -2635,7 +2635,7 @@ def test_non_zero_pt_interaction_trips(agent_trip_handler):
 				</attributes>
 				<route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
 			</leg>
-			<activity type="pt interaction" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+			<activity type="pt interaction" link="1-5" x="0.0" y="10000.0">
 			</activity>
 			<leg mode="walk" dep_time="17:30:00" trav_time="00:07:34">
 				<attributes>
@@ -2648,8 +2648,7 @@ def test_non_zero_pt_interaction_trips(agent_trip_handler):
 		</plan>
 	</person>
     """
+
     person = etree.fromstring(person)
     handler.process_plans(person)
-    print(handler.trips_log)
-    assert handler.trips_log.chunk[-1]['start_s'] == 63000
-    
+    assert handler.legs_log.chunk[-1]['start_s'] == 28804

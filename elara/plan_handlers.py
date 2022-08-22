@@ -539,21 +539,18 @@ class LegLogs(PlanHandlerTool):
 
                         act_type = stage.get('type')
 
-                        if not (act_type == 'pt interaction' and (stage.get('end_time') is None)):
-
-                            trip_seq_idx += 1  # increment for a new trip idx
-
+                        if act_type != 'pt interaction' or stage.get('end_time'):
                             end_time_str = stage.get('end_time', '23:59:59')
-
                             activity_end_dt = matsim_time_to_datetime(
                                 arrival_dt, end_time_str, self.logger, idx=ident
                             )
-
-                            duration = activity_end_dt - arrival_dt
-
                         else:
-                            activity_end_dt = arrival_dt
-                            duration = arrival_dt - arrival_dt  # zero duration
+                            activity_end_dt = arrival_dt # zero duration for pt interactions without an end_time attribute
+
+                        if act_type != 'pt interaction':
+                            trip_seq_idx += 1  # increment for a new trip idx
+                        
+                        duration = activity_end_dt - arrival_dt  
 
                         x = stage.get('x')
                         y = stage.get('y')
@@ -739,7 +736,7 @@ class TripLogs(PlanHandlerTool):
                     if stage.tag == 'activity':
                         act_type = stage.get('type')
 
-                        if not (act_type == 'pt interaction' and (stage.get('end_time') is None)):
+                        if not act_type == 'pt interaction':
 
                             act_seq_idx += 1  # increment for a new trip idx
                             trip_duration = activity_start_dt - activity_end_dt
@@ -1002,7 +999,7 @@ class PlanLogs(PlanHandlerTool):
                 if stage.tag == 'activity':
                     act_type = stage.get('type')
 
-                    if not (act_type == 'pt interaction' and (stage.get('end_time') is None)):
+                    if act_type == 'pt interaction':
 
                         end_time_str = stage.get('end_time', '23:59:59')
 
