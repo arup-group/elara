@@ -539,21 +539,18 @@ class LegLogs(PlanHandlerTool):
 
                         act_type = stage.get('type')
 
-                        if not act_type == 'pt interaction':
-
-                            trip_seq_idx += 1  # increment for a new trip idx
-
+                        if act_type != 'pt interaction' or stage.get('end_time'):
                             end_time_str = stage.get('end_time', '23:59:59')
-
                             activity_end_dt = matsim_time_to_datetime(
                                 arrival_dt, end_time_str, self.logger, idx=ident
                             )
-
-                            duration = activity_end_dt - arrival_dt
-
                         else:
-                            activity_end_dt = arrival_dt
-                            duration = arrival_dt - arrival_dt  # zero duration
+                            activity_end_dt = arrival_dt # zero duration for pt interactions without an end_time attribute
+
+                        if act_type != 'pt interaction':
+                            trip_seq_idx += 1  # increment for a new trip idx
+                        
+                        duration = activity_end_dt - arrival_dt  
 
                         x = stage.get('x')
                         y = stage.get('y')
@@ -805,6 +802,15 @@ class TripLogs(PlanHandlerTool):
 
                             activity_start_dt = activity_end_dt
 
+                        # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
+                        # then advance the next activity start time accordingly   
+                        elif stage.get('end_time'):
+                            end_time_str = stage.get('end_time')
+
+                            activity_start_dt = matsim_time_to_datetime(
+                                activity_start_dt, end_time_str, self.logger, idx=ident
+                            )
+
                     elif stage.tag == 'leg':
 
                         leg_mode = stage.get('mode')
@@ -1052,6 +1058,16 @@ class PlanLogs(PlanHandlerTool):
                         in_transit = False
                         prev_x = x
                         prev_y = y
+                        arrival_dt = activity_end_dt
+
+                    # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
+                    # then advance the trip arrival time accordingly   
+                    elif stage.get('end_time'):
+                        end_time_str = stage.get('end_time')
+
+                        arrival_dt = matsim_time_to_datetime(
+                            arrival_dt, end_time_str, self.logger, idx=ident
+                        )
 
                 elif stage.tag == 'leg':
 
@@ -1066,7 +1082,7 @@ class PlanLogs(PlanHandlerTool):
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")
                     td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    arrival_dt = activity_end_dt + td
+                    arrival_dt = arrival_dt + td
 
             total_trips = len(trip_records)
             total_duration = sum([trip['act_duration'] for trip in trip_records])
