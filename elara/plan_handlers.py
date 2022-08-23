@@ -1056,7 +1056,7 @@ class SeeTripLogs(PlanHandlerTool):
                     mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
 
                     mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
-                    modes[mode] = modes.get(mode, 0)  distance
+                    modes[mode] = modes.get(mode, 0) + distance
                     trip_distance = distance
 
                     trav_time = stage.get('trav_time')
