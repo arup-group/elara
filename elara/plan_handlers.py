@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import logging
 import json
+import uuid
 
 from elara.factory import Tool, WorkStation
 
