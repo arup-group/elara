@@ -1,6 +1,7 @@
 import numpy as np
 from math import floor
 import pandas as pd
+import geopandas
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
