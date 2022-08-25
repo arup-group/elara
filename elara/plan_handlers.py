@@ -1087,7 +1087,8 @@ class SeeTripLogs(PlanHandlerTool):
             selected_utility = group[group['selected']=='yes']['utility'].values[0]
             group['relativeDisUtilityToSelected'] = group['utility'] - selected_utility
             return group
-
+        
+        print(summary)
         trips = pd.DataFrame(summary).groupby(['agent',"innovation_hash"]).apply(get_dominant)
 
         # for each agent and each innovation, we want to define the dominantMode (by frequency)
