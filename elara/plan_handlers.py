@@ -932,7 +932,7 @@ class SeeTripLogs(PlanHandlerTool):
         see_trips_csv_name = f"{self.name}_see_trips.csv"
 
         # writes the SEE specific trips log 
-        self.see_trips_log = self.start_chunk_writer(see_trips_csv_name, write_path=write_path)
+        self.see_trips_log = self.start_csv_chunk_writer(see_trips_csv_name, write_path=write_path)
 
     def process_plans(self, elem):
 
@@ -982,13 +982,13 @@ class SeeTripLogs(PlanHandlerTool):
 
                     if not act_type == 'pt interaction':
 
-                        act_seq_idx = 1  # increment for a new trip idx
+                        act_seq_idx += 1  # increment for a new trip idx
                         trip_duration = activity_start_dt - activity_end_dt
 
                         end_time_str = stage.get('end_time', '23:59:59')
 
                         activity_end_dt = matsim_time_to_datetime(
-                            activity_start_dt, end_time_str, self.logger, idx=ident
+                                activity_start_dt, end_time_str, self.logger, idx=ident
                         )
 
                         activity_duration = activity_end_dt - activity_start_dt
@@ -1048,6 +1048,15 @@ class SeeTripLogs(PlanHandlerTool):
                         )
 
                         activity_start_dt = activity_end_dt
+                    
+                    # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
+                    # then advance the next activity start time accordingly   
+                    elif stage.get('end_time'):
+                        end_time_str = stage.get('end_time')
+
+                        activity_start_dt = matsim_time_to_datetime(
+                            activity_start_dt, end_time_str, self.logger, idx=ident
+                        )
 
                 elif stage.tag == 'leg':
 
@@ -1064,7 +1073,7 @@ class SeeTripLogs(PlanHandlerTool):
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")
                     td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    activity_start_dt = td
+                    activity_start_dt += td
 
             self.see_trips_log.add(trips)
             summary.extend(trips)
