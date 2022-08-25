@@ -1820,6 +1820,7 @@ class PlanHandlerWorkStation(WorkStation):
         "plan_activity_modes": PlanActivityModes,
         "leg_logs": LegLogs,
         "trip_logs": TripLogs,
+        "see_trip_logs" : SeeTripLogs,
         "plan_logs": PlanLogs,
         "utility_logs": UtilityLogs,
         "agent_highway_distance_logs": AgentHighwayDistanceLogs,
@@ -1885,7 +1886,7 @@ class PlanHandlerWorkStation(WorkStation):
                     else:
                         csv_name = "{}.csv".format(name)
                         self.write_csv(result, csv_name, write_path=write_path)
-                        
+
                     del result
 
 
