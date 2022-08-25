@@ -1088,87 +1088,87 @@ class SeeTripLogs(PlanHandlerTool):
             group['relativeDisUtilityToSelected'] = group['utility'] - selected_utility
             return group
         
-        print(summary)
-        trips = pd.DataFrame(summary).groupby(['agent',"innovation_hash"]).apply(get_dominant)
+        if not summary:
+            trips = pd.DataFrame(summary).groupby(['agent',"innovation_hash"]).apply(get_dominant)
 
-        # for each agent and each innovation, we want to define the dominantMode (by frequency)
-        trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
-        trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
+            # for each agent and each innovation, we want to define the dominantMode (by frequency)
+            trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
+            trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
 
-        # we use the innovation_hash to identify a summary, per agent
-        plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
+            # we use the innovation_hash to identify a summary, per agent
+            plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
 
-        # calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
-        # Remember, the chosen plan may not always be the top score due to randomness in MATSim process
-        # in the case of the selected plan, the relative disutility is 0
-        plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
-        plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
+            # calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
+            # Remember, the chosen plan may not always be the top score due to randomness in MATSim process
+            # in the case of the selected plan, the relative disutility is 0
+            plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
+            plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
 
-        # We find the home locations, based on the origin activity (home)
-        # we use home locations for visulisation purposes
-        homes = trips[trips.o_act=="home"][['ox','oy','agent']]
-        homes.drop_duplicates(subset=['agent'],keep='first')
+            # We find the home locations, based on the origin activity (home)
+            # we use home locations for visulisation purposes
+            homes = trips[trips.o_act=="home"][['ox','oy','agent']]
+            homes.drop_duplicates(subset=['agent'],keep='first')
 
-        # merge this table into the plans, giving us the ox and oy
-        plans = plans.merge(homes,on='agent',how='left')
+            # merge this table into the plans, giving us the ox and oy
+            plans = plans.merge(homes,on='agent',how='left')
 
-        # todo. Add a warning if many home locations are not found
-        gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
+            # todo. Add a warning if many home locations are not found
+            gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
 
-        # dropping some columns
-        # we've used ox/oy to build geometry
-        # we remove mode as it is not used, we now use the dominantMode
-        gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
+            # dropping some columns
+            # we've used ox/oy to build geometry
+            # we remove mode as it is not used, as we now use the dominantMode
+            gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
 
-        # British east/northing
-        # need to inherit this from elara config
-        gdf.crs = {'init': 'epsg:27700'}
+            # British east/northing
+            # TODO need to inherit this from elara config
+            gdf.crs = {'init': 'epsg:27700'}
 
-        # re-project to 4326
-        gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
+            # re-project to 4326
+            gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
 
-        # sort by utility
-        gdf = gdf.sort_values("utility")
-        # flatten, one row per innovation (removes duplicates from lazy processes above)
-        gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
+            # sort by utility
+            gdf = gdf.sort_values("utility")
+            # flatten, one row per innovation (removes duplicates from lazy processes above)
+            gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
 
-        # Kepler weirdness. Moving from yes/no (matsim lingo) to a bool for whether or not it was selected
-        # enables this to be toggled on/off on kepler
-        gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
+            # Kepler weirdness. Moving from yes/no (matsim lingo) to a bool for whether or not it was selected
+            # enables this to be toggled on/off on kepler
+            gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
 
-        # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
-        gdf = gdf.sort_values('utility')
-        gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
+            # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
+            gdf = gdf.sort_values('utility')
+            gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
 
-        # subselecting them into 2 different dfs
-        selectedPlans = gdf[gdf.selected==True]
-        unSelectedPlans = gdf[gdf.selected==False]
+            # subselecting them into 2 different dfs
+            selectedPlans = gdf[gdf.selected==True]
+            unSelectedPlans = gdf[gdf.selected==False]
 
-        # Often we will have time/route innovations across n innovation strategies
-        # Since we care about mode shift, we can pick the best innovation per mode. 
-        # this is the 'best' option for a given mode
-        # since we have sorted based on utility, we can remove duplicates 
+            # Often we will have time/route innovations across n innovation strategies
+            # Since we care about mode shift, we can pick the best innovation per mode. 
+            # this is the 'best' option for a given mode
+            # since we have sorted based on utility, we can remove duplicates 
 
-        unSelectedPlans = unSelectedPlans.sort_values("utility")
-        unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
+            unSelectedPlans = unSelectedPlans.sort_values("utility")
+            unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
 
-        # zip them back together again
-        gdf = pd.concat([selectedPlans,unSelectedPlans])
+            # zip them back together again
+            gdf = pd.concat([selectedPlans,unSelectedPlans])
 
-        self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
+            self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
 
-        # creation of a df where car is selected
-        # but PT exists in their unchosen plans
-        # "mode shift opportunity" gdf
-        PlanAgentsSel = gdf[gdf.selected==True]
-        carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
+            # creation of a df where car is selected
+            # but PT exists in their unchosen plans
+            # "mode shift opportunity" gdf
+            PlanAgentsSel = gdf[gdf.selected==True]
+            carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
 
-        unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
+            unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
 
-        # This finds all modes that aren't car, generally bike, walk, pt etc
-        unSelectedPlansCarSelected = unSelectedPlans[~unSelectedPlans.dominantTripMode.isin(['car'])]
+            # This finds all modes that aren't car, generally bike, walk, pt etc
+            unSelectedPlansCarSelected = unSelectedPlans[~unSelectedPlans.dominantTripMode.isin(['car'])]
 
-        self.results['SeeUnSelectedPlansCarSelectedGdf'] = self.results['SeeUnSelectedPlansCarSelectedGdf'].append(unSelectedPlansCarSelected)
+            self.results['SeeUnSelectedPlansCarSelectedGdf'] = self.results['SeeUnSelectedPlansCarSelectedGdf'].append(unSelectedPlansCarSelected)
 
     def finalise(self):
         """
