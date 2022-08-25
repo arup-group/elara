@@ -136,11 +136,22 @@ Currently supported handlers include:
 * ``plan_modes``: Produce modeshares and counts of all plans (ie the dominant mode for each person).
 * ``plan_activity_modes``: Produce modeshares and counts of all plans (ie the dominant mode for each person) to specified destination activities.
 * ``trip_logs``: Produce agent activity logs and trip logs for all selected plans. Omits pt interactions and individual trip legs. Trip mode is based on maximum leg distance.
+* ``see_trip_logs`` : Produce agent trip logs for both selected and unselected plans. Trip mode is based on maximum leg distance. This is a part of the SEE analysis (see SEE) 
 * ``leg_logs``: Produce agent activity logs and leg logs for all selected plans.
 * ``plan_logs``: Produce agent plans including unselected plans and scores.
 * ``agent_highway_distance_logs``: Produce agent distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 * ``trip_highway_distance_logs``: Produce flat output of agent trip distances by car on different road types. Requires network to have `osm:way:highways` attribute.
 * **(DEPRECATED)** ``toll_logs``: Produces summary of amounts agents paid at tolls based on route information contained in agent plans. Requires road pricing input file. Only works for option ``["car"]``. *The AgentTollsPaidFromRPConfig handler is still supported, but has been superseded by an event handler. This handler calculates toll payments via a link-lookup with the road pricing configuration file, and will not account for any in-simulation adjustments for differential or capped road pricing.*
+
+#### Simulated Experience Extractor (SEE)
+
+SEE (aka Near Miss Analyser) is a new extension to Elara which analyses the plans that agents didn't selected in order to understand the choices available to different types of agents in different locations. It is helpful for understanding mode shift potential and gives both tabular and spatial outputs for visualisation.
+
+```
+[plan_handlers]
+see_trip_logs = ["all"]
+
+```
 
 ### **Post Processing Handlers/Workstation Tools**
 
