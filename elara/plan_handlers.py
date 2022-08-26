@@ -1110,11 +1110,11 @@ class SeeTripLogs(PlanHandlerTool):
 
             # We find the home locations, based on the origin activity (home)
             # we use home locations for visulisation purposes
-            homes = trips[trips.o_act=="home"][['ox','oy','agent']]
-            homes.drop_duplicates(subset=['agent'],keep='first')
+            # homes = trips[trips.o_act=="home"][['ox','oy','agent']]
+            # homes.drop_duplicates(subset=['agent'],keep='first')
 
             # merge this table into the plans, giving us the ox and oy
-            plans = plans.merge(homes,on='agent',how='left')
+            # plans = plans.merge(homes,on='agent',how='left')
 
             gdf = plans
 
