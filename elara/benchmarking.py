@@ -159,6 +159,158 @@ class CsvComparison(BenchmarkTool):
             return fig
 
 
+
+class MatrixComparison(BenchmarkTool):
+
+    output_value_fields = ['trips_benchmark', 'trip_simulation']
+
+    def __init__(self, config, mode, groupby_person_attribute=None, **kwargs) -> None:
+        """
+        Initiate class, checks benchmark data format.
+        :param config: Config object
+        :param mode: str, mode
+        :param attribute: str, atribute key defaults to None
+        """
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+
+        self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
+        self.logger.debug(f"Using indices '{self.index_fields}'")
+        if self.benchmark_data_path is None:
+            return None  # todo this is required for the input plan comparison tools
+        if not os.path.exists(self.benchmark_data_path):
+            raise UserWarning(f"Unable to find benchmark {self.benchmark_data_path}.")
+        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+        if self.value_field not in benchmarks_df.columns:
+            raise UserWarning(f"Incorrectly formatted benchmarks, expected {self.value_field} column.")
+
+
+    def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
+        """
+        Compare two two-dimensional csv files (benchmark vs simulation), calculate and plot their differences
+
+        Dataframe structure as follows:
+
+        Column Headers: ID, 0, 1, 2, 3, 4, 5, ...., 23
+
+        ID: e.g. Road corridor 
+        0: e.g. traffic counts between 12am - 1am
+        1: e.g. traffic counts between 1am - 2am
+        ...
+        23: e.g. traffic counts between 23pm - 12am etc...
+        """
+        super().build(resources, write_path)
+
+        # Read benchmark and simulation csv files
+        self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
+        self.logger.debug(f"Using indices '{self.index_fields}'")
+        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+
+        simulation_path = os.path.join(self.config.output_path, self.simulation_name)
+        self.logger.debug(f"Loading Simulation data from {simulation_path}")
+        simulation_df = pd.read_csv(simulation_path, index_col=self.index_fields)
+
+        # groupby ID column
+        simulation_df = simulation_df.groupby('ID').agg('sum')
+        benchmark_df = benchmark_df.groupby('ID').agg('sum')
+        
+        # transpose dataframes
+        simulation_df = simulation_df.T
+        benchmark_df = benchmark_df.T
+
+        """
+        This gives the format:
+
+            ID_1    ID_2    ID_3    ...
+        0
+        1
+        2
+        ...
+        23
+
+        """
+
+        # Get list of ID's
+        ID_list = simulation_df.columns.values.tolist()
+
+        scores = {}
+
+        # Iterate through columns and plot line chart
+        for id in ID_list:
+            bm_df = pd.concat([benchmarks_df[id], simulation_df[id]], axis = 1)
+            bm_df.columns = self.output_value_fields
+            self.plot_comparisons(bm_df)
+        
+            bm_df['difference'] = bm_df[self.output_value_fields[0]] - bm_df[self.output_value_fields[1]]
+            bm_df['abs_difference'] = bm_df.difference.abs()
+
+            # write results
+            csv_name = f'{id}.csv'
+            csv_path = os.path.join('benchmarks', csv_name)
+            self.write_csv(bm_df, csv_path, write_path=write_path)
+
+            # evaluation metrics
+            scores[id]['mse'] = np.mean(bm_df['difference'] ** 2), # mean squared error
+            scores[id]['mae'] = np.mean(bm_df.abs_difference)
+
+        return scores
+
+    def plot_comparisons(self, df):
+        for kind in self.plot_types:
+            figure = self.plot(df, kind=kind)
+            if figure is not None:
+                figure.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}_{kind}.png'))
+
+    def plot(self, df:pd.DataFrame, kind:str) -> plt.figure:
+        """
+        Comparison plot, either bar, line or histograms supported.
+        """
+        if kind == "hist":
+            return df.plot.hist(figsize=(6,4)).get_figure()
+        if kind == "bar":
+            return self.barline(df, kind="bar")
+        if kind == "line":
+            return self.barline(df, kind="line")
+
+        self.logger.warning(f"Unknown plot type '{kind}', returning 'None'.")
+        return None
+
+    def barline(self, df: pd.DataFrame, kind: str):
+        """
+        Plot a bar or line figure.
+        Can handle multi indices of size 2 using subplots.
+        Will attempt a sensible sort of x axis.
+
+        :param pd.DataFrame df: data to plot
+        :param str kind: ['bar','line','hist']
+        :return plt.Figure: figure
+        """
+        if isinstance(df.index, pd.MultiIndex):
+            if not len(df.index.levels) == 2:
+                self.logger.warning(f"{self} cannot handle multi index > 2, returning None.")
+                return None
+            groups = [(m, g) for m, g in df.groupby(df.index.get_level_values(-1))]
+            n = len(groups)
+            if n == 1:
+                try_sort_on_numeric_index(df)
+                fig = df.plot(figsize=(6,4), kind=kind, rot=90).get_figure()
+                fig.tight_layout()
+                return fig
+
+            fig, axs = plt.subplots(n, figsize=(6, (2.5*n)+2), sharex=True)
+            for (m, data), ax in zip(groups, axs):
+                data.index = data.index.get_level_values(0)
+                try_sort_on_numeric_index(data)
+                data.plot(ax=ax, title=m, kind=kind, rot=90)
+            fig.tight_layout()
+            return fig
+        else:
+            try_sort_on_numeric_index(df)
+            fig = df.plot(figsize=(6,4), kind=kind, rot=90).get_figure()
+            fig.tight_layout()
+            return fig
+
+
+
 class TripDurationsComparison(CsvComparison):
 
     """
@@ -834,6 +986,40 @@ class LinkCounterComparison(BenchmarkTool):
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
+
+
+class LinkCounterComparison_v2(MatrixComparison):
+
+    """
+    Benchmark Dataframe structure as follows:
+
+    Column Headers: NAME, MODE, DIRECTION, MATSIM_LINKS, 0, 1, 2, 3, 4, 5, ....
+
+    NAME: Road, Screenline, Cordon etc
+    MODE: 'car' #todo - add other modes 
+    DIRECTION: direction of movement
+    MATSIM_LINKS: list of MatSIM link ID's
+    0: traffic counts between 12am-1am
+    1: traffic counts between 1am - 2am etc...
+    """
+
+    requirements = ['link_vehicle_counts']
+    options_enabled = True
+
+    # Group simulation_df MATSIM_LINKS to match benchmark_df MATSIM_LINKS
+
+    group_id = 1
+
+    for index, row in benchmarks_df.iterrows():
+        # extract list of id's from MATSIM_LINKS
+        links_list = row['MATSIM_LINKS']
+
+        for link in links_list:
+            simulation_df['GroupID'] = np.where(simulation_df['MATSIM_LINKS']== link, group_id, simulation_df['GroupID'])
+        
+        group_id += 1
+
+    # group simulation_df by group_id
 
 
 class TransitInteractionComparison(BenchmarkTool):
