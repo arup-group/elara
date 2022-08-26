@@ -866,7 +866,7 @@ class TripLogs(PlanHandlerTool):
 
 class SeeTripLogs(PlanHandlerTool):
     
-    requirements = ['plans', 'transit_schedule', 'attributes']
+    requirements = ['plans']
     valid_modes = ['all']
 
     # todo make it so that 'all' option not required (maybe for all plan handlers)
@@ -928,7 +928,6 @@ class SeeTripLogs(PlanHandlerTool):
 
         super().build(resources, write_path=write_path)
 
-        self.attributes = self.resources["attributes"]
         see_trips_csv_name = f"{self.name}_see_trips.csv"
 
         # writes the SEE specific trips log 
@@ -951,7 +950,7 @@ class SeeTripLogs(PlanHandlerTool):
 
         for i, plan in enumerate(elem.xpath(".//plan")):
 
-            attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+            # attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
             # check that plan starts with an activity
             if not plan[0].tag == 'activity':
@@ -1005,7 +1004,7 @@ class SeeTripLogs(PlanHandlerTool):
                             trips.append(
                                 {
                                     'agent': ident,
-                                    'attribute': attribute,
+                                    # 'attribute': attribute,
                                     'seq': act_seq_idx-1,
                                     'mode': self.get_furthest_mode(modes),
                                     # 'ox': float(activities[-1]['x']),
@@ -1035,7 +1034,7 @@ class SeeTripLogs(PlanHandlerTool):
                         activities.append(
                             {
                                 'agent': ident,
-                                'attribute': attribute,
+                                # 'attribute': attribute,
                                 'seq': act_seq_idx,
                                 'act': act_type,
                                 'x': x,
