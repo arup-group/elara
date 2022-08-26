@@ -1113,22 +1113,24 @@ class SeeTripLogs(PlanHandlerTool):
             # merge this table into the plans, giving us the ox and oy
             plans = plans.merge(homes,on='agent',how='left')
 
-            # todo. Add a warning if many home locations are not found
-            gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
+            gdf = plans
 
-            # dropping some columns
-            # we've used ox/oy to build geometry
-            # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
-            gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
+            # # todo. Add a warning if many home locations are not found
+            # gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
 
-            # British east/northing
-            # TODO need to inherit this from elara config
-            gdf.crs = 'epsg:27700'
+            # # dropping some columns
+            # # we've used ox/oy to build geometry
+            # # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
+            # gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
 
-            # re-project to 4326
-            gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
+            # # British east/northing
+            # # TODO need to inherit this from elara config
+            # gdf.crs = 'epsg:27700'
 
-            # sort by utility
+            # # re-project to 4326
+            # gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
+
+            # # sort by utility
             gdf = gdf.sort_values("utility")
             # flatten, one row per innovation (removes duplicates from lazy processes above)
             gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
@@ -1137,11 +1139,11 @@ class SeeTripLogs(PlanHandlerTool):
             # enables this to be toggled on/off on kepler
             gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
 
-            # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
+            # # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
             gdf = gdf.sort_values('utility')
             gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
 
-            # subselecting them into 2 different dfs
+            # # subselecting them into 2 different dfs
             selectedPlans = gdf[gdf.selected==True]
             unSelectedPlans = gdf[gdf.selected==False]
 
@@ -1153,7 +1155,7 @@ class SeeTripLogs(PlanHandlerTool):
             unSelectedPlans = unSelectedPlans.sort_values("utility")
             unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
 
-            # zip them back together again
+            # # zip them back together again
             gdf = pd.concat([selectedPlans,unSelectedPlans])
 
             self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
@@ -1176,8 +1178,8 @@ class SeeTripLogs(PlanHandlerTool):
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
         self.see_trips_log.finish()
-        # self.allPlansGdf.finish()
-        # self.unSelectedPlansCarSelectedGdf.finish()
+        # self.results['SeeAllPlansGdf'].finish()
+        # self.results['SeeUnSelectedPlansCarSelectedGdf'].finish()
 
     @staticmethod
     def get_seconds(dt: datetime) -> int:
@@ -1890,13 +1892,13 @@ class PlanHandlerWorkStation(WorkStation):
                     csv_name = "{}.csv".format(name)
                     self.write_csv(result, csv_name, write_path=write_path, compression=handler.compression)
                     # hacky - trying to catch geojson results. How is this handled elsewhere? Currently assumes everything is csv
-                    if "gdf" in name.lower():
-                        self.logger.debug(f'writing to {output_path + f"{name}.geojson"}')
-                        export_geojson(result,output_path+f"{name}.geojson")
+                    # if "gdf" in name.lower():
+                        # self.logger.debug(f'writing to {output_path + f"{name}.geojson"}')
+                        # export_geojson(result,output_path+f"{name}.geojson")
                     
-                    else:
-                        csv_name = "{}.csv".format(name)
-                        self.write_csv(result, csv_name, write_path=write_path)
+                    # else:
+                    csv_name = "{}.csv".format(name)
+                    self.write_csv(result, csv_name, write_path=write_path)
 
                     del result
 
