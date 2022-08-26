@@ -962,8 +962,8 @@ class SeeTripLogs(PlanHandlerTool):
             trips = []
             act_seq_idx = 0
 
-            activity_start_dt = self.start_datetime
-            activity_end_dt = self.start_datetime
+            # activity_start_dt = self.start_datetime
+            # activity_end_dt = self.start_datetime
             # todo replace this start datetime with a real start datetime using config
 
             x = None
@@ -986,15 +986,15 @@ class SeeTripLogs(PlanHandlerTool):
                     if not act_type == 'pt interaction':
 
                         act_seq_idx += 1  # increment for a new trip idx
-                        trip_duration = activity_start_dt - activity_end_dt
+                        # trip_duration = activity_start_dt - activity_end_dt
 
-                        end_time_str = stage.get('end_time', '23:59:59')
+                        # end_time_str = stage.get('end_time', '23:59:59')
 
-                        activity_end_dt = matsim_time_to_datetime(
-                                activity_start_dt, end_time_str, self.logger, idx=ident
-                        )
+                        # activity_end_dt = matsim_time_to_datetime(
+                                # activity_start_dt, end_time_str, self.logger, idx=ident
+                        # )
 
-                        activity_duration = activity_end_dt - activity_start_dt
+                        # activity_duration = activity_end_dt - activity_start_dt
 
                         x = stage.get('x')
                         y = stage.get('y')
@@ -1031,35 +1031,35 @@ class SeeTripLogs(PlanHandlerTool):
                             modes = {}  # reset for next trip
                             trip_distance = 0  # reset for next trip
 
-                        activities.append(
-                            {
-                                'agent': ident,
-                                # 'attribute': attribute,
-                                'seq': act_seq_idx,
-                                'act': act_type,
-                                'x': x,
-                                'y': y,
-                                'start': activity_start_dt.time(),
-                                'start_day': activity_start_dt.day,
-                                'end': activity_end_dt.time(),
-                                'end_day': activity_end_dt.day,
-                                'start_s': self.get_seconds(activity_start_dt),
-                                'end_s': self.get_seconds(activity_end_dt),
-                                'duration': activity_duration,
-                                'duration_s': activity_duration.total_seconds()
-                            }
-                        )
+                        # activities.append(
+                        #     {
+                        #         'agent': ident,
+                        #         # 'attribute': attribute,
+                        #         'seq': act_seq_idx,
+                        #         'act': act_type,
+                        #         'x': x,
+                        #         'y': y,
+                        #         'start': activity_start_dt.time(),
+                        #         'start_day': activity_start_dt.day,
+                        #         'end': activity_end_dt.time(),
+                        #         'end_day': activity_end_dt.day,
+                        #         'start_s': self.get_seconds(activity_start_dt),
+                        #         'end_s': self.get_seconds(activity_end_dt),
+                        #         'duration': activity_duration,
+                        #         'duration_s': activity_duration.total_seconds()
+                        #     }
+                        # )
 
-                        activity_start_dt = activity_end_dt
+                        # activity_start_dt = activity_end_dt
                     
                     # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
                     # then advance the next activity start time accordingly   
-                    elif stage.get('end_time'):
-                        end_time_str = stage.get('end_time')
+                    # elif stage.get('end_time'):
+                    #     end_time_str = stage.get('end_time')
 
-                        activity_start_dt = matsim_time_to_datetime(
-                            activity_start_dt, end_time_str, self.logger, idx=ident
-                        )
+                    #     activity_start_dt = matsim_time_to_datetime(
+                    #         activity_start_dt, end_time_str, self.logger, idx=ident
+                    #     )
 
                 elif stage.tag == 'leg':
 
@@ -1073,10 +1073,10 @@ class SeeTripLogs(PlanHandlerTool):
                     modes[mode] = modes.get(mode, 0) + distance
                     trip_distance = distance
 
-                    trav_time = stage.get('trav_time')
-                    h, m, s = trav_time.split(":")
-                    td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    activity_start_dt += td
+                    # trav_time = stage.get('trav_time')
+                    # h, m, s = trav_time.split(":")
+                    # td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                    # activity_start_dt += td
 
             self.see_trips_log.add(trips)
             summary.extend(trips)
