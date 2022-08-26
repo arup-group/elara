@@ -1118,12 +1118,12 @@ class SeeTripLogs(PlanHandlerTool):
 
             # dropping some columns
             # we've used ox/oy to build geometry
-            # we remove mode as it is not used, as we now use the dominantMode
+            # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
             gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
 
             # British east/northing
             # TODO need to inherit this from elara config
-            gdf.crs = {'init': 'epsg:27700'}
+            gdf.crs = 'epsg:27700'
 
             # re-project to 4326
             gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
