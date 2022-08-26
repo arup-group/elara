@@ -1117,6 +1117,7 @@ class SeeTripLogs(PlanHandlerTool):
             # plans = plans.merge(homes,on='agent',how='left')
 
             gdf = plans
+            print("{} plans being processed by SEE".format(len(plans)))
 
             # # todo. Add a warning if many home locations are not found
             # gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
