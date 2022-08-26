@@ -949,7 +949,7 @@ class SeeTripLogs(PlanHandlerTool):
 
         summary = []
 
-        for plan in elem.xpath(".//plan"):
+        for i, plan in enumerate(elem.xpath(".//plan")):
 
             attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
 
@@ -975,7 +975,11 @@ class SeeTripLogs(PlanHandlerTool):
             for stage in plan:
 
                 # we give each plan an id (to permit comparisons)
-                innovation_hash = str(uuid.uuid4())
+                # innovation_hash = str(uuid.uuid4())
+                innovation_hash = i
+                
+                # append as a number? i.e. 1,2,3,4,5
+                # get rid of time
             
                 if stage.tag == 'activity':
                     act_type = stage.get('type')
