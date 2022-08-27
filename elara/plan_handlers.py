@@ -1100,7 +1100,6 @@ class SeeTripLogs(PlanHandlerTool):
 
             # we use the innovation_hash to identify a summary, per agent
             plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
-            print("{} plans loaded".format(len(plans)))
 
             # calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
             # Remember, the chosen plan may not always be the top score due to randomness in MATSim process
@@ -1117,7 +1116,6 @@ class SeeTripLogs(PlanHandlerTool):
             # plans = plans.merge(homes,on='agent',how='left')
 
             gdf = plans
-            print("{} plans being processed by SEE".format(len(plans)))
 
             # # todo. Add a warning if many home locations are not found
             # gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
