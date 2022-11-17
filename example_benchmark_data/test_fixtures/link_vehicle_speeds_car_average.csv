@@ -1,3 +1,3 @@
-id,from,to,length,lanes,capacity,modes,8,17
-1-5,1,5,10000.0,1.0,1000.0,"bus,car",0.29244041526538966,0.0
-5-1,5,1,10000.0,1.0,1000.0,"bus,car",0.0,0.0
+link_id,from,to,length,lanes,capacity,modes,8,17
+01-May,1,5,10000,1,1000,"bus,car",0.292440415,0
+05-Jan,5,1,10000,1,1000,"bus,car",0,0

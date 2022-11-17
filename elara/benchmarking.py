@@ -256,7 +256,7 @@ class LinkVehicleSpeedsComparison(CsvComparison):
             raise ValueError(f"Not found 'time_slice' in {self} kwargs: {kwargs}'")
         self.value_field = str(time_slice)
 
-        self.index_fields = ['id']
+        self.index_fields = ['link_id']
         self.weight = 1
 
         super().__init__(

@@ -1,15 +1,16 @@
-import numpy as np
-import pandas as pd
-import geopandas as gpd
-from typing import Union, Tuple, Optional
 import logging
 import os
-import networkx as nx
-from shapely.geometry import LineString
 from math import floor
-from pyproj import Transformer
+from typing import Optional, Tuple, Union
 
-from elara.factory import WorkStation, Tool
+import geopandas as gpd
+import networkx as nx
+import numpy as np
+import pandas as pd
+from pyproj import Transformer
+from shapely.geometry import LineString
+
+from elara.factory import Tool, WorkStation
 
 
 class EventHandlerTool(Tool):
@@ -642,7 +643,7 @@ modes. Elara will continue with all links found in network.
             index = pd.MultiIndex.from_product(indexes, names=names)
             counts_df = pd.DataFrame(self.counts.flatten(), index=index)[0]
             counts_df = counts_df.unstack(level='hour').sort_index()
-            counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
+            # counts_df = counts_df.reset_index().set_index(['elem', self.groupby_person_attribute])
 
             counts_df['total'] = counts_df.sum(1)
             counts_df = counts_df.reset_index().set_index('elem')
@@ -651,6 +652,9 @@ modes. Elara will continue with all links found in network.
             counts_df = self.elem_gdf.join(
                 counts_df, how="left"
             )
+
+            counts_df.index = counts_df.index.set_names(['link_id'])
+            counts_df.reset_index(inplace=True)
             self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -667,6 +671,8 @@ modes. Elara will continue with all links found in network.
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
+        totals_df.index = totals_df.index.set_names(['link_id'])
+        totals_df.reset_index(inplace=True)
         self.result_dfs[key] = totals_df
 
 
@@ -896,8 +902,7 @@ modes. Elara will continue with all links found in network.
             counts_link_subpop = flatten_subpops(self, self.counts)
             duration_link_subpop = flatten_subpops(self, self.duration_sum)
             average_speeds = calc_average_speed(self, counts_link_subpop, duration_link_subpop)
-
-            average_speeds.index.name = "id"
+            average_speeds.index = average_speeds.index.set_names(['link_id'])
             self.result_dfs[key] = average_speeds
 
         # Calc average speed at population level
@@ -912,6 +917,7 @@ modes. Elara will continue with all links found in network.
             ).sort_index().rename_axis('elem')
 
         average_speeds = calc_average_speed(self, counts_link_pop, duration_link_pop)
+        average_speeds.index = average_speeds.index.set_names(['link_id'])
         self.result_dfs[key] = average_speeds
 
         if self.groupby_person_attribute:
@@ -920,7 +926,8 @@ modes. Elara will continue with all links found in network.
             max_speeds = flatten_subpops(self, calc_max_matrices(self)[0]).reset_index().set_index('elem')
             max_speeds = self.elem_gdf.join(max_speeds, how="left")
             max_speeds = multiply_distance(self, max_speeds)
-            max_speeds.index.name = "id"
+            max_speeds.index = max_speeds.index.set_names(['link_id'])
+
             self.result_dfs[key] = max_speeds
 
         # Calc max at pop level
@@ -931,6 +938,7 @@ modes. Elara will continue with all links found in network.
             ).sort_index()
         max_speeds = self.elem_gdf.join(max_speeds, how="left")
         max_speeds = multiply_distance(self, max_speeds)
+        max_speeds.index = max_speeds.index.set_names(['link_id'])
         self.result_dfs[key] = max_speeds
 
         if self.groupby_person_attribute:
@@ -940,7 +948,7 @@ modes. Elara will continue with all links found in network.
             min_speeds = flatten_subpops(self, min_matrix).reset_index().set_index('elem')
             min_speeds = self.elem_gdf.join(min_speeds, how="left")
             min_speeds = multiply_distance(self, min_speeds)
-            min_speeds.index.name = "id"
+            min_speeds.index = min_speeds.index.set_names(['link_id'])
             self.result_dfs[key] = min_speeds
 
         # Calc max at pop level
@@ -951,6 +959,7 @@ modes. Elara will continue with all links found in network.
             ).sort_index()
         min_speeds = self.elem_gdf.join(min_speeds, how="left")
         min_speeds = multiply_distance(self, min_speeds)
+        min_speeds.index = min_speeds.index.set_names(['link_id'])
         self.result_dfs[key] = min_speeds
 
         # convert all dataframes from meters per second to kph
@@ -1141,6 +1150,10 @@ modes. Elara will continue with all links found in network.
             counts_df = self.elem_gdf.join(
                 counts_df, how="left"
             )
+
+            counts_df.index = counts_df.index.set_names(['link_id'])
+            counts_df.reset_index(inplace=True)
+
             self.result_dfs[key] = counts_df
 
         # calc sum across all recorded attribute classes
@@ -1157,6 +1170,9 @@ modes. Elara will continue with all links found in network.
         totals_df = self.elem_gdf.join(
             totals_df, how="left"
         )
+        
+        totals_df.index = totals_df.index.set_names(['link_id'])
+        totals_df.reset_index(inplace=True)
         self.result_dfs[key] = totals_df
 
 
@@ -1511,6 +1527,7 @@ class StopPassengerCounts(EventHandlerTool):
                 counts_df = self.elem_gdf.join(
                     counts_df, how="left"
                 )
+                counts_df.rename(columns={'link':'link_id'}, inplace=True)
                 self.result_dfs[key] = counts_df
 
             # calc sum across all recorded attribute classes
@@ -1527,6 +1544,7 @@ class StopPassengerCounts(EventHandlerTool):
             totals_df = self.elem_gdf.join(
                 totals_df, how="left"
             )
+            totals_df.rename(columns={'link':'link_id'}, inplace=True)
             self.result_dfs[key] = totals_df
 
 
