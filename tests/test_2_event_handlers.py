@@ -74,6 +74,25 @@ def test_tool_naming(test_config):
     assert (str(tool)) == "LinkVehicleCountsAll"
 
 
+def handler_from_config(config_path):
+    config = Config(config_path)
+
+    paths = PathFinderWorkStation(config)
+    paths.connect(managers=None, suppliers=None)
+    paths.load_all_tools()
+    paths.build()
+
+    input_workstation = inputs.InputsWorkStation(config)
+    input_workstation.connect(managers=None, suppliers=[paths])
+    input_workstation.load_all_tools()
+    input_workstation.build()
+
+    handler = event_handlers.EventHandlerTool(config)
+    handler.build(input_workstation.resources)
+
+    return handler
+
+
 # Paths
 @pytest.fixture
 def test_paths(test_config):
@@ -120,6 +139,20 @@ def test_build_df_indices(base_handler, test_df, test_list):
 def test_get_veh_mode(base_handler):
     assert base_handler.vehicle_mode('bus1').lower() == 'bus'
     assert base_handler.vehicle_mode('not_a_transit_vehicle') == "car"
+
+
+@pytest.fixture
+def active_mode_handler():
+    config = os.path.join(test_dir, 'test_fixtures', 'active_modes', 'test_xml_scenario.toml')
+    return handler_from_config(config)
+
+
+def test_get_veh_mode_for_bike(active_mode_handler):
+    assert active_mode_handler.vehicle_mode('gerry_bike').lower() == 'bike'
+
+
+def test_get_veh_mode_for_walk(active_mode_handler):
+    assert active_mode_handler.vehicle_mode('jerry_walk').lower() == 'walk'
 
 
 def test_empty_rows(base_handler, test_df):

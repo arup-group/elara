@@ -53,7 +53,6 @@ class InputTool(Tool):
 
 
 class Events(InputTool):
-
     requirements = ['events_path']
     elems = None
 
@@ -69,9 +68,13 @@ class Events(InputTool):
 
         self.elems = get_elems(path, "event")
 
+        self.veh_to_mode_map = {
+            e.attrib['vehicle']: e.attrib['networkMode'] for e in get_elems(path, "event") if
+            e.attrib['type'] == 'vehicle enters traffic'
+        }
+
 
 class Network(InputTool):
-
     requirements = ['network_path', 'crs']
     node_gdf = None
     link_gdf = None
@@ -127,7 +130,6 @@ class Network(InputTool):
         self.set_and_change_crs(self.node_gdf, set_crs=crs)
         self.logger.debug(f'Re-projecting network links geodataframe')
         self.set_and_change_crs(self.link_gdf, set_crs=crs)
-
 
     @staticmethod
     def transform_node_elem(elem, crs):
@@ -212,9 +214,9 @@ class OSMWays(InputTool):
         # Extract element properties
         self.logger.debug(f'Extracting links for OSM Ways input')
         links = [
-                self.get_link_attribute(elem)
-                for elem in get_elems(path, "link")
-                ]
+            self.get_link_attribute(elem)
+            for elem in get_elems(path, "link")
+        ]
         self.ways = {link['id']: link['way'] for link in links}
         self.lengths = {link['id']: link['length'] for link in links}
         self.classes = list(set(self.ways.values()))
@@ -303,7 +305,6 @@ class TransitSchedule(InputTool):
             stops = self.get_route_stops(elem)
             self.mode_to_stops_map[mode].update(stops)
 
-            
             route_id, route_vehicles = self.get_route_vehicles(elem)
             # mode -> vehs map
             self.mode_to_veh_map[mode].update(route_vehicles)
@@ -311,20 +312,19 @@ class TransitSchedule(InputTool):
             for vehicle_id in route_vehicles:
                 # vehicles -> routes map
                 self.veh_to_route_map[vehicle_id] = route_id
-        
+
         # mode -> veh map
         self.veh_to_mode_map = {v: mode for mode, vs in self.mode_to_veh_map.items() for v in vs}
 
         # mode -> routes map
         self.mode_to_routes_map = defaultdict(set)
         for route, mode in self.route_to_mode_map.items():
-            self.mode_to_routes_map[mode].add(route) 
+            self.mode_to_routes_map[mode].add(route)
 
         self.modes = list(set(self.route_to_mode_map.values()))
 
         self.logger.debug(f'Transit Schedule Route modes = {self.modes}')
         self.logger.debug(f'Transit Schedule Stop modes = {list(self.mode_to_stops_map)}')
-
 
     @staticmethod
     def get_node_elem(elem):
@@ -404,7 +404,6 @@ class TransitSchedule(InputTool):
 
 
 class TransitVehicles(InputTool):
-
     requirements = ['transit_vehicles_path']
     veh_type_mode_map = None
     veh_type_capacity_map = None
@@ -465,7 +464,7 @@ class TransitVehicles(InputTool):
         ident = elem.xpath("@id")[0]
         if len(elem.xpath("capacity/seats/@persons")) > 0:
             # https://www.matsim.org/files/dtd/vehicleDefinitions_v1.0.xsd
-            seated_capacity = float(elem.xpath("capacity/seats/@persons")[0]) 
+            seated_capacity = float(elem.xpath("capacity/seats/@persons")[0])
             standing_capacity = float(elem.xpath("capacity/standingRoom/@persons")[0])
         else:
             # https://www.matsim.org/files/dtd/vehicleDefinitions_v2.0.xsd
@@ -475,7 +474,6 @@ class TransitVehicles(InputTool):
 
 
 class Subpopulations(InputTool):
-    
     requirements = ['attributes_path']
     # final_attribute_map = None
     map = None
@@ -532,7 +530,6 @@ class Subpopulations(InputTool):
 
 
 class Attributes(InputTool):
-    
     requirements = ['attributes_path']
     attributes = {}
     attribute_count_map = None
@@ -637,7 +634,7 @@ class Plans(InputTool):
 
         self.plans = get_elems(path, "plan")
         # self.persons = get_elems(path, "person")
-        self.persons = self.filter_out_persons_with_empty_plans(get_elems(path, "person")) # skip empty-plan persons
+        self.persons = self.filter_out_persons_with_empty_plans(get_elems(path, "person"))  # skip empty-plan persons
 
     def filter_out_persons_with_empty_plans(self, iterator):
         """
@@ -648,6 +645,7 @@ class Plans(InputTool):
             if len(elem.find('./plan').getchildren()) > 0:
                 yield elem
 
+
 class InputPlans(Plans):
     """
     InputTool for iterating through plans used as inputs to a MATSim simulation.
@@ -657,8 +655,8 @@ class InputPlans(Plans):
     plans = None
     persons = None
 
-class OutputConfig(InputTool):
 
+class OutputConfig(InputTool):
     requirements = ['output_config_path']
 
     modes = set()
@@ -697,7 +695,6 @@ class OutputConfig(InputTool):
 
 
 class ModeHierarchy(InputTool):
-
     requirements = []
 
     hierarchy = [
@@ -744,7 +741,6 @@ class ModeHierarchy(InputTool):
 
 
 class ModeMap(InputTool):
-
     requirements = []
 
     modemap = {
@@ -768,7 +764,6 @@ class ModeMap(InputTool):
 
 
 class RoadPricing(InputTool):
-
     requirements = ['road_pricing_path']
     links = None
 
@@ -802,9 +797,9 @@ class RoadPricing(InputTool):
         costs = sorted(costs, key=lambda k: k['start_time'])
         return ident, costs
 
-    def get_tollnames(self,elem):
+    def get_tollnames(self, elem):
         ident = elem.xpath("@id")[0]
-        if len(elem.xpath('./tollname/@name')): #if the toll link has a tag called tollname
+        if len(elem.xpath('./tollname/@name')):  # if the toll link has a tag called tollname
             tollname = elem.xpath('./tollname/@name')[0]
         else:
             tollname = 'missing'
