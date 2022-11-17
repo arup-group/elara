@@ -3,7 +3,7 @@ colorama==0.4.4
 Fiona==1.8.20
 geojson==2.5.0
 geopandas==0.7.0
-lxml==4.6.3
+lxml==4.9.1
 networkx==2.4
 numpy==1.19.0
 matplotlib==3.5
