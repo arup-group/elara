@@ -1,5 +1,4 @@
 from pandas.core import groupby
-from plotnine import ggplot, aes, geom_point, geom_line, geom_col, labs, theme, element_text
 import pandas as pd
 import os
 import numpy as np
@@ -827,14 +826,14 @@ class LinkCounterComparison(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
 
         # plot normalised by number of counters
         bm_results_normalised_df = bm_results_summary_df
         bm_results_normalised_df['volume']=bm_results_normalised_df['volume'] / total_counters
         bm_results_normalised_plot = comparative_plots(bm_results_normalised_df)
         plot_name = f'{self.name}_summary_normalised.png'
-        bm_results_normalised_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_normalised_plot.savefig(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -1086,7 +1085,7 @@ class TransitInteractionComparison(BenchmarkTool):
 
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -1343,7 +1342,7 @@ class PassengerStopToStop(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -1722,7 +1721,7 @@ class PointsCounter(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -2028,68 +2027,6 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
         return np.absolute(result - count) / count
 
 
-class OldModeSharesComparison(BenchmarkTool):
-
-    requirements = ["mode_shares"]
-    valid_modes = ['all']
-    options_enabled = True
-
-    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
-        """
-        ModeStat parent object for benchmarking with mode share data.
-        :param config: Config object
-        :param mode: str, mode
-        """
-        super().__init__(
-            config=config,
-            mode=mode,
-            groupby_person_attribute=groupby_person_attribute,
-            benchmark_data_path=benchmark_data_path,
-            **kwargs
-        )
-
-        self.benchmark_df = pd.read_csv(
-            self.benchmark_data_path,
-            header=None,
-            names=['mode', 'benchmark']
-            )
-        self.benchmark_df.set_index('mode', inplace=True)
-
-    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
-        """
-        Builds paths for mode share outputs, loads and combines with model for scoring.
-        :return: Dictionary of scores
-        """
-        # Build paths and load appropriate volume counts
-        results_name = "mode_shares_all.csv"
-        results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path,
-                                 header=None,
-                                 names=['mode', 'model'])
-        results_df.set_index('mode', inplace=True)
-
-        # join results
-        summary_df = self.benchmark_df.join(results_df, how='inner')
-        summary_df.loc[:, 'diff'] = summary_df.model - summary_df.benchmark
-
-        # write results
-        csv_name = 'modeshare_results.csv'
-        csv_path = os.path.join('benchmarks', csv_name)
-        self.write_csv(summary_df, csv_path, write_path=write_path)
-
-        #plot
-        summary_df_plot = pd.melt(summary_df.reset_index(), id_vars=['mode'], value_vars = ['benchmark','model'], var_name = 'type', value_name='modeshare')
-        bm_results_summary_plot = comparative_column_plots(summary_df_plot)
-        plot_name = 'modeshare_results.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
-        plt.close()
-
-        # get scores and write outputs
-        score = sum(((np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model))) * 100) ** 2)
-
-        return {'counters': score}
-
-
 class TestTownHighwayCounters(PointsCounter):
 
     name = 'test_highways'
@@ -2322,15 +2259,14 @@ def merge_summary_stats(bm_results_summary):
 
 def comparative_plots(results):
 
-    return ggplot(
-        aes(y="volume", x="hour", color="type"),
-        data=results) + geom_point() + geom_line() + labs(y="Volume",
-        x="Time (hour)"
-        )
+    bms = results[results['type'] == 'benchmark']
+    sims = results[results['type'] == 'simulation']
 
-def comparative_column_plots(results):
-    plot = ggplot(
-        aes(y="modeshare", x="mode", fill="type"),
-        data=results) + geom_col(position="dodge") + labs(y="Mode Share",
-        x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
-    return  plot
+    fig, ax = plt.subplots()
+    ax.plot(bms['hour'], bms['volume'], label='benchmark', marker ='.', linewidth=1)
+    ax.plot(sims['hour'], sims['volume'], label='simulation', marker ='.',linewidth=1)
+    ax.set_xlabel("Time (hour)")
+    ax.set_ylabel("Volume")
+    ax.legend(loc='best')
+
+    return fig
