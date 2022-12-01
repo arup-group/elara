@@ -2268,5 +2268,7 @@ def comparative_plots(results):
     ax.set_xlabel("Time (hour)")
     ax.set_ylabel("Volume")
     ax.legend(loc='best')
+    ax.grid(linestyle = '--', linewidth = 0.5)
+    ax.set_axisbelow(True) 
 
     return fig
