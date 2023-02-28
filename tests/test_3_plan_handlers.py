@@ -2764,7 +2764,7 @@ def test_non_zero_pt_interaction_plan(agent_plan_handler):
 		</plan>
 	</person>
     """
-    
+
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert len(handler.plans_log.chunk) == 1
@@ -2804,7 +2804,7 @@ def test_zero_pt_interaction_plan(agent_plan_handler):
 		</plan>
 	</person>
     """
-    
+
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert len(handler.plans_log.chunk) == 1

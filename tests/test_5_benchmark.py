@@ -1,3 +1,10 @@
+from elara import get_benchmark_data
+from elara.plan_handlers import PlanHandlerWorkStation
+from elara.event_handlers import EventHandlerWorkStation
+from elara.inputs import InputsWorkStation
+from elara.config import PathFinderWorkStation
+from elara import benchmarking
+from elara.config import Config
 from io import StringIO
 import sys
 import os
@@ -8,14 +15,8 @@ import pytest
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(root_dir)
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../elara")))
-from elara.config import Config
-from elara import benchmarking
-from elara.config import PathFinderWorkStation
-from elara.inputs import InputsWorkStation
-from elara.event_handlers import EventHandlerWorkStation
-from elara.plan_handlers import PlanHandlerWorkStation
-from elara import get_benchmark_data
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../elara")))
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -29,11 +30,12 @@ if not os.path.exists(benchmarks_path):
 config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
 config = Config(config_path)
 
+
 def test_trip_duration_comparison_cars():
     benchmark = benchmarking.TripDurationsComparison(
         config=config,
         mode="all",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'trip_durations_car.csv')
         )
     )
@@ -45,7 +47,7 @@ def test_trip_duration_comparison_all():
     benchmark = benchmarking.TripDurationsComparison(
         config=config,
         mode="all",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'trip_durations_multi_modal.csv')
         )
     )
@@ -57,8 +59,9 @@ def test_trip_duration_comparison_mode_consistency():
     benchmark = benchmarking.TripDurationsComparison(
         config=config,
         mode="all",
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'trip_durations_mode_consistency.csv')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_fixtures',
+                         'trip_durations_mode_consistency.csv')
         ),
         mode_consistent=True
     )
@@ -71,8 +74,9 @@ def test_link_vehicle_speed_comparison():
         config=config,
         mode="car",
         time_slice=8,
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'link_vehicle_speeds_car_average.csv')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_fixtures',
+                         'link_vehicle_speeds_car_average.csv')
         )
     )
     score = benchmark.build({}, write_path=test_outputs)
@@ -85,8 +89,9 @@ def test_link_vehicle_speed_comparison_with_groupby_subpopulation():
         mode="car",
         time_slice=8,
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'link_vehicle_speeds_car_average_subpopulation.csv')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_fixtures',
+                         'link_vehicle_speeds_car_average_subpopulation.csv')
         )
     )
     score = benchmark.build({}, write_path=test_outputs)
@@ -98,8 +103,9 @@ def test_pt_volume_counter_bus():
     test_bm = benchmark(
         config,
         'bus',
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_town', 'pt_stop_to_stop_volumes', 'test_pt_volumes_bus.json')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_town', 'pt_stop_to_stop_volumes',
+                         'test_pt_volumes_bus.json')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
@@ -111,8 +117,9 @@ def test_pt_interactions_counter_bus():
     test_bm = benchmark(
         config,
         'bus',
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_town', 'pt_interactions', 'test_interaction_counter.json')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_town', 'pt_interactions',
+                         'test_interaction_counter.json')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
@@ -124,8 +131,9 @@ def test_links_counter_car_init():
     test_bm = benchmark(
         config,
         'car',
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_town', 'test_town_cordon', 'test_link_counter.json')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_town', 'test_town_cordon',
+                         'test_link_counter.json')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
@@ -137,8 +145,9 @@ def test_links_counter_bus_init():
     test_bm = benchmark(
         config,
         'bus',
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_town', 'test_town_cordon', 'test_link_counter.json')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_town', 'test_town_cordon',
+                         'test_link_counter.json')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
@@ -150,7 +159,7 @@ def test_points_counter_init():
     test_bm = benchmark(
         config,
         'car',
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_town', 'highways', 'test_hw_bm.json')
         )
     )
@@ -163,7 +172,7 @@ def test_mode_share_score_zero():
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'mode_shares.csv')
         )
     )
@@ -177,7 +186,7 @@ def test_mode_share_by_attribute_score_zero():
         config,
         mode='all',
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'subpop_mode_shares.csv')
         )
     )
@@ -190,7 +199,7 @@ def test_mode_counts_score_zero():
     test_bm = benchmark(
         config,
         mode='all',
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'mode_counts.csv')
         )
     )
@@ -204,7 +213,7 @@ def test_mode_counts_by_attribute_score_zero():
         config,
         mode='all',
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'subpop_mode_counts.csv')
         )
     )
@@ -218,12 +227,13 @@ def test_activity_mode_share_score_zero():
         config,
         mode='all',
         destination_activity_filters=["work"],
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'mode_shares.csv')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
+
 
 def test_activity_subpopulaion_mode_share_score_zero():
     benchmark = benchmarking.TripActivityModeSharesComparison
@@ -232,7 +242,7 @@ def test_activity_subpopulaion_mode_share_score_zero():
         mode='all',
         destination_activity_filters=["work"],
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'subpop_mode_shares.csv')
         )
     )
@@ -274,7 +284,7 @@ def test_plan_mode_share_score_zero():
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'mode_shares.csv')
         )
     )
@@ -288,7 +298,7 @@ def test_plan_mode_share_by_attribute_score_zero():
         config,
         mode='all',
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'subpop_mode_shares.csv')
         )
     )
@@ -301,7 +311,7 @@ def test_plan_mode_counts_score_zero():
     test_bm = benchmark(
         config,
         mode='all',
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'mode_plan_counts.csv')
         )
     )
@@ -315,7 +325,7 @@ def test_plan_mode_counts_by_attribute_score_zero():
         config,
         mode='all',
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'subpop_mode_plan_counts.csv')
         )
     )
@@ -329,12 +339,13 @@ def test_plan_activity_mode_share_score_zero():
         config,
         mode='all',
         destination_activity_filters=["work"],
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'mode_shares.csv')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_fixtures', 'mode_shares_work.csv')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
+
 
 def test_plan_activity_subpopulaion_mode_share_score_zero():
     benchmark = benchmarking.PlanActivityModeSharesComparison
@@ -343,7 +354,7 @@ def test_plan_activity_subpopulaion_mode_share_score_zero():
         mode='all',
         destination_activity_filters=["work"],
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'subpop_mode_shares.csv')
         )
     )
@@ -357,7 +368,7 @@ def test_plan_activity_mode_share_count_zero():
         config,
         mode='all',
         destination_activity_filters=["work"],
-        benchmark_data_path = get_benchmark_data(
+        benchmark_data_path=get_benchmark_data(
             os.path.join('test_fixtures', 'commuter_plan_mode_counts.csv')
         )
     )
@@ -372,12 +383,14 @@ def test_plan_activity_subpopulaion_mode_count_score_zero():
         mode='all',
         destination_activity_filters=["work"],
         groupby_person_attribute="subpopulation",
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'subpop_commuter_plan_mode_counts.csv')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_fixtures',
+                         'subpop_commuter_plan_mode_counts.csv')
         )
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
+
 
 def test_input_plan_comparison_trip_start_zero():
     # input plan comparisons self-build benchmark_data_path, do not require separate test classes
@@ -389,6 +402,7 @@ def test_input_plan_comparison_trip_start_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
+
 def test_input_plan_comparison_trip_duration_zero():
     # input plan comparisons self-build benchmark_data_path, do not require separate test classes
     benchmark = benchmarking.InputPlanComparisonTripDuration
@@ -398,6 +412,7 @@ def test_input_plan_comparison_trip_duration_zero():
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
+
 
 def test_input_plan_comparison_activity_start_zero():
     # input plan comparisons self-build benchmark_data_path, do not require separate test classes
@@ -409,6 +424,7 @@ def test_input_plan_comparison_activity_start_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
+
 def test_input_plan_comparison_activity_duration_zero():
     # input plan comparisons self-build benchmark_data_path, do not require separate test classes
     benchmark = benchmarking.InputPlanComparisonActivityDuration
@@ -419,31 +435,33 @@ def test_input_plan_comparison_activity_duration_zero():
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
+
 @pytest.fixture
 def input_mode_table():
     data = StringIO("""
-        ,agent,seq,mode
+        ,agent_id,seq,mode
         0,fred,1,bike
         1,fred,2,bike
         2,fred,3,walk
         3,chris,1,car
         4,chris,2,car
         """
-    )
+                    )
 
     return data
+
 
 @pytest.fixture
 def output_mode_table():
     data = StringIO("""
-        ,agent,seq,mode
+        ,agent_id,seq,mode
         0,fred,1,walk
         1,fred,2,walk
         2,fred,3,bike
         3,chris,1,car
         4,chris,2,car
         """
-    )
+                    )
 
     return data
 
@@ -464,12 +482,12 @@ def test_input_mode_comparison_scores(input_mode_table, output_mode_table):
 def test_euclid_distance_comparison_score_zero_filepath():
     benchmark = benchmarking.EuclideanDistanceBreakdownComparison
     benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv')
-        )
+        os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_all.csv')
+    )
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = benchmark_data_path
+        benchmark_data_path=benchmark_data_path
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
@@ -478,12 +496,13 @@ def test_euclid_distance_comparison_score_zero_filepath():
 def test_mode_euclid_distance_comparison_score_zero_filepath():
     benchmark = benchmarking.EuclideanDistanceModeBreakdownComparison
     benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'trip_euclid_distance_breakdown_mode.csv')
-        )
+        os.path.join('test_fixtures',
+                     'trip_euclid_distance_breakdown_mode.csv')
+    )
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = benchmark_data_path
+        benchmark_data_path=benchmark_data_path
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
@@ -492,12 +511,12 @@ def test_mode_euclid_distance_comparison_score_zero_filepath():
 def test_duration_comparison_score_zero_filepath():
     benchmark = benchmarking.DurationBreakdownComparison
     benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv')
-        )
+        os.path.join('test_fixtures', 'trip_duration_breakdown_all.csv')
+    )
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = benchmark_data_path
+        benchmark_data_path=benchmark_data_path
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
@@ -506,12 +525,12 @@ def test_duration_comparison_score_zero_filepath():
 def test_mode_duration_comparison_score_zero_filepath():
     benchmark = benchmarking.DurationModeBreakdownComparison
     benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'trip_duration_breakdown_mode.csv')
-        )
+        os.path.join('test_fixtures', 'trip_duration_breakdown_mode.csv')
+    )
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = benchmark_data_path
+        benchmark_data_path=benchmark_data_path
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
@@ -520,17 +539,19 @@ def test_mode_duration_comparison_score_zero_filepath():
 def test_destination_act_duration_comparison_score_zero_filepath():
     benchmark = benchmarking.DurationDestinationActivityBreakdownComparison
     benchmark_data_path = get_benchmark_data(
-            os.path.join('test_fixtures', 'trip_duration_breakdown_d_act.csv')
-        )
+        os.path.join('test_fixtures', 'trip_duration_breakdown_d_act.csv')
+    )
     test_bm = benchmark(
         config,
         'all',
-        benchmark_data_path = benchmark_data_path
+        benchmark_data_path=benchmark_data_path
     )
     score = test_bm.build({}, write_path=test_outputs)
     assert score['mse'] == 0
 
 # Config
+
+
 @pytest.fixture
 def test_config():
     config_path = os.path.join(test_dir, 'test_xml_scenario.toml')
@@ -538,9 +559,11 @@ def test_config():
     assert config
     return config
 
+
 @pytest.fixture
 def test_config_dictionary():
-    config_dictionary_path = os.path.join(test_dir, 'test_xml_scenario_dictionary.toml')
+    config_dictionary_path = os.path.join(
+        test_dir, 'test_xml_scenario_dictionary.toml')
     config_dictionary = Config(config_dictionary_path)
     assert config_dictionary
     return config_dictionary
@@ -566,7 +589,8 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
     event_workstation = EventHandlerWorkStation(test_config)
     event_workstation.connect(managers=None, suppliers=[input_workstation])
     tool = event_workstation.tools['link_vehicle_counts']
-    event_workstation.resources['link_vehicle_counts'] = tool(test_config, 'all')
+    event_workstation.resources['link_vehicle_counts'] = tool(
+        test_config, 'all')
     event_workstation.build(write_path=test_outputs)
 
     plan_workstation = PlanHandlerWorkStation(test_config)
@@ -576,13 +600,15 @@ def test_benchmark_workstation_with_link_bms(test_config, test_paths):
     plan_workstation.build(write_path=test_outputs)
 
     bm_workstation = benchmarking.BenchmarkWorkStation(test_config)
-    bm_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
+    bm_workstation.connect(managers=None, suppliers=[
+                           event_workstation, plan_workstation])
 
     bm_workstation.resources['link_counter_comparison:car'] = bm_workstation.tools['link_counter_comparison'](
         config=test_config,
         mode='car',
-        benchmark_data_path = get_benchmark_data(
-            os.path.join('test_town', 'test_town_cordon', 'test_link_counter.json')
+        benchmark_data_path=get_benchmark_data(
+            os.path.join('test_town', 'test_town_cordon',
+                         'test_link_counter.json')
         )
     )
 
@@ -603,11 +629,15 @@ def test_benchmark_duration_workstation_dictionary(test_config_dictionary, test_
     plan_workstation.connect(managers=None, suppliers=[input_workstation])
 
     bm_workstation = benchmarking.BenchmarkWorkStation(test_config_dictionary)
-    bm_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation])
+    bm_workstation.connect(managers=None, suppliers=[
+                           event_workstation, plan_workstation])
 
-    benchmarking_workstation = benchmarking.BenchmarkWorkStation(test_config_dictionary)
-    benchmarking_workstation.connect(managers=None, suppliers=[event_workstation, plan_workstation, bm_workstation])
+    benchmarking_workstation = benchmarking.BenchmarkWorkStation(
+        test_config_dictionary)
+    benchmarking_workstation.connect(managers=None, suppliers=[
+                                     event_workstation, plan_workstation, bm_workstation])
     tool = benchmarking_workstation.tools['duration_breakdown_comparison']
-    benchmarking_workstation.resources['duration_breakown_comparison'] = tool(test_config_dictionary, 'all', benchmark_data_path='./tests/test_outputs/trip_duration_breakdown_all.csv')
+    benchmarking_workstation.resources['duration_breakown_comparison'] = tool(
+        test_config_dictionary, 'all', benchmark_data_path='./tests/test_outputs/trip_duration_breakdown_all.csv')
 
     benchmarking_workstation.build(write_path=test_outputs)
