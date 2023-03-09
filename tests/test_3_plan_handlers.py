@@ -1,3 +1,7 @@
+from elara.plan_handlers import PlanHandlerWorkStation
+from elara import plan_handlers
+from elara.inputs import InputsWorkStation
+from elara.config import Config, PathFinderWorkStation
 import sys
 import os
 from numpy.matrixlib import defmatrix
@@ -9,10 +13,6 @@ from datetime import datetime, timedelta
 
 
 sys.path.append(os.path.abspath('../elara'))
-from elara.config import Config, PathFinderWorkStation
-from elara.inputs import InputsWorkStation
-from elara import plan_handlers
-from elara.plan_handlers import PlanHandlerWorkStation
 
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 test_inputs = os.path.join(test_dir, "test_intermediate_data")
@@ -51,6 +51,7 @@ def test_config_v12():
     config = Config(config_path)
     assert config
     return config
+
 
 @pytest.fixture
 def test_config_v13():
@@ -122,11 +123,11 @@ def base_handler_v12(test_config_v12, input_manager):
 
 
 mode_distances = [
-    ({'a':2, 'b':0.5}, 'a'),
-    ({'a':2, 'b':2}, 'a'),
-    ({'a':2}, 'a'),
-    ({'a':2, 'b':-1}, 'a'),
-    ({'transit_walk':2, 'b':1}, 'b'),
+    ({'a': 2, 'b': 0.5}, 'a'),
+    ({'a': 2, 'b': 2}, 'a'),
+    ({'a': 2}, 'a'),
+    ({'a': 2, 'b': -1}, 'a'),
+    ({'transit_walk': 2, 'b': 1}, 'b'),
     ({None: 1}, None),
 ]
 
@@ -138,7 +139,7 @@ def get_furthest_mode(modes, mode):
 
 def test_extract_mode_from_v11_route_elem(base_handler):
     class Resource:
-        route_to_mode_map = {"a":"bus"}
+        route_to_mode_map = {"a": "bus"}
     base_handler.resources['transit_schedule'] = Resource()
     string = """
     <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42"
@@ -150,7 +151,7 @@ def test_extract_mode_from_v11_route_elem(base_handler):
 
 def test_extract_routeid_from_v12_route_elem(base_handler):
     class Resource:
-        route_to_mode_map = {"a":"bus"}
+        route_to_mode_map = {"a": "bus"}
     base_handler.resources['transit_schedule'] = Resource()
     string = """
     <route type="default_pt" start_link="1"
@@ -164,7 +165,7 @@ def test_extract_routeid_from_v12_route_elem(base_handler):
 
 def test_extract_mode_from_route_elem_v11(base_handler):
     class Resource:
-        route_to_mode_map = {"a":"bus"}
+        route_to_mode_map = {"a": "bus"}
     base_handler.resources['transit_schedule'] = Resource()
     string = """
     <route type="experimentalPt1" start_link="1-2" end_link="3-4" trav_time="00:43:42"
@@ -176,7 +177,7 @@ def test_extract_mode_from_route_elem_v11(base_handler):
 
 def test_extract_mode_from_route_elem_v12(base_handler_v12):
     class Resource:
-        route_to_mode_map = {"a":"bus"}
+        route_to_mode_map = {"a": "bus"}
     base_handler_v12.resources['transit_schedule'] = Resource()
     string = """
     <route type="default_pt" start_link="1"
@@ -227,14 +228,16 @@ def test_utility_handler_process_single_plan(utility_handler, person_single_plan
     assert len(utility_handler.utility_log) == 0
     utility_handler.process_plans(person_single_plan_elem)
     assert len(utility_handler.utility_log) == 1
-    assert utility_handler.utility_log.chunk == [{'agent': 'test1','score': '10'}]
+    assert utility_handler.utility_log.chunk == [
+        {'agent': 'test1', 'score': '10'}]
 
 
 def test_utility_handler_process_multi_plan(utility_handler, person_plans_elem):
     assert len(utility_handler.utility_log) == 0
     utility_handler.process_plans(person_plans_elem)
     assert len(utility_handler.utility_log) == 1
-    assert utility_handler.utility_log.chunk == [{'agent': 'test2','score': '10'}]
+    assert utility_handler.utility_log.chunk == [
+        {'agent': 'test2', 'score': '10'}]
 
 
 def test_utility_handler_process_plans(utility_handler, person_single_plan_elem, person_plans_elem):
@@ -242,7 +245,8 @@ def test_utility_handler_process_plans(utility_handler, person_single_plan_elem,
     utility_handler.process_plans(person_single_plan_elem)
     utility_handler.process_plans(person_plans_elem)
     assert len(utility_handler.utility_log) == 2
-    assert utility_handler.utility_log.chunk == [{'agent': 'test1','score': '10'}, {'agent': 'test2','score': '10'}]
+    assert utility_handler.utility_log.chunk == [
+        {'agent': 'test1', 'score': '10'}, {'agent': 'test2', 'score': '10'}]
 
 
 ### Leg Log Handler ###
@@ -268,6 +272,7 @@ non_wrapping_test_matsim_time_data = [
     (['24:00:00'], '2-00:00:00'),
 ]
 
+
 @pytest.mark.parametrize("times,final_string", non_wrapping_test_matsim_time_data)
 def test_matsim_time_to_datetime(times, final_string):
     current_dt = None
@@ -277,7 +282,7 @@ def test_matsim_time_to_datetime(times, final_string):
             new_time_str,
             base_year=1900,
             base_month=1,
-            )
+        )
     assert isinstance(current_dt, datetime)
     assert current_dt == datetime.strptime(f"{final_string}", '%d-%H:%M:%S')
 
@@ -292,18 +297,23 @@ test_durations_data = [
         timedelta(hours=1), datetime(year=2020, month=4, day=1, hour=0)
     ),
     (
-        datetime(year=2020, month=4, day=1, hour=1), datetime(year=2020, month=4, day=1, hour=1),
+        datetime(year=2020, month=4, day=1, hour=1), datetime(
+            year=2020, month=4, day=1, hour=1),
         timedelta(hours=0), datetime(year=2020, month=4, day=1, hour=1)
     ),
     (
-        datetime(year=2020, month=4, day=1, hour=1), datetime(year=2020, month=4, day=1, hour=2),
+        datetime(year=2020, month=4, day=1, hour=1), datetime(
+            year=2020, month=4, day=1, hour=2),
         timedelta(hours=1), datetime(year=2020, month=4, day=1, hour=1)
     ),
     (
-        datetime(year=2020, month=4, day=1, hour=2), datetime(year=2020, month=4, day=1, hour=1),
+        datetime(year=2020, month=4, day=1, hour=2), datetime(
+            year=2020, month=4, day=1, hour=1),
         timedelta(hours=-1), datetime(year=2020, month=4, day=1, hour=2)
     ),
 ]
+
+
 @pytest.mark.parametrize("start,end,duration,start_time", test_durations_data)
 def test_safe_duration(start, end, duration, start_time):
     d, st = plan_handlers.safe_duration(start, end)
@@ -312,15 +322,17 @@ def test_safe_duration(start, end, duration, start_time):
 
 
 test_distance_data = [
-    (0,0,0,0,0),
-    (1,1,1,1,0),
-    (0,0,3,4,5),
-    (3,4,0,0,5),
-    (3,0,0,-4,5)
+    (0, 0, 0, 0, 0),
+    (1, 1, 1, 1, 0),
+    (0, 0, 3, 4, 5),
+    (3, 4, 0, 0, 5),
+    (3, 0, 0, -4, 5)
 ]
+
+
 @pytest.mark.parametrize("x1,y1,x2,y2,dist", test_distance_data)
-def test_distance(x1,y1,x2,y2,dist):
-    assert plan_handlers.distance(x1,y1,x2,y2) == dist
+def test_distance(x1, y1, x2, y2, dist):
+    assert plan_handlers.distance(x1, y1, x2, y2) == dist
 
 
 # Normal Case
@@ -427,6 +439,7 @@ def test_finalised_logs_bad_plans(agent_leg_log_handler_finalised_bad_plans):
 
 ### Toll Log Handler ###
 
+
 @pytest.fixture
 def toll_log_handler(test_config, input_manager):
     handler = plan_handlers.AgentTollsPaidFromRPConfig(test_config, 'car')
@@ -436,7 +449,9 @@ def toll_log_handler(test_config, input_manager):
 
     return handler
 
-#paying single toll
+# paying single toll
+
+
 def test_toll_onelink(toll_log_handler):
     handler = toll_log_handler
 
@@ -456,9 +471,11 @@ def test_toll_onelink(toll_log_handler):
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert len(handler.toll_log) == 1
-    assert handler.toll_log.iloc[0]['toll']=='10.0'
+    assert handler.toll_log.iloc[0]['toll'] == '10.0'
 
-#using two adjacent toll links consecutively should only incur one charge
+# using two adjacent toll links consecutively should only incur one charge
+
+
 def test_toll_consecutivelinks(toll_log_handler):
     handler = toll_log_handler
 
@@ -478,9 +495,11 @@ def test_toll_consecutivelinks(toll_log_handler):
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert len(handler.toll_log) == 1
-    assert handler.toll_log.iloc[0]['toll']=='10.0'
+    assert handler.toll_log.iloc[0]['toll'] == '10.0'
 
-#using two adjacent toll links non-consecutively should incur charge twice
+# using two adjacent toll links non-consecutively should incur charge twice
+
+
 def test_toll_nonconsecutivelinks(toll_log_handler):
     handler = toll_log_handler
 
@@ -500,7 +519,9 @@ def test_toll_nonconsecutivelinks(toll_log_handler):
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert len(handler.toll_log) == 2
-    assert float(handler.toll_log.iloc[0]['toll'])+ float(handler.toll_log.iloc[1]['toll'])== 20
+    assert float(handler.toll_log.iloc[0]['toll']) + \
+        float(handler.toll_log.iloc[1]['toll']) == 20
+
 
 def test_toll_finalise(toll_log_handler):
     handler = toll_log_handler
@@ -522,6 +543,7 @@ def test_toll_finalise(toll_log_handler):
     handler.process_plans(person)
     handler.finalise()
     assert handler.results['tolls_paid_total_by_agent'].sum() == 20
+
 
 def test_toll_tagged(toll_log_handler):
     handler = toll_log_handler
@@ -581,9 +603,11 @@ def test_agent_trip_log_process_person(agent_trip_handler):
     assert handler.trips_log.chunk[0]["mode"] == "car"
 
     assert handler.activities_log.chunk[1]["start_s"] == 8*60*60 + 4
-    assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 4)
+    assert handler.activities_log.chunk[1]["duration_s"] == 17.5 * \
+        60*60 - (8*60*60 + 4)
     assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
     assert handler.activities_log.chunk[1]["act"] == "work"
+
 
 def test_agent_trip_log_process_pt_bus_person(agent_trip_handler):
     handler = agent_trip_handler
@@ -631,7 +655,8 @@ def test_agent_trip_log_process_pt_bus_person(agent_trip_handler):
     assert handler.trips_log.chunk[0]["mode"] == "bus"
 
     assert handler.activities_log.chunk[1]["start_s"] == 8*60*60 + 1.5*60*60
-    assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 1.5*60*60)
+    assert handler.activities_log.chunk[1]["duration_s"] == 17.5 * \
+        60*60 - (8*60*60 + 1.5*60*60)
     assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
     assert handler.activities_log.chunk[1]["act"] == "work"
 
@@ -682,7 +707,8 @@ def test_agent_trip_log_process_pt_rail_person(agent_trip_handler):
     assert handler.trips_log.chunk[0]["mode"] == "rail"
 
     assert handler.activities_log.chunk[1]["start_s"] == 8*60*60 + 1.5*60*60
-    assert handler.activities_log.chunk[1]["duration_s"] == 17.5*60*60 - (8*60*60 + 1.5*60*60)
+    assert handler.activities_log.chunk[1]["duration_s"] == 17.5 * \
+        60*60 - (8*60*60 + 1.5*60*60)
     assert handler.activities_log.chunk[1]["end_s"] == 17.5*60*60
     assert handler.activities_log.chunk[1]["act"] == "work"
 
@@ -821,7 +847,8 @@ def agent_distances_handler_car_mode(test_config, input_manager):
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
 
-    assert len(handler.agent_ids) == len(handler.resources['subpopulations'].map)
+    assert len(handler.agent_ids) == len(
+        handler.resources['subpopulations'].map)
     assert list(handler.agent_indices.keys()) == handler.agent_ids
 
     assert len(handler.ways) == len(handler.resources['osm_ways'].classes)
@@ -848,7 +875,8 @@ def test_agent_distances_handler_car_mode(agent_distances_handler_car_mode):
     assert np.sum(handler.distances[handler.agent_indices['chris']]) == 20400.0
 
     # class
-    assert np.sum(handler.distances[:, handler.ways_indices['trunk']]) == 30600.0
+    assert np.sum(
+        handler.distances[:, handler.ways_indices['trunk']]) == 30600.0
 
 
 @pytest.fixture
@@ -905,7 +933,8 @@ def test_trip_distances_handler_car_mode(trip_distances_handler_car_mode):
     assert sum([d['trunk'] for d in handler.distances_log.chunk]) == 30600
 
     # agent
-    assert sum([d['trunk'] for d in handler.distances_log.chunk if d['agent'] == 'chris']) == 20400.0
+    assert sum([d['trunk']
+               for d in handler.distances_log.chunk if d['agent_id'] == 'chris']) == 20400.0
 
 
 def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
@@ -919,13 +948,14 @@ def test_trip_distances_handler_finalised_car(trip_distances_handler_car_mode):
     results = pd.read_csv(path)
     assert len(results) == 10
     assert sum(results.trunk) == 30600
-    assert sum(results.loc[results.agent == 'chris'].trunk) == 20400
+    assert sum(results.loc[results.agent_id == 'chris'].trunk) == 20400
 
 
 ### Trip Modeshare Handlers ###
 @pytest.fixture
 def test_trip_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.TripModes(test_config, mode='all', groupby_person_attribute="subpopulation")
+    handler = plan_handlers.TripModes(
+        test_config, mode='all', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1126,7 +1156,8 @@ def test_trip_mode_share_without_attribute_slice(test_trip_modeshare_handler_no_
 ### Modeshare Handler With Attribute Slices###
 @pytest.fixture
 def test_trip_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripModes(test_config_v12, mode='all', groupby_person_attribute="age")
+    handler = plan_handlers.TripModes(
+        test_config_v12, mode='all', groupby_person_attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1191,7 +1222,9 @@ def test_trip_mode_share_without_attribute_slice(test_trip_modeshare_handler_age
     person = etree.fromstring(string)
     handler.process_plans(person)
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+    assert np.sum(
+        handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+
 
 def test_trip_handler_test_data(test_trip_modeshare_handler):
     handler = test_trip_modeshare_handler
@@ -1209,8 +1242,10 @@ def test_trip_handler_test_data(test_trip_modeshare_handler):
     assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 0
 
     # class
-    assert np.sum(handler.mode_counts[:, handler.class_indices['rich'], :]) == 2
-    assert np.sum(handler.mode_counts[:, handler.class_indices['poor'], :]) == 8
+    assert np.sum(
+        handler.mode_counts[:, handler.class_indices['rich'], :]) == 2
+    assert np.sum(
+        handler.mode_counts[:, handler.class_indices['poor'], :]) == 8
     # assert np.sum(handler.mode_counts[:, handler.class_indices['not_applicable'], :, :]) == 0
 
     # time
@@ -1234,7 +1269,8 @@ def test_finalised_trip_mode_counts(test_trip_modeshares_handler_finalised):
     for name, result in handler.results.items():
         if 'counts' in name:
             if isinstance(result, pd.DataFrame):
-                assert result["count"].sum() == 10 / handler.config.scale_factor
+                assert result["count"].sum() == 10 / \
+                    handler.config.scale_factor
             else:
                 assert result.sum() == 10 / handler.config.scale_factor
 
@@ -1248,7 +1284,8 @@ def test_finalised_trip_mode_counts(test_trip_modeshares_handler_finalised):
 ### TripDestinationModeShare Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_trip_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
+    handler = plan_handlers.TripActivityModes(
+        test_config_v12, mode='all', destination_activity_filters=["work_a", "work_b"])
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1266,7 +1303,8 @@ def test_trip_activity_modeshare_handler_without_attribute_slice(test_config_v12
 
 @pytest.fixture
 def test_trip_pt_interaction_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["pt interaction"])
+    handler = plan_handlers.TripActivityModes(
+        test_config_v12, mode='all', destination_activity_filters=["pt interaction"])
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1426,6 +1464,7 @@ def test_trip_activity_mode_share_without_attribute_slice_with_activities_comple
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
     assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 3
 
+
 def test_trip_activity_mode_share_without_attribute_slice_with_activities_pt_interaction(test_trip_pt_interaction_modeshare_handler_without_attribute_slice):
     handler = test_trip_pt_interaction_modeshare_handler_without_attribute_slice
 
@@ -1485,7 +1524,8 @@ def test_trip_activity_mode_share_without_attribute_slice_with_activities_pt_int
 
 @pytest.fixture
 def test_trip_work_and_education_activity_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.TripActivityModes(test_config, mode='all', groupby_person_attribute="subpopulation", destination_activity_filters=["work", "education"])
+    handler = plan_handlers.TripActivityModes(
+        test_config, mode='all', groupby_person_attribute="subpopulation", destination_activity_filters=["work", "education"])
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1574,9 +1614,9 @@ def test_trip_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
     handler = plan_handlers.TripActivityModes(
         test_config_v12,
         mode='all',
-        destination_activity_filters = ["work_a","work_b"],
+        destination_activity_filters=["work_a", "work_b"],
         groupby_person_attribute="age"
-        )
+    )
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1592,6 +1632,7 @@ def test_trip_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
     assert handler.mode_counts.shape == (6, 3, 24)
 
     return handler
+
 
 def test_trip_activity_mode_share_with_attribute_slice(test_trip_activity_modeshare_handler_age_attribute_slice):
     handler = test_trip_activity_modeshare_handler_age_attribute_slice
@@ -1641,7 +1682,8 @@ def test_trip_activity_mode_share_with_attribute_slice(test_trip_activity_modesh
     handler.process_plans(person)
     # mode
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+    assert np.sum(
+        handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
 
     # class
     assert np.sum(handler.mode_counts[:, handler.class_indices['yes'], :]) == 1
@@ -1702,6 +1744,7 @@ def test_trip_activity_modeshare_plan_handler_finalised(test_trip_activity_modes
     handler.finalise()
     return handler
 
+
 def test_trip_activity_finalised_mode_counts(test_trip_activity_modeshare_plan_handler_finalised):
     handler = test_trip_activity_modeshare_plan_handler_finalised
     for name, result in handler.results.items():
@@ -1721,7 +1764,8 @@ def test_trip_activity_finalised_mode_counts(test_trip_activity_modeshare_plan_h
 ### Plan Modeshare Handlers ###
 @pytest.fixture
 def test_plan_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.PlanModes(test_config, mode='all', groupby_person_attribute="subpopulation")
+    handler = plan_handlers.PlanModes(
+        test_config, mode='all', groupby_person_attribute="subpopulation")
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -1935,7 +1979,8 @@ def test_plan_mode_share_without_attribute_slice(test_plan_modeshare_handler_no_
 ### Modeshare Handler With Attribute Slices###
 @pytest.fixture
 def test_plan_modeshare_handler_age_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripModes(test_config_v12, mode='all', groupby_person_attribute="age")
+    handler = plan_handlers.TripModes(
+        test_config_v12, mode='all', groupby_person_attribute="age")
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -1994,7 +2039,9 @@ def test_plan_mode_share_without_attribute_slice(test_plan_modeshare_handler_age
     person = etree.fromstring(string)
     handler.process_plans(person)
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+    assert np.sum(
+        handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+
 
 def test_plan_handler_test_data(test_plan_modeshare_handler):
     handler = test_plan_modeshare_handler
@@ -2012,8 +2059,10 @@ def test_plan_handler_test_data(test_plan_modeshare_handler):
     assert np.sum(handler.mode_counts[handler.mode_indices['walk']]) == 0
 
     # class
-    assert np.sum(handler.mode_counts[:, handler.class_indices['rich'], :]) == 1
-    assert np.sum(handler.mode_counts[:, handler.class_indices['poor'], :]) == 4
+    assert np.sum(
+        handler.mode_counts[:, handler.class_indices['rich'], :]) == 1
+    assert np.sum(
+        handler.mode_counts[:, handler.class_indices['poor'], :]) == 4
 
 
 @pytest.fixture
@@ -2046,7 +2095,8 @@ def test_finalised_plan_mode_counts(test_plan_handler_finalised):
 ### TripDestinationModeShare Modeshare Handler No Attribute Slices###
 @pytest.fixture
 def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12, input_manager_v12):
-    handler = plan_handlers.TripActivityModes(test_config_v12, mode='all', destination_activity_filters = ["work_a","work_b"])
+    handler = plan_handlers.TripActivityModes(
+        test_config_v12, mode='all', destination_activity_filters=["work_a", "work_b"])
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -2060,6 +2110,7 @@ def test_plan_activity_modeshare_handler_without_attribute_slice(test_config_v12
     assert handler.mode_counts.shape == (6, 1, 24)
 
     return handler
+
 
 def test_activity_plan_mode_share_without_attribute_slice_with_activities_simple(test_plan_activity_modeshare_handler_without_attribute_slice):
     handler = test_plan_activity_modeshare_handler_without_attribute_slice
@@ -2086,6 +2137,7 @@ def test_activity_plan_mode_share_without_attribute_slice_with_activities_simple
     person = etree.fromstring(string)
     handler.process_plans(person)
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 1
+
 
 def test_activity_plan_mode_share_without_attribute_slice_with_activities_complex(test_plan_activity_modeshare_handler_without_attribute_slice):
     handler = test_plan_activity_modeshare_handler_without_attribute_slice
@@ -2207,7 +2259,8 @@ def test_activity_plan_mode_share_without_attribute_slice_with_activities_comple
 
 @pytest.fixture
 def test_work_and_education_plan_activity_modeshare_handler(test_config, input_manager):
-    handler = plan_handlers.TripActivityModes(test_config, mode='all', groupby_person_attribute="subpopulation", destination_activity_filters=["work", "education"])
+    handler = plan_handlers.TripActivityModes(
+        test_config, mode='all', groupby_person_attribute="subpopulation", destination_activity_filters=["work", "education"])
 
     resources = input_manager.resources
     handler.build(resources, write_path=test_outputs)
@@ -2296,9 +2349,9 @@ def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
     handler = plan_handlers.PlanActivityModes(
         test_config_v12,
         mode='all',
-        destination_activity_filters = ["work_a","work_b"],
+        destination_activity_filters=["work_a", "work_b"],
         groupby_person_attribute="age"
-        )
+    )
 
     resources = input_manager_v12.resources
     handler.build(resources, write_path=test_outputs)
@@ -2314,6 +2367,7 @@ def test_plan_activity_modeshare_handler_age_attribute_slice(test_config_v12, in
     assert handler.mode_counts.shape == (6, 3, 24)
 
     return handler
+
 
 def test_plan_activity_mode_share_with_attribute_slice(test_plan_activity_modeshare_handler_age_attribute_slice):
     handler = test_plan_activity_modeshare_handler_age_attribute_slice
@@ -2363,7 +2417,8 @@ def test_plan_activity_mode_share_with_attribute_slice(test_plan_activity_modesh
     handler.process_plans(person)
     # mode
     assert np.sum(handler.mode_counts[handler.mode_indices['car']]) == 2
-    assert np.sum(handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
+    assert np.sum(
+        handler.mode_counts[handler.mode_indices['car'], handler.class_indices['yes']]) == 1
 
     # class
     assert np.sum(handler.mode_counts[:, handler.class_indices['yes'], :]) == 1
@@ -2432,6 +2487,7 @@ def test_plan_activity_modeshare_plan_handler_finalised(test_plan_activity_modes
     handler.finalise()
     return handler
 
+
 def test_plan_activity_finalised_mode_counts(test_plan_activity_modeshare_plan_handler_finalised):
     handler = test_plan_activity_modeshare_plan_handler_finalised
     for name, result in handler.results.items():
@@ -2448,6 +2504,8 @@ def test_plan_activity_finalised_mode_counts(test_plan_activity_modeshare_plan_h
                 assert result.sum() == 1
 
 # Plan Handler Manager
+
+
 def test_load_workstation_with_trip_modes(test_config, test_paths):
     input_workstation = InputsWorkStation(test_config)
     input_workstation.connect(managers=None, suppliers=[test_paths])
@@ -2463,7 +2521,7 @@ def test_load_workstation_with_trip_modes(test_config, test_paths):
         test_config,
         mode='all',
         groupby_person_attribute="subpopulation"
-        )
+    )
 
     # detination based mode_share
     tool = plan_workstation.tools['trip_activity_modes']
@@ -2473,29 +2531,39 @@ def test_load_workstation_with_trip_modes(test_config, test_paths):
         destination_activity_filters=["work"]
     )
 
-     # detination and attribute based mode_share
+    # detination and attribute based mode_share
     tool = plan_workstation.tools['trip_activity_modes']
     plan_workstation.resources['trip_activity_modes'] = tool(
         test_config,
         'all',
         destination_activity_filters=["work"],
-        groupby_person_attribute = "subpopulation"
+        groupby_person_attribute="subpopulation"
     )
 
     plan_workstation.build(write_path=test_outputs)
 
-    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_detailed_shares.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_modes_all_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_modes_all_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_modes_all_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_modes_all_detailed_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_modes_all_shares.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_shares.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_detailed_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_activity_modes_all_work_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_activity_modes_all_work_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_activity_modes_all_work_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_activity_modes_all_work_detailed_shares.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_subpopulation_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_activity_modes_all_work_subpopulation_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_activity_modes_all_work_subpopulation_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_activity_modes_all_work_subpopulation_shares.csv"))
 
 
 def test_load_workstation_with_plan_modes(test_config, test_paths):
@@ -2513,7 +2581,7 @@ def test_load_workstation_with_plan_modes(test_config, test_paths):
         test_config,
         mode='all',
         groupby_person_attribute="subpopulation"
-        )
+    )
 
     # detination based mode_share
     tool = plan_workstation.tools['plan_activity_modes']
@@ -2523,29 +2591,39 @@ def test_load_workstation_with_plan_modes(test_config, test_paths):
         destination_activity_filters=["work"]
     )
 
-     # detination and attribute based mode_share
+    # detination and attribute based mode_share
     tool = plan_workstation.tools['plan_activity_modes']
     plan_workstation.resources['plan_activity_modes'] = tool(
         test_config,
         'all',
         destination_activity_filters=["work"],
-        groupby_person_attribute = "subpopulation"
+        groupby_person_attribute="subpopulation"
     )
 
     plan_workstation.build(write_path=test_outputs)
 
-    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_detailed_shares.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_modes_all_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_modes_all_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_modes_all_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_modes_all_detailed_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_modes_all_shares.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_detailed_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_shares.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_detailed_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_activity_modes_all_work_detailed_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_activity_modes_all_work_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_activity_modes_all_work_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_activity_modes_all_work_detailed_shares.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_subpopulation_counts.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "plan_activity_modes_all_work_subpopulation_shares.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_activity_modes_all_work_subpopulation_counts.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "plan_activity_modes_all_work_subpopulation_shares.csv"))
 
 
 def test_load_workstation_with_logs(test_config, test_paths):
@@ -2561,21 +2639,25 @@ def test_load_workstation_with_logs(test_config, test_paths):
     plan_workstation.resources['leg_logs'] = plan_workstation.tools['leg_logs'](
         test_config,
         mode='all',
-        )
+    )
 
     # trip_logs
     plan_workstation.resources['trip_logs'] = plan_workstation.tools['trip_logs'](
         test_config,
         mode='all',
-        )
+    )
 
     plan_workstation.build(write_path=test_outputs)
 
     assert os.path.exists(os.path.join(test_outputs, "leg_logs_all_legs.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "leg_logs_all_activities.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "leg_logs_all_activities.csv"))
 
-    assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_trips.csv"))
-    assert os.path.exists(os.path.join(test_outputs, "trip_logs_all_activities.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_logs_all_trips.csv"))
+    assert os.path.exists(os.path.join(
+        test_outputs, "trip_logs_all_activities.csv"))
+
 
 def test_non_zero_pt_interaction_legs(agent_leg_log_handler):
     """ PT interaction activity has non-zero duration """
@@ -2614,6 +2696,7 @@ def test_non_zero_pt_interaction_legs(agent_leg_log_handler):
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert handler.legs_log.chunk[-1]['start_s'] == 63000
+
 
 def test_zero_pt_interaction_legs(agent_leg_log_handler):
     """ PT interaction activity has zero duration (not 'end_time' attribute in the 'pt interaction' activity ) """
@@ -2691,6 +2774,7 @@ def test_non_zero_pt_interaction_trips(agent_trip_handler):
     person = etree.fromstring(person)
     handler.process_plans(person)
     assert handler.trips_log.chunk[-1]['end_s'] == 63454
+
 
 def test_zero_pt_interaction_trips(agent_trip_handler):
     """ PT interaction activity has zero duration """
@@ -2770,6 +2854,7 @@ def test_non_zero_pt_interaction_plan(agent_plan_handler):
     assert len(handler.plans_log.chunk) == 1
     assert handler.plans_log.chunk[0]['act_duration'] == 22945
     assert handler.plans_log.chunk[0]['start'] == 28800
+
 
 def test_zero_pt_interaction_plan(agent_plan_handler):
     """ PT interaction activity has zero duration, plan logs """

@@ -1527,7 +1527,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
 
                             # set counter
                             trip_counter = {
-                                'agent': ident,
+                                'agent_id': ident,
                                 'subpop': attribute,
                                 'seq': trip_seq_idx
                             }
