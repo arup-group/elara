@@ -641,7 +641,7 @@ link_vehicle_speeds_comparison--am_freight = {modes = ["car"], benchmark_data_pa
 csv formatted as follows:
 
 ```
-id,8
+link_id,8
 1-5,9.5
 5-1,9.8
 ```
@@ -649,7 +649,7 @@ id,8
 or if `groupby_person_attributes` is being used:
 
 ```
-id,class,8
+link_id,class,8
 1-5,freight,9.5
 5-1,freight,9.8
 ```
@@ -659,7 +659,7 @@ Note that unrecognised or missing keys will be quietly ignored.
 Also note that the csv can contain multiple time slices but that each benchmark will only use one as per the `time_slice` option:
 
 ```
-id,class,8,17
+link_id,class,8,17
 1-5,freight,9.5,9.2
 5-1,freight,9.8,9.3
 ```
@@ -686,7 +686,7 @@ trip_durations_comparison = {benchmark_data_path = "./PATH.csv", mode_consistent
 csv formatted as follows:
 
 ```{csv}
-agent,seq,duration_s
+agent_id,seq,duration_s
 chris,1,454.0
 chris,2,463.0
 nick,1,4.0
@@ -699,7 +699,7 @@ Where `agent` is the agent unique identifier (sometimes refered to as `pid`) and
 If `mode_consistency` is set to `true` then a mode column should additionally be included:
 
 ```{csv}
-agent,seq,mode,duration_s
+agent_id,seq,mode,duration_s
 chris,1,car,454.0
 chris,2,car,463.0
 nick,1,car,4.0

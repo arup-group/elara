@@ -17,7 +17,8 @@ class PlanHandlerTool(Tool):
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
         self.logger = logging.getLogger(__name__)
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
     def build(
             self,
@@ -104,7 +105,8 @@ class PlanHandlerTool(Tool):
         """
         x = self.mode_indices[mode]
         y = self.class_indices[attribute_class]
-        z = floor(time / (86400.0 / self.config.time_periods)) % self.config.time_periods
+        z = floor(time / (86400.0 / self.config.time_periods)
+                  ) % self.config.time_periods
         return x, y, z
 
 
@@ -127,11 +129,13 @@ class ModeShares(PlanHandlerTool):
         :param config: Config
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode  # todo options not implemented
         self.groupby_person_attribute = groupby_person_attribute
-        self.destination_activity_filters = kwargs.get("destination_activity_filters")
+        self.destination_activity_filters = kwargs.get(
+            "destination_activity_filters")
 
         self.modes = None
         self.mode_indices = None
@@ -151,7 +155,8 @@ class ModeShares(PlanHandlerTool):
         """
         super().build(resources, write_path=write_path)
 
-        modes = list(set(self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
+        modes = list(set(
+            self.resources['output_config'].modes + self.resources['transit_schedule'].modes))
         self.logger.debug(f'modes = {modes}')
 
         # Initialise mode classes
@@ -159,18 +164,23 @@ class ModeShares(PlanHandlerTool):
 
         if self.groupby_person_attribute:
             self.attributes = self.resources["attributes"]
-            availability = self.attributes.attribute_key_availability(self.groupby_person_attribute)
-            self.logger.debug(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
+            availability = self.attributes.attribute_key_availability(
+                self.groupby_person_attribute)
+            self.logger.debug(
+                f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
             if availability < 1:
-                self.logger.warning(f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
-            found_attributes = self.resources['attributes'].attribute_values(self.groupby_person_attribute) | {None}
+                self.logger.warning(
+                    f'availability of attribute {self.groupby_person_attribute} = {availability*100}%')
+            found_attributes = self.resources['attributes'].attribute_values(
+                self.groupby_person_attribute) | {None}
         else:
             self.attributes = {}
             found_attributes = [None]
         self.logger.debug(f'attributes = {found_attributes}')
 
         # Initialise class classes
-        self.classes, self.class_indices = self.generate_id_map(found_attributes)
+        self.classes, self.class_indices = self.generate_id_map(
+            found_attributes)
 
         # Initialise mode count table
         self.mode_counts = np.zeros((
@@ -204,7 +214,8 @@ class ModeShares(PlanHandlerTool):
 
         # mode counts totals by attribute
         if self.groupby_person_attribute:
-            total_grouped_counts_df = counts_df.groupby(["mode", "class"]).sum()
+            total_grouped_counts_df = counts_df.groupby(
+                ["mode", "class"]).sum()
             key = f"{self.name}_{self.groupby_person_attribute}_counts"
             self.results[key] = total_grouped_counts_df
 
@@ -224,7 +235,8 @@ class ModeShares(PlanHandlerTool):
 
         # mode shares totals by attribute
         if self.groupby_person_attribute:
-            total_grouped_shares_df = shares_df.groupby(["mode", "class"]).sum()
+            total_grouped_shares_df = shares_df.groupby(
+                ["mode", "class"]).sum()
             key = f"{self.name}_{self.groupby_person_attribute}_shares"
             self.results[key] = total_grouped_shares_df
 
@@ -244,7 +256,8 @@ class TripModes(ModeShares):
             if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
-                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+                attribute_class = self.attributes.get(
+                    ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
                 trip_modes = {}
@@ -254,14 +267,17 @@ class TripModes(ModeShares):
                     if stage.tag == 'leg':
                         leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
-                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        mode = self.extract_mode_from_route_elem(
+                            leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
                         # ignore access and egress walk
-                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                        mode = {"egress_walk": "walk",
+                                "access_walk": "walk"}.get(mode, mode)
                         trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
-                        if stage.get('type') == 'pt interaction':  # ignore pt interaction activities
+                        # ignore pt interaction activities
+                        if stage.get('type') == 'pt interaction':
                             continue
 
                         # only add activity modes when there has been previous activity
@@ -277,7 +293,8 @@ class TripModes(ModeShares):
                             self.mode_counts[x, y, z] += 1
 
                         # update endtime for next activity
-                        end_time = convert_time_to_seconds(stage.get('end_time'))
+                        end_time = convert_time_to_seconds(
+                            stage.get('end_time'))
 
                         # reset modes
                         trip_modes = {}
@@ -292,7 +309,8 @@ class PlanModes(ModeShares):
             if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
-                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+                attribute_class = self.attributes.get(
+                    ident, {}).get(self.groupby_person_attribute)
 
                 plan_modes = {}
 
@@ -301,13 +319,15 @@ class PlanModes(ModeShares):
                     if stage.tag == 'leg':
                         leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
-                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        mode = self.extract_mode_from_route_elem(
+                            leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
                         # ignore access and egress walk
-                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                        mode = {"egress_walk": "walk",
+                                "access_walk": "walk"}.get(mode, mode)
                         plan_modes[mode] = plan_modes.get(mode, 0) + distance
 
-                if plan_modes: # stay-home agents have no legs/modes
+                if plan_modes:  # stay-home agents have no legs/modes
                     mode = self.get_furthest_mode(plan_modes)
                     x, y, z = self.mode_table_position(
                         mode,
@@ -323,16 +343,18 @@ class TripActivityModes(ModeShares):
     Extract mode shares for specified activities from plans.
     This handler takes a list of activities and computes the mode shares for each independent activity trip.
     """
+
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
         if not kwargs.get("destination_activity_filters"):
             raise UserWarning(
                 "You must configure 'destination_activity_filters' for the 'trip_activity_modes' tool, eg '['work']."
-                )
+            )
         if not isinstance(kwargs.get("destination_activity_filters"), list):
             raise UserWarning(
                 "You must configure 'destination_activity_filters' for the 'trip_activity_modes' tool as a list, eg '['work']."
-                )
+            )
 
     def process_plans(self, elem):
         """
@@ -351,7 +373,8 @@ class TripActivityModes(ModeShares):
             if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
-                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+                attribute_class = self.attributes.get(
+                    ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
                 trip_modes = {}
@@ -360,10 +383,12 @@ class TripActivityModes(ModeShares):
                     if stage.tag == 'leg':
                         leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
-                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        mode = self.extract_mode_from_route_elem(
+                            leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
                         # ignore access and egress walk
-                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                        mode = {"egress_walk": "walk",
+                                "access_walk": "walk"}.get(mode, mode)
                         trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
@@ -385,21 +410,23 @@ class TripActivityModes(ModeShares):
                         if not activity == 'pt interaction':  # reset modes at end of trip
                             trip_modes = {}
                             # update endtime for next activity
-                            end_time = convert_time_to_seconds(stage.get('end_time'))
+                            end_time = convert_time_to_seconds(
+                                stage.get('end_time'))
 
 
 class PlanActivityModes(ModeShares):
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
         if not kwargs.get("destination_activity_filters"):
             raise UserWarning(
                 "You must configure 'destination_activity_filters' for the 'plan_activity_modes' tool, eg '['work']."
-                )
+            )
         if not isinstance(kwargs.get("destination_activity_filters"), list):
             raise UserWarning(
                 "You must configure 'destination_activity_filters' for the 'plan_activity_modes' tool as a list, eg '['work']."
-                )
+            )
 
     def process_plans(self, elem):
         """
@@ -408,7 +435,8 @@ class PlanActivityModes(ModeShares):
             if plan.get('selected') != 'no':
 
                 ident = elem.get('id')
-                attribute_class = self.attributes.get(ident, {}).get(self.groupby_person_attribute)
+                attribute_class = self.attributes.get(
+                    ident, {}).get(self.groupby_person_attribute)
 
                 end_time = None
                 trip_modes = {}
@@ -418,10 +446,12 @@ class PlanActivityModes(ModeShares):
                     if stage.tag == 'leg':
                         leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
-                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                        mode = self.extract_mode_from_route_elem(
+                            leg_mode, route_elem)
                         distance = float(route_elem.get("distance", 0))
                         # ignore access and egress walk
-                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                        mode = {"egress_walk": "walk", "access_walk": "walk",
+                                "transit_walk": "walk"}.get(mode, mode)
                         trip_modes[mode] = trip_modes.get(mode, 0) + distance
 
                     elif stage.tag == 'activity':
@@ -433,13 +463,15 @@ class PlanActivityModes(ModeShares):
                             if activity in self.destination_activity_filters:
                                 # add modes and distances to plan_modes
                                 for mode, distance in trip_modes.items():
-                                    plan_modes[mode] = plan_modes.get(mode, 0) + distance
+                                    plan_modes[mode] = plan_modes.get(
+                                        mode, 0) + distance
                             # reset modes
                             trip_modes = {}
                         if not activity == 'pt interaction':  # reset modes at end of trip
                             trip_modes = {}
                             # update endtime for next activity
-                            end_time = convert_time_to_seconds(stage.get('end_time'))
+                            end_time = convert_time_to_seconds(
+                                stage.get('end_time'))
 
                 if plan_modes:
                     mode = self.get_furthest_mode(plan_modes)
@@ -474,11 +506,13 @@ class LegLogs(PlanHandlerTool):
         :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.groupby_person_attribute = groupby_person_attribute
-        self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
+        self.start_datetime = datetime.strptime(
+            "2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
         self.legs_log = None
@@ -499,11 +533,12 @@ class LegLogs(PlanHandlerTool):
         activity_csv_name = f"{self.name}_activities.csv"
         legs_csv_name = f"{self.name}_legs.csv"
 
-        self.activities_log = self.start_csv_chunk_writer(activity_csv_name, write_path=write_path, compression=self.compression)
-        self.legs_log = self.start_csv_chunk_writer(legs_csv_name, write_path=write_path, compression=self.compression)
+        self.activities_log = self.start_csv_chunk_writer(
+            activity_csv_name, write_path=write_path, compression=self.compression)
+        self.legs_log = self.start_csv_chunk_writer(
+            legs_csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
-
         """
         Build list of leg and activity logs (dicts) for each selected plan.
 
@@ -521,7 +556,8 @@ class LegLogs(PlanHandlerTool):
                 activities = []
                 legs = []
 
-                attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+                attribute = self.attributes.get(ident, {}).get(
+                    self.groupby_person_attribute, None)
 
                 leg_seq_idx = 0
                 trip_seq_idx = 0
@@ -545,19 +581,20 @@ class LegLogs(PlanHandlerTool):
                                 arrival_dt, end_time_str, self.logger, idx=ident
                             )
                         else:
-                            activity_end_dt = arrival_dt # zero duration for pt interactions without an end_time attribute
+                            # zero duration for pt interactions without an end_time attribute
+                            activity_end_dt = arrival_dt
 
                         if act_type != 'pt interaction':
                             trip_seq_idx += 1  # increment for a new trip idx
-                        
-                        duration = activity_end_dt - arrival_dt  
+
+                        duration = activity_end_dt - arrival_dt
 
                         x = stage.get('x')
                         y = stage.get('y')
 
                         activities.append(
                             {
-                                'agent': ident,
+                                'agent_id': ident,
                                 'attribute': attribute,
                                 'seq': act_seq_idx,
                                 'act': act_type,
@@ -578,21 +615,25 @@ class LegLogs(PlanHandlerTool):
 
                         leg_mode = stage.get('mode')
                         route_elem = stage.xpath('route')[0]
-                        mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
-                        mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                        mode = self.extract_mode_from_route_elem(
+                            leg_mode, route_elem)
+                        mode = {"egress_walk": "walk",
+                                "access_walk": "walk",
+                                "transit_walk": "walk"}.get(mode, mode)
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
-                        td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                        td = timedelta(
+                            hours=int(h), minutes=int(m), seconds=int(s))
 
                         arrival_dt = activity_end_dt + td
 
                         legs.append(
                             {
-                                'agent': ident,
+                                'agent_id': ident,
                                 'attribute': attribute,
                                 'seq': leg_seq_idx,
-                                'trip': trip_seq_idx,
+                                'trip_id': trip_seq_idx,
                                 'mode': mode,
                                 'ox': x,
                                 'oy': y,
@@ -666,11 +707,13 @@ class TripLogs(PlanHandlerTool):
         :param attributes: str, attribute key defaults to 'subpopulation'
         """
 
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.groupby_person_attribute = groupby_person_attribute
-        self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
+        self.start_datetime = datetime.strptime(
+            "2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.activities_log = None
         self.trips_log = None
@@ -691,11 +734,12 @@ class TripLogs(PlanHandlerTool):
         activity_csv_name = f"{self.name}_activities.csv"
         trips_csv_name = f"{self.name}_trips.csv"
 
-        self.activities_log = self.start_csv_chunk_writer(activity_csv_name, write_path=write_path, compression=self.compression)
-        self.trips_log = self.start_csv_chunk_writer(trips_csv_name, write_path=write_path, compression=self.compression)
+        self.activities_log = self.start_csv_chunk_writer(
+            activity_csv_name, write_path=write_path, compression=self.compression)
+        self.trips_log = self.start_csv_chunk_writer(
+            trips_csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
-
         """
         Build list of trip and activity logs (dicts) for each selected plan.
 
@@ -708,7 +752,8 @@ class TripLogs(PlanHandlerTool):
 
         for plan in elem.xpath(".//plan"):
 
-            attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+            attribute = self.attributes.get(ident, {}).get(
+                self.groupby_person_attribute, None)
 
             if plan.get('selected') != 'no':
 
@@ -716,7 +761,8 @@ class TripLogs(PlanHandlerTool):
                 if not plan[0].tag == 'activity':
                     raise UserWarning('Plan does not start with activity.')
                 if plan[0].get('type') == 'pt interaction':
-                    raise UserWarning('Plan cannot start with activity type "pt interaction".')
+                    raise UserWarning(
+                        'Plan cannot start with activity type "pt interaction".')
 
                 activities = []
                 trips = []
@@ -756,7 +802,7 @@ class TripLogs(PlanHandlerTool):
 
                                 trips.append(
                                     {
-                                        'agent': ident,
+                                        'agent_id': ident,
                                         'attribute': attribute,
                                         'seq': act_seq_idx-1,
                                         'mode': self.get_furthest_mode(modes),
@@ -783,7 +829,7 @@ class TripLogs(PlanHandlerTool):
 
                             activities.append(
                                 {
-                                    'agent': ident,
+                                    'agent_id': ident,
                                     'attribute': attribute,
                                     'seq': act_seq_idx,
                                     'act': act_type,
@@ -803,7 +849,7 @@ class TripLogs(PlanHandlerTool):
                             activity_start_dt = activity_end_dt
 
                         # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
-                        # then advance the next activity start time accordingly   
+                        # then advance the next activity start time accordingly
                         elif stage.get('end_time'):
                             end_time_str = stage.get('end_time')
 
@@ -823,9 +869,12 @@ class TripLogs(PlanHandlerTool):
 
                             distance = float(route_elem.get("distance", 0))
 
-                            mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+                            mode = self.extract_mode_from_route_elem(
+                                leg_mode, route_elem)
 
-                            mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)
+                            mode = {"egress_walk": "walk",
+                                    "access_walk": "walk",
+                                    "transit_walk": "walk"}.get(mode, mode)
                             trip_distance += distance
                         else:  # use leg info
                             mode = leg_mode
@@ -836,7 +885,8 @@ class TripLogs(PlanHandlerTool):
 
                         trav_time = stage.get('trav_time')
                         h, m, s = trav_time.split(":")
-                        td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                        td = timedelta(
+                            hours=int(h), minutes=int(m), seconds=int(s))
                         activity_start_dt += td
 
                 self.activities_log.add(activities)
@@ -877,7 +927,8 @@ class UtilityLogs(PlanHandlerTool):
         :param mode: str, mode option
         """
 
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.utility_log = None
@@ -894,10 +945,10 @@ class UtilityLogs(PlanHandlerTool):
 
         utility_csv_name = f"{self.name}.csv"
 
-        self.utility_log = self.start_csv_chunk_writer(utility_csv_name, write_path=write_path, compression=self.compression)
+        self.utility_log = self.start_csv_chunk_writer(
+            utility_csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
-
         """
         Build list of the utility of the selected plan for each agent.
 
@@ -946,7 +997,8 @@ class PlanLogs(PlanHandlerTool):
         :param mode: str, mode option
         """
 
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.groupby_person_attribute = groupby_person_attribute
@@ -968,10 +1020,10 @@ class PlanLogs(PlanHandlerTool):
         self.attributes = self.resources["attributes"]
 
         csv_name = f"{self.name}.csv"
-        self.plans_log = self.start_csv_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
+        self.plans_log = self.start_csv_chunk_writer(
+            csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
-
         """
         Build list of leg logs (dicts) for each selected plan.
 
@@ -982,7 +1034,8 @@ class PlanLogs(PlanHandlerTool):
         """
 
         ident = elem.get('id')
-        attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+        attribute = self.attributes.get(ident, {}).get(
+            self.groupby_person_attribute, None)
 
         if not self.mode == "all" and not attribute == self.mode:
             return None
@@ -1016,7 +1069,8 @@ class PlanLogs(PlanHandlerTool):
                             arrival_dt, end_time_str, self.logger, idx=ident
                         )
 
-                        duration, arrival_dt = safe_duration(arrival_dt, activity_end_dt)
+                        duration, arrival_dt = safe_duration(
+                            arrival_dt, activity_end_dt)
 
                         # MATSim BUG: first activity location may not be recorded
                         # Use NaN to allow distance() -> NaN
@@ -1035,7 +1089,7 @@ class PlanLogs(PlanHandlerTool):
                             # record previous trip
                             trip_records.append(
                                 {
-                                    "pid": ident,
+                                    "agent_id": ident,
                                     "subpop": attribute,
                                     # "license": license,
                                     "plan": pidx,
@@ -1061,7 +1115,7 @@ class PlanLogs(PlanHandlerTool):
                         arrival_dt = activity_end_dt
 
                     # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
-                    # then advance the trip arrival time accordingly   
+                    # then advance the trip arrival time accordingly
                     elif stage.get('end_time'):
                         end_time_str = stage.get('end_time')
 
@@ -1081,11 +1135,13 @@ class PlanLogs(PlanHandlerTool):
 
                     trav_time = stage.get('trav_time')
                     h, m, s = trav_time.split(":")
-                    td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                    td = timedelta(
+                        hours=int(h), minutes=int(m), seconds=int(s))
                     arrival_dt = arrival_dt + td
 
             total_trips = len(trip_records)
-            total_duration = sum([trip['act_duration'] for trip in trip_records])
+            total_duration = sum([trip['act_duration']
+                                 for trip in trip_records])
             total_distance = sum([trip['distance'] for trip in trip_records])
 
             for trip in trip_records:
@@ -1129,7 +1185,7 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         'plans',
         'attributes',
         'road_pricing'
-        ]
+    ]
     valid_modes = ['car']
 
     def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
@@ -1140,7 +1196,8 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         :param attribute: str, attribute key defaults to subpopulation
         """
 
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.groupby_person_attribute = groupby_person_attribute
@@ -1165,7 +1222,8 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         self.attributes = resources['attributes']
         self.roadpricing = resources['road_pricing']
         self.toll_log = pd.DataFrame(
-            columns=["agent", "subpopulation", "tollname", "link", "time", "toll"]
+            columns=["agent", "subpopulation",
+                     "tollname", "link", "time", "toll"]
         )  # df for results
 
     def process_plans(self, elem):
@@ -1174,8 +1232,10 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
-        attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
-        agent_in_tolled_space = [0, 0]  # {trip marker, whether last link was tolled}
+        attribute = self.attributes.get(ident, {}).get(
+            self.groupby_person_attribute, None)
+        # {trip marker, whether last link was tolled}
+        agent_in_tolled_space = [0, 0]
 
         def apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
             if current_link_tolled and agent_in_tolled_space[1] is False:
@@ -1210,20 +1270,22 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
                             # append results to dictionary if toll applies
                             if apply_toll(agent_in_tolled_space, current_link_tolled, start_time):
                                 toll_dictionary = {
-                                                "agent": ident,
-                                                "subpopulation": attribute,
-                                                "tollname": self.roadpricing.tollnames[link],
-                                                "link": link,
-                                                "time": start_time,
-                                                "toll": get_toll(link, start_time)}
-                                self.toll_log = self.toll_log.append(toll_dictionary, ignore_index=True)
+                                    "agent_id": ident,
+                                    "subpopulation": attribute,
+                                    "tollname": self.roadpricing.tollnames[link],
+                                    "link_id": link,
+                                    "time": start_time,
+                                    "toll": get_toll(link, start_time)}
+                                self.toll_log = self.toll_log.append(
+                                    toll_dictionary, ignore_index=True)
 
                             # update memory of last link
                             if link in self.roadpricing.links:
                                 agent_in_tolled_space[1] = True
                             else:
                                 agent_in_tolled_space[1] = False
-                            agent_in_tolled_space[0] = start_time  # use start time as a marker of unique leg
+                            # use start time as a marker of unique leg
+                            agent_in_tolled_space[0] = start_time
 
     def finalise(self):
         """
@@ -1237,12 +1299,14 @@ class AgentTollsPaidFromRPConfig(PlanHandlerTool):
         self.results[key] = toll_log_df
 
         # total amount paid by each agent
-        aggregate_df = toll_log_df.groupby(by=['agent', 'subpopulation'])['toll'].sum()
+        aggregate_df = toll_log_df.groupby(
+            by=['agent_id', 'subpopulation'])['toll'].sum()
         key = "tolls_paid_total_by_agent"
         self.results[key] = aggregate_df
 
         # average amount paid by each agent within subpopulation
-        aggregate_df = aggregate_df.reset_index().groupby(by=['subpopulation'])['toll'].mean()
+        aggregate_df = aggregate_df.reset_index().groupby(
+            by=['subpopulation'])['toll'].mean()
         key = "tolls_paid_average_by_subpopulation"
         self.results[key] = aggregate_df
 
@@ -1257,7 +1321,7 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         'plans',
         'subpopulations',
         'osm_ways'
-        ]
+    ]
     valid_modes = ['car']
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs):
@@ -1266,7 +1330,8 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         :param config: config
         :param mode: str, mode option
         """
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.osm_ways = None
@@ -1292,10 +1357,12 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         self.subpopulations = resources['subpopulations'].map
 
         # Initialise agent indices
-        self.agent_ids, self.agent_indices = self.generate_indices_map(list(self.subpopulations))
+        self.agent_ids, self.agent_indices = self.generate_indices_map(
+            list(self.subpopulations))
 
         # Initialise way indices
-        self.ways, self.ways_indices = self.generate_indices_map(self.osm_ways.classes)
+        self.ways, self.ways_indices = self.generate_indices_map(
+            self.osm_ways.classes)
 
         # Initialise results array
         self.distances = np.zeros((
@@ -1324,7 +1391,8 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
                         length = len(route)
                         for i, link in enumerate(route):
                             way = str(self.osm_ways.ways.get(link, None))
-                            distance = float(self.osm_ways.lengths.get(link, 0))
+                            distance = float(
+                                self.osm_ways.lengths.get(link, 0))
                             if i == 0 or i == length - 1:  # halve first and last link lengths
                                 distance /= 2
 
@@ -1341,7 +1409,7 @@ class AgentHighwayDistanceLogs(PlanHandlerTool):
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
 
-        names = ['agent', 'way']
+        names = ['agent_id', 'way']
         indexes = [self.agent_ids, self.ways]
         index = pd.MultiIndex.from_product(indexes, names=names)
         distance_df = pd.DataFrame(self.distances.flatten(), index=index)[0]
@@ -1387,7 +1455,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         'plans',
         'osm_ways',
         'attributes'
-        ]
+    ]
     valid_modes = ['car']
 
     def __init__(self, config, mode="all", groupby_person_attribute="subpopulation", **kwargs):
@@ -1397,7 +1465,8 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         :param mode: str, mode option
         :param attribute: str, attribute key defaults to 'subpopulation'
         """
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
         self.groupby_person_attribute = groupby_person_attribute
@@ -1425,7 +1494,8 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
 
         # Initialise results writer
         csv_name = f"{self.name}.csv"
-        self.distances_log = self.start_csv_chunk_writer(csv_name, write_path=write_path, compression=self.compression)
+        self.distances_log = self.start_csv_chunk_writer(
+            csv_name, write_path=write_path, compression=self.compression)
 
     def process_plans(self, elem):
         """
@@ -1433,7 +1503,8 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
         :param elem: Plan XML element
         """
         ident = elem.get('id')
-        attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+        attribute = self.attributes.get(ident, {}).get(
+            self.groupby_person_attribute, None)
 
         for plan in elem.xpath(".//plan"):
             if plan.get('selected') != 'no':
@@ -1456,7 +1527,7 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
 
                             # set counter
                             trip_counter = {
-                                'agent': ident,
+                                'agent_id': ident,
                                 'subpop': attribute,
                                 'seq': trip_seq_idx
                             }
@@ -1473,7 +1544,8 @@ class TripHighwayDistanceLogs(PlanHandlerTool):
                         length = len(route)
                         for i, link in enumerate(route):
                             way = str(self.osm_ways.ways.get(link, None))
-                            distance = float(self.osm_ways.lengths.get(link, 0))
+                            distance = float(
+                                self.osm_ways.lengths.get(link, 0))
                             if i == 0 or i == length - 1:  # halve first and last link lengths
                                 distance /= 2
                             trip_counter[way] += distance
@@ -1520,7 +1592,8 @@ class PlanHandlerWorkStation(WorkStation):
         """
 
         if not self.resources:
-            self.logger.warning(f'{str(self)} has no resources, build returning None.')
+            self.logger.warning(
+                f'{str(self)} has no resources, build returning None.')
             return None
 
         # build tools
@@ -1550,15 +1623,18 @@ class PlanHandlerWorkStation(WorkStation):
             self.logger.debug(f'Finalising {str(handler)}')
             handler.finalise()
 
-            self.logger.debug(f'{len(handler.results)} result_dfs at {str(handler)}')
+            self.logger.debug(
+                f'{len(handler.results)} result_dfs at {str(handler)}')
 
             if handler.results:
                 output_path = handler.config.output_path
-                self.logger.info(f'Writing results from {str(handler)} to {output_path}')
+                self.logger.info(
+                    f'Writing results from {str(handler)} to {output_path}')
 
                 for name, result in handler.results.items():
                     csv_name = "{}.csv".format(name)
-                    self.write_csv(result, csv_name, write_path=write_path, compression=handler.compression)
+                    self.write_csv(
+                        result, csv_name, write_path=write_path, compression=handler.compression)
                     del result
 
 
@@ -1607,7 +1683,8 @@ def matsim_time_to_datetime(
     :param base_day: int defaul=1,
     :return: time string, day
     """
-    start_of_day = datetime(year=base_year, month=base_month, day=base_day, hour=0)
+    start_of_day = datetime(
+        year=base_year, month=base_month, day=base_day, hour=0)
     if current_time is None:
         current_time = start_of_day
 
@@ -1616,9 +1693,11 @@ def matsim_time_to_datetime(
 
     if logger is not None:
         if h > 23:
-            logger.debug(f'Bad time str: {new_time_str}, outputting: {new_time}, idx: {idx}')
+            logger.debug(
+                f'Bad time str: {new_time_str}, outputting: {new_time}, idx: {idx}')
         if new_time < current_time:
-            logger.warning(f'Time Wrapping (new time:{new_time} < previous time:{current_time}), idx: {idx}')
+            logger.warning(
+                f'Time Wrapping (new time:{new_time} < previous time:{current_time}), idx: {idx}')
 
     return new_time
 
@@ -1635,7 +1714,7 @@ def safe_duration(start_time, end_time):
             month=end_time.month,
             day=end_time.day,
             hour=0
-            )
+        )
         return timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second), start_time
     return end_time - start_time, start_time
 
