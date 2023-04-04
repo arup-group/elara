@@ -58,8 +58,8 @@ class EventHandlerTool(Tool):
         """
         if vehicle_id in self.resources['transit_schedule'].veh_to_mode_map.keys():
             return self.resources['transit_schedule'].veh_to_mode_map[vehicle_id]
-        elif vehicle_id in self.resources['events'].veh_to_mode_map:
-            return self.resources['events'].veh_to_mode_map[vehicle_id]
+        elif vehicle_id in self.resources['vehicles'].veh_to_mode_map:
+            return self.resources['vehicles'].veh_to_mode_map[vehicle_id]
         else:
             return "car"
 

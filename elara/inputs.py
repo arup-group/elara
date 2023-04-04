@@ -68,10 +68,6 @@ class Events(InputTool):
 
         self.elems = get_elems(path, "event")
 
-        self.veh_to_mode_map = {
-            e.attrib['vehicle']: e.attrib['networkMode'] for e in get_elems(path, "event") if
-            e.attrib['type'] == 'vehicle enters traffic'
-        }
 
 
 class Network(InputTool):
@@ -806,6 +802,51 @@ class RoadPricing(InputTool):
         return ident, tollname
 
 
+class Vehicles(InputTool):
+    requirements = ['vehicles_path']
+    vehicles = None
+    vehicle_types = None
+    veh_to_mode_map = None
+
+    def build(self, resources: dict, write_path: Optional[str] = None):
+        """
+        Network road pricing input file.
+        :param resources: dict, of supplier resources.
+        :param write_path: Optional output path overwrite.
+        """
+        super().build(resources)
+
+        path = resources['vehicles_path'].path
+
+        self.logger.debug(f"Loading vehicles from {path}")
+        self.vehicles = dict(
+            [
+                self.get_vehicles(elem)
+                for elem in get_elems(path, "vehicle")
+            ]
+        )
+        self.vehicle_types = dict(
+            [
+                self.get_vehicle_types(elem)
+                for elem in get_elems(path, "vehicleType")
+            ]
+        )
+        self.veh_to_mode_map = {
+            k: self.vehicle_types[v]['networkMode']['networkMode']
+            for k, v in self.vehicles.items()
+        }
+
+    def get_vehicles(self, elem):
+        return elem.xpath("@id")[0], str(elem.xpath("@type")[0])
+
+    def get_vehicle_types(self, elem):
+        ident = elem.xpath("@id")[0]
+        vehicle_specs = {}
+        for spec in elem.xpath('./*'):
+            vehicle_specs[spec.tag.replace('{http://www.matsim.org/files/dtd}', '')] = dict(spec.attrib)
+        return ident, vehicle_specs
+
+
 class InputsWorkStation(WorkStation):
     tools = {
         "events": Events,
@@ -820,6 +861,7 @@ class InputsWorkStation(WorkStation):
         'output_config': OutputConfig,
         'mode_map': ModeMap,
         'road_pricing': RoadPricing,
+        'vehicles': Vehicles,
         # 'mode_hierarchy': ModeHierarchy,
     }
 

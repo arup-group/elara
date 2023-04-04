@@ -28,6 +28,7 @@ class Config:
                 "plans": "./output_experienced_plans.xml.gz",
                 "output_config_path": "./output_config.xml",
                 "road_pricing": "./road_pricing.xml",
+                "vehicles": "./output_vehicles.xml",
             },
         "outputs":
             {
@@ -244,6 +245,12 @@ you may either or both the keys using HANDLER--NAME, for example:
             self.settings["inputs"]["road_pricing"], "output_config"
         )
 
+    @property
+    def vehicles_path(self):
+        return self.valid_path(
+            self.settings["inputs"]["vehicles"], "output_vehicles"
+        )
+
     @staticmethod
     def check_xml_path(xml_path):
         """
@@ -377,7 +384,6 @@ you may either or both the keys using HANDLER--NAME, for example:
         renaming_dict = {
             'volume_counts':'link_vehicle_counts',
             'passenger_counts':'link_passenger_counts',
-            'volume_counts':'link_vehicle_counts',
             'stop_interactions':'stop_passenger_counts',
             'waiting_times':'stop_passenger_waiting',
             'mode_share':'mode_shares'
@@ -579,6 +585,14 @@ class GetRoadPricingPath(PathTool):
         self.path = self.config.road_pricing_path
 
 
+class GetVehiclesPath(PathTool):
+    path = None
+
+    def build(self, resource: dict, write_path=None):
+        super().build(resource)
+        self.path = self.config.vehicles_path
+
+
 class PathFinderWorkStation(WorkStation):
     tools = {
         'crs': GetCRS,
@@ -591,6 +605,7 @@ class PathFinderWorkStation(WorkStation):
         'transit_vehicles_path': GetTransitVehiclesPath,
         'output_config_path': GetOutputConfigPath,
         'road_pricing_path': GetRoadPricingPath,
+        'vehicles_path': GetVehiclesPath,
     }
 
     def __init__(self, config):

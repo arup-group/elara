@@ -18,7 +18,7 @@ transit_schedule = "./tests/test_fixtures/output_transitSchedule.xml.gz"
 transit_vehicles = "./tests/test_fixtures/output_transitVehicles.xml.gz"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 road_pricing = "./tests/test_fixtures/road_pricing.xml"
-
+vehicles = "./tests/test_fixtures/active_modes/output_vehicles.xml"
 
 [event_handlers]
 vehicle_link_log = ["bike", "walk"]
