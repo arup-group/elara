@@ -402,6 +402,7 @@ you may either or both the keys using HANDLER--NAME, for example:
                 'transit_schedule': 'output_transitSchedule.xml',
                 'transit_vehicles': 'output_transitVehicles.xml',
                 'output_config_path': 'output_config.xml',
+                'vehicles': 'output_vehicles.xml'
             }
         )
         if not self.using_experienced_plans:
