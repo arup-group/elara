@@ -810,7 +810,7 @@ class Vehicles(InputTool):
 
     def build(self, resources: dict, write_path: Optional[str] = None):
         """
-        Network road pricing input file.
+        Vehicles output file. Defines agents' vehicle specs.
         :param resources: dict, of supplier resources.
         :param write_path: Optional output path overwrite.
         """

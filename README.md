@@ -83,6 +83,7 @@ Inputs to Elara are MATSim format output files, eg:
 * **plans** = "./tests/test_fixtures/output_plans.xml"
 * **output_config_path** = "./tests/test_fixtures/output_config.xml"
 * **road pricing config** = "./tests/test_fixtures/roadpricing.xml"
+* **output_vehicles** = "./tests/test_fixtures/output_vehicles.xml"
 
 Depending on what outputs you require from elara, some of these inputs may not be required, but it is often convenient to have them all available as a default. In most cases these Elara inputs may be compressed using gzip (`file.xml.gz`).
 
@@ -181,6 +182,7 @@ attributes = "./tests/test_fixtures/output_personAttributes.xml"
 plans= "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 road_pricing = "./tests/test_fixtures/roadpricing.xml"
+vehicles = "./tests/test_fixtures/output_vehicles.xml"
 
 [outputs]
 path = "./tests/test_outputs"
