@@ -58,6 +58,8 @@ class EventHandlerTool(Tool):
         """
         if vehicle_id in self.resources['transit_schedule'].veh_to_mode_map.keys():
             return self.resources['transit_schedule'].veh_to_mode_map[vehicle_id]
+        elif vehicle_id in self.resources['vehicles'].veh_to_mode_map:
+            return self.resources['vehicles'].veh_to_mode_map[vehicle_id]
         else:
             return "car"
 
@@ -155,6 +157,7 @@ class VehiclePassengerGraph(EventHandlerTool):
         'events',
         'transit_vehicles',
         'attributes',
+        'vehicles',
     ]
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
@@ -241,6 +244,7 @@ class StopPassengerWaiting(EventHandlerTool):
         'events',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
@@ -381,6 +385,7 @@ class LinkVehicleCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
@@ -530,6 +535,7 @@ class LinkVehicleCapacity(EventHandlerTool):
         'transit_schedule',
         'transit_vehicles',
         'attributes',
+        'vehicles',
     ]
     invalid_modes = ['car']
 
@@ -684,6 +690,7 @@ class LinkVehicleSpeeds(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
 
     def __init__(self, config, mode="all", groupby_person_attribute=None, **kwargs) -> None:
@@ -975,6 +982,7 @@ class LinkPassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
     invalid_modes = ['car']
 
@@ -1183,6 +1191,7 @@ class RoutePassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
     invalid_modes = ['car']
 
@@ -1369,6 +1378,7 @@ class StopPassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
     invalid_modes = ['car']
 
@@ -1556,6 +1566,7 @@ class StopToStopPassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
     invalid_modes = ['car']
 
@@ -1794,6 +1805,7 @@ class VehicleStopToStopPassengerCounts(EventHandlerTool):
         'network',
         'transit_schedule',
         'attributes',
+        'vehicles',
     ]
     invalid_modes = ['car']
 
@@ -2038,7 +2050,11 @@ class VehicleDepartureLog(EventHandlerTool):
     Extract vehicle depart times at stops.
     """
 
-    requirements = ['events', 'transit_schedule']
+    requirements = [
+        'events',
+        'transit_schedule',
+        'vehicles',
+        ]
 
     def __init__(self, config, mode="all", **kwargs):
         super().__init__(config, mode, **kwargs)
@@ -2173,7 +2189,11 @@ class VehicleLinkLog(EventHandlerTool):
     Extract all vehicle link entry/link exit events
     """
 
-    requirements = ['events', 'transit_schedule']
+    requirements = [
+        'events',
+        'transit_schedule',
+        'vehicles'
+        ]
 
     def __init__(self, config, mode=None, **kwargs):
         super().__init__(config, mode, **kwargs)
@@ -2248,7 +2268,11 @@ class AgentTollsLog(EventHandlerTool):
     Additionally produces a 24-hr summary of tolls paid by each agent
     """
 
-    requirements = ['events', 'attributes']
+    requirements = [
+        'events',
+        'attributes',
+        'vehicles',
+        ]
 
     def __init__(self, config, mode=None, groupby_person_attribute=None, **kwargs):
         super().__init__(config, mode, **kwargs)
@@ -2381,7 +2405,12 @@ class VehicleLinksAnimate(EventHandlerTool):
     Extract all vehicle trips as Arrow format.
     """
 
-    requirements = ['events', 'transit_schedule', 'network']
+    requirements = [
+        'events',
+        'transit_schedule',
+        'network',
+        'vehicles'
+        ]
     cmap = {
         "car": [200, 200, 200],
         "bus": [255, 40, 40],

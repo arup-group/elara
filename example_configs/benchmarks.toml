@@ -16,6 +16,7 @@ plans = "./tests/test_fixtures/output_experienced_plans.xml"
 attributes = "./tests/test_fixtures/output_plans.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 input_plans = "./tests/test_fixtures/output_plans.xml"
+vehicles = "./tests/test_fixtures/output_vehicles.xml.gz"
 
 [outputs]
 path = "./outputs"
