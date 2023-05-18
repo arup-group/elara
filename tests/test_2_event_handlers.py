@@ -103,7 +103,7 @@ def test_class_requirements(test_config):
 
     for cls, requirements in class_requirements.items():
         instance = cls(test_config)
-        assert instance.requirements == requirements, f"Failed for class {cls.__name__}"
+        assert instance.requirements == requirements, f"Requirements do not match for class {cls.__name__}"
 
 
 def handler_from_config(config_path):
