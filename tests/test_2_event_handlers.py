@@ -16,7 +16,7 @@ from elara.event_handlers import (VehiclePassengerGraph, StopPassengerWaiting, L
                                  StopPassengerCounts, StopToStopPassengerCounts,
                                  VehicleStopToStopPassengerCounts, VehicleDepartureLog,
                                  VehicleLinkLog, RoutePassengerCounts, AgentTollsLog,
-                                 VehicleLinksAnimate)
+                                 VehiclePassengerLog, VehicleLinksAnimate)
 
 
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
@@ -98,6 +98,7 @@ def test_class_requirements(test_config):
                         VehicleLinkLog: ['events', 'transit_schedule', 'vehicles'],
                         RoutePassengerCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
                         AgentTollsLog: ['events', 'attributes', 'vehicles'],
+                        VehiclePassengerLog: ['events', 'transit_schedule', 'vehicles'],
                         VehicleLinksAnimate: ['events', 'transit_schedule', 'network', 'vehicles']
                         }
 
