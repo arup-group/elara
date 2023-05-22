@@ -1,4 +1,4 @@
-agent,seq,mode,duration_s
+agent_id,seq,mode,duration_s
 chris,1,car,454.0
 chris,2,car,463.0
 nick,1,car,4.0

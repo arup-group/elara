@@ -410,6 +410,7 @@ def test_directory_input(test_directory_input_config):
                 'transit_schedule': './tests/test_fixtures/output_transitSchedule.xml',
                 'transit_vehicles': './tests/test_fixtures/output_transitVehicles.xml',
                 'output_config_path': './tests/test_fixtures/output_config.xml',
+                'vehicles': './tests/test_fixtures/output_vehicles.xml'
             }
     assert input_paths == correct_paths
     for p in input_paths.values():

@@ -16,6 +16,7 @@ plans = "./tests/test_fixtures/output_plans_v12.xml"
 input_plans = "./tests/test_fixtures/input_plans_v12.xml"
 output_config_path = "./tests/test_fixtures/output_config.xml"
 road_pricing = "./tests/test_fixtures/road_pricing.xml"
+vehicles = "./tests/test_fixtures/output_vehicles.xml.gz"
 
 [event_handlers]
 link_vehicle_counts = ["car"]

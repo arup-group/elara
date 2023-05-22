@@ -74,7 +74,8 @@ class Tool:
             suffix += f"_{self.mode}"
         if self.kwargs:  # add other options to ensure unique name
             for value in self.kwargs.values():
-                if isinstance(value, str) and os.path.isfile(value):  # if arg is a path then get file name minus extension
+                # if arg is a path then get file name minus extension
+                if isinstance(value, str) and os.path.isfile(value):
                     # value = os.path.basename(value).split(".")[0]
                     continue
                 if not isinstance(value, list):
@@ -105,7 +106,8 @@ class Tool:
                 requirements[req].pop("name", None)
                 requirements[req].pop("benchmark_data_path", None)
         else:
-            requirements = {req: {"modes": ["all"]} for req in self.requirements}
+            requirements = {req: {"modes": ["all"]}
+                            for req in self.requirements}
             # requirements = {req: None for req in self.requirements}
         return requirements
 
@@ -148,10 +150,12 @@ class Tool:
         """
         if self.valid_modes:
             if mode not in self.valid_modes:
-                raise UserWarning(f'Unsupported mode option: {mode} at tool: {self}')
+                raise UserWarning(
+                    f'Unsupported mode option: {mode} at tool: {self}')
         if self.invalid_modes:
             if mode in self.invalid_modes:
-                raise UserWarning(f'Invalid mode option: {mode} at tool: {self}')
+                raise UserWarning(
+                    f'Invalid mode option: {mode} at tool: {self}')
         return mode
 
     def _validate_compression_method(self, compression: str) -> str:
@@ -162,7 +166,8 @@ class Tool:
         """
         valid_compression_methods = [None, 'bz2', 'gzip', 'xz', 'zip']
         if compression not in valid_compression_methods:
-            raise ValueError(f'Unsupported compression method: {compression} at tool: {self}')
+            raise ValueError(
+                f'Unsupported compression method: {compression} at tool: {self}')
         return compression
 
     def start_csv_chunk_writer(self, csv_name: str, write_path=None, compression=None):
@@ -196,7 +201,7 @@ class Tool:
             self,
             write_object: Union[pd.DataFrame, gpd.GeoDataFrame],
             csv_name: str,
-            compression = None,
+            compression=None,
             write_path=None
     ):
         """
@@ -220,7 +225,8 @@ class Tool:
             write_object.to_csv(csv_path, header=True)
 
         else:
-            raise TypeError(f"don't know how to write object of type {type(write_object)} to csv")
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to csv")
 
     def write_geojson(
             self,
@@ -397,23 +403,26 @@ class WorkStation:
                 for manager_requirement, options in manager_requirements.items():
 
                     if len(manager_requirement.split("--")) > 1:
-                        manager_requirement = manager_requirement.split("--")[0]
+                        manager_requirement = manager_requirement.split(
+                            "--")[0]
 
                     if manager_requirement == tool_name:
                         if options:
                             # split options between modes and optional arguments
                             modes = options.get("modes")
-                            groupby_person_attributes = options.get("groupby_person_attributes")
+                            groupby_person_attributes = options.get(
+                                "groupby_person_attributes")
 
                             if len(groupby_person_attributes) > 1 and None in groupby_person_attributes:
                                 # then can remove None as it exits as a default in all cases
                                 groupby_person_attributes.remove(None)
 
                             optional_args = {
-                                key : options[key] for key in options if key not in ["modes", "groupby_person_attributes"]
-                                }
+                                key: options[key] for key in options if key not in ["modes", "groupby_person_attributes"]
+                            }
 
-                            optional_arg_values_string = ":".join([str(o) for o in (optional_args.values())])
+                            optional_arg_values_string = ":".join(
+                                [str(o) for o in (optional_args.values())])
 
                             for mode in modes:
                                 for groupby_person_attribute in groupby_person_attributes:
@@ -428,15 +437,17 @@ class WorkStation:
                                         mode=mode,
                                         groupby_person_attribute=groupby_person_attribute,
                                         **optional_args
-                                        )
+                                    )
 
-                                    tool_requirements = self.resources[key].get_requirements()
+                                    tool_requirements = self.resources[key].get_requirements(
+                                    )
                                     all_requirements.append(tool_requirements)
                         else:
                             # init
                             key = str(tool_name)
                             self.resources[key] = tool(self.config)
-                            tool_requirements = self.resources[key].get_requirements()
+                            tool_requirements = self.resources[key].get_requirements(
+                            )
                             all_requirements.append(tool_requirements)
 
             self.requirements = complex_combine_reqs(all_requirements)
@@ -476,7 +487,8 @@ class WorkStation:
         missing = set(clean_requirements) - set(supplier_tools)
         if missing:
             helpful_error_string = self.build_helpful_error_string(missing)
-            raise ValueError(f"Failure to find at least one requirement, this may be an error with your config:{helpful_error_string}")
+            raise ValueError(
+                f"Failure to find at least one requirement, this may be an error with your config:{helpful_error_string}")
 
     def build_helpful_error_string(self, missing: List[str]) -> str:
         """
@@ -556,14 +568,15 @@ class WorkStation:
                 continue
             if mode is None and tool.valid_modes is not None:
                 mode = tool.valid_modes[0]
-            self.resources[name] = tool(self.config, mode=mode, groupby_person_attribute=groupby_person_attribute)
+            self.resources[name] = tool(
+                self.config, mode=mode, groupby_person_attribute=groupby_person_attribute)
 
     def write_csv(
             self,
             write_object: Union[pd.DataFrame, gpd.GeoDataFrame],
             csv_name: str,
             write_path=None,
-            compression = None,
+            compression=None,
     ):
         """
         Simple write to csv, default to config path if write_path (used for testing) not given.
@@ -580,6 +593,10 @@ class WorkStation:
             self.logger.debug(f'writing to {csv_path}')
 
         # File exports
+        if write_object.empty:
+            self.logger.warning(
+                "faile to write {name} to {path} because it's empty")
+            return None
         if isinstance(write_object, gpd.GeoDataFrame):
             write_object.drop("geometry", axis=1).to_csv(csv_path, header=True)
 
@@ -587,7 +604,8 @@ class WorkStation:
             write_object.to_csv(csv_path, header=True)
 
         else:
-            raise TypeError(f"don't know how to write object of type {type(write_object)} to csv")
+            raise TypeError(
+                f"don't know how to write object of type {type(write_object)} to csv")
 
     def write_geojson(
             self,
@@ -606,9 +624,13 @@ class WorkStation:
             path = os.path.join(self.config.output_path, name)
             self.logger.debug(f'writing to {path}')
         # File exports
+        if write_object.empty:
+            self.logger.warning(
+                "faile to write {name} to {path} because it's empty")
+            return None
         if isinstance(write_object, gpd.GeoDataFrame):
-            with open(path, "w") as file:
-                file.write(write_object.to_json())
+            write_object.columns = [str(c) for c in write_object.columns]
+            write_object.to_file(path, driver="GeoJSON")
 
         else:
             raise TypeError(
@@ -648,7 +670,7 @@ class CSVChunkWriter:
     Extend a list of lines (dicts) that are saved to drive once they reach a certain length.
     """
 
-    def __init__(self, path, compression = None, chunksize=1000) -> None:
+    def __init__(self, path, compression=None, chunksize=1000) -> None:
         self.path = path
         self.compression = compression
         self.chunksize = chunksize
@@ -657,7 +679,8 @@ class CSVChunkWriter:
         self.idx = 0
 
         self.logger = logging.getLogger(__name__)
-        self.logger.debug(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
+        self.logger.debug(
+            f'Chunkwriter initiated for {path}, with size {chunksize} lines')
 
     def add(self, lines: list) -> None:
         """
@@ -675,12 +698,14 @@ class CSVChunkWriter:
         Convert chunk to dataframe and write to disk.
         :return: None
         """
-        chunk_df = pd.DataFrame(self.chunk, index=range(self.idx, self.idx + len(self.chunk)))
+        chunk_df = pd.DataFrame(self.chunk, index=range(
+            self.idx, self.idx + len(self.chunk)))
         if not self.idx:
             chunk_df.to_csv(self.path, compression=self.compression)
             self.idx += len(self.chunk)
         else:
-            chunk_df.to_csv(self.path, header=None, mode="a", compression=self.compression)
+            chunk_df.to_csv(self.path, header=None, mode="a",
+                            compression=self.compression)
             self.idx += len(self.chunk)
         del chunk_df
         self.chunk = []
@@ -691,6 +716,7 @@ class CSVChunkWriter:
 
     def __len__(self):
         return self.idx + len(self.chunk)
+
 
 class ArrowChunkWriter:
     """
@@ -706,8 +732,8 @@ class ArrowChunkWriter:
         self.idx = 0
 
         self.logger = logging.getLogger(__name__)
-        self.logger.debug(f'Chunkwriter initiated for {path}, with size {chunksize} lines')
-
+        self.logger.debug(
+            f'Chunkwriter initiated for {path}, with size {chunksize} lines')
 
     def add(self, lines: list) -> None:
         """
@@ -724,9 +750,11 @@ class ArrowChunkWriter:
         """
         Convert chunk to dataframe and write to arrow.
         """
-        table = pa.Table.from_pandas(pd.DataFrame(self.chunk))  # TODO loose the pandas intermediate
+        table = pa.Table.from_pandas(pd.DataFrame(
+            self.chunk))  # TODO loose the pandas intermediate
         if not self.idx:
-            self.writer = pa.ipc.RecordBatchStreamWriter(self.path, table.schema)
+            self.writer = pa.ipc.RecordBatchStreamWriter(
+                self.path, table.schema)
             self.writer.write(table)
             self.idx += len(self.chunk)
         else:
@@ -783,15 +811,18 @@ def assemble_dag(start_node: WorkStation) -> None:
     logger.debug(f'Starting DAG')
 
     if is_cyclic(start_node):
-        raise UserWarning(f"Cyclic dependency found at {is_cyclic(start_node)}")
+        raise UserWarning(
+            f"Cyclic dependency found at {is_cyclic(start_node)}")
     if is_broken(start_node):
-        raise UserWarning(f"Broken dependency found at {is_broken(start_node)}")
+        raise UserWarning(
+            f"Broken dependency found at {is_broken(start_node)}")
 
     build_graph_depth(start_node)
 
     display_graph(start_node)
 
     logger.debug(f'DAG prepared')
+
 
 def initiate_dag(start_node: WorkStation) -> list:
     # stage 2:
@@ -817,6 +848,7 @@ def initiate_dag(start_node: WorkStation) -> list:
 
     logger.info(f'All Workstations Initiated and Validated')
     return queue
+
 
 def build_dag(queue, write_path=None) -> list:
     # stage 3:
@@ -983,8 +1015,10 @@ def complex_combine_reqs(reqs: List[dict]) -> Dict[str, list]:
             if tool_reqs.get("modes"):
                 modes |= set(tool_reqs.get("modes"))
             if tool_reqs.get("groupby_person_attributes"):
-                groupby_person_attributes |= set(tool_reqs.get("groupby_person_attributes"))
-            remaining_args = {k:v for k,v in tool_reqs.items() if k not in ["modes","groupby_person_attributes"]}
+                groupby_person_attributes |= set(
+                    tool_reqs.get("groupby_person_attributes"))
+            remaining_args = {k: v for k, v in tool_reqs.items(
+            ) if k not in ["modes", "groupby_person_attributes"]}
             kwargs.update(remaining_args)
 
         if not modes:
@@ -1100,7 +1134,8 @@ def equals(d1, d2):
             return False
     return True
 
-def path_compressed(path:str, compression:str)->str:
+
+def path_compressed(path: str, compression: str) -> str:
     """
     Add an appropriate suffix to a compressed file path.
     :param path: Csv output filepath

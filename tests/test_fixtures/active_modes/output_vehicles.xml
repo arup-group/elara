@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<vehicleDefinitions xmlns="http://www.matsim.org/files/dtd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.matsim.org/files/dtd http://www.matsim.org/files/dtd/vehicleDefinitions_v2.0.xsd">
+	<vehicleType id="defaultBicycle">
+		<capacity seats="0" standingRoomInPersons="0">
+		</capacity>
+		<length meter="7.5"/>
+		<width meter="1.0"/>
+		<maximumVelocity meterPerSecond="6.01"/>
+		<costInformation>
+
+		</costInformation>
+		<passengerCarEquivalents pce="0.2"/>
+		<networkMode networkMode="bike"/>
+		<flowEfficiencyFactor factor="1.0"/>
+	</vehicleType>
+
+	<vehicleType id="defaultVehicleType">
+		<capacity seats="4" standingRoomInPersons="0">
+		</capacity>
+		<length meter="7.5"/>
+		<width meter="1.0"/>
+		<costInformation>
+		</costInformation>
+		<passengerCarEquivalents pce="1.0"/>
+		<networkMode networkMode="car"/>
+		<flowEfficiencyFactor factor="1.0"/>
+	</vehicleType>
+
+	<vehicleType id="defaultWalk">
+		<capacity seats="0" standingRoomInPersons="0">
+		</capacity>
+		<length meter="7.5"/>
+		<width meter="1.0"/>
+		<maximumVelocity meterPerSecond="1.34"/>
+		<costInformation>
+		</costInformation>
+		<passengerCarEquivalents pce="0.1"/>
+		<networkMode networkMode="walk"/>
+		<flowEfficiencyFactor factor="1.0"/>
+	</vehicleType>
+
+	<vehicle id="gerry" type="defaultVehicleType"/>
+	<vehicle id="gerry_bike" type="defaultBicycle"/>
+	<vehicle id="gerry_walk" type="defaultWalk"/>
+	<vehicle id="jerry" type="defaultVehicleType"/>
+	<vehicle id="jerry_bike" type="defaultBicycle"/>
+	<vehicle id="jerry_walk" type="defaultWalk"/>
+
+</vehicleDefinitions>

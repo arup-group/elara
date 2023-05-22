@@ -1,4 +1,4 @@
-,agent,attribute,seq,act,x,y,start,end,end_day,start_s,end_s,duration_s
+,agent_id,attribute,seq,act,x,y,start,end,end_day,start_s,end_s,duration_s
 0,chris,rich,1,home,0.0,0.0,00:00:00,07:00:00,1,0,25200,25200.0
 1,chris,rich,2,work,10100.0,0.0,07:07:34,16:30:00,1,25654,59400,33746.0
 2,chris,rich,3,home,0.0,0.0,16:37:43,23:59:59,1,59863,86399,26536.0

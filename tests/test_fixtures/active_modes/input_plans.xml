@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE population SYSTEM "http://www.matsim.org/files/dtd/population_v6.dtd">
+
+<population>
+
+
+
+<!-- ====================================================================== -->
+
+	<person id="gerry">
+		<attributes>
+			<attribute name="hid" class="java.lang.String">gerry</attribute>
+			<attribute name="vehicles" class="org.matsim.vehicles.PersonVehicles">{"car":"gerry","walk":"gerry_walk","bike":"gerry_bike"}</attribute>
+		</attributes>
+		<plan score="127.76699714278072" selected="yes">
+			<activity type="home" link="1-2" x="10100.0" y="5100.0" end_time="07:00:00" >
+			</activity>
+			<leg mode="bike" dep_time="07:00:00" trav_time="00:33:20">
+				<attributes>
+					<attribute name="enterVehicleTime" class="java.lang.Double">2000.0</attribute>
+					<attribute name="routingMode" class="java.lang.String">bike</attribute>
+				</attributes>
+				<route type="links" start_link="1-2-bike" end_link="2-3-bike" trav_time="00:33:20" distance="10000.0" vehicleRefId="null">1-2-bike 2-3-bike</route>
+			</leg>
+			<activity type="bike_shopping" link="2-3" x="5100.0" y="10000.0" start_time="07:33:20" end_time="23:59:59" >
+			</activity>
+		</plan>
+
+	</person>
+
+<!-- ====================================================================== -->
+
+	<person id="jerry">
+		<attributes>
+			<attribute name="hid" class="java.lang.String">jerry</attribute>
+			<attribute name="vehicles" class="org.matsim.vehicles.PersonVehicles">{"car":"jerry","walk":"jerry_walk","bike":"jerry_bike"}</attribute>
+		</attributes>
+		<plan score="132.41759787273972" selected="yes">
+			<activity type="home" link="1-2" x="10100.0" y="5100.0" end_time="07:00:00" >
+			</activity>
+			<leg mode="walk" dep_time="07:00:00" trav_time="00:33:20">
+				<attributes>
+					<attribute name="enterVehicleTime" class="java.lang.Double">2000.0</attribute>
+					<attribute name="routingMode" class="java.lang.String">walk</attribute>
+				</attributes>
+				<route type="links" start_link="1-2-walk" end_link="2-3-walk" trav_time="00:33:20" distance="10000.0" vehicleRefId="null">1-2-walk 2-3-walk</route>
+			</leg>
+			<activity type="shoe_shopping" link="2-3" x="5100.0" y="10000.0" start_time="07:33:20" end_time="23:59:59" >
+			</activity>
+		</plan>
+
+	</person>
+
+<!-- ====================================================================== -->
+
+</population>

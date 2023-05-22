@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<events version="1.0">
+	<event time="25200.0" type="actend" person="gerry" link="1-2" actType="home"  />
+	<event time="25200.0" type="PersonEntersVehicle" person="gerry" vehicle="gerry_bike"  />
+	<event time="25200.0" type="vehicle enters traffic" person="gerry" link="1-2-bike" vehicle="gerry_bike" networkMode="bike" relativePosition="1.0"  />
+	<event time="25200.0" type="left link" link="1-2-bike" vehicle="gerry_bike"  />
+	<event time="25200.0" type="entered link" link="2-3-bike" vehicle="gerry_bike"  />
+	<event time="27200.0" type="left link" link="2-3-bike" vehicle="gerry_bike"  />
+	<event time="27200.0" type="vehicle leaves traffic" person="gerry" link="2-3-bike" vehicle="gerry_bike" networkMode="bike" relativePosition="1.0"  />
+	<event time="27200.0" type="PersonLeavesVehicle" person="gerry" vehicle="gerry_bike"  />
+	<event time="27200.0" type="arrival" person="gerry" link="2-3" legMode="bike"  />
+	<event time="27200.0" type="actstart" person="gerry" link="2-3" actType="bike_shopping"  />
+	<event time="28200.0" type="actend" person="jerry" link="1-2" actType="home"  />
+	<event time="28200.0" type="PersonEntersVehicle" person="jerry" vehicle="jerry_walk"  />
+	<event time="28200.0" type="vehicle enters traffic" person="jerry" link="1-2-walk" vehicle="jerry_walk" networkMode="walk" relativePosition="1.0"  />
+	<event time="28200.0" type="left link" link="1-2-walk" vehicle="jerry_walk"  />
+	<event time="28200.0" type="entered link" link="2-3-walk" vehicle="jerry_walk"  />
+	<event time="29200.0" type="left link" link="2-3-walk" vehicle="jerry_walk"  />
+	<event time="29200.0" type="vehicle leaves traffic" person="jerry" link="2-3-walk" vehicle="jerry_walk" networkMode="walk" relativePosition="1.0"  />
+	<event time="29200.0" type="PersonLeavesVehicle" person="jerry" vehicle="jerry_walk"  />
+	<event time="29200.0" type="arrival" person="jerry" link="2-3" legMode="walk"  />
+	<event time="29200.0" type="actstart" person="jerry" link="2-3" actType="shoe_shopping"  />
+</events>

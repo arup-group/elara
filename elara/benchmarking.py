@@ -1,5 +1,4 @@
 from pandas.core import groupby
-from plotnine import ggplot, aes, geom_point, geom_line, geom_col, labs, theme, element_text
 import pandas as pd
 import os
 import numpy as np
@@ -31,11 +30,13 @@ class BenchmarkTool(Tool):
         if not self.benchmark_data_path:
             self.benchmark_data_path = proposed_bm_path
 
-        super().__init__(config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.logger = logging.getLogger(__name__)
         self.logger.debug(f"Initiating: {str(self)} with name: {self.name}")
-        self.logger.debug(f"groupby_person_attribute={groupby_person_attribute}, benchmark_data_path={self.benchmark_data_path}, kwargs={kwargs}")
+        self.logger.debug(
+            f"groupby_person_attribute={groupby_person_attribute}, benchmark_data_path={self.benchmark_data_path}, kwargs={kwargs}")
 
     def __str__(self):
         return f'{self.__class__.__name__}'
@@ -52,7 +53,8 @@ class CsvComparison(BenchmarkTool):
         :param mode: str, mode
         :param attribute: str, atribute key defaults to None
         """
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         if self.unsafe_load:
             self.logger.debug(f"Data path is {self.benchmark_data_path}")
@@ -63,11 +65,13 @@ class CsvComparison(BenchmarkTool):
         if self.benchmark_data_path is None:
             return None  # todo this is required for the input plan comparison tools
         if not os.path.exists(self.benchmark_data_path):
-            raise UserWarning(f"Unable to find benchmark {self.benchmark_data_path}.")
-        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+            raise UserWarning(
+                f"Unable to find benchmark {self.benchmark_data_path}.")
+        benchmarks_df = pd.read_csv(
+            self.benchmark_data_path, index_col=self.index_fields)
         if self.value_field not in benchmarks_df.columns:
-            raise UserWarning(f"Incorrectly formatted benchmarks, expected {self.value_field} column.")
-
+            raise UserWarning(
+                f"Incorrectly formatted benchmarks, expected {self.value_field} column.")
 
     def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -78,20 +82,25 @@ class CsvComparison(BenchmarkTool):
         # Read benchmark and simulation csv files
         self.logger.debug(f"Loading BM data from {self.benchmark_data_path}")
         self.logger.debug(f"Using indices '{self.index_fields}'")
-        benchmarks_df = pd.read_csv(self.benchmark_data_path, index_col=self.index_fields)
+        benchmarks_df = pd.read_csv(
+            self.benchmark_data_path, index_col=self.index_fields)
 
-        simulation_path = os.path.join(self.config.output_path, self.simulation_name)
+        simulation_path = os.path.join(
+            self.config.output_path, self.simulation_name)
         self.logger.debug(f"Loading Simulation data from {simulation_path}")
-        simulation_df = pd.read_csv(simulation_path, index_col=self.index_fields)
+        simulation_df = pd.read_csv(
+            simulation_path, index_col=self.index_fields)
 
         # compare
-        bm_df = pd.concat([benchmarks_df[self.value_field], simulation_df[self.value_field]], axis = 1)
+        bm_df = pd.concat([benchmarks_df[self.value_field],
+                          simulation_df[self.value_field]], axis=1)
         bm_df.columns = self.output_value_fields
         bm_df.dropna(0, inplace=True)
 
         self.plot_comparisons(bm_df)
 
-        bm_df['difference'] = bm_df[self.output_value_fields[0]] - bm_df[self.output_value_fields[1]]
+        bm_df['difference'] = bm_df[self.output_value_fields[0]] - \
+            bm_df[self.output_value_fields[1]]
         bm_df['abs_difference'] = bm_df.difference.abs()
 
         # write results
@@ -101,9 +110,9 @@ class CsvComparison(BenchmarkTool):
 
         # evaluation metrics
         scores = {
-            'mse':np.mean(bm_df['difference'] ** 2), # mean squared error
+            'mse': np.mean(bm_df['difference'] ** 2),  # mean squared error
             'mae': np.mean(bm_df.abs_difference)
-            }
+        }
 
         return scores
 
@@ -111,14 +120,15 @@ class CsvComparison(BenchmarkTool):
         for kind in self.plot_types:
             figure = self.plot(df, kind=kind)
             if figure is not None:
-                figure.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}_{kind}.png'))
+                figure.savefig(os.path.join(self.config.output_path,
+                               'benchmarks', f'{self.name}_{kind}.png'))
 
-    def plot(self, df:pd.DataFrame, kind:str) -> plt.figure:
+    def plot(self, df: pd.DataFrame, kind: str) -> plt.figure:
         """
         Comparison plot, either bar, line or histograms supported.
         """
         if kind == "hist":
-            return df.plot.hist(figsize=(6,4)).get_figure()
+            return df.plot.hist(figsize=(6, 4)).get_figure()
         if kind == "bar":
             return self.barline(df, kind="bar")
         if kind == "line":
@@ -139,13 +149,15 @@ class CsvComparison(BenchmarkTool):
         """
         if isinstance(df.index, pd.MultiIndex):
             if not len(df.index.levels) == 2:
-                self.logger.warning(f"{self} cannot handle multi index > 2, returning None.")
+                self.logger.warning(
+                    f"{self} cannot handle multi index > 2, returning None.")
                 return None
-            groups = [(m, g) for m, g in df.groupby(df.index.get_level_values(-1))]
+            groups = [(m, g)
+                      for m, g in df.groupby(df.index.get_level_values(-1))]
             n = len(groups)
             if n == 1:
                 try_sort_on_numeric_index(df)
-                fig = df.plot(figsize=(6,4), kind=kind, rot=90).get_figure()
+                fig = df.plot(figsize=(6, 4), kind=kind, rot=90).get_figure()
                 fig.tight_layout()
                 return fig
 
@@ -158,7 +170,7 @@ class CsvComparison(BenchmarkTool):
             return fig
         else:
             try_sort_on_numeric_index(df)
-            fig = df.plot(figsize=(6,4), kind=kind, rot=90).get_figure()
+            fig = df.plot(figsize=(6, 4), kind=kind, rot=90).get_figure()
             fig.tight_layout()
             return fig
 
@@ -168,7 +180,7 @@ class TripDurationsComparison(CsvComparison):
     """
     Compares observed trip durations against thise in trip_logs. Expects bm data with format:
 
-    agent,seq,mode,duration_s
+    agent_id,seq,mode,duration_s
     chris,1,car,454.0
     chris,2,car,463.0
     nick,1,car,4.0
@@ -190,7 +202,7 @@ class TripDurationsComparison(CsvComparison):
         mode,
         groupby_person_attribute=None,
         **kwargs
-        ):
+    ):
         self.requirements = ['trip_logs']
         self.valid_modes = ["all"]
         self.simulation_name = "trip_logs_all_trips.csv"
@@ -198,9 +210,9 @@ class TripDurationsComparison(CsvComparison):
 
         # check for mode_consistent option and remove (not a required option for managers)
         if kwargs.pop("mode_consistent", False) is True:
-            self.index_fields = ["agent", "seq", "mode"]
+            self.index_fields = ["agent_id", "seq", "mode"]
         else:
-            self.index_fields = ["agent", "seq"]
+            self.index_fields = ["agent_id", "seq"]
 
         self.weight = 1
 
@@ -209,7 +221,7 @@ class TripDurationsComparison(CsvComparison):
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
-            )
+        )
 
 
 class LinkVehicleSpeedsComparison(CsvComparison):
@@ -246,17 +258,19 @@ class LinkVehicleSpeedsComparison(CsvComparison):
         mode,
         groupby_person_attribute=None,
         **kwargs
-        ):
+    ):
         self.requirements = ['link_vehicle_speeds']
         self.invalid_modes = ['all']
 
         # get required time-slice from kwargs
-        time_slice = kwargs.pop("time_slice", None)  # this is the required column field, typically hour of day
+        # this is the required column field, typically hour of day
+        time_slice = kwargs.pop("time_slice", None)
         if time_slice is None:
-            raise ValueError(f"Not found 'time_slice' in {self} kwargs: {kwargs}'")
+            raise ValueError(
+                f"Not found 'time_slice' in {self} kwargs: {kwargs}'")
         self.value_field = str(time_slice)
 
-        self.index_fields = ['id']
+        self.index_fields = ['link_id']
         self.weight = 1
 
         super().__init__(
@@ -264,11 +278,12 @@ class LinkVehicleSpeedsComparison(CsvComparison):
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
-            )
+        )
         self.groupby_person_attribute = groupby_person_attribute
         self.simulation_name = f"link_vehicle_speeds_{mode}_average"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -285,7 +300,7 @@ class TripModeSharesComparison(CsvComparison):
         mode,
         groupby_person_attribute=None,
         **kwargs
-        ):
+    ):
         self.requirements = ['trip_modes']
         self.valid_modes = ['all']
         self.value_field = 'share'
@@ -297,11 +312,12 @@ class TripModeSharesComparison(CsvComparison):
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
-            )
+        )
         self.groupby_person_attribute = groupby_person_attribute
         self.simulation_name = f"trip_modes_all"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -318,7 +334,7 @@ class TripModeCountsComparison(CsvComparison):
         mode,
         groupby_person_attribute=None,
         **kwargs
-        ):
+    ):
         self.requirements = ['trip_modes']
         self.valid_modes = ['all']
         self.value_field = 'count'
@@ -330,11 +346,12 @@ class TripModeCountsComparison(CsvComparison):
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
-            )
+        )
         self.groupby_person_attribute = groupby_person_attribute
         self.simulation_name = f"trip_modes_all"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -359,7 +376,8 @@ class TripActivityModeSharesComparison(CsvComparison):
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -384,7 +402,8 @@ class TripActivityModeCountsComparison(CsvComparison):
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -401,7 +420,7 @@ class PlanModeSharesComparison(CsvComparison):
         mode,
         groupby_person_attribute=None,
         **kwargs
-        ):
+    ):
         self.requirements = ['plan_modes']
         self.valid_modes = ['all']
         self.value_field = 'share'
@@ -413,11 +432,12 @@ class PlanModeSharesComparison(CsvComparison):
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
-            )
+        )
         self.groupby_person_attribute = groupby_person_attribute
         self.simulation_name = f"plan_modes_all"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -434,7 +454,7 @@ class PlanModeCountsComparison(CsvComparison):
         mode,
         groupby_person_attribute=None,
         **kwargs
-        ):
+    ):
         self.requirements = ['plan_modes']
         self.valid_modes = ['all']
         self.value_field = 'count'
@@ -446,11 +466,12 @@ class PlanModeCountsComparison(CsvComparison):
             mode=mode,
             groupby_person_attribute=groupby_person_attribute,
             **kwargs
-            )
+        )
         self.groupby_person_attribute = groupby_person_attribute
         self.simulation_name = f"plan_modes_all"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -475,7 +496,8 @@ class PlanActivityModeSharesComparison(CsvComparison):
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -500,7 +522,8 @@ class PlanActivityModeCountsComparison(CsvComparison):
         for act in destination_activities:
             self.simulation_name += f"_{act}"
         if groupby_person_attribute is not None:
-            self.logger.debug(f"Found 'groupby_person_attribute': {groupby_person_attribute}")
+            self.logger.debug(
+                f"Found 'groupby_person_attribute': {groupby_person_attribute}")
             self.simulation_name += f"_{groupby_person_attribute}"
             self.index_fields.append("class")
             self.logger.debug(f"Index fields={self.index_fields}")
@@ -597,14 +620,14 @@ class LinkCounterComparison(BenchmarkTool):
         super().__init__(
             config=config,
             mode=mode,
-            benchmark_data_path = benchmark_data_path,
+            benchmark_data_path=benchmark_data_path,
             **kwargs
-            )
+        )
 
         self.mode = mode
         self.logger.debug(
             f"Initiating: {str(self)} with name: {self.name}"
-            )
+        )
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
@@ -631,7 +654,7 @@ class LinkCounterComparison(BenchmarkTool):
                     missing_counters += 1
                     self.logger.warning(
                         f"Benchmark data has no links - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
-                        )
+                    )
 
         # Check for number of missing BM links. Note this is a fault with the BM (ie missing links)
         missing = missing_counters / total_counters
@@ -643,9 +666,9 @@ class LinkCounterComparison(BenchmarkTool):
         if missing > 0.5:
             self.logger.warning(
                 f"{str(self)} has more than 50% ({missing*100}%) BMs with no links."
-                )
+            )
 
-    def build(self, resource: dict, write_path: Optional[str]=None) -> dict:
+    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         :return: Dictionary of scores {'name': float}
@@ -676,8 +699,10 @@ class LinkCounterComparison(BenchmarkTool):
         results_name = f"link_vehicle_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
         results_df = pd.read_csv(results_path)
-        results_df.index = results_df.link_id.map(str)  # indices converted to strings
-        results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
+        results_df.index = results_df.link_id.map(
+            str)  # indices converted to strings
+        # just keep hourly counts
+        results_df = results_df[[str(h) for h in range(24)]]
 
         # build benchmark results
         snaps = 0
@@ -694,9 +719,10 @@ class LinkCounterComparison(BenchmarkTool):
             for direction, counter in counter_location.items():
 
                 links = counter['links']
-                if links==[]:
-                    continue # some links are empty lists, we skip them
-                links = [str(link) for link in links]  # force all ids to strings
+                if links == []:
+                    continue  # some links are empty lists, we skip them
+                # force all ids to strings
+                links = [str(link) for link in links]
                 bm_hours = [str(h) for h in list(counter['counts'])]
                 counts_array = np.array(list(counter['counts'].values()))
 
@@ -720,11 +746,12 @@ class LinkCounterComparison(BenchmarkTool):
                         )
                     else:
                         snaps += 1
-                        sim_result += np.array(results_df.loc[str(link_id), bm_hours])
+                        sim_result += np.array(
+                            results_df.loc[str(link_id), bm_hours])
 
                 if not sum(sim_result):
                     found = False
-                    continue # this will ignore failed joins and zero counters
+                    continue  # this will ignore failed joins and zero counters
                 else:
                     found = True
 
@@ -760,7 +787,8 @@ class LinkCounterComparison(BenchmarkTool):
                     result_line[f"bm_{str(time)}"] = counts_array[i]
 
                 for i, time in enumerate(bm_hours):
-                    result_line[f"diff_{str(time)}"] = sim_result[i] - counts_array[i]
+                    result_line[f"diff_{str(time)}"] = sim_result[i] - \
+                        counts_array[i]
 
                 bm_results.append(result_line)
 
@@ -827,14 +855,17 @@ class LinkCounterComparison(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(
+            self.config.output_path, "benchmarks", plot_name))
 
         # plot normalised by number of counters
         bm_results_normalised_df = bm_results_summary_df
-        bm_results_normalised_df['volume']=bm_results_normalised_df['volume'] / total_counters
-        bm_results_normalised_plot = comparative_plots(bm_results_normalised_df)
+        bm_results_normalised_df['volume'] = bm_results_normalised_df['volume'] / total_counters
+        bm_results_normalised_plot = comparative_plots(
+            bm_results_normalised_df)
         plot_name = f'{self.name}_summary_normalised.png'
-        bm_results_normalised_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_normalised_plot.savefig(os.path.join(
+            self.config.output_path, "benchmarks", plot_name))
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -855,13 +886,14 @@ class TransitInteractionComparison(BenchmarkTool):
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, benchmark_data_path=benchmark_data_path, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         benchmark_data_path=benchmark_data_path, **kwargs)
 
         self.mode = mode
 
         self.logger.debug(
             f"Initiating {str(self)}"
-            )
+        )
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
@@ -888,7 +920,7 @@ class TransitInteractionComparison(BenchmarkTool):
                     missing_counters += 1
                     self.logger.debug(
                         f"Benchmark data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
-                        )
+                    )
 
         # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
         missing = missing_counters / total_counters
@@ -900,7 +932,7 @@ class TransitInteractionComparison(BenchmarkTool):
         if missing > 0.5:
             self.logger.error(
                 f"{str(self)} has more than 50% ({missing*100}%) BMs with no stops."
-                )
+            )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -933,9 +965,11 @@ class TransitInteractionComparison(BenchmarkTool):
         for direction in ["boardings", "alightings"]:
             results_name = f"stop_passenger_counts_{self.mode}_{direction}.csv"
             results_path = os.path.join(self.config.output_path, results_name)
-            results_df = pd.read_csv(results_path, index_col=0,dtype={0:str})
-            results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
-            results_df.index = results_df.index.map(str)  # indices converted to strings
+            results_df = pd.read_csv(results_path, index_col=0, dtype={0: str})
+            # just keep hourly counts
+            results_df = results_df[[str(h) for h in range(24)]]
+            results_df.index = results_df.index.map(
+                str)  # indices converted to strings
             results_df.index.name = 'stop_id'
             model_results[direction] = results_df
 
@@ -963,7 +997,7 @@ class TransitInteractionComparison(BenchmarkTool):
                 if not direction in model_results:
                     raise UserWarning(
                         f"Direction: {direction} not available in model results"
-                        )
+                    )
 
                 # check if count times are available
                 if not set(bm_hours) <= set(model_results[direction].columns):
@@ -983,7 +1017,8 @@ class TransitInteractionComparison(BenchmarkTool):
                         found = False
                     else:
                         snaps += 1
-                        sim_result += np.array(model_results[direction].loc[str(stop_id), bm_hours])
+                        sim_result += np.array(
+                            model_results[direction].loc[str(stop_id), bm_hours])
                         found = True
 
                 # calc score
@@ -1018,7 +1053,8 @@ class TransitInteractionComparison(BenchmarkTool):
                     result_line[f"bm_{str(time)}"] = counts_array[i]
 
                 for i, time in enumerate(bm_hours):
-                    result_line[f"diff_{str(time)}"] = sim_result[i] - counts_array[i]
+                    result_line[f"diff_{str(time)}"] = sim_result[i] - \
+                        counts_array[i]
 
                 bm_results.append(result_line)
 
@@ -1066,7 +1102,8 @@ class TransitInteractionComparison(BenchmarkTool):
 
         if failed_snaps:
             report = 100 * failed_snaps / (snaps + failed_snaps)
-            self.logger.warning(f" {report}% of stop_ids not found for bm: {self.name}")
+            self.logger.warning(
+                f" {report}% of stop_ids not found for bm: {self.name}")
 
         # build results df
         bm_results_df = pd.DataFrame(bm_results)
@@ -1086,7 +1123,8 @@ class TransitInteractionComparison(BenchmarkTool):
 
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(
+            self.config.output_path, "benchmarks", plot_name))
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -1119,7 +1157,7 @@ class PassengerStopToStop(BenchmarkTool):
 
         self.logger.debug(
             f"Initiating {str(self)}"
-            )
+        )
 
         with open(self.benchmark_data_path) as json_file:
             self.counts = json.load(json_file)
@@ -1143,7 +1181,7 @@ class PassengerStopToStop(BenchmarkTool):
                     missing_counters += 1
                     self.logger.debug(
                         f"Benchmark {od} data has no stop/s - suggests error with Bench (i.e. MATSIM network has not matched to BM)."
-                        )
+                    )
 
         # Check for number of missing BM stops. Note this is a fault with the BM (ie missing stops)
         missing = missing_counters / total_counters
@@ -1155,7 +1193,7 @@ class PassengerStopToStop(BenchmarkTool):
         if missing > 0.5:
             self.logger.error(
                 f"{str(self)} has more than 50% ({missing*100}%) BMs with no stops."
-                )
+            )
 
     def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
@@ -1186,9 +1224,11 @@ class PassengerStopToStop(BenchmarkTool):
         # Build paths and load appropriate volume counts from previous workstation
         results_name = f"stop_to_stop_passenger_counts_{self.mode}.csv"
         results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path, index_col=False,dtype = {0:str})
-        results_df.origin = results_df.origin.map(str)  # indices converted to strings
-        results_df.destination = results_df.destination.map(str)  # indices converted to strings
+        results_df = pd.read_csv(results_path, index_col=False, dtype={0: str})
+        results_df.origin = results_df.origin.map(
+            str)  # indices converted to strings
+        results_df.destination = results_df.destination.map(
+            str)  # indices converted to strings
         results_df = results_df.set_index(["origin", "destination"])
         # results_df = results_df[[str(h) for h in range(24)]]  # just keep hourly counts
         # results_df.index = results_df.index.map(str)  # indices converted to strings
@@ -1272,7 +1312,8 @@ class PassengerStopToStop(BenchmarkTool):
                     result_line[f"bm_{str(time)}"] = counts_array[i]
 
                 for i, time in enumerate(bm_hours):
-                    result_line[f"diff_{str(time)}"] = sim_result[i] - counts_array[i]
+                    result_line[f"diff_{str(time)}"] = sim_result[i] - \
+                        counts_array[i]
 
                 bm_results.append(result_line)
 
@@ -1324,7 +1365,8 @@ class PassengerStopToStop(BenchmarkTool):
 
         if failed_snaps:
             report = 100 * failed_snaps / (snaps + failed_snaps)
-            self.logger.warning(f" {report}% of stop_ids not found for bm: {self.name}")
+            self.logger.warning(
+                f" {report}% of stop_ids not found for bm: {self.name}")
 
         # build results df
         bm_results_df = pd.DataFrame(bm_results)
@@ -1343,18 +1385,20 @@ class PassengerStopToStop(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(
+            self.config.output_path, "benchmarks", plot_name))
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
 
 # ================= Input/Output Plan Comparison BMs  ====================
 
+
 class PlanComparisonTripStart(CsvComparison):
     simulation_name = 'trip_logs_all_trips.csv'
     requirements = ['trip_logs']
     valid_modes = ['all']
-    index_fields = ['agent', 'seq']
+    index_fields = ['agent_id', 'seq']
     value_field = 'start_s'
     output_value_fields = ['start_s_bm', 'start_s_sim']
     plot = False
@@ -1383,7 +1427,7 @@ class PlanComparisonTripDuration(CsvComparison):
     simulation_name = 'trip_logs_all_trips.csv'
     requirements = ['trip_logs']
     valid_modes = ['all']
-    index_fields = ['agent', 'seq']
+    index_fields = ['agent_id', 'seq']
     value_field = 'duration_s'
     output_value_fields = ['duration_s_bm', 'duration_s_sim']
     plot = False
@@ -1413,7 +1457,7 @@ class PlanComparisonActivityStart(CsvComparison):
     simulation_name = 'trip_logs_all_activities.csv'
     requirements = ['trip_logs']
     valid_modes = ['all']
-    index_fields = ['agent', 'seq']
+    index_fields = ['agent_id', 'seq']
     value_field = 'start_s'
     output_value_fields = ['start_s_bm', 'start_s_sim']
     plot = False
@@ -1442,7 +1486,7 @@ class PlanComparisonActivityDuration(CsvComparison):
     simulation_name = 'trip_logs_all_activities.csv'
     requirements = ['trip_logs']
     valid_modes = ['all']
-    index_fields = ['agent', 'seq']
+    index_fields = ['agent_id', 'seq']
     value_field = 'duration_s'
     output_value_fields = ['duration_s_bm', 'duration_s_sim']
     plot = False
@@ -1507,12 +1551,14 @@ class InputModeComparison(BenchmarkTool):
                 f'InputPlanComparison tool overriding {data_path_from_config} with {self.benchmark_data_path}'
             )
 
-    def build(self, resources: dict, write_path: Optional[str]=None) -> dict:
-        usecols = ['agent', 'seq', 'mode']
-        indexcols = ['agent', 'seq']
+    def build(self, resources: dict, write_path: Optional[str] = None) -> dict:
+        usecols = ['agent_id', 'seq', 'mode']
+        indexcols = ['agent_id', 'seq']
 
-        trips_input = pd.read_csv(self.benchmark_data_path, usecols=usecols, header=0).set_index(indexcols)
-        trips_output = pd.read_csv(self.simulation_data_path, usecols=usecols, header=0).set_index(indexcols)
+        trips_input = pd.read_csv(
+            self.benchmark_data_path, usecols=usecols, header=0).set_index(indexcols)
+        trips_output = pd.read_csv(
+            self.simulation_data_path, usecols=usecols, header=0).set_index(indexcols)
 
         trips_input.rename({'mode': 'prev_mode'}, axis=1, inplace=True)
         trips_output.rename({'mode': 'new_mode'}, axis=1, inplace=True)
@@ -1524,9 +1570,11 @@ class InputModeComparison(BenchmarkTool):
         results_table['new_mode'].fillna('unmatched', inplace=True)
 
         # build confusion matrix representations
-        results_matrix_counts = results_table.value_counts(subset=['prev_mode', 'new_mode']).unstack()
-        results_matrix_counts.fillna(0, inplace=True) # unobserved pairs = 0
-        results_matrix_pcts = results_matrix_counts.div(results_matrix_counts.sum(1), axis=0)
+        results_matrix_counts = results_table.value_counts(
+            subset=['prev_mode', 'new_mode']).unstack()
+        results_matrix_counts.fillna(0, inplace=True)  # unobserved pairs = 0
+        results_matrix_pcts = results_matrix_counts.div(
+            results_matrix_counts.sum(1), axis=0)
 
         # write results
         csv_name = f'{self.name}.csv'
@@ -1542,7 +1590,8 @@ class InputModeComparison(BenchmarkTool):
         self.write_csv(results_matrix_pcts, csv_path, write_path=write_path)
 
         # score = percent correct
-        count_no_shift = len(results_table.loc[results_table.prev_mode == results_table.new_mode])
+        count_no_shift = len(
+            results_table.loc[results_table.prev_mode == results_table.new_mode])
         score = {'pct': (count_no_shift / len(results_table))}
 
         if self.plot:
@@ -1555,7 +1604,7 @@ class InputModeComparison(BenchmarkTool):
         df,
         result_name="_matrix_pct",
         cmap='summer',
-        figsize=(12,12),
+        figsize=(12, 12),
         val_label_size=12
     ) -> None:
 
@@ -1569,7 +1618,7 @@ class InputModeComparison(BenchmarkTool):
         ax.set_yticks(np.arange(len(df.index)))
         ax.set_yticklabels(list(df.index))
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-                rotation_mode="anchor")
+                 rotation_mode="anchor")
 
         # add labels
         for i, idx in enumerate(df.index):
@@ -1586,7 +1635,8 @@ class InputModeComparison(BenchmarkTool):
 
         plt.tight_layout()
 
-        plt.savefig(os.path.join(self.config.output_path,'benchmarks', f'{self.name}{result_name}.png'))
+        plt.savefig(os.path.join(self.config.output_path,
+                    'benchmarks', f'{self.name}{result_name}.png'))
 
 
 # ========================== Old style BMs below ==========================
@@ -1604,7 +1654,8 @@ class PointsCounter(BenchmarkTool):
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.mode = mode
 
@@ -1648,7 +1699,8 @@ class PointsCounter(BenchmarkTool):
         results_df = pd.read_csv(results_path)
         results_df.index = results_df.link_id.map(str)
 
-        results_df = results_df[[str(h) for h in range(24)]]  # just keep counts
+        results_df = results_df[[str(h)
+                                 for h in range(24)]]  # just keep counts
 
         # build benchmark results
         bm_results = []
@@ -1722,7 +1774,8 @@ class PointsCounter(BenchmarkTool):
         bm_results_summary_df = merge_summary_stats(bm_results_summary)
         bm_results_summary_plot = comparative_plots(bm_results_summary_df)
         plot_name = f'{self.name}_{self.mode}_summary.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
+        bm_results_summary_plot.savefig(os.path.join(
+            self.config.output_path, "benchmarks", plot_name))
         plt.close()
 
         return {'counters': sum(bm_scores) / len(bm_scores)}
@@ -1745,7 +1798,8 @@ class Cordon(BenchmarkTool):
         :param config: Config object
         :param mode: str, mode
         """
-        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+        super().__init__(config=config, mode=mode,
+                         groupby_person_attribute=groupby_person_attribute, **kwargs)
 
         self.cordon_counts = []
 
@@ -1766,7 +1820,7 @@ class Cordon(BenchmarkTool):
                 links_df
             ))
 
-    def build(self, resource: dict, write_path: Optional[str]=None) -> dict:
+    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
         """
         Builds paths for modal volume count outputs, loads and combines for scoring.
         Collects scoring from CordonCount objects.
@@ -1839,11 +1893,11 @@ class CordonDirectionCount(BenchmarkTool):
         counts_array = np.zeros(len(self.hours))
 
         df = counts_df.loc[counts_df.Year == self.year, :]
-        assert(len(df)),\
+        assert (len(df)),\
             f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
 
         df = df.loc[df.Hour.isin(self.hours), :]
-        assert(len(df)),\
+        assert (len(df)),\
             f'No {self.cordon_name} BM counts left from after filtering by hours:{self.hours}'
 
         df = df.loc[counts_df.Direction == self.dir_code, :]
@@ -1851,7 +1905,8 @@ class CordonDirectionCount(BenchmarkTool):
 
         for site_index in site_indexes:
             site_df = df.loc[df.Site == site_index, :]
-            hour_counts = np.array(site_df.sort_values('Hour').loc[:, self.mode])
+            hour_counts = np.array(
+                site_df.sort_values('Hour').loc[:, self.mode])
             assert len(hour_counts) == len(self.hours),\
                 f'Not extracted the right amount of hours {self.hours}'
 
@@ -1880,7 +1935,7 @@ class CordonDirectionCount(BenchmarkTool):
         count = 0
 
         df = counts_df.loc[counts_df.Year == self.year, :]
-        assert(len(df)),\
+        assert (len(df)),\
             f'No {self.cordon_name} benchmark counts left from after filtering by {self.year}'
 
         df = df.loc[df.Direction == self.dir_code, :]
@@ -1929,16 +1984,19 @@ class HourlyCordonDirectionCount(CordonDirectionCount):
                 self.logger.warning("Zero filling results for benchmark")
                 result_df.loc[link_id] = 0
 
-        model_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
+        model_results = result_df.loc[result_df.index.isin(
+            self.link_ids), :].copy()
         model_results.loc[:, 'mode'] = self.mode
 
         # write cordon model results
-        csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
+        csv_name = '{}_{}_model_results.csv'.format(
+            self.cordon_name, self.direction)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(model_results, csv_path, write_path=write_path)
 
         # aggregate for each class
-        classes_df = model_results.groupby('subpopulation').sum()  # TODO this is hardcoded - will break for other options
+        # TODO this is hardcoded - will break for other options
+        classes_df = model_results.groupby('subpopulation').sum()
 
         # filter model results for hours
         select_cols = [str(i) for i in self.hours]
@@ -1958,9 +2016,11 @@ class HourlyCordonDirectionCount(CordonDirectionCount):
         count_df = self.counts_to_df(counts_array, )
 
         # Label and write benchmark csv
-        benchmark_df = pd.concat([count_df, classes_df]).groupby('source').sum()
+        benchmark_df = pd.concat(
+            [count_df, classes_df]).groupby('source').sum()
 
-        csv_name = '{}_{}_benchmark.csv'.format(self.cordon_name, self.direction)
+        csv_name = '{}_{}_benchmark.csv'.format(
+            self.cordon_name, self.direction)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(benchmark_df, csv_path, write_path=write_path)
 
@@ -1989,11 +2049,13 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
                 self.logger.warning("Zero filling results for benchmark")
                 result_df.loc[link_id] = 0
 
-        model_results = result_df.loc[result_df.index.isin(self.link_ids), :].copy()
+        model_results = result_df.loc[result_df.index.isin(
+            self.link_ids), :].copy()
         model_results.loc[:, 'mode'] = self.mode
 
         # write cordon model results
-        csv_name = '{}_{}_model_results.csv'.format(self.cordon_name, self.direction)
+        csv_name = '{}_{}_model_results.csv'.format(
+            self.cordon_name, self.direction)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(model_results, csv_path, write_path=write_path)
 
@@ -2020,74 +2082,13 @@ class PeriodCordonDirectionCount(CordonDirectionCount):
 
         # Label and write benchmark csv
         benchmark_df = pd.concat([count_df, result_df]).groupby('source').sum()
-        csv_name = '{}_{}_benchmark.csv'.format(self.cordon_name, self.direction)
+        csv_name = '{}_{}_benchmark.csv'.format(
+            self.cordon_name, self.direction)
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(benchmark_df, csv_path, write_path=write_path)
 
         # Calc score
         return np.absolute(result - count) / count
-
-
-class OldModeSharesComparison(BenchmarkTool):
-
-    requirements = ["mode_shares"]
-    valid_modes = ['all']
-    options_enabled = True
-
-    def __init__(self, config, mode, groupby_person_attribute=None, benchmark_data_path=None, **kwargs):
-        """
-        ModeStat parent object for benchmarking with mode share data.
-        :param config: Config object
-        :param mode: str, mode
-        """
-        super().__init__(
-            config=config,
-            mode=mode,
-            groupby_person_attribute=groupby_person_attribute,
-            benchmark_data_path=benchmark_data_path,
-            **kwargs
-        )
-
-        self.benchmark_df = pd.read_csv(
-            self.benchmark_data_path,
-            header=None,
-            names=['mode', 'benchmark']
-            )
-        self.benchmark_df.set_index('mode', inplace=True)
-
-    def build(self, resource: dict, write_path: Optional[str] = None) -> dict:
-        """
-        Builds paths for mode share outputs, loads and combines with model for scoring.
-        :return: Dictionary of scores
-        """
-        # Build paths and load appropriate volume counts
-        results_name = "mode_shares_all.csv"
-        results_path = os.path.join(self.config.output_path, results_name)
-        results_df = pd.read_csv(results_path,
-                                 header=None,
-                                 names=['mode', 'model'])
-        results_df.set_index('mode', inplace=True)
-
-        # join results
-        summary_df = self.benchmark_df.join(results_df, how='inner')
-        summary_df.loc[:, 'diff'] = summary_df.model - summary_df.benchmark
-
-        # write results
-        csv_name = 'modeshare_results.csv'
-        csv_path = os.path.join('benchmarks', csv_name)
-        self.write_csv(summary_df, csv_path, write_path=write_path)
-
-        #plot
-        summary_df_plot = pd.melt(summary_df.reset_index(), id_vars=['mode'], value_vars = ['benchmark','model'], var_name = 'type', value_name='modeshare')
-        bm_results_summary_plot = comparative_column_plots(summary_df_plot)
-        plot_name = 'modeshare_results.png'
-        bm_results_summary_plot.save(os.path.join(self.config.output_path,"benchmarks", plot_name), verbose=False)
-        plt.close()
-
-        # get scores and write outputs
-        score = sum(((np.absolute(np.array(summary_df.benchmark) - np.array(summary_df.model))) * 100) ** 2)
-
-        return {'counters': score}
 
 
 class TestTownHighwayCounters(PointsCounter):
@@ -2108,7 +2109,8 @@ class SqueezeTownHighwayCounters(PointsCounter):
 
     name = 'squeeze_town_highways'
     benchmark_data_path = get_benchmark_data(
-        os.path.join('squeeze_town', 'highways', 'squeeze_town_highways_bm.json')
+        os.path.join('squeeze_town', 'highways',
+                     'squeeze_town_highways_bm.json')
     )
 
     requirements = ['link_vehicle_counts']
@@ -2176,10 +2178,12 @@ class TestTownPeakIn(Cordon):
     weight = 1
     cordon_counter = PeriodCordonDirectionCount
     benchmark_data_path = get_benchmark_data(
-        os.path.join('test_town', 'test_town_peak_cordon', '2016_peak_in_counts.csv')
+        os.path.join('test_town', 'test_town_peak_cordon',
+                     '2016_peak_in_counts.csv')
     )
     cordon_path = get_benchmark_data(
-        os.path.join('test_town', 'test_town_peak_cordon', 'test_town_cordon.csv')
+        os.path.join('test_town', 'test_town_peak_cordon',
+                     'test_town_cordon.csv')
     )
 
     directions = {'in': 1}
@@ -2275,7 +2279,8 @@ class BenchmarkWorkStation(WorkStation):
             summary[benchmark_name] = sub_summary
 
             for name, score in scores.items():
-                self.logger.info(f' *** {benchmark_name} {name} = {score} *** ')
+                self.logger.info(
+                    f' *** {benchmark_name} {name} = {score} *** ')
                 flat_summary.append([benchmark_name, name, score])
                 self.meta_score += (score * weight)
 
@@ -2284,7 +2289,8 @@ class BenchmarkWorkStation(WorkStation):
         # Write scores
         csv_name = 'benchmark_scores.csv'
 
-        self.scores_df = pd.DataFrame(flat_summary, columns=['benchmark', 'type', 'score'])
+        self.scores_df = pd.DataFrame(
+            flat_summary, columns=['benchmark', 'type', 'score'])
         csv_path = os.path.join('benchmarks', csv_name)
         self.write_csv(self.scores_df, csv_path, write_path=write_path)
 
@@ -2312,9 +2318,9 @@ def merge_summary_stats(bm_results_summary):
             for measurement in list(record):
                 results.append(
                     {
-                    "hour" : int(measurement),
-                    "volume" : record[measurement],
-                    "type" : record_type
+                        "hour": int(measurement),
+                        "volume": record[measurement],
+                        "type": record_type
                     })
 
     return pd.DataFrame(results)
@@ -2322,15 +2328,18 @@ def merge_summary_stats(bm_results_summary):
 
 def comparative_plots(results):
 
-    return ggplot(
-        aes(y="volume", x="hour", color="type"),
-        data=results) + geom_point() + geom_line() + labs(y="Volume",
-        x="Time (hour)"
-        )
+    bms = results[results['type'] == 'benchmark']
+    sims = results[results['type'] == 'simulation']
 
-def comparative_column_plots(results):
-    plot = ggplot(
-        aes(y="modeshare", x="mode", fill="type"),
-        data=results) + geom_col(position="dodge") + labs(y="Mode Share",
-        x="Mode") + theme(axis_text_x = element_text(angle=90,hjust=0.5,vjust=1))
-    return  plot
+    fig, ax = plt.subplots()
+    ax.plot(bms['hour'], bms['volume'],
+            label='benchmark', marker='.', linewidth=1)
+    ax.plot(sims['hour'], sims['volume'],
+            label='simulation', marker='.', linewidth=1)
+    ax.set_xlabel("Time (hour)")
+    ax.set_ylabel("Volume")
+    ax.legend(loc='best')
+    ax.grid(linestyle='--', linewidth=0.5)
+    ax.set_axisbelow(True)
+
+    return fig
