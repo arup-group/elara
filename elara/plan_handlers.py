@@ -1015,10 +1015,6 @@ class SeeTripLogs(PlanHandlerTool):
             trips = []
             act_seq_idx = 0
 
-            # activity_start_dt = self.start_datetime
-            # activity_end_dt = self.start_datetime
-            # todo replace this start datetime with a real start datetime using config
-
             x = None
             y = None
             modes = {}
@@ -1027,11 +1023,7 @@ class SeeTripLogs(PlanHandlerTool):
             for stage in plan:
 
                 # we give each plan an id (to permit comparisons)
-                # innovation_hash = str(uuid.uuid4())
-                innovation_hash = i
-                
-                # append as a number? i.e. 1,2,3,4,5
-                # get rid of time
+                innovation_hash = i    
             
                 if stage.tag == 'activity':
                     act_type = stage.get('type')
@@ -1039,41 +1031,30 @@ class SeeTripLogs(PlanHandlerTool):
                     if not act_type == 'pt interaction':
 
                         act_seq_idx += 1  # increment for a new trip idx
-                        # trip_duration = activity_start_dt - activity_end_dt
-
-                        # end_time_str = stage.get('end_time', '23:59:59')
-
-                        # activity_end_dt = matsim_time_to_datetime(
-                                # activity_start_dt, end_time_str, self.logger, idx=ident
-                        # )
-
-                        # activity_duration = activity_end_dt - activity_start_dt
 
                         x = stage.get('x')
                         y = stage.get('y')
 
                         if modes:  # add to trips log
-
+                            activities.append(
+                                {
+                                'agent': ident,
+                                'act': act_type,
+                                'x': x,
+                                'y': y
+                                }
+                            )
                             trips.append(
                                 {
                                     'agent': ident,
-                                    # 'attribute': attribute,
                                     'seq': act_seq_idx-1,
                                     'mode': self.get_furthest_mode(modes),
-                                    # 'ox': float(activities[-1]['x']),
-                                    # 'oy': float(activities[-1]['y']),
-                                    # 'dx': float(x),
-                                    # 'dy': float(y),
-                                    # 'o_act': activities[-1]['act'],
-                                    # 'd_act': act_type,
-                                    # 'start': activities[-1]['end'],
-                                    # 'start_day': activities[-1]['end_day'],
-                                    # 'end': activity_start_dt.time(),
-                                    # 'end_day': activity_start_dt.day,
-                                    # 'start_s': activities[-1]['end_s'],
-                                    # 'end_s': self.get_seconds(activity_start_dt),
-                                    # 'duration': trip_duration,
-                                    # 'duration_s': trip_duration.total_seconds(),
+                                    'ox': float(activities[-1]['x']),
+                                    'oy': float(activities[-1]['y']),
+                                    'dx': float(x),
+                                    'dy': float(y),
+                                    'o_act': activities[-1]['act'],
+                                    'd_act': act_type,
                                     'distance': trip_distance,
                                     "utility" : float(plan.get("score")),
                                     "selected" : plan.get("selected"),
@@ -1083,36 +1064,7 @@ class SeeTripLogs(PlanHandlerTool):
 
                             modes = {}  # reset for next trip
                             trip_distance = 0  # reset for next trip
-
-                        # activities.append(
-                        #     {
-                        #         'agent': ident,
-                        #         # 'attribute': attribute,
-                        #         'seq': act_seq_idx,
-                        #         'act': act_type,
-                        #         'x': x,
-                        #         'y': y,
-                        #         'start': activity_start_dt.time(),
-                        #         'start_day': activity_start_dt.day,
-                        #         'end': activity_end_dt.time(),
-                        #         'end_day': activity_end_dt.day,
-                        #         'start_s': self.get_seconds(activity_start_dt),
-                        #         'end_s': self.get_seconds(activity_end_dt),
-                        #         'duration': activity_duration,
-                        #         'duration_s': activity_duration.total_seconds()
-                        #     }
-                        # )
-
-                        # activity_start_dt = activity_end_dt
-                    
-                    # if a 'pt interaction' activity has duration (ie it has an 'end_time' attribute)
-                    # then advance the next activity start time accordingly   
-                    # elif stage.get('end_time'):
-                    #     end_time_str = stage.get('end_time')
-
-                    #     activity_start_dt = matsim_time_to_datetime(
-                    #         activity_start_dt, end_time_str, self.logger, idx=ident
-                    #     )
+                            innovation_hash+=1 # increment for next trip
 
                 elif stage.tag == 'leg':
 
@@ -1125,11 +1077,6 @@ class SeeTripLogs(PlanHandlerTool):
                     mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
                     modes[mode] = modes.get(mode, 0) + distance
                     trip_distance = distance
-
-                    # trav_time = stage.get('trav_time')
-                    # h, m, s = trav_time.split(":")
-                    # td = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    # activity_start_dt += td
 
             self.see_trips_log.add(trips)
             summary.extend(trips)
@@ -1162,21 +1109,23 @@ class SeeTripLogs(PlanHandlerTool):
 
             # We find the home locations, based on the origin activity (home)
             # we use home locations for visulisation purposes
-            # homes = trips[trips.o_act=="home"][['ox','oy','agent']]
-            # homes.drop_duplicates(subset=['agent'],keep='first')
+            homes = trips[trips.o_act=="home"][['ox','oy','agent']]
+            homes.drop_duplicates(subset=['agent'],keep='first')
 
             # merge this table into the plans, giving us the ox and oy
-            # plans = plans.merge(homes,on='agent',how='left')
+            plans = plans.merge(homes,on='agent',how='left')
 
-            gdf = plans
+            # gdf = plans
 
             # # todo. Add a warning if many home locations are not found
-            # gdf = geopandas.GeoDataFrame(plans, geometry=geopandas.points_from_xy(plans.ox, plans.oy))
+            gdf = geopandas.GeoDataFrame(plans, 
+                                         geometry=geopandas.points_from_xy(plans.ox, plans.oy), 
+                                         crs='EPSG:27700')
 
             # # dropping some columns
             # # we've used ox/oy to build geometry
             # # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
-            # gdf = gdf.drop(['ox', 'oy', 'mode'], axis=1)
+            gdf = gdf.drop(['mode'], axis=1)
 
             # # British east/northing
             # # TODO need to inherit this from elara config
@@ -1212,7 +1161,6 @@ class SeeTripLogs(PlanHandlerTool):
 
             # # zip them back together again
             gdf = pd.concat([selectedPlans,unSelectedPlans])
-
             self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
 
             # creation of a df where car is selected
@@ -1232,11 +1180,8 @@ class SeeTripLogs(PlanHandlerTool):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
-        print('See Trips Log')
-        print(self.see_trips_log)
         self.see_trips_log.finish()
         # self.results['SeeAllPlansGdf'].finish()
-        
         self.see_unselectedplans_car.finish()
 
     @staticmethod
