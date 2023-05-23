@@ -2118,7 +2118,7 @@ class VehiclePassengerLog(EventHandlerTool):
     Extract a log of passenger boardings and alightings to a PT vehicle.
     """
 
-    requirements = ['events', 'transit_schedule']
+    requirements = ['events', 'transit_schedule', 'vehicles']
 
     def __init__(self, config, mode="all", **kwargs):
         super().__init__(config, mode, **kwargs)

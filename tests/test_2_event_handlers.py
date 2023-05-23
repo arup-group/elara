@@ -11,6 +11,13 @@ from elara import event_handlers
 from elara.event_handlers import EventHandlerWorkStation, LinkVehicleCounts
 
 from tests.test_helpers import get_vehicle_capacity_from_vehicles_xml_file
+from elara.event_handlers import (VehiclePassengerGraph, StopPassengerWaiting, LinkVehicleCounts,
+                                 LinkVehicleCapacity, LinkVehicleSpeeds, LinkPassengerCounts,
+                                 StopPassengerCounts, StopToStopPassengerCounts,
+                                 VehicleStopToStopPassengerCounts, VehicleDepartureLog,
+                                 VehicleLinkLog, RoutePassengerCounts, AgentTollsLog,
+                                 VehiclePassengerLog, VehicleLinksAnimate)
+
 
 # paths in config files etc. assume we're in the repo's root, so make sure we always are
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -73,6 +80,31 @@ def test_config():
 def test_tool_naming(test_config):
     tool = LinkVehicleCounts(config=test_config)
     assert (str(tool)) == "LinkVehicleCountsAll"
+
+
+def test_class_requirements(test_config):
+    # List all class with requirements
+    class_requirements = {
+                        VehiclePassengerGraph: ['events', 'transit_vehicles', 'attributes', 'vehicles'],
+                        StopPassengerWaiting: ['events', 'transit_schedule', 'attributes', 'vehicles'],
+                        LinkVehicleCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        LinkVehicleCapacity: ['events', 'network', 'transit_schedule', 'transit_vehicles', 'attributes', 'vehicles'],
+                        LinkVehicleSpeeds: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        LinkPassengerCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        StopPassengerCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        StopToStopPassengerCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        VehicleStopToStopPassengerCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        VehicleDepartureLog: ['events', 'transit_schedule', 'vehicles'],
+                        VehicleLinkLog: ['events', 'transit_schedule', 'vehicles'],
+                        RoutePassengerCounts: ['events', 'network', 'transit_schedule', 'attributes', 'vehicles'],
+                        AgentTollsLog: ['events', 'attributes', 'vehicles'],
+                        VehiclePassengerLog: ['events', 'transit_schedule', 'vehicles'],
+                        VehicleLinksAnimate: ['events', 'transit_schedule', 'network', 'vehicles']
+                        }
+
+    for cls, requirements in class_requirements.items():
+        instance = cls(test_config)
+        assert instance.requirements == requirements, f"Requirements do not match for class {cls.__name__}"
 
 
 def handler_from_config(config_path):
@@ -144,7 +176,8 @@ def test_get_veh_mode(base_handler):
 
 @pytest.fixture
 def active_mode_handler():
-    config = os.path.join(test_dir, 'test_fixtures', 'active_modes', 'test_xml_scenario.toml')
+    config = os.path.join(test_dir, 'test_fixtures',
+                          'active_modes', 'test_xml_scenario.toml')
     return handler_from_config(config)
 
 
@@ -1748,3 +1781,4 @@ def test_load_all_event_handler_manager_with_mode_car_and_groupby_subpopulation(
                 cols = [t for t in range(handler.config.time_periods)]
                 df = gdf.loc[:, cols]
                 assert np.sum(df.values)
+
