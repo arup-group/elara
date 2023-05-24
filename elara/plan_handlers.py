@@ -1161,28 +1161,31 @@ class SeeTripLogs(PlanHandlerTool):
 
             # # zip them back together again
             gdf = pd.concat([selectedPlans,unSelectedPlans])
-            self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
+            #self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
 
             # creation of a df where car is selected
             # but PT exists in their unchosen plans
             # "mode shift opportunity" gdf
-            PlanAgentsSel = gdf[gdf.selected==True]
-            carPlanAgentsSel = PlanAgentsSel[PlanAgentsSel.dominantTripMode=='car']
+            #PlanAgentsSel = gdf[gdf.selected==True]
+            carSelectedPlans = selectedPlans[selectedPlans.dominantTripMode=='car']
 
-            unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carPlanAgentsSel.agent.unique())]
+            unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carSelectedPlans.agent.unique())]
 
             # This finds all modes that aren't car, generally bike, walk, pt etc
             unSelectedPlansCarSelected = unSelectedPlansCarSelected[~unSelectedPlansCarSelected.dominantTripMode.isin(['car'])]
+            # self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf[gdf['agent']=='fatema'])
+            self.results['SeeUnSelectedPlansCarSelectedGdf'] = self.results['SeeUnSelectedPlansCarSelectedGdf'].append(unSelectedPlansCarSelected)
 
-            self.see_unselectedplans_car.add(self.results['SeeUnSelectedPlansCarSelectedGdf'])#.append(unSelectedPlansCarSelected)
+            #self.see_unselectedplans_car.add(self.results['SeeUnSelectedPlansCarSelectedGdf'])#.append(unSelectedPlansCarSelected)
 
     def finalise(self):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
         self.see_trips_log.finish()
+        #self.results.finish()
         # self.results['SeeAllPlansGdf'].finish()
-        self.see_unselectedplans_car.finish()
+        #self.see_unselectedplans_car.finish()
 
     @staticmethod
     def get_seconds(dt: datetime) -> int:
