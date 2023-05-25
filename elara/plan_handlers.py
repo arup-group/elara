@@ -944,7 +944,7 @@ class SeeTripLogs(PlanHandlerTool):
         self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
 
         self.see_trips_log = None
-        self.see = see
+        #self.see = see
 
         # Initialise results storage
         self.results = dict()  # Result dataframes ready to export
@@ -979,12 +979,9 @@ class SeeTripLogs(PlanHandlerTool):
         super().build(resources, write_path=write_path)
 
         see_trips_csv_name = f"{self.name}_see_trips.csv"
-        see_unselectedplans_car_csv_name = f"{self.name}_see_unselectedplans_car.csv"
-
 
         # writes the SEE specific trips log 
         self.see_trips_log = self.start_csv_chunk_writer(see_trips_csv_name, write_path=write_path)
-        self.see_unselectedplans_car = self.start_csv_chunk_writer(see_unselectedplans_car_csv_name, write_path=write_path)
 
     def process_plans(self, elem):
 
@@ -1051,10 +1048,10 @@ class SeeTripLogs(PlanHandlerTool):
                                     'mode': self.get_furthest_mode(modes),
                                     'ox': float(activities[-1]['x']),
                                     'oy': float(activities[-1]['y']),
-                                    'dx': float(x),
-                                    'dy': float(y),
+                                    # 'dx': float(x),
+                                    # 'dy': float(y),
                                     'o_act': activities[-1]['act'],
-                                    'd_act': act_type,
+                                    # 'd_act': act_type,
                                     'distance': trip_distance,
                                     "utility" : float(plan.get("score")),
                                     "selected" : plan.get("selected"),
@@ -1092,7 +1089,14 @@ class SeeTripLogs(PlanHandlerTool):
             return group
         
         if summary:
+            
             trips = pd.DataFrame(summary).groupby(['agent',"innovation_hash"]).apply(get_dominant)
+
+            # We find the home locations, based on the origin activity (home)
+            # we use home locations for visulisation purposes
+            # # todo. Add a warning if many home locations are not found
+            homes = trips[trips.o_act=="home"][['ox','oy','agent', 'o_act']]
+            homes = homes.drop_duplicates(subset=['agent'],keep='first')
 
             # for each agent and each innovation, we want to define the dominantMode (by frequency)
             trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
@@ -1107,34 +1111,15 @@ class SeeTripLogs(PlanHandlerTool):
             plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
             plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
 
-            # We find the home locations, based on the origin activity (home)
-            # we use home locations for visulisation purposes
-            homes = trips[trips.o_act=="home"][['ox','oy','agent']]
-            homes.drop_duplicates(subset=['agent'],keep='first')
-
-            # merge this table into the plans, giving us the ox and oy
+            # # merge this table into the plans, giving us the ox and oy
             plans = plans.merge(homes,on='agent',how='left')
-
-            # gdf = plans
-
-            # # todo. Add a warning if many home locations are not found
+            
             gdf = geopandas.GeoDataFrame(plans, 
                                          geometry=geopandas.points_from_xy(plans.ox, plans.oy), 
                                          crs='EPSG:27700')
 
-            # # dropping some columns
-            # # we've used ox/oy to build geometry
-            # # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
+            # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
             gdf = gdf.drop(['mode'], axis=1)
-
-            # # British east/northing
-            # # TODO need to inherit this from elara config
-            # gdf.crs = 'epsg:27700'
-
-            # # re-project to 4326
-            # gdf['geometry'] = gdf['geometry'].to_crs(epsg=4326)
-
-            # # sort by utility
             gdf = gdf.sort_values("utility")
             # flatten, one row per innovation (removes duplicates from lazy processes above)
             gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
@@ -1143,11 +1128,11 @@ class SeeTripLogs(PlanHandlerTool):
             # enables this to be toggled on/off on kepler
             gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
 
-            # # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
+            # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
             gdf = gdf.sort_values('utility')
             gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
 
-            # # subselecting them into 2 different dfs
+            # subselecting them into 2 different dfs
             selectedPlans = gdf[gdf.selected==True]
             unSelectedPlans = gdf[gdf.selected==False]
 
@@ -1159,33 +1144,25 @@ class SeeTripLogs(PlanHandlerTool):
             unSelectedPlans = unSelectedPlans.sort_values("utility")
             unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
 
-            # # zip them back together again
+            # zip them back together again
             gdf = pd.concat([selectedPlans,unSelectedPlans])
-            #self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
+            self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
 
             # creation of a df where car is selected
             # but PT exists in their unchosen plans
             # "mode shift opportunity" gdf
-            #PlanAgentsSel = gdf[gdf.selected==True]
             carSelectedPlans = selectedPlans[selectedPlans.dominantTripMode=='car']
-
             unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carSelectedPlans.agent.unique())]
 
             # This finds all modes that aren't car, generally bike, walk, pt etc
             unSelectedPlansCarSelected = unSelectedPlansCarSelected[~unSelectedPlansCarSelected.dominantTripMode.isin(['car'])]
-            # self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf[gdf['agent']=='fatema'])
             self.results['SeeUnSelectedPlansCarSelectedGdf'] = self.results['SeeUnSelectedPlansCarSelectedGdf'].append(unSelectedPlansCarSelected)
-
-            #self.see_unselectedplans_car.add(self.results['SeeUnSelectedPlansCarSelectedGdf'])#.append(unSelectedPlansCarSelected)
-
     def finalise(self):
         """
         Finalise aggregates and joins these results as required and creates a dataframe.
         """
+        
         self.see_trips_log.finish()
-        #self.results.finish()
-        # self.results['SeeAllPlansGdf'].finish()
-        #self.see_unselectedplans_car.finish()
 
     @staticmethod
     def get_seconds(dt: datetime) -> int:
