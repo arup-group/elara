@@ -16,7 +16,7 @@ class Config:
                 "crs": "EPSG:27700",
                 "version": 12,
                 "using_experienced_plans": True,
-                "verbose": False,
+                "debug": False,
             },
         "inputs":
             {
@@ -47,7 +47,6 @@ class Config:
         self.scale_factor = None
         self.version = None
         self.using_experienced_plans = None
-        self.logging = None
         self.event_handlers = None
         self.plan_handlers = None
         self.input_plan_handlers = None
@@ -105,7 +104,7 @@ class Config:
         self.logger.debug(f'Scale factor = {self.scale_factor}')
         self.logger.debug(f'Version = {self.version}')
         self.logger.debug(f'Using experienced plans = {self.using_experienced_plans}')
-        self.logger.debug(f'Verbosity/logging = {self.logging}')
+        self.logger.debug(f'Debug verbosity = {self.logging}')
         self.logger.debug(f'Required Event Handlers = {self.event_handlers}')
         self.logger.debug(f'Required Plan Handlers = {self.plan_handlers}')
         self.logger.debug(f'Required Post Processors = {self.post_processors}')
@@ -148,7 +147,7 @@ you may either or both the keys using HANDLER--NAME, for example:
             self.settings["scenario"].get("using_experienced_plans", True)
         )
         self.logging = self.valid_verbosity(
-            self.settings["scenario"].get("verbose", False)
+            self.settings["scenario"].get("debug", False)
         )
 
         # Factory requirements

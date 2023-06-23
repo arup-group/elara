@@ -65,12 +65,13 @@ def run(config_path, dry, path_override, root, output_directory_override):
 
 
 def main(config, dry_run=False) -> None:
-    logging.basicConfig(
-        level=config.logging,
-        format='%(asctime)s %(name)-12s %(levelname)-3s %(message)s',
-        datefmt='%m-%d %H:%M'
-    )
     logger = logging.getLogger(__name__)
+    logger.setLevel(config.logging)
+
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-3s %(message)s', '%m-%d %H:%M')
+    handler.setFormatter(formatter)
+
     logger.info('Starting')
     requirements = define_and_connect_workstations(config, logger)
     if dry_run:
@@ -150,7 +151,7 @@ def common_override(
                 "scale_factor": scale_factor,
                 "version": version,
                 "crs": epsg,
-                "verbose": debug,
+                "debug": debug,
                 "using_experienced_plans": using_experienced_plans
             },
         "inputs":
