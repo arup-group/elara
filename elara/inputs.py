@@ -321,6 +321,15 @@ class TransitSchedule(InputTool):
 
         self.logger.debug(f'Transit Schedule Route modes = {self.modes}')
         self.logger.debug(f'Transit Schedule Stop modes = {list(self.mode_to_stops_map)}')
+    
+    
+    def is_transit(self, vehicle_id: str) -> bool:
+        """Given a vehicle's ID, return if it is a transit mode.
+        Based on existance in veh_to_mode_map.
+        :param vehicle_id: Vehicle ID string
+        :return: bool
+        """
+        return vehicle_id in self.veh_to_mode_map
 
     @staticmethod
     def get_node_elem(elem):
