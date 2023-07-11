@@ -334,9 +334,9 @@ If using MATSim "experienced_plans" you should set this flag to 'true'.
 
 The EPSG code specifying which coordinate projection system the MATSim scenario inputs used. This is used to convert the results to WGS 84 as required.
 
-**verbose** *string* *(required)*
+**debug** *bool {true,false}* *(optional)*
 
-Logging module [level](https://docs.python.org/3/library/logging.html#levels), for example, either ERROR, WARNING, INFO or DEBUG.
+Set logging to [DEBUG level](https://docs.python.org/3/library/logging.html#levels), defaults to `false`.
 
 **[inputs]**
 
@@ -556,7 +556,7 @@ To generate XML & HTML coverage reports to `reports/coverage`:
 
 ## Debug
 
-Logging level can be set in the config or via the cli, or otherwise defaults to False (INFO). We
+Logging level can be set to debug in the config (`debug = True`) or via the cli, or otherwise defaults to False (INFO). We
 currently support the following levels: DEBUG, INFO.
 
 Note that the configured or default logging level can be overwritten to debug using an env variable:
