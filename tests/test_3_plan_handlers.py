@@ -838,6 +838,35 @@ def test_finalised_plans(agent_plans_handler_finalised):
     assert len(handler.results) == 0
 
 
+def test_unselected_pt_plans(test_config, input_manager):
+    handler = plan_handlers.PlanLogs(test_config, "all")
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+
+    plans = handler.resources["plans"]
+    for plan in plans.persons:
+        handler.process_plans(plan)
+
+    string = """
+    <person id="nick">
+        <plan score="100" selected="no">
+            <activity type="home" link="1-2" x="0.0" y="0.0" end_time="08:00:00" >
+            </activity>
+            <leg mode="bus" dep_time="08:00:00" trav_time="00:00:04">
+            <route type="links" start_link="1-2" end_link="1-5" trav_time="00:00:04" distance="10100.0">1-2 2-1 1-5</route>
+            </leg>
+            <activity type="work" link="1-5" x="0.0" y="10000.0" end_time="17:30:00" >
+            </activity>
+        </plan>
+    </person>
+    """
+    person = etree.fromstring(string)
+    handler.process_plans(person)
+
+    assert handler.trips_log.chunk[-1]["selected"]=="no"
+    assert handler.trips_log.chunk[-1]["mode"]=="bus"
+
+
 # Plans Wrapping case
 
 
