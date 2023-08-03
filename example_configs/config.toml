@@ -38,6 +38,7 @@ plan_activity_modes = {destination_activity_filters=["work"], attributes=["age"]
 trip_logs = ["all"]
 agent_highway_distance_logs = ["car"]
 trip_highway_distance_logs = ["car"]
+see_trips_log = ["all"]
 
 [post_processors]
 plan_summary = ["all"]

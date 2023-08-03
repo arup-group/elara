@@ -837,6 +837,65 @@ def test_finalised_plans(agent_plans_handler_finalised):
 
     assert len(handler.results) == 0
 
+def test_see_handler_raise_error_ptinteraction(test_config, input_manager):
+    handler = plan_handlers.SeeTripLogs(test_config, 'all')
+    person = """
+    <person id="fred">
+		<attributes>
+			<attribute name="subpopulation" class="java.lang.String">poor</attribute>
+			<attribute name="age" class="java.lang.String">no</attribute>
+		</attributes>
+		<plan score="113.01188458431385" selected="yes">
+			<activity type="pt interaction" link="1-2" x="50.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+			<leg mode="bus" trav_time="00:43:42">
+				<attributes>
+					<attribute name="routingMode" class="java.lang.String">bus</attribute>
+		pytest tests/test_9_samplers_tour.py		</attributes>
+				<route type="default_pt" start_link="1-2" end_link="3-4" trav_time="00:43:42" distance="10100.0">
+				{"transitRouteId":"work_bound","boardingTime":"08:30:00","transitLineId":"city_line","accessFacilityId":"home_stop_out","egressFacilityId":"work_stop_in"}
+				</route>
+			</leg>
+			<activity type="pt interaction" link="3-4" x="10050.0" y="0.0" max_dur="00:00:00" >
+			</activity>
+		</plan>
+	</person>
+    """
+    person = etree.fromstring(person)
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    with pytest.raises(UserWarning, match='Plan cannot start with activity type "pt interaction".'):
+        handler.process_plans(person)
+
+
+@pytest.fixture
+def test_unselected_car_plans_mode(test_config, input_manager):
+    handler = plan_handlers.SeeTripLogs(test_config, 'all')
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    plans = handler.resources['plans']
+    for person in plans.persons:
+        handler.process_plans(person)
+
+    assert len(handler.see_unselectedplans_car[handler.see_unselectedplans_car['dominantTripMode']=='car'])==0
+
+
+@pytest.fixture
+def see_handler_finalised(test_config, input_manager):
+    handler = plan_handlers.SeeTripLogs(test_config, 'all')
+    resources = input_manager.resources
+    handler.build(resources, write_path=test_outputs)
+    plans = handler.resources['plans']
+    for plan in plans.persons:
+        handler.process_plans(plan)
+    handler.finalise()
+    return handler
+
+
+def test_finalised_plans(see_handler_finalised):
+    handler = see_handler_finalised
+
+    assert len(handler.results) > 0
 
 def test_unselected_pt_plans(test_config, input_manager):
     handler = plan_handlers.PlanLogs(test_config, "all")

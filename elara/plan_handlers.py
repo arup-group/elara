@@ -1,10 +1,12 @@
 import numpy as np
 from math import floor
 import pandas as pd
+import geopandas
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
 import json
+import uuid
 
 from elara.factory import Tool, WorkStation
 
@@ -928,6 +930,268 @@ class TripLogs(PlanHandlerTool):
         s = dt.second
         return s + (60 * (m + (60 * (h + ((d - 1) * 24)))))
 
+class SeeTripLogs(PlanHandlerTool):
+    
+    requirements = ['plans']
+    valid_modes = ['all']
+
+    # todo make it so that 'all' option not required (maybe for all plan handlers)
+
+    """
+    Note that MATSim plan output plans display incorrect 'dep_time' (they show departure time of 
+    original init plan) and do not show activity start time. As a result, we use leg 'duration' 
+    to calculate the start of the next activity. This results in time waiting to enter 
+    first link as being activity time. Therefore activity durations are slightly over reported 
+    and leg duration under reported.
+    """
+
+    def __init__(self, config, mode="all", groupby_person_attribute="subpopulation",see=None, **kwargs):
+        """
+        Initiate handler.
+        :param config: config
+        :param mode: str, mode option
+        :param attributes: str, attribute key defaults to 'subpopulation'
+        """
+
+        super().__init__(config=config, mode=mode, groupby_person_attribute=groupby_person_attribute, **kwargs)
+
+        self.mode = mode
+        self.groupby_person_attribute = groupby_person_attribute
+        self.start_datetime = datetime.strptime("2020:4:1-00:00:00", '%Y:%m:%d-%H:%M:%S')
+
+        self.see_trips_log = None
+        #self.see = see
+
+        # Initialise results storage
+        self.results = dict()  # Result dataframes ready to export
+        self.results['SeeAllPlansGdf'] = geopandas.GeoDataFrame()
+        self.results['SeeUnSelectedPlansCarSelectedGdf'] = geopandas.GeoDataFrame()
+
+
+    def build(self, resources: dict, write_path=None) -> None:
+        """
+        Build handler from resources.
+        :param resources: dict, supplier resources
+        :param write_path: Optional output path overwrite
+        """
+
+        print("""\                                                                                                                                  
+                                                                                                                                  
+  .--.--.       ,---,.    ,---,.           ,---,                                ,--,                                              
+ /  /    '.   ,'  .' |  ,'  .' |          '  .' \                             ,--.'|                          ,--,                
+|  :  /`. / ,---.'   |,---.'   |         /  ;    '.          ,---,            |  | :                        ,--.'|                
+;  |  |--`  |   |   .'|   |   .'        :  :       \     ,--. /  |           :  : '              .--.--.   |  |,      .--.--.    
+|  :  ;_    :   :  |-,:   :  |-,        :  |   /\   \   ,--.'|'   |  ,--.--.  |  ' |        .--, /  /    '  `--'_     /  /    '   
+ \  \    `. :   |  ;/|:   |  ;/|        |  :  ' ;.   : |   |  ,"' | /       \ '  | |      /_ ./||  :  /`./  ,' ,'|   |  :  /`./   
+  `----.   \|   :   .'|   :   .'        |  |  ;/  \   \|   | /  | |.--.  .-. ||  | :   , ' , ' :|  :  ;_    '  | |   |  :  ;_     
+  __ \  \  ||   |  |-,|   |  |-,        '  :  | \  \ ,'|   | |  | | \__\/: . .'  : |__/___/ \: | \  \    `. |  | :    \  \    `.  
+ /  /`--'  /'   :  ;/|'   :  ;/|        |  |  '  '--'  |   | |  |/  ," .--.; ||  | '.'|.  \  ' |  `----.   \'  : |__   `----.   \ 
+'--'.     / |   |    \|   |    \        |  :  :        |   | |--'  /  /  ,.  |;  :    ; \  ;   : /  /`--'  /|  | '.'| /  /`--'  / 
+  `--'---'  |   :   .'|   :   .'        |  | ,'        |   |/     ;  :   .'   \  ,   /   \  \  ;'--'.     / ;  :    ;'--'.     /  
+            |   | ,'  |   | ,'          `--''          '---'      |  ,     .-./---`-'     :  \  \ `--'---'  |  ,   /   `--'---'   
+            `----'    `----'                                       `--`---'                \  ' ;            ---`-'               
+                                                                                            `--`                                  """)
+
+        super().build(resources, write_path=write_path)
+
+        see_trips_csv_name = f"{self.name}_see_trips.csv"
+
+        # writes the SEE specific trips log 
+        self.see_trips_log = self.start_csv_chunk_writer(see_trips_csv_name, write_path=write_path)
+
+    def process_plans(self, elem):
+
+        """
+        Build list of trip and activity logs (dicts) for all plans.
+
+        Note that this uses ALL plans, selected and unselected (for subsequent SEE analysis).
+        Note that this assumes that first stage of a plan is ALWAYS an activity.
+        Note that activity wrapping is not dealt with here.
+
+        :return: Tuple[List[dict]]
+        """
+        ident = elem.get('id')
+
+        summary = []
+
+        for i, plan in enumerate(elem.xpath(".//plan")):
+
+            # attribute = self.attributes.get(ident, {}).get(self.groupby_person_attribute, None)
+
+            # check that plan starts with an activity
+            if not plan[0].tag == 'activity':
+                raise UserWarning('Plan does not start with activity.')
+            if plan[0].get('type') == 'pt interaction':
+                raise UserWarning('Plan cannot start with activity type "pt interaction".')
+
+            activities = []
+            trips = []
+            act_seq_idx = 0
+
+            x = None
+            y = None
+            modes = {}
+            trip_distance = 0
+
+            for stage in plan:
+
+                # we give each plan an id (to permit comparisons)
+                innovation_hash = i    
+            
+                if stage.tag == 'activity':
+                    act_type = stage.get('type')
+
+                    if not act_type == 'pt interaction':
+
+                        act_seq_idx += 1  # increment for a new trip idx
+
+                        x = stage.get('x')
+                        y = stage.get('y')
+
+                        if modes:  # add to trips log
+                            activities.append(
+                                {
+                                'agent': ident,
+                                'act': act_type,
+                                'x': x,
+                                'y': y
+                                }
+                            )
+                            trips.append(
+                                {
+                                    'agent': ident,
+                                    'seq': act_seq_idx-1,
+                                    'mode': self.get_furthest_mode(modes),
+                                    'ox': float(activities[-1]['x']),
+                                    'oy': float(activities[-1]['y']),
+                                    # 'dx': float(x),
+                                    # 'dy': float(y),
+                                    'o_act': activities[-1]['act'],
+                                    # 'd_act': act_type,
+                                    'distance': trip_distance,
+                                    "utility" : float(plan.get("score")),
+                                    "selected" : plan.get("selected"),
+                                    "innovation_hash" : innovation_hash
+                                }
+                            )
+
+                            modes = {}  # reset for next trip
+                            trip_distance = 0  # reset for next trip
+                            innovation_hash+=1 # increment for next trip
+
+                elif stage.tag == 'leg':
+
+                    leg_mode = stage.get('mode')
+                    route_elem = stage.xpath('route')[0]
+                    distance = float(route_elem.get("distance", 0))
+
+                    mode = self.extract_mode_from_route_elem(leg_mode, route_elem)
+
+                    mode = {"egress_walk": "walk", "access_walk": "walk"}.get(mode, mode)  # ignore access and egress walk
+                    modes[mode] = modes.get(mode, 0) + distance
+                    trip_distance = distance
+
+            self.see_trips_log.add(trips)
+            summary.extend(trips)
+
+        def get_dominant(group):
+            group['dominantModeDistance'] = group['distance'].max()
+            group['dominantTripMode'] = group.loc[group['distance'].idxmax(), 'mode'] # this might return a series if multiple same max values ?
+            return group
+
+        def get_relativeUtilityToSelected(group):
+            selected_utility = group[group['selected']=='yes']['utility'].values[0]
+            group['relativeDisUtilityToSelected'] = group['utility'] - selected_utility
+            return group
+        
+        if summary:
+            
+            trips = pd.DataFrame(summary).groupby(['agent',"innovation_hash"]).apply(get_dominant)
+
+            # We find the home locations, based on the origin activity (home)
+            # we use home locations for visulisation purposes
+            # # todo. Add a warning if many home locations are not found
+            homes = trips[trips.o_act=="home"][['ox','oy','agent', 'o_act']]
+            homes = homes.drop_duplicates(subset=['agent'],keep='first')
+
+            # for each agent and each innovation, we want to define the dominantMode (by frequency)
+            trips['dominantModeFreq'] = trips.groupby(['agent','innovation_hash'])['mode'].transform('max')
+            trips = trips.drop_duplicates(subset=['agent','innovation_hash'],keep='first')
+
+            # we use the innovation_hash to identify a summary, per agent
+            plans = trips.groupby(['agent',"innovation_hash","utility","dominantTripMode"],as_index=False)['mode','selected'].agg(lambda x: ','.join(x.unique()))
+
+            # calculate relative disutility of a plan to the selected plan, gives indication of relative proximity to that chosen/selected
+            # Remember, the chosen plan may not always be the top score due to randomness in MATSim process
+            # in the case of the selected plan, the relative disutility is 0
+            plans = plans.groupby(['agent']).apply(get_relativeUtilityToSelected)
+            plans['relativeDisUtilityToSelectedPerc'] = plans['relativeDisUtilityToSelected'] / plans['utility'] * -100.0
+
+            # # merge this table into the plans, giving us the ox and oy
+            plans = plans.merge(homes,on='agent',how='left')
+            
+            gdf = geopandas.GeoDataFrame(plans, 
+                                         geometry=geopandas.points_from_xy(plans.ox, plans.oy), 
+                                         crs='EPSG:27700')
+
+            # we remove the legacy trip mode as it is not used, as we now use the dominantMode for the entire plan
+            gdf = gdf.drop(['mode'], axis=1)
+            gdf = gdf.sort_values("utility")
+            # flatten, one row per innovation (removes duplicates from lazy processes above)
+            gdf = gdf.drop_duplicates(subset=['innovation_hash'],keep='first')
+
+            # Kepler weirdness. Moving from yes/no (matsim lingo) to a bool for whether or not it was selected
+            # enables this to be toggled on/off on kepler
+            gdf['selected'] = gdf['selected'].map({'yes':True ,'no':False})
+
+            # let's sort and label them in order (i.e. 1st (selected),  2nd (least worst etc), per plan
+            gdf = gdf.sort_values('utility')
+            gdf['scoreRank'] = gdf.groupby(['agent'])['utility'].rank(method='dense',ascending=False).astype(int)
+
+            # subselecting them into 2 different dfs
+            selectedPlans = gdf[gdf.selected==True]
+            unSelectedPlans = gdf[gdf.selected==False]
+
+            # Often we will have time/route innovations across n innovation strategies
+            # Since we care about mode shift, we can pick the best innovation per mode. 
+            # this is the 'best' option for a given mode
+            # since we have sorted based on utility, we can remove duplicates 
+
+            unSelectedPlans = unSelectedPlans.sort_values("utility")
+            unSelectedPlans = unSelectedPlans.drop_duplicates(['agent','dominantTripMode'], keep='last')
+
+            # zip them back together again
+            gdf = pd.concat([selectedPlans,unSelectedPlans])
+            self.results['SeeAllPlansGdf'] = self.results['SeeAllPlansGdf'].append(gdf)
+
+            # creation of a df where car is selected
+            # but PT exists in their unchosen plans
+            # "mode shift opportunity" gdf
+            carSelectedPlans = selectedPlans[selectedPlans.dominantTripMode=='car']
+            unSelectedPlansCarSelected = unSelectedPlans[unSelectedPlans.agent.isin(carSelectedPlans.agent.unique())]
+
+            # This finds all modes that aren't car, generally bike, walk, pt etc
+            unSelectedPlansCarSelected = unSelectedPlansCarSelected[~unSelectedPlansCarSelected.dominantTripMode.isin(['car'])]
+            self.results['SeeUnSelectedPlansCarSelectedGdf'] = self.results['SeeUnSelectedPlansCarSelectedGdf'].append(unSelectedPlansCarSelected)
+    def finalise(self):
+        """
+        Finalise aggregates and joins these results as required and creates a dataframe.
+        """
+        
+        self.see_trips_log.finish()
+
+    @staticmethod
+    def get_seconds(dt: datetime) -> int:
+        """
+        Extract time of day in seconds from datetime.
+        :param dt: datetime
+        :return: int, seconds
+        """
+        d = dt.day
+        h = dt.hour
+        m = dt.minute
+        s = dt.second
+        return s + (60 * (m + (60 * (h + ((d-1) * 24)))))
 
 class UtilityLogs(PlanHandlerTool):
     requirements = ["plans"]
@@ -1643,6 +1907,7 @@ class PlanHandlerWorkStation(WorkStation):
         "plan_activity_modes": PlanActivityModes,
         "leg_logs": LegLogs,
         "trip_logs": TripLogs,
+        "see_trips_log" : SeeTripLogs,
         "plan_logs": PlanLogs,
         "utility_logs": UtilityLogs,
         "agent_highway_distance_logs": AgentHighwayDistanceLogs,
